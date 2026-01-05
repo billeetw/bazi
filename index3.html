@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- FB 分享預覽設定 (Open Graph) -->
+    <meta property="og:title" content="2026 丙午年戰略導航 | 一起出來玩 四柱遊戲版">
+    <meta property="og:description" content="這不是算命，是妳 2026 的生存策略。點擊獲取高壓月提醒與能量配置建議！">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://images.unsplash.com/photo-1533035350251-aa8b8e208d95?q=80&w=1000&auto=format&fit=crop">
+
+    <title>2026 丙午年戰略導航 | 一起出來玩 四柱遊戲版</title>
+    <!-- 引入穩定版 lunar-javascript -->
+    <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background: #0b0e14; color: #e2e8f0; overflow-x: hidden; }
+        .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .gold-text { background: linear-gradient(135deg, #d4af37 0%, #f3e5ab 50%, #aa8a2e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .status-green { color: #2ecc71; border-left: 4px solid #2ecc71; }
+        .status-yellow { color: #f1c40f; border-left: 4px solid #f1c40f; }
+        .status-red { color: #e74c3c; border-left: 4px solid #e74c3c; }
+        
+        /* 五行顏色系統 */
+        .wuxing-木 { background: #2ecc71; }
+        .wuxing-火 { background: #e74c3c; }
+        .wuxing-土 { background: #f1c40f; }
+        .wuxing-金 { background: #ced4da; }
+        .wuxing-水 { background: #3498db; }
+
+        .progress-bg { background: rgba(255,255,255,0.05); height: 12px; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .progress-bar { height: 100%; border-radius: 6px; transition: width 1.5s cubic-bezier(0.1, 0.7, 1.0, 0.1); }
+        
+        .bazi-char { font-size: 2.2rem; font-weight: 900; line-height: 1.1; letter-spacing: -2px; }
+
+        /* 儀式感加載動畫 */
+        #loadingOverlay { position: fixed; inset: 0; background: #0b0e14; z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .loader-ring { width: 80px; height: 80px; border: 4px solid rgba(212, 175, 55, 0.1); border-top: 4px solid #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        #copyToast { visibility: hidden; min-width: 250px; background-color: #d4af37; color: #000; text-align: center; border-radius: 50px; padding: 16px; position: fixed; z-index: 2000; left: 50%; transform: translateX(-50%); bottom: 30px; font-weight: 900; }
+        #copyToast.show { visibility: visible; animation: fadein 0.5s, fadeout 0.5s 2.5s; }
+        @keyframes fadein { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+        @keyframes fadeout { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+    </style>
+</head>
+<body class="min-h-screen pb-10 flex flex-col items-center">
+
+    <!-- 儀式感加載層 -->
+    <div id="loadingOverlay">
+        <div class="loader-ring mb-4"></div>
+        <p class="gold-text font-black tracking-widest animate-pulse" id="loadingText">正在調取出生能量場...</p>
+        <p class="text-slate-500 text-xs mt-2">根據 Lunar-JS 專業曆法演算中</p>
+    </div>
+
+    <!-- 頂部導流 -->
+    <div class="w-full bg-gradient-to-r from-red-600 to-amber-600 py-3 px-4 text-center text-white text-xs font-black sticky top-0 z-50 shadow-2xl">
+        <i class="fab fa-youtube mr-2"></i> 想掌握 2026 最新趨勢？一起出來玩 
+        <a href="https://www.youtube.com/@billeetw1" target="_blank" class="underline ml-1">訂閱 YouTube 頻道 →</a>
+    </div>
+
+    <div class="w-full max-w-2xl px-6 pt-12">
+        <div class="text-center mb-10">
+            <h1 class="text-3xl font-black gold-text mb-2 tracking-tighter">2026 丙午年戰略導航</h1>
+            <p class="text-slate-500 text-sm tracking-widest font-bold uppercase italic">一起出來玩 四柱遊戲版：生存策略與資源配置</p>
+        </div>
+
+        <!-- 輸入表單 -->
+        <div class="glass p-8 rounded-3xl mb-12 shadow-2xl border-t-2 border-amber-500/30">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">出生日期 (公曆)</label>
+                    <input type="date" id="birthDate" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-amber-500 transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">出生時間</label>
+                    <input type="time" id="birthTime" value="12:00" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-amber-500 transition-all">
+                </div>
+            </div>
+            <button onclick="startAnalysis()" class="w-full mt-8 bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-900 font-black py-5 rounded-2xl shadow-lg hover:brightness-110 active:scale-95 transition-all uppercase tracking-widest text-lg">
+                生成我的 2026 戰略報告
+            </button>
+        </div>
+
+        <div id="resultArea" class="hidden space-y-12 w-full">
+            
+            <!-- ❶ 出生四柱與日元核對 -->
+            <div class="w-full">
+                <h2 class="text-xl font-black gold-text mb-6 text-center italic">❶ 出生四柱與能量核心</h2>
+                <div class="grid grid-cols-4 gap-2 text-center">
+                    <div class="glass p-4 rounded-2xl flex flex-col items-center justify-center"><p class="text-[10px] text-slate-500 mb-2 uppercase tracking-tighter">年柱</p><div id="yearGan" class="bazi-char"></div><div id="yearZhi" class="bazi-char"></div></div>
+                    <div class="glass p-4 rounded-2xl flex flex-col items-center justify-center"><p class="text-[10px] text-slate-500 mb-2 uppercase tracking-tighter">月柱</p><div id="monthGan" class="bazi-char"></div><div id="monthZhi" class="bazi-char"></div></div>
+                    <div class="glass p-4 rounded-2xl border border-amber-500/50 bg-amber-500/5 flex flex-col items-center justify-center"><p class="text-[10px] text-amber-500 mb-2 uppercase font-black">日柱</p><div id="dayGan" class="bazi-char text-amber-500"></div><div id="dayZhi" class="bazi-char text-amber-500"></div></div>
+                    <div class="glass p-4 rounded-2xl flex flex-col items-center justify-center"><p class="text-[10px] text-slate-500 mb-2 uppercase tracking-tighter">時柱</p><div id="hourGan" class="bazi-char"></div><div id="hourZhi" class="bazi-char"></div></div>
+                </div>
+            </div>
+
+            <!-- ❷ 命盤能量佔比 -->
+            <div class="w-full">
+                <h2 class="text-xl font-black gold-text mb-6 text-center italic">❷ 命盤能量佔比 (原局統計)</h2>
+                <div class="glass p-8 rounded-3xl space-y-6">
+                    <div id="wuxingContainer" class="space-y-5"></div>
+                    <div id="wuxingAdvice" class="mt-6 p-5 bg-slate-800/40 rounded-2xl text-xs text-slate-300 leading-relaxed border border-white/5"></div>
+                </div>
+            </div>
+
+            <!-- ❸ 2026 丙午年戰略重點 -->
+            <div class="glass p-8 rounded-3xl border-t-4 border-amber-500 shadow-xl w-full">
+                <h2 class="text-xl font-black gold-text mb-4 italic text-center">❸ 2026 丙午年年度戰略方針</h2>
+                <div id="yearStrategy" class="text-sm text-slate-200 leading-relaxed text-center"></div>
+            </div>
+
+            <!-- ❹ 流月執行節奏 -->
+            <div id="monthlySection" class="w-full">
+                <h2 class="text-xl font-black gold-text mb-6 text-center italic">❹ 2026 流月執行節奏 (三色燈)</h2>
+                <div id="monthlyCards" class="space-y-4"></div>
+            </div>
+
+            <!-- ❺ 分享與互動 -->
+            <div class="glass p-8 rounded-3xl text-center border-2 border-dashed border-amber-500/20 bg-slate-900/40 shadow-inner w-full mb-10">
+                <h3 class="gold-text text-xl font-black mb-4">這不是算命，是 2026 生存策略</h3>
+                <p class="text-slate-400 text-xs mb-8 leading-relaxed px-4 font-bold">
+                    手機不好截圖？沒關係！<br>
+                    👉 點擊下方按鈕【一鍵複製戰略文案】貼回臉書留言區，<br>
+                    觸發演算法讓更多人能避開風險，擁抱好運。
+                </p>
+                <div class="grid grid-cols-1 gap-4">
+                    <button onclick="copyShareText()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-900 py-5 rounded-2xl font-black shadow-lg hover:brightness-110 active:scale-95 transition-all text-lg tracking-wider">
+                        <i class="far fa-copy mr-2"></i> 一鍵複製戰略文案（貼回臉書用）
+                    </button>
+                    <a href="https://www.facebook.com/bill17gonplay/" target="_blank" class="w-full bg-[#1877F2] hover:bg-blue-600 text-white py-4 rounded-2xl font-bold flex items-center justify-center transition-all">
+                        <i class="fab fa-facebook-f mr-2"></i> 前往臉書參與互動
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="copyToast">✅ 戰略文案已複製，快去臉書留言吧！</div>
+
+    <div class="mt-auto text-center text-slate-600 text-[10px] tracking-widest pb-10">
+        © 2026 一起出來玩 四柱遊戲版 | 純公益能量提醒
+    </div>
+
+    <script>
+        const ELEMENTS_MAP = {"甲":"木","乙":"木","丙":"火","丁":"火","戊":"土","己":"土","庚":"金","辛":"金","壬":"水","癸":"水","子":"水","丑":"土","寅":"木","卯":"木","辰":"土","巳":"火","午":"火","未":"土","申":"金","酉":"金","戌":"土","亥":"水"};
+        const gen = {"木": "火", "火": "土", "土": "金", "金": "水", "水": "木"};
+        const ctrl = {"木": "土", "土": "水", "水": "火", "火": "金", "金": "木"};
+        
+        const wuxingAdviceMap = {
+            "木": "補木＝維持「成長動能」。適合啟動新案、增加閱讀、擴張社交圈。火旺年木是燃料，要注意別燒得太快。",
+            "火": "補火＝管理「輸出節奏」。固定輸出週期、運動日照。強火者防躁鬱；弱火者可借勢起飛。",
+            "土": "補土＝建立「能量緩衝」。冥想、接地氣穩住核心。土是火旺年的穩定劑，能幫妳固守現金流與情緒地基。",
+            "金": "補金＝落實「流程紀律」。用制度保護產出，明確截止日、停損條件與邊界。拒絕無謂的人情損耗，按表操課。",
+            "水": "補水＝配置「風險防護」。多喝水、深度思考。水是火旺年的救命降溫劑，幫妳在熱浪中保持清醒。"
+        };
+
+        function startAnalysis() {
+            const dateVal = document.getElementById('birthDate').value;
+            if (!dateVal) return alert("請輸入出生日期。");
+
+            const overlay = document.getElementById('loadingOverlay');
+            const loadingText = document.getElementById('loadingText');
+            overlay.style.display = 'flex';
+            
+            const steps = ["正在調取出生能量場...", "正在鎖定丙午流年碰撞...", "正在生成 12 個月戰略行動卡...", "報告生成完畢！"];
+            let step = 0;
+            const timer = setInterval(() => {
+                step++;
+                if (step < steps.length) {
+                    loadingText.innerText = steps[step];
+                } else {
+                    clearInterval(timer);
+                    overlay.style.display = 'none';
+                    calculateEightChar();
+                }
+            }, 1200);
+        }
+
+        function calculateEightChar() {
+            const dateVal = document.getElementById('birthDate').value;
+            const timeVal = document.getElementById('birthTime').value;
+            try {
+                const dateArr = dateVal.split('-');
+                const timeArr = timeVal.split(':');
+                const solar = Solar.fromYmdHms(parseInt(dateArr[0]), parseInt(dateArr[1]), parseInt(dateArr[2]), parseInt(timeArr[0]), parseInt(timeArr[1]), 0);
+                const lunar = solar.getLunar();
+                const eightChar = lunar.getEightChar();
+                
+                const year = eightChar.getYear(), month = eightChar.getMonth(), day = eightChar.getDay(), hour = eightChar.getTime();    
+                document.getElementById('yearGan').innerText = year.charAt(0);
+                document.getElementById('yearZhi').innerText = year.charAt(1);
+                document.getElementById('monthGan').innerText = month.charAt(0);
+                document.getElementById('monthZhi').innerText = month.charAt(1);
+                document.getElementById('dayGan').innerText = day.charAt(0);
+                document.getElementById('dayZhi').innerText = day.charAt(1);
+                document.getElementById('hourGan').innerText = hour.charAt(0);
+                document.getElementById('hourZhi').innerText = hour.charAt(1);
+
+                const dayStem = day.charAt(0);
+                const dayElem = ELEMENTS_MAP[dayStem];
+                const allChars = (year + month + day + hour).split('');
+                let counts = { "木": 0, "火": 0, "土": 0, "金": 0, "水": 0 };
+                allChars.forEach(char => { if (ELEMENTS_MAP[char]) counts[ELEMENTS_MAP[char]]++; });
+
+                let levels = {};
+                for (let k in counts) {
+                    let c = counts[k];
+                    if (c === 0) levels[k] = 0.5;
+                    else if (c === 1) levels[k] = 1.2;
+                    else if (c === 2) levels[k] = 1.8;
+                    else if (c === 3) levels[k] = 2.5;
+                    else levels[k] = 3.0;
+                }
+
+                const wuxingContainer = document.getElementById('wuxingContainer');
+                wuxingContainer.innerHTML = '';
+                let lowElements = [];
+                ["木", "火", "土", "金", "水"].forEach(e => {
+                    const lv = levels[e], pct = (lv / 3) * 100;
+                    if(lv <= 1.2) lowElements.push(e);
+                    wuxingContainer.innerHTML += `
+                        <div class="space-y-1">
+                            <div class="flex justify-between text-[10px] font-bold"><span>${e} 能量 (${counts[e]}次)</span><span class="${lv >= 1.5 ? 'text-amber-400' : 'text-red-400'}">${lv} / 3</span></div>
+                            <div class="progress-bg"><div class="progress-bar wuxing-${e}" style="width: ${pct}%"></div></div>
+                        </div>`;
+                });
+
+                document.getElementById('wuxingAdvice').innerHTML = lowElements.length > 0 ? 
+                    `<strong>⚠️ 戰略建議：</strong><br>${lowElements.map(le => wuxingAdviceMap[le]).join('<br>')}` : 
+                    `<strong>✨ 能量分布平衡：</strong>妳的底盤在 2026 火旺之年具備良好緩衝。`;
+
+                function getRelation(d, o) {
+                    if (d === o) return "same";
+                    if (gen[o] === d) return "resource";
+                    if (gen[d] === o) return "output";
+                    if (ctrl[o] === d) return "pressure";
+                    if (ctrl[d] === o) return "control";
+                    return "same";
+                }
+
+                const yrRel = getRelation(dayElem, "火");
+                const yrRelMap = { "output": "傷官輸出年", "resource": "印星補血年", "pressure": "官殺挑戰年", "control": "財星收割年", "same": "比劫競爭年" };
+                
+                const yrStrategy = {
+                    "output": "【輸出戰略】丙午火旺，這是不躲起來想、要做出來賣的一年。用系統產出省命，別把自己當耗材。",
+                    "resource": "【借力戰略】有人推妳一把。合作必留文字證據，能量來了要挑，別被掌聲帶走節奏。",
+                    "pressure": "【防守戰略】現實變硬，是要妳變精準。先降風險再談擴張，用制度取代個人意志。",
+                    "control": "【收割戰略】適合立規矩、收回帳款。主動權在妳手，但「刀要準」，別為了贏而贏。",
+                    "same": "【推進戰略】節奏快、情緒熱。這年競爭者多，但也最能鍛鍊意志。固定節奏，用規則贏。"
+                };
+                document.getElementById('yearStrategy').innerHTML = `<p class="font-black text-amber-500 text-lg mb-2">2026 格局：${yrRelMap[yrRel]}</p><p class="font-medium italic">${yrStrategy[yrRel]}</p>`;
+
+                const cardsContainer = document.getElementById('monthlyCards');
+                cardsContainer.innerHTML = '';
+                let redM = [];
+                const monthBoundaries = [
+                    { name: "庚寅月", p: "寅", range: "02.04-03.05", elem: "木" }, { name: "辛卯月", p: "卯", range: "03.05-04.05", elem: "木" }, { name: "壬辰月", p: "辰", range: "04.05-05.05", elem: "土" },
+                    { name: "癸巳月", p: "巳", range: "05.05-06.05", elem: "火" }, { name: "甲午月", p: "午", range: "06.05-07.07", elem: "火" }, { name: "乙未月", p: "未", range: "07.07-08.07", elem: "土" },
+                    { name: "丙申月", p: "申", range: "08.07-09.07", elem: "金" }, { name: "丁酉月", p: "酉", range: "09.07-10.08", elem: "金" }, { name: "戊戌月", p: "戌", range: "10.08-11.07", elem: "土" },
+                    { name: "己亥月", p: "亥", range: "11.07-12.07", elem: "水" }, { name: "庚子月", p: "子", range: "12.07-01.05", elem: "水" }, { name: "辛丑月", p: "丑", range: "01.05-02.04", elem: "土" }
+                ];
+                monthBoundaries.forEach(m => {
+                    const rel = getRelation(dayElem, m.elem);
+                    const meta = { "resource": "🟢 補血月", "same": "🟢 順風月", "output": "🟡 輸出月", "control": "🟡 收割月", "pressure": "🔴 高壓月" }[rel];
+                    if(rel === "pressure") redM.push(`${m.name}(${m.range})`);
+                    cardsContainer.innerHTML += `<div class="glass p-5 rounded-2xl border-l-4 status-${rel === 'pressure' ? 'red' : rel === 'resource' || rel === 'same' ? 'green' : 'yellow'} card-hover transition-all w-full">
+                        <div class="flex justify-between items-start mb-2"><div><span class="text-lg font-black">${m.name}</span><span class="text-[9px] text-slate-500 ml-2 uppercase tracking-widest">${m.range}</span></div><span class="text-[10px] px-2 py-1 rounded bg-slate-800 font-bold">${meta}</span></div>
+                        <p class="text-xs text-slate-300 font-medium leading-relaxed">【戰略】${rel === 'pressure' ? '防守為上，優先管理睡眠與情緒，重要承諾保留文字數據。' : '穩定輸出，按部就班執行計畫，固定產出頻率。'}</p></div>`;
+                });
+
+                document.getElementById('resultArea').classList.remove('hidden');
+                window.scrollTo({ top: document.getElementById('resultArea').offsetTop - 80, behavior: 'smooth' });
+                
+                // --- 病毒分享文案包 ---
+                window.shareText = `【一起出來玩 四柱遊戲版：2026 戰略導航】\n\n我的日主型態：${dayStem}${dayElem}型\n2026 年度格局：${yrRelMap[yrRel]}\n\n🔴 2026 高壓/高波動月：\n${redM.join('\n')}\n\n我的戰略建議：${lowElements.length > 0 ? '補' + lowElements.join('/') : '能量平衡'}\n\n「妳不是在算命，妳是在做 2026 生存策略。」\n\n👉 我的專屬戰略報告：${window.location.href}\n#2026生存策略 #四柱遊戲版 #一起出來玩`;
+
+            } catch (e) { console.error(e); alert("演算失敗，請重試。"); }
+        }
+
+        function copyShareText() {
+            if(!window.shareText) return;
+            const el = document.createElement('textarea');
+            el.value = window.shareText;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            
+            const toast = document.getElementById("copyToast");
+            toast.className = "show";
+            setTimeout(function(){ toast.className = toast.className.replace("show", ""); }, 3000);
+        }
+    </script>
+</body>
+</html>
