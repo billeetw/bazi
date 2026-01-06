@@ -47,7 +47,7 @@
   <!-- 頂部醒目 Bar -->
   <div class="w-full bg-gradient-to-r from-red-600 via-orange-600 to-red-600 py-5 px-6 text-white sticky top-0 z-50 shadow-[0_4px_20px_rgba(220,38,38,0.5)] cursor-pointer hover:brightness-110 transition-all border-b border-white/20">
     <a href="https://www.youtube.com/@billeetw1" target="_blank" class="block w-full">
-      <span class="text-base md:text-xl font-black tracking-tight vibrant-bar inline-block">
+      <span class="text-base md:text-xl font-black tracking-tight vibrant-bar inline-block text-center mx-auto">
         『跟李伯彥一起出來玩』 2026 你的生存戰略 🚀
         <span class="ml-2 bg-yellow-400 text-red-700 px-3 py-1 rounded-full text-xs md:text-sm font-black shadow-lg text-center inline-block">
           點擊訂閱隨時接受新情報！
@@ -106,7 +106,7 @@
 
       <!-- ❶ 命盤 -->
       <div class="w-full">
-        <h2 class="text-xs font-black text-slate-500 mb-6 tracking-[0.2em] uppercase text-center">❶ 河圖時空座標 (四柱命盤)</h2>
+        <h2 class="text-xs font-black text-slate-500 mb-6 tracking-[0.2em] uppercase text-center mx-auto">❶ 河圖時空座標 (四柱命盤)</h2>
         <div class="grid grid-cols-4 gap-2 px-1">
           <div class="glass py-5 rounded-2xl flex flex-col items-center">
             <p class="text-[10px] text-slate-600 mb-2 font-bold uppercase">年</p>
@@ -137,7 +137,7 @@
 
       <!-- ❷ 五行 -->
       <div class="glass p-8 rounded-[2.5rem] shadow-xl w-full">
-        <h2 class="text-xs font-black gold-text mb-6 tracking-widest uppercase text-center">❷ 五行能量深度演算法</h2>
+        <h2 class="text-xs font-black gold-text mb-6 tracking-widest uppercase text-center mx-auto">❷ 五行能量深度演算法</h2>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
           <div>
@@ -159,7 +159,7 @@
 
       <!-- ❸ 戰略 -->
       <div class="glass p-10 rounded-[2.5rem] border-t-4 border-amber-500 shadow-2xl w-full bg-gradient-to-b from-slate-900/50 to-transparent">
-        <h2 class="text-xs font-black gold-text mb-4 uppercase tracking-[0.2em] text-center">❸ 2026 丙午年年度戰略方針</h2>
+        <h2 class="text-xs font-black gold-text mb-4 uppercase tracking-[0.2em] text-center mx-auto">❸ 2026 丙午年年度戰略方針</h2>
         <div id="strategyBox" class="text-sm text-slate-200 leading-relaxed text-center italic"></div>
       </div>
 
@@ -317,7 +317,7 @@
         "偏印": [
           "今年不是表現年。是升級年。",
           "不是你不夠熱。是你需要更精準的工具。",
-          "不是缺靈感。是缺一套可落地的系統。",
+          "平衡感與靈感缺一不可。是缺一套可落地的系統。",
           "把技術做成壁壘。把洞察做成差異。",
           "但好消息來了。你只要把武器磨亮。別人追不上你。",
           "年度命題。用技術換主場。"
@@ -383,7 +383,7 @@
 
         const mSSZ = getSS(dm, bM[1]);
         document.getElementById('ySG').innerText = getSS(dm, bY[0]); document.getElementById('ySZ').innerText = getSS(dm, bY[1]);
-        document.getElementById('mSG').innerText = getSS(dm, bM[0]); document.getElementById('mSZ').innerText = mSSZ;
+        document.getElementById('mSG').innerText = getSS(dm, bM[0]); document.getElementById('mSZ').innerText = getSS(dm, bM[1]);
         document.getElementById('hSG').innerText = getSS(dm, bH[0]); document.getElementById('hSZ').innerText = getSS(dm, bH[1]);
 
         let surface = {"木":0,"火":0,"土":0,"金":0,"水":0}, strategic = {"木":0,"火":0,"土":0,"金":0,"水":0};
@@ -415,15 +415,23 @@
         const yrSS_G = getSS(dm, "丙");
         const yrSS_Z = getSS(dm, "午");
         const yrRelMap = {"傷官":"內容爆炸年","食神":"產品打磨年","正財":"獲利入帳年","偏財":"資產配置年","正官":"規則重組年","七殺":"挑戰突破年","正印":"資源回收年","偏印":"技術精進年","比肩":"同儕競爭年","劫財":"人脈擴展年"};
+        
+        // 年度戰略判詞標籤保底
+        const yTagG = yrRelMap[yrSS_G] || "年度變革";
+        const yTagZ = yrRelMap[yrSS_Z] || "底層影響";
+        
         const ys = yearStrategyCopy(yrSS_G, yrSS_Z);
 
+        // ❸ 年度戰略：顯示更完整的判詞線索
         document.getElementById('strategyBox').innerHTML = `
           <p class="font-black text-amber-500 text-2xl mb-3 tracking-tighter">
-            ${yrRelMap[yrSS_G] || "年度變革"} <span class="text-xs text-slate-500 font-normal"> / ${yrRelMap[yrSS_Z] || "底層影響"} </span>
+            ${yTagG} <span class="text-xs text-slate-500 font-normal"> / ${yTagZ} </span>
           </p>
           <div class="space-y-2">
             <p>${ys.lines[0]}</p>
-            <p>${ys.lines[4]}</p>
+            <p>${ys.lines[1]}</p>
+            <p>${ys.lines[2]}</p>
+            <p class="text-slate-100 italic mt-2">${ys.lines[4]}</p>
             <p class="text-amber-200 font-bold">${ys.lines[5]}</p>
             <p class="text-[10px] text-slate-500 mt-4">${ys.zHint}</p>
           </div>`;
@@ -447,7 +455,8 @@
         const myArch = archetypes[mSSZ] || "平衡觀察者";
         document.getElementById('archetype').innerText = myArch;
 
-        window.shareText = `【一起出來玩。2026 深度戰略報告】\n生存原型。${myArch}\n年度戰略。${yrRelMap[yrSS_G]}。${yrRelMap[yrSS_Z]}。\n\n${ys.lines[0]}\n${ys.lines[4]}\n${ys.lines[5]}\n\n2026 壓力月。${redM.join('、')}。\n\n妳不是在算命。是在重寫 2026。\n我的報告。${window.location.href}`;
+        // 分享文案同步優化
+        window.shareText = `【一起出來玩。2026 深度戰略報告】\n生存原型。${myArch}\n年度戰略。${yTagG}。${yTagZ}。\n\n${ys.lines[0]}\n${ys.lines[1]}\n${ys.lines[4]}\n${ys.lines[5]}\n\n2026 壓力月。${redM.join('、')}。\n\n妳不是在算命。是在重寫 2026。\n我的報告。${window.location.href}`;
 
         document.getElementById('report').classList.remove('hidden');
         document.getElementById('report').scrollIntoView({ behavior: 'smooth', block: 'start' });
