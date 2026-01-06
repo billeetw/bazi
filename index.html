@@ -6,7 +6,7 @@
     
     <!-- FB 分享預覽設定 -->
     <meta property="og:title" content="2026 戰略導航：生存演算法（深度解析版）">
-    <meta property="og:description" content="這不是算命，是妳 2026 的戰略配置。解碼妳的十神屬性與高壓防線！">
+    <meta property="og:description" content="這不是算命，是妳 2026 的戰略配置。解碼妳的十神屬性與壓力防線！">
     <meta property="og:type" content="website">
     <meta property="og:image" content="https://images.unsplash.com/photo-1533035350251-aa8b8e208d95?q=80&w=1000&auto=format&fit=crop">
 
@@ -118,7 +118,7 @@
             </div>
         </div>
 
-        <!-- 報告展示區 (其餘內容保持不變) -->
+        <!-- 報告展示區 -->
         <div id="report" class="hidden space-y-10 w-full animate-in fade-in slide-in-from-bottom-10 duration-1000 flex flex-col items-center">
             
             <div class="text-center w-full">
@@ -195,7 +195,6 @@
             const counterEl = document.getElementById('userCounter');
             let count = parseInt(localStorage.getItem('fakeCount')) || 5001;
             
-            // 隨機增長人數 (每 3-8 秒增加 1-3 人)
             function tick() {
                 const add = Math.floor(Math.random() * 3) + 1;
                 count += add;
@@ -244,7 +243,7 @@
             });
 
             updateDays();
-            initCounter(); // 啟動計數器
+            initCounter();
         }
 
         function updateDays() {
@@ -265,7 +264,6 @@
 
         window.onload = initSelectors;
 
-        // --- 命理邏輯區 (與前版保持一致) ---
         const ELEMENTS = {"甲":"木","乙":"木","丙":"火","丁":"火","戊":"土","己":"土","庚":"金","辛":"金","壬":"水","癸":"水","子":"水","丑":"土","寅":"木","卯":"木","辰":"土","巳":"火","午":"火","未":"土","申":"金","酉":"金","戌":"土","亥":"水"};
         const SHISHEN_MAP = {
             "同類":{"同":"比肩","異":"劫財"}, "生者":{"同":"食神","異":"傷官"},
@@ -317,7 +315,7 @@
                 ["木","火","土","金","水"].forEach(e => {
                     const c = ct[e], lv = c === 0 ? 0.5 : c === 1 ? 1.2 : c === 2 ? 1.8 : c === 3 ? 2.5 : 3, pct = (lv / 3) * 100;
                     if(lv <= 1.2) low.push(e);
-                    wxBox.innerHTML += `<div class="space-y-1 w-full"><div class="flex justify-between text-[10px] font-bold uppercase tracking-widest"><span>${e} (${c}次)</span><span>${lv}/3</span></div><div class="progress-bg"><div class="progress-bar wuxing-${e}" style="width:${pct}%"></div></div></div>`;
+                    wxBox.innerHTML += `<div class="space-y-1 w-full"><div class="flex justify-between text-[10px] font-bold uppercase tracking-widest"><span>${e} 能量 (${c}次)</span><span>${lv}/3</span></div><div class="progress-bg"><div class="progress-bar wuxing-${e}" style="width:${pct}%"></div></div></div>`;
                 });
                 const mainSS = getShishen(dm, bM[0]);
                 const archetypes = {"傷官":"內容革命家","食神":"生活產品經理","正財":"精準執行者","偏財":"資源整合商","正官":"秩序守護者","七殺":"邊際破局者","正印":"智慧導師","偏印":"靈魂奇才","比肩":"意志型推手","劫財":"人脈開拓者"};
@@ -332,11 +330,11 @@
                 bounds.forEach(b => {
                     const ss = getShishen(dm, b.n[0]), isRed = ss.includes("殺") || (ss.includes("官") && ct["金"] < 1);
                     if(isRed) redM.push(b.n);
-                    mGrid.innerHTML += `<div class="glass p-5 rounded-2xl border-l-4 ${isRed ? 'border-red-500 bg-red-500/5':'border-emerald-500 bg-emerald-500/5'} flex justify-between items-center w-full"><div class="text-left"><p class="font-black text-base">${b.n} <span class="text-[9px] font-normal text-slate-500 ml-1 uppercase font-mono">${b.r}</span></p><p class="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-tight">戰略標籤：${ss}</p></div><span class="text-[10px] font-bold px-3 py-1 rounded-lg bg-white/10 tracking-widest">${isRed ? '🔴 高壓' : '🟢 穩進'}</span></div>`;
+                    mGrid.innerHTML += `<div class="glass p-5 rounded-2xl border-l-4 ${isRed ? 'border-red-500 bg-red-500/5':'border-emerald-500 bg-emerald-500/5'} flex justify-between items-center w-full"><div class="text-left"><p class="font-black text-base">${b.n} <span class="text-[9px] font-normal text-slate-500 ml-1 uppercase font-mono">${b.r}</span></p><p class="text-[10px] text-slate-400 mt-1 uppercase font-bold tracking-tight">戰略標籤：${ss}</p></div><span class="text-[10px] font-bold px-3 py-1 rounded-lg bg-white/10 tracking-widest">${isRed ? '🔴 壓力' : '🟢 穩進'}</span></div>`;
                 });
                 document.getElementById('report').classList.remove('hidden');
                 window.scrollTo({ top: document.getElementById('report').offsetTop - 20, behavior: 'smooth' });
-                window.shareText = `【一起出來玩：2026 深度戰略報告】\n\n我的生存原型：${document.getElementById('archetype').innerText}\n我的日元：${dm}${de}型\n年度戰略：${yrRelMap[yrSS]}\n\n🔴 2026 高壓/高波動月：\n${redM.join('、')}\n\n「妳不是在算命，是在重寫 2026 的生存演算法。」\n👉 我的專屬報告：${window.location.href}\n#2026生存策略 #一起出來玩 #四柱深度版`;
+                window.shareText = `【一起出來玩：2026 深度戰略報告】\n\n我的生存原型：${document.getElementById('archetype').innerText}\n我的日元：${dm}${de}型\n年度戰略：${yrRelMap[yrSS]}\n\n🔴 2026 壓力/高波動月：\n${redM.join('、')}\n\n「妳不是在算命，是在重寫 2026 的生存演算法。」\n👉 我的專屬報告：${window.location.href}\n#2026生存策略 #一起出來玩 #四柱深度版`;
             } catch (err) { alert("日期設定有誤，請重新檢查。"); }
         }
 
