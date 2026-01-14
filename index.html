@@ -528,7 +528,7 @@
       const vmin = parseInt(document.getElementById('birthMinute').value, 10);
 
       try {
-      const resp = await fetch("https://YOUR_WORKER_DOMAIN/compute/bazi", {
+      const resp = await fetch("https://17gonplay-api.billeetw.workers.dev/compute/bazi", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ year: vy, month: vm, day: vd, hour: vh, minute: vmin })
@@ -677,4 +677,5 @@ const dm = data.pillars.dm;
   </script>
 </body>
 </html>
+
 
