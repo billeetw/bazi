@@ -527,14 +527,37 @@
       const vh = parseInt(document.getElementById('birthHour').value, 10);
       const vmin = parseInt(document.getElementById('birthMinute').value, 10);
 
-      try {
-      const resp = await fetch("https://17gonplay-api.billeetw.workers.dev/compute/bazi", {
+      try {      const resp = await fetch("https://17gonplay-api.billeetw.workers.dev/compute/bazi", {
   method: "POST",
-  headers: { "Content-Type": "application/json" },
+  headers: { "Content-Type":
+ "application/json" },
   body: JSON.stringify({ year: vy, month: vm, day: vd, hour: vh, minute: vmin })
 });
 const data = await resp.json();
 if (!data.ok) throw new Error(data.error || "API error");
+// 🔹 第二步：交給後端做判斷整合
+const judgeResp = await fetch(`${API_BASE}/judge/merge`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(data) // 直接把 compute/bazi 的結果丟過去
+});
+
+const judge = await judgeResp.json();
+if (!judge.ok) throw new Error(judge.error || "judge error");
+// 🔹 第三步：請後端直接產生敘事 HTML
+const reportResp = await fetch(`${API_BASE}/render/report`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ ...data, judge })
+});
+
+const report = await reportResp.json();
+if (!report.ok) throw new Error(report.error || "report error");
+
+document.getElementById('analysisBox').innerHTML =
+  report.html || "<p>（後端尚未回傳敘事內容）</p>";
+
+
 
 const bY = data.pillars.year;
 const bM = data.pillars.month;
@@ -663,6 +686,11 @@ const dm = data.pillars.dm;
   </script>
 </body>
 </html>
+
+
+
+
+
 
 
 
