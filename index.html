@@ -520,7 +520,7 @@
       }, 1200);
     }
 
-    function calculate() {
+    async function calculate() {
       const vy = parseInt(document.getElementById('birthYear').value, 10);
       const vm = parseInt(document.getElementById('birthMonth').value, 10);
       const vd = parseInt(document.getElementById('birthDay').value, 10);
@@ -528,9 +528,19 @@
       const vmin = parseInt(document.getElementById('birthMinute').value, 10);
 
       try {
-        const sol = Solar.fromYmdHms(vy, vm, vd, vh, vmin, 0);
-        const bazi = sol.getLunar().getEightChar();
-        const bY = bazi.getYear(), bM = bazi.getMonth(), bD = bazi.getDay(), bH = bazi.getTime(), dm = bD[0];
+      const resp = await fetch("https://YOUR_WORKER_DOMAIN/compute/bazi", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ year: vy, month: vm, day: vd, hour: vh, minute: vmin })
+});
+const data = await resp.json();
+if (!data.ok) throw new Error(data.error || "API error");
+
+const bY = data.pillars.year;
+const bM = data.pillars.month;
+const bD = data.pillars.day;
+const bH = data.pillars.time;
+const dm = data.pillars.dm;
 
         document.getElementById('yG').innerText = bY[0]; document.getElementById('yZ').innerText = bY[1];
         document.getElementById('mG').innerText = bM[0]; document.getElementById('mZ').innerText = bM[1];
@@ -628,7 +638,7 @@
 
         document.getElementById('report').classList.remove('hidden');
         document.getElementById('report').scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } catch (e) { console.error(e); alert("資料設定有誤，請檢查。"); }
+      } catch (e) {   console.error(e);   alert("計算失敗：" + (e?.message || e)); } 
     }
 
     function initSelectors() {
@@ -667,3 +677,4 @@
   </script>
 </body>
 </html>
+
