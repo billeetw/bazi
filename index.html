@@ -643,7 +643,12 @@ const dm = data.pillars.dm;
         const myArch = archetypes[mSSZ] || "平衡觀察者";
         document.getElementById('archetype').innerText = myArch;
 
-        window.shareText = `【一起出來玩。2026 深度戰略報告】${profile.narrativeLines.join("\n")}`;
+// ✅ shareText 改用後端 report（或 analysisBox 文字）
+window.shareText = report?.text
+  || document.getElementById('analysisBox')?.innerText
+  || "請先生成報告再複製。";
+
+
 
         document.getElementById('report').classList.remove('hidden');
         document.getElementById('report').scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -686,6 +691,11 @@ const dm = data.pillars.dm;
   </script>
 </body>
 </html>
+
+
+
+
+
 
 
 
