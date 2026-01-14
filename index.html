@@ -616,20 +616,6 @@ const dm = data.pillars.dm;
 
         // ❺ 命盤分析：用 C 路線規則生成文字
         const dmElement = ELEMENTS[dm];
-        const profile = buildNarrativeProfile({
-          dmElement,
-          strategicWx: strategic,
-          dominantSS: mSSZ,
-          yrSS_G,
-          yrSS_Z,
-          redMonths: redM
-        });
-        document.getElementById('analysisBox').innerHTML = `
-          <div class="space-y-2">
-            ${profile.narrativeLines.map(line => `<p>${line}</p>`).join("")}
-          </div>
-        `;
-
         const archetypes = {"傷官":"內容革命家","食神":"生活產品經理","正財":"精準執行者","偏財":"資源整合商","正官":"秩序守護者","七殺":"邊際破局者","正印":"智慧導師","偏印":"靈魂奇才","比肩":"意志型推手","劫財":"人脈開拓者"};
         const myArch = archetypes[mSSZ] || "平衡觀察者";
         document.getElementById('archetype').innerText = myArch;
@@ -677,5 +663,7 @@ const dm = data.pillars.dm;
   </script>
 </body>
 </html>
+
+
 
 
