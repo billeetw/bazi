@@ -3,456 +3,162 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta property="og:title" content="2026 戰略導航：生存演算法（專業校準最終版）" />
-  <meta property="og:description" content="這不是算命，是妳 2026 的戰略配置。解碼藏干權重、雙標籤年度戰略與壓力防線！" />
-  <title>2026 戰略導航 | 一起出來玩 專業校準最終版</title>
+  <title>2026 戰略導航｜一起出來玩</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&display=swap');
-    body { font-family: 'Noto Sans TC', sans-serif; background: #0b0e14; color: #e2e8f0; overflow-x: hidden; }
-    .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
-    .gold-text { background: linear-gradient(135deg, #d4af37 0%, #f3e5ab 50%, #aa8a2e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .wuxing-木 { background: #2ecc71; box-shadow: 0 0 10px rgba(46, 204, 113, 0.2); }
-    .wuxing-火 { background: #e74c3c; box-shadow: 0 0 10px rgba(231, 76, 60, 0.2); }
-    .wuxing-土 { background: #f1c40f; box-shadow: 0 0 10px rgba(241, 196, 15, 0.2); }
-    .wuxing-金 { background: #ced4da; box-shadow: 0 0 10px rgba(206, 212, 218, 0.2); }
-    .wuxing-水 { background: #3498db; box-shadow: 0 0 10px rgba(52, 152, 219, 0.2); }
-    .bazi-char { font-size: 1.8rem; font-weight: 900; line-height: 1.1; }
-    .shishen-tag { font-size: 10px; padding: 2px 4px; border-radius: 4px; background: rgba(255,255,255,0.08); color: #aaa; margin-top: 2px; }
-    #loading { position: fixed; inset: 0; background: #0b0e14; z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; }
-    .ring { width: 60px; height: 60px; border: 4px solid rgba(212,175,55,0.1); border-top: 4px solid #d4af37; border-radius: 50%; animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .archetype-badge { background: linear-gradient(45deg, #1e293b, #0f172a); border: 1px solid #d4af37; border-radius: 99px; padding: 6px 20px; font-weight: 900; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2); }
-    select {
-      -webkit-appearance: none; appearance: none;
-      background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1em; padding-right: 2rem !important;
-    }
-    @keyframes pulse-red { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
-    .vibrant-bar { animation: pulse-red 2s infinite ease-in-out; }
+    body { background:#0b0e14; color:#e2e8f0; font-family: system-ui,-apple-system; }
+    .glass { background: rgba(255,255,255,.04); backdrop-filter: blur(10px); border:1px solid rgba(255,255,255,.08); }
+    .bazi-char { font-size:1.8rem; font-weight:900; }
+    .wuxing-木{background:#2ecc71}.wuxing-火{background:#e74c3c}
+    .wuxing-土{background:#f1c40f}.wuxing-金{background:#ced4da}
+    .wuxing-水{background:#3498db}
   </style>
 </head>
 
-<body class="min-h-screen flex flex-col items-center p-0 pb-24 text-center">
+<body class="p-4">
 
-  <div id="loading">
-    <div class="ring mb-6"></div>
-    <p class="gold-text font-black tracking-[0.3em] text-lg animate-pulse">正在精算河圖洛書與權重能量...</p>
+<h1 class="text-3xl font-black text-center mb-6">2026 流年戰略報告</h1>
+
+<!-- 輸入 -->
+<div class="glass p-6 rounded-xl max-w-xl mx-auto mb-10">
+  <div class="grid grid-cols-3 gap-2 mb-3">
+    <select id="birthYear" class="bg-black/40 p-2 rounded"></select>
+    <select id="birthMonth" class="bg-black/40 p-2 rounded" onchange="updateDays()"></select>
+    <select id="birthDay" class="bg-black/40 p-2 rounded"></select>
   </div>
-
-  <div class="w-full bg-gradient-to-r from-red-600 via-orange-600 to-red-600 py-5 px-6 text-white sticky top-0 z-50 shadow-[0_4px_20px_rgba(220,38,38,0.5)] cursor-pointer hover:brightness-110 transition-all border-b border-white/20">
-    <a href="https://www.youtube.com/@billeetw1" target="_blank" class="block w-full">
-      <span class="text-base md:text-xl font-black tracking-tight vibrant-bar inline-block text-center mx-auto">
-        『跟李伯彥一起出來玩』 2026 你的生存戰略 🚀
-        <span class="ml-2 bg-yellow-400 text-red-700 px-3 py-1 rounded-full text-xs md:text-sm font-black shadow-lg text-center inline-block">
-          點擊訂閱隨時接受新情報！
-        </span>
-      </span>
-    </a>
+  <div class="grid grid-cols-2 gap-2 mb-4">
+    <select id="birthHour" class="bg-black/40 p-2 rounded"></select>
+    <select id="birthMinute" class="bg-black/40 p-2 rounded"></select>
   </div>
+  <button onclick="launch()" class="w-full bg-amber-500 text-black py-3 rounded font-black">
+    生成我的 2026 戰略
+  </button>
+</div>
 
-  <div class="w-full max-w-xl mx-auto flex flex-col items-center p-4">
-    <div class="my-8 px-4">
-      <h1 class="text-3xl md:text-4xl font-black gold-text mb-3 tracking-tighter leading-tight text-center">
-        一起出來玩<br class="md:hidden" /> 易經四柱流年深度解析
-      </h1>
-      <p class="text-slate-500 text-xs tracking-[0.4em] font-bold uppercase italic text-center mx-auto">Advanced Metaphysical Algorithm</p>
+<!-- 報告 -->
+<div id="report" class="hidden max-w-xl mx-auto space-y-10">
 
-      <div class="mt-6 flex items-center justify-center space-x-2 bg-slate-800/40 px-4 py-2 rounded-full border border-white/5 mx-auto w-fit">
-        <span class="flex h-2 w-2 relative">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-          <span class="relative h-2 w-2 rounded-full bg-green-500"></span>
-        </span>
-        <p class="text-[11px] font-bold text-slate-400 tracking-wider">
-          目前已有 <span id="userCounter" class="text-amber-400 font-black text-sm mx-1">5,001</span> 位領取戰略報告
-        </p>
-      </div>
-    </div>
-
-    <div class="glass p-8 rounded-[2.5rem] shadow-2xl border-t-2 border-amber-500/20 mb-10 w-full">
-      <div class="space-y-8">
-        <div>
-          <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">選擇您的出生日期 (公曆)</label>
-          <div class="grid grid-cols-3 gap-3">
-            <select id="birthYear" class="bg-slate-800/60 border border-slate-700 rounded-2xl px-3 py-4 text-white text-center text-sm focus:outline-none focus:border-amber-500 transition-all"></select>
-            <select id="birthMonth" class="bg-slate-800/60 border border-slate-700 rounded-2xl px-3 py-4 text-white text-center text-sm focus:outline-none focus:border-amber-500 transition-all" onchange="updateDays()"></select>
-            <select id="birthDay" class="bg-slate-800/60 border border-slate-700 rounded-2xl px-3 py-4 text-white text-center text-sm focus:outline-none focus:border-amber-500 transition-all"></select>
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-4 text-center">選擇出生時間</label>
-          <div class="grid grid-cols-2 gap-3">
-            <select id="birthHour" class="bg-slate-800/60 border border-slate-700 rounded-2xl px-3 py-4 text-white text-center text-sm focus:outline-none focus:border-amber-500"></select>
-            <select id="birthMinute" class="bg-slate-800/60 border border-slate-700 rounded-2xl px-3 py-4 text-white text-center text-sm focus:outline-none focus:border-amber-500"></select>
-          </div>
-        </div>
-
-        <button onclick="launch()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-900 font-black py-6 rounded-2xl text-lg md:text-xl shadow-[0_10px_30px_rgba(245,158,11,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all tracking-widest leading-tight uppercase">
-          生成專屬於我的 2026 流年戰略報告
-        </button>
-      </div>
-    </div>
-
-    <div id="report" class="hidden space-y-10 w-full animate-in fade-in slide-in-from-bottom-10 duration-1000 flex flex-col items-center">
-      <div id="archetype" class="archetype-badge gold-text mb-2 tracking-tighter italic"></div>
-
-      <div class="w-full">
-        <h2 class="text-xs font-black text-slate-500 mb-6 tracking-[0.2em] uppercase text-center mx-auto">❶ 河圖時空座標 (四柱命盤)</h2>
-        <div class="grid grid-cols-4 gap-2 px-1">
-          <div class="glass py-5 rounded-2xl flex flex-col items-center">
-            <p class="text-[10px] text-slate-600 mb-2 font-bold uppercase">年</p>
-            <div id="yG" class="bazi-char"></div><div id="yZ" class="bazi-char"></div>
-            <div id="ySG" class="shishen-tag"></div><div id="ySZ" class="shishen-tag opacity-40 italic text-[8px]"></div>
-          </div>
-          <div class="glass py-5 rounded-2xl flex flex-col items-center border border-white/5">
-            <p class="text-[10px] text-slate-600 mb-2 font-bold uppercase">月</p>
-            <div id="mG" class="bazi-char"></div><div id="mZ" class="bazi-char"></div>
-            <div id="mSG" class="shishen-tag"></div><div id="mSZ" class="shishen-tag opacity-40 italic text-[8px]"></div>
-          </div>
-          <div class="glass py-5 rounded-2xl flex flex-col items-center border-2 border-amber-500/30 bg-amber-500/5">
-            <p class="text-[10px] text-amber-500 mb-2 font-black uppercase tracking-tighter">日</p>
-            <div id="dG" class="bazi-char text-amber-500"></div><div id="dZ" class="bazi-char text-amber-500"></div>
-            <div class="shishen-tag text-amber-600 font-bold border-amber-900/50 uppercase">命主</div>
-          </div>
-          <div class="glass py-5 rounded-2xl flex flex-col items-center">
-            <p class="text-[10px] text-slate-600 mb-2 font-bold uppercase">時</p>
-            <div id="hG" class="bazi-char text-slate-200"></div><div id="hZ" class="bazi-char text-slate-200"></div>
-            <div id="hSG" class="shishen-tag"></div><div id="hSZ" class="shishen-tag opacity-40 italic text-[8px]"></div>
-          </div>
-        </div>
-        <p class="text-[9px] text-slate-500 mt-3 italic text-right px-2 tracking-tight w-full">※ 地支顯示本氣十神以保持可讀性</p>
-      </div>
-
-      <div class="glass p-8 rounded-[2.5rem] shadow-xl w-full">
-        <h2 class="text-xs font-black gold-text mb-6 tracking-widest uppercase text-center mx-auto">❷ 五行能量深度演算法</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
-          <div>
-            <p class="text-[10px] font-black text-slate-500 mb-4 uppercase flex items-center"><i class="fas fa-eye mr-2"></i> 表層能量 (天干字數)</p>
-            <div id="surfaceWx" class="space-y-3"></div>
-          </div>
-          <div>
-            <p class="text-[10px] font-black text-amber-500 mb-4 uppercase flex items-center"><i class="fas fa-shield-alt mr-2"></i> 實戰能量 (天干+藏干+月令)</p>
-            <div id="strategicWx" class="space-y-3"></div>
-          </div>
-        </div>
-        <div class="mt-8 p-5 bg-slate-800/40 rounded-3xl text-[11px] text-slate-400 border border-white/5 leading-relaxed italic text-left">
-          <p class="font-bold text-slate-300 mb-2 uppercase">🛡️ 演算法說明：</p>
-          表層=天干統計；實戰=天干+藏干+月令加權（後端計算回傳）。
-        </div>
-      </div>
-
-      <div class="glass p-10 rounded-[2.5rem] border-t-4 border-amber-500 shadow-2xl w-full bg-gradient-to-b from-slate-900/50 to-transparent">
-        <h2 class="text-xs font-black gold-text mb-4 uppercase tracking-[0.2em] text-center mx-auto">❸ 2026 年度戰略方針</h2>
-        <div id="strategyBox" class="text-sm text-slate-200 leading-relaxed text-center italic"></div>
-      </div>
-
-      <div class="w-full px-2">
-        <h2 class="text-xs font-black text-slate-500 mb-6 tracking-[0.2em] uppercase text-center mx-auto">❹ 2026 節氣流月執行節奏 (三色燈)</h2>
-        <div id="monthGrid" class="grid grid-cols-1 gap-3.5"></div>
-        <p class="text-[9px] text-slate-600 mt-4 italic text-center uppercase tracking-widest mx-auto">※ 本表採節氣月區間（後端回傳 bounds）</p>
-      </div>
-
-      <div class="glass p-10 rounded-[2.5rem] shadow-2xl w-full bg-gradient-to-b from-slate-900/40 to-transparent">
-        <h2 class="text-xs font-black gold-text mb-4 uppercase tracking-[0.2em] text-center mx-auto">❺ 命盤分析 你的人生使用說明</h2>
-        <div id="analysisBox" class="text-sm text-slate-200 leading-relaxed text-left italic space-y-2"></div>
-      </div>
-
-      <div class="glass p-10 rounded-[3rem] text-center border-2 border-dashed border-amber-500/20 bg-slate-900/60 w-full mb-12 flex flex-col items-center">
-        <h3 class="gold-text text-2xl font-black mb-4 tracking-tighter italic text-center mx-auto">「妳不是在算命，是在重寫 2026。」</h3>
-        <div class="flex flex-col gap-4 w-full px-2">
-          <button onclick="copyText()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-600 text-slate-900 font-black py-5 rounded-2xl text-lg shadow-xl hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center">
-            <i class="far fa-copy mr-2"></i> 一鍵複製【深度戰略】文案
-          </button>
-          <a href="https://www.facebook.com/bill17gonplay/" target="_blank" class="w-full bg-[#1877F2] text-white py-4 rounded-2xl font-bold flex items-center justify-center text-sm shadow-lg mx-auto">
-            <i class="fab fa-facebook-f mr-2"></i> 前往臉書參與戰略實驗
-          </a>
-        </div>
-      </div>
+  <!-- 四柱 -->
+  <div class="glass p-6 rounded-xl">
+    <div class="grid grid-cols-4 text-center">
+      <div><div id="yG" class="bazi-char"></div><div id="yZ"></div></div>
+      <div><div id="mG" class="bazi-char"></div><div id="mZ"></div></div>
+      <div><div id="dG" class="bazi-char text-amber-400"></div><div id="dZ"></div></div>
+      <div><div id="hG" class="bazi-char"></div><div id="hZ"></div></div>
     </div>
   </div>
 
-  <div id="copyToast" class="fixed bottom-12 bg-amber-500 text-slate-900 px-8 py-4 rounded-full font-black text-sm shadow-2xl opacity-0 transition-opacity duration-300 pointer-events-none z-[2001] flex items-center transition-all">
-    <i class="fas fa-check-circle mr-2"></i> 專業校準版戰略文案已複製
+  <!-- 五行 -->
+  <div class="glass p-6 rounded-xl">
+    <h2 class="font-black mb-3">五行能量</h2>
+    <div id="surfaceWx" class="space-y-2 mb-4"></div>
+    <div id="strategicWx" class="space-y-2"></div>
   </div>
 
-  <script>
-    // ✅ 只宣告一次（不要再重複宣告）
-    const API_BASE = "https://17gonplay-api.billeetw.workers.dev";
+  <!-- 流月 -->
+  <div class="glass p-6 rounded-xl">
+    <h2 class="font-black mb-3">2026 流月節奏</h2>
+    <div id="monthGrid" class="space-y-2"></div>
+  </div>
 
-    // ===== 十神工具（前端只做展示，不做起盤）=====
-    const ELEMENTS = {"甲":"木","乙":"木","丙":"火","丁":"火","戊":"土","己":"土","庚":"金","辛":"金","壬":"水","癸":"水",
-      "子":"水","丑":"土","寅":"木","卯":"木","辰":"土","巳":"火","午":"火","未":"土","申":"金","酉":"金","戌":"土","亥":"水"};
-    const STEM_POLARITY = {"甲":"陽","乙":"陰","丙":"陽","丁":"陰","戊":"陽","己":"陰","庚":"陽","辛":"陰","壬":"陽","癸":"陰"};
-    const SHISHEN_MAP = {
-      "同類": {"同":"比肩","異":"劫財"},
-      "生者": {"同":"食神","異":"傷官"},
-      "剋者": {"同":"偏財","異":"正財"},
-      "後生者": {"同":"偏印","異":"正印"},
-      "後剋者": {"同":"七殺","異":"正官"}
-    };
-    const CANGGAN_DATA = {
-      "子": {"癸": 1.0},
-      "丑": {"己": 0.6, "癸": 0.3, "辛": 0.1},
-      "寅": {"甲": 0.6, "丙": 0.3, "戊": 0.1},
-      "卯": {"乙": 1.0},
-      "辰": {"戊": 0.6, "乙": 0.3, "癸": 0.1},
-      "巳": {"丙": 0.6, "庚": 0.3, "戊": 0.1},
-      "午": {"丁": 0.7, "己": 0.3},
-      "未": {"己": 0.6, "丁": 0.3, "乙": 0.1},
-      "申": {"庚": 0.6, "壬": 0.3, "戊": 0.1},
-      "酉": {"辛": 1.0},
-      "戌": {"戊": 0.6, "辛": 0.3, "丁": 0.1},
-      "亥": {"壬": 0.7, "甲": 0.3}
-    };
+  <!-- 分析 -->
+  <div class="glass p-6 rounded-xl">
+    <h2 class="font-black mb-3">戰略解讀</h2>
+    <div id="analysisBox" class="space-y-2"></div>
+  </div>
 
-    function getBranchMainStem(zhi) {
-      const cg = CANGGAN_DATA[zhi];
-      if (!cg) return null;
-      let bestStem = null, bestW = -1;
-      for (const s in cg) { if (cg[s] > bestW) { bestW = cg[s]; bestStem = s; } }
-      return bestStem;
-    }
-    function normalizeToStem(x) { if (!x) return null; if (STEM_POLARITY[x]) return x; return getBranchMainStem(x); }
-    function getSS(dm, target) {
-      const sDm = normalizeToStem(dm), sTarget = normalizeToStem(target);
-      if (!sDm || !sTarget) return "";
-      const de = ELEMENTS[sDm], te = ELEMENTS[sTarget];
-      const isS = (STEM_POLARITY[sDm] === STEM_POLARITY[sTarget]) ? "同" : "異";
-      const gen = {"木":"火","火":"土","土":"金","金":"水","水":"木"};
-      const ctrl = {"木":"土","土":"水","水":"火","火":"金","金":"木"};
-      if (de === te) return SHISHEN_MAP["同類"][isS];
-      if (gen[de] === te) return SHISHEN_MAP["生者"][isS];
-      if (ctrl[de] === te) return SHISHEN_MAP["剋者"][isS];
-      if (gen[te] === de) return SHISHEN_MAP["後生者"][isS];
-      if (ctrl[te] === de) return SHISHEN_MAP["後剋者"][isS];
-      return "";
-    }
+</div>
 
-    // ✅ 讓 renderBar 在 console 也能用
-    function formatVal(v) {
-      const x = Number(v || 0);
-      if (x > 0 && x < 0.05) return "<0.1";
-      return x.toFixed(1);
-    }
-    function renderBar(id, wxData, max) {
-      const box = document.getElementById(id);
-      if (!box) return;
-      box.innerHTML = "";
-      ["木","火","土","金","水"].forEach(e => {
-        const raw = Number(wxData?.[e] || 0);
-        const pct = max > 0 ? (raw / max) * 100 : 0;
-        const width = (raw > 0 && pct < 2) ? 2 : pct;
-        box.innerHTML += `
-          <div class="space-y-1 w-full text-left">
-            <div class="flex justify-between text-[9px] font-bold"><span>${e}</span><span>${formatVal(raw)}</span></div>
-            <div class="h-1.5 bg-white/5 rounded-full overflow-hidden">
-              <div class="h-full wuxing-${e}" style="width:${Math.max(0, Math.min(100, width))}%"></div>
-            </div>
-          </div>`;
-      });
-    }
+<script>
+/* ========= 基本設定 ========= */
+const API_BASE = "https://17gonplay-api.billeetw.workers.dev";
 
-    function buildFallbackNarrative({ dmElement, dominantSS, redMonths }) {
-      const lines = [];
-      lines.push(`你屬於「${dmElement}」主場的人，做事靠直覺與節奏。`);
-      lines.push(`今年的主軸偏向「${dominantSS || "未定"}」，關鍵是：先立規則再出手。`);
-      if (Array.isArray(redMonths) && redMonths.length) lines.push(`壓力月：${redMonths.join("、")}（這些月先守住，不要硬衝）。`);
-      lines.push(`策略：把行動拆小、把交付寫成清單、把節奏固定。`);
-      return lines;
-    }
+/* ========= 工具 ========= */
+function renderBar(id, data, max){
+  const box = document.getElementById(id);
+  box.innerHTML="";
+  ["木","火","土","金","水"].forEach(e=>{
+    const v=Number(data[e]||0);
+    const w=max?Math.max(2,(v/max)*100):0;
+    box.innerHTML+=`
+      <div>
+        <div class="flex justify-between text-xs"><span>${e}</span><span>${v.toFixed(1)}</span></div>
+        <div class="h-2 bg-white/10 rounded">
+          <div class="h-full wuxing-${e}" style="width:${w}%"></div>
+        </div>
+      </div>`;
+  });
+}
 
-    function launch() {
-      document.getElementById('loading').style.display = 'flex';
-      setTimeout(() => {
-        document.getElementById('loading').style.display = 'none';
-        calculate();
-      }, 900);
-    }
+/* ========= 主流程 ========= */
+async function calculate(){
+  const vy=+birthYear.value, vm=+birthMonth.value, vd=+birthDay.value;
+  const vh=+birthHour.value, vmin=+birthMinute.value;
 
-    async function calculate() {
-      const vy = parseInt(document.getElementById('birthYear').value, 10);
-      const vm = parseInt(document.getElementById('birthMonth').value, 10);
-      const vd = parseInt(document.getElementById('birthDay').value, 10);
-      const vh = parseInt(document.getElementById('birthHour').value, 10);
-      const vmin = parseInt(document.getElementById('birthMinute').value, 10);
+  const resp = await fetch(`${API_BASE}/compute/bazi`,{
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({year:vy,month:vm,day:vd,hour:vh,minute:vmin})
+  });
+  const data = await resp.json();
+  if(!data.ok) throw new Error(data.error);
 
-      try {
-        const resp = await fetch(`${API_BASE}/compute/bazi`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ year: vy, month: vm, day: vd, hour: vh, minute: vmin })
-        });
+  /* 四柱 */
+  yG.innerText=data.pillars.year[0]; yZ.innerText=data.pillars.year[1];
+  mG.innerText=data.pillars.month[0]; mZ.innerText=data.pillars.month[1];
+  dG.innerText=data.pillars.day[0]; dZ.innerText=data.pillars.day[1];
+  hG.innerText=data.pillars.time[0]; hZ.innerText=data.pillars.time[1];
 
-        if (!resp.ok) {
-          const txt = await resp.text().catch(() => "");
-          throw new Error(`API HTTP ${resp.status} ${txt || ""}`.trim());
-        }
+  /* 五行 */
+  renderBar("surfaceWx",data.features.wuxing.surface,4);
+  renderBar("strategicWx",data.features.wuxing.strategic,data.features.wuxing.maxStrategic);
 
-        const data = await resp.json();
-        if (!data.ok) throw new Error(data.error || "API error");
+  /* 流月 */
+  monthGrid.innerHTML="";
+  data.features.liuyue2026.bounds.forEach(b=>{
+    const red=b.light==="RED";
+    monthGrid.innerHTML+=`
+      <div class="p-3 rounded border-l-4 ${red?"border-red-500":"border-emerald-500"} bg-black/20">
+        <div class="font-bold">${b.gz} <span class="text-xs text-slate-400">${b.range}</span></div>
+        <div class="text-xs">${red?"🔴 壓力":"🟢 穩進"}｜${b.ssBranch}</div>
+      </div>`;
+  });
 
-        // judge/merge：有就用，沒有也不死
-        let judge = null;
-        try {
-          const judgeResp = await fetch(`${API_BASE}/judge/merge`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-          });
-          const j = await judgeResp.json().catch(() => null);
-          if (j && j.ok) judge = j;
-        } catch (_) {}
+  /* 分析（穩定 fallback） */
+  const redMonths=data.features.liuyue2026.bounds.filter(x=>x.light==="RED").map(x=>x.gz);
+  analysisBox.innerHTML=`
+    <p>你的主軸十神是「${data.features.tenGod.dominant}」。</p>
+    <p>2026 關鍵在「先立規則，再推進」。</p>
+    <p>壓力月：${redMonths.join("、")||"無"}。</p>
+    <p>策略：減少同時推進的戰線，把節奏固定。</p>`;
 
-        // render/report：你如果還沒做這支，這裡會自動 fallback
-        let report = null;
-        try {
-          const reportResp = await fetch(`${API_BASE}/render/report`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ ...data, judge })
-          });
-          const r = await reportResp.json().catch(() => null);
-          if (r && r.ok) report = r;
-        } catch (_) {}
+  report.classList.remove("hidden");
+}
 
-        const bY = data.pillars.year;
-        const bM = data.pillars.month;
-        const bD = data.pillars.day;
-        const bH = data.pillars.time;
-        const dm = data.pillars.dm;
+/* ========= UI ========= */
+function launch(){ calculate().catch(e=>alert(e.message)); }
 
-        document.getElementById('yG').innerText = bY[0]; document.getElementById('yZ').innerText = bY[1];
-        document.getElementById('mG').innerText = bM[0]; document.getElementById('mZ').innerText = bM[1];
-        document.getElementById('dG').innerText = bD[0]; document.getElementById('dZ').innerText = bD[1];
-        document.getElementById('hG').innerText = bH[0]; document.getElementById('hZ').innerText = bH[1];
-
-        const mSSZ = getSS(dm, bM[1]);
-        document.getElementById('ySG').innerText = getSS(dm, bY[0]); document.getElementById('ySZ').innerText = getSS(dm, bY[1]);
-        document.getElementById('mSG').innerText = getSS(dm, bM[0]); document.getElementById('mSZ').innerText = mSSZ;
-        document.getElementById('hSG').innerText = getSS(dm, bH[0]); document.getElementById('hSZ').innerText = getSS(dm, bH[1]);
-
-        const surface = data.features?.wuxing?.surface;
-        const strategic = data.features?.wuxing?.strategic;
-        const maxStrat = data.features?.wuxing?.maxStrategic || 1;
-        if (!surface || !strategic) throw new Error("features.wuxing missing");
-
-        renderBar('surfaceWx', surface, 4);
-        renderBar('strategicWx', strategic, maxStrat);
-
-        const bounds = data.features?.liuyue2026?.bounds;
-        const mGrid = document.getElementById('monthGrid');
-        mGrid.innerHTML = '';
-        const redM = [];
-
-        if (Array.isArray(bounds)) {
-          bounds.forEach(b => {
-            const isRed = b.light === "RED";
-            if (isRed) redM.push(b.gz);
-            mGrid.innerHTML += `
-              <div class="glass p-5 rounded-2xl border-l-4 ${isRed ? 'border-red-500 bg-red-500/5' : 'border-emerald-500 bg-emerald-500/5'} flex justify-between items-center w-full">
-                <div class="text-left">
-                  <p class="font-black text-base">${b.gz}
-                    <span class="text-[9px] font-normal text-slate-500 ml-1 uppercase">${b.range || ""}</span>
-                  </p>
-                  <p class="text-[10px] text-slate-400 mt-1 font-bold italic">本氣戰略：${b.ssBranch || ""}</p>
-                </div>
-                <span class="text-[10px] font-bold px-3 py-1 rounded-lg bg-white/10 tracking-widest">${isRed ? '🔴 壓力' : '🟢 穩進'}</span>
-              </div>`;
-          });
-        }
-
-        if (report?.strategyHtml) {
-          document.getElementById('strategyBox').innerHTML = report.strategyHtml;
-        } else {
-          document.getElementById('strategyBox').innerHTML = `<p class="text-amber-200 font-bold">年度主軸：${mSSZ || "未定"}</p>`;
-        }
-
-        if (report?.html) {
-          document.getElementById('analysisBox').innerHTML = report.html;
-        } else {
-          const dmElement = data.features?.dmElement || ELEMENTS[dm];
-          const lines = buildFallbackNarrative({ dmElement, dominantSS: mSSZ, redMonths: redM });
-          document.getElementById('analysisBox').innerHTML = `<div class="space-y-2">${lines.map(x => `<p>${x}</p>`).join("")}</div>`;
-        }
-
-        const archetypes = {"傷官":"內容革命家","食神":"生活產品經理","正財":"精準執行者","偏財":"資源整合商","正官":"秩序守護者","七殺":"邊際破局者","正印":"智慧導師","偏印":"靈魂奇才","比肩":"意志型推手","劫財":"人脈開拓者"};
-        document.getElementById('archetype').innerText = archetypes[mSSZ] || "平衡觀察者";
-
-        window.shareText = report?.text
-          || document.getElementById('analysisBox')?.innerText
-          || "請先生成報告再複製。";
-
-        document.getElementById('report').classList.remove('hidden');
-        document.getElementById('report').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-      } catch (e) {
-        console.error(e);
-        alert("計算失敗：" + (e?.message || e));
-      }
-    }
-
-    function initSelectors() {
-      const y = document.getElementById('birthYear'), m = document.getElementById('birthMonth'), d = document.getElementById('birthDay'),
-            h = document.getElementById('birthHour'), min = document.getElementById('birthMinute');
-
-      for (let i = 2026; i >= 1940; i--) { const o = new Option(i + " 年", i); if (i === 1990) o.selected = true; y.add(o); }
-      for (let i = 1; i <= 12; i++) m.add(new Option(i + " 月", i));
-      for (let i = 0; i <= 23; i++) { const o = new Option(String(i).padStart(2, '0') + " 時", i); if (i === 12) o.selected = true; h.add(o); }
-      ["00","15","30","45"].forEach(v => min.add(new Option(v + " 分", v)));
-
-      updateDays();
-
-      let c = parseInt(localStorage.getItem('fCount'), 10) || 5001;
-      function t() {
-        c += Math.floor(Math.random() * 3) + 1;
-        document.getElementById('userCounter').innerText = c.toLocaleString();
-        localStorage.setItem('fCount', c);
-        setTimeout(t, 5000);
-      }
-      t();
-    }
-
-    function updateDays() {
-      const y = parseInt(document.getElementById('birthYear').value, 10);
-      const m = parseInt(document.getElementById('birthMonth').value, 10);
-      const d = document.getElementById('birthDay');
-      const days = new Date(y, m, 0).getDate();
-      const cur = d.value;
-      d.innerHTML = '';
-      for (let i = 1; i <= days; i++) {
-        const o = new Option(i + " 日", i);
-        if (String(i) === String(cur) || (!cur && i === 1)) o.selected = true;
-        d.add(o);
-      }
-    }
-
-    async function copyText() {
-      const text = window.shareText || "請先生成報告再複製。";
-      const t = document.getElementById("copyToast");
-      try {
-        await navigator.clipboard.writeText(text);
-        t.classList.remove('opacity-0'); t.classList.add('opacity-100');
-        setTimeout(() => { t.classList.add('opacity-0'); t.classList.remove('opacity-100'); }, 2500);
-      } catch (e) {
-        const el = document.createElement('textarea');
-        el.value = text;
-        document.body.appendChild(el);
-        el.select();
-        try { document.execCommand('copy'); } catch (_) {}
-        document.body.removeChild(el);
-        t.classList.remove('opacity-0'); t.classList.add('opacity-100');
-        setTimeout(() => { t.classList.add('opacity-0'); t.classList.remove('opacity-100'); }, 2500);
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', initSelectors);
-  </script>
+function initSelectors(){
+  for(let i=2026;i>=1940;i--) birthYear.add(new Option(i,i));
+  for(let i=1;i<=12;i++) birthMonth.add(new Option(i,i));
+  for(let i=0;i<24;i++) birthHour.add(new Option(i,i));
+  ["00","15","30","45"].forEach(v=>birthMinute.add(new Option(v,v)));
+  birthYear.value=1990; birthMonth.value=1; birthHour.value=12;
+  updateDays();
+}
+function updateDays(){
+  birthDay.innerHTML="";
+  const d=new Date(birthYear.value,birthMonth.value,0).getDate();
+  for(let i=1;i<=d;i++) birthDay.add(new Option(i,i));
+}
+document.addEventListener("DOMContentLoaded",initSelectors);
+</script>
 </body>
 </html>
+
 
 
 
