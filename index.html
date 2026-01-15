@@ -132,6 +132,10 @@ async function calculate() {
     }
 
     const payload = await resp.json();
+    window.__payload = payload;
+window.__contract = payload?.features;
+window.__bounds = payload?.features?.bazi?.liuyue2026?.bounds;
+
     if (!payload?.ok) throw new Error(payload?.error || "API error");
 
     // payload = { ok:true, features: StrategicFeaturesV1 }
