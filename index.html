@@ -92,116 +92,89 @@
 /* ========= 基本設定 ========= */
 const API_BASE = "https://17gonplay-api.billeetw.workers.dev";
 
-/* ========= 安全取 DOM ========= */
-const $ = (id) => document.getElementById(id);
+/* ========= UI：selectors ========= */
+function initSelectors(){
+  const y = document.getElementById("birthYear");
+  const m = document.getElementById("birthMonth");
+  const d = document.getElementById("birthDay");
+  const h = document.getElementById("birthHour");
+  const min = document.getElementById("birthMinute");
 
-/* ========= bars ========= */
+  y.innerHTML = ""; m.innerHTML = ""; d.innerHTML = ""; h.innerHTML = ""; min.innerHTML = "";
+
+  for(let i=2026;i>=1940;i--) y.add(new Option(i, i));
+  for(let i=1;i<=12;i++) m.add(new Option(i, i));
+  for(let i=0;i<24;i++) h.add(new Option(String(i).padStart(2,"0"), i));
+  ["00","15","30","45"].forEach(v => min.add(new Option(v, v)));
+
+  y.value = "1990";
+  m.value = "1";
+  h.value = "12";
+  min.value = "00";
+  updateDays();
+}
+
+function updateDays(){
+  const y = Number(document.getElementById("birthYear").value);
+  const m = Number(document.getElementById("birthMonth").value);
+  const d = document.getElementById("birthDay");
+  d.innerHTML = "";
+  const days = new Date(y, m, 0).getDate();
+  for(let i=1;i<=days;i++) d.add(new Option(i, i));
+  d.value = "1";
+}
+
+/* ========= 工具：bars ========= */
 function renderBar(id, data, max){
-  const box = $(id);
-  if (!box) return;
+  const box = document.getElementById(id);
+  if(!box) return;
   box.innerHTML = "";
   ["木","火","土","金","水"].forEach(e=>{
-    const v = Number(data?.[e] ?? 0);
-    const pct = max ? (v / max) * 100 : 0;
-    const w = (v > 0 && pct < 2) ? 2 : Math.max(0, Math.min(100, pct));
+    const v = Number(data?.[e] || 0);
+    const pct = max ? (v/max)*100 : 0;
+    const w = (v>0 && pct<2) ? 2 : pct;
     box.innerHTML += `
       <div>
-        <div class="flex justify-between text-xs">
-          <span>${e}</span><span>${v.toFixed(1)}</span>
-        </div>
+        <div class="flex justify-between text-xs"><span>${e}</span><span>${v.toFixed(1)}</span></div>
         <div class="h-2 bg-white/10 rounded overflow-hidden">
-          <div class="h-full wuxing-${e}" style="width:${w}%"></div>
+          <div class="h-full wuxing-${e}" style="width:${Math.max(0,Math.min(100,w))}%"></div>
         </div>
       </div>`;
   });
 }
 
-/* ========= UI: selectors ========= */
-function initSelectors(){
-  const birthYear = $("birthYear");
-  const birthMonth = $("birthMonth");
-  const birthDay = $("birthDay");
-  const birthHour = $("birthHour");
-  const birthMinute = $("birthMinute");
-
-  // 年
-  for(let i=2026;i>=1940;i--){
-    birthYear.add(new Option(`${i}`, i));
-  }
-  // 月
-  for(let i=1;i<=12;i++){
-    birthMonth.add(new Option(`${i}`, i));
-  }
-  // 時
-  for(let i=0;i<24;i++){
-    birthHour.add(new Option(String(i).padStart(2,"0"), i));
-  }
-  // 分
-  ["00","15","30","45"].forEach(v=>{
-    birthMinute.add(new Option(v, Number(v)));
-  });
-
-  // 預設值
-  birthYear.value = "1990";
-  birthMonth.value = "1";
-  birthHour.value = "12";
-  birthMinute.value = "0";
-
-  // 綁事件
-  birthYear.addEventListener("change", updateDays);
-  birthMonth.addEventListener("change", updateDays);
-
-  updateDays();
-}
-
-function updateDays(){
-  const birthYear = $("birthYear");
-  const birthMonth = $("birthMonth");
-  const birthDay = $("birthDay");
-  if (!birthYear || !birthMonth || !birthDay) return;
-
-  const y = Number(birthYear.value);
-  const m = Number(birthMonth.value);
-  const days = new Date(y, m, 0).getDate();
-
-  const cur = Number(birthDay.value || 1);
-  birthDay.innerHTML = "";
-  for(let i=1;i<=days;i++){
-    birthDay.add(new Option(`${i}`, i));
-  }
-  birthDay.value = String(Math.min(cur, days));
-}
-
 /* ========= 主流程 ========= */
+function launch(){
+  calculate();
+}
+
 async function calculate(){
-  const vy = Number($("birthYear")?.value);
-  const vm = Number($("birthMonth")?.value);
-  const vd = Number($("birthDay")?.value);
-  const vh = Number($("birthHour")?.value);
-  const vmin = Number($("birthMinute")?.value);
+  const vy = Number(document.getElementById("birthYear").value);
+  const vm = Number(document.getElementById("birthMonth").value);
+  const vd = Number(document.getElementById("birthDay").value);
+  const vh = Number(document.getElementById("birthHour").value);
+  const vmin = Number(document.getElementById("birthMinute").value);
 
   try {
-    $("hint").innerText = "計算中…";
-
     if (![vy,vm,vd,vh,vmin].every(n => Number.isFinite(n))) {
       throw new Error("請先選好出生年月日與時間");
     }
 
-    // 1) Phase 0: /compute/all 取 contract
+    // Phase 1：只打 /compute/all（contract-only）
     const resp = await fetch(`${API_BASE}/compute/all`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ year: vy, month: vm, day: vd, hour: vh, minute: vmin }),
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ year: vy, month: vm, day: vd, hour: vh, minute: vmin })
     });
 
     if (!resp.ok) {
-      const txt = await resp.text().catch(() => "");
+      const txt = await resp.text().catch(()=> "");
       throw new Error(`API HTTP ${resp.status} ${txt || ""}`.trim());
     }
 
     const payload = await resp.json();
 
-    // 讓你 console 查得到
+    // ✅ debug 全域（console 永遠查得到）
     window.__payload = payload;
     window.__contract = payload?.features;
     window.__bounds = payload?.features?.bazi?.liuyue2026?.bounds;
@@ -212,81 +185,62 @@ async function calculate(){
     if (!contract || contract.version !== "strategic_features_v1") {
       throw new Error("contract 格式不正確（features.version != strategic_features_v1）");
     }
+
     const bazi = contract.bazi;
-    if (!bazi) throw new Error("contract.bazi 不存在");
+    if (!bazi) throw new Error("contract.bazi 不存在（Phase 0 應該一定要有）");
 
-    // 2) 顯示用四柱：/compute/bazi（只拿 pillars/display/meta）
-    const dispResp = await fetch(`${API_BASE}/compute/bazi`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ year: vy, month: vm, day: vd, hour: vh, minute: vmin }),
+    // 1) 四柱（Phase 1 先不補 pillars：顯示 placeholder）
+    ["yG","yZ","mG","mZ","dG","dZ","hG","hZ"].forEach(id=>{
+      const el = document.getElementById(id);
+      if (el) el.innerText = "—";
     });
-    const disp = await dispResp.json();
-    if (!disp?.ok) throw new Error(disp?.error || "compute/bazi error（顯示用）");
 
-    const bY = disp.pillars?.year || "";
-    const bM = disp.pillars?.month || "";
-    const bD = disp.pillars?.day || "";
-    const bH = disp.pillars?.time || "";
-
-    $("yG").innerText = bY[0] || ""; $("yZ").innerText = bY[1] || "";
-    $("mG").innerText = bM[0] || ""; $("mZ").innerText = bM[1] || "";
-    $("dG").innerText = bD[0] || ""; $("dZ").innerText = bD[1] || "";
-    $("hG").innerText = bH[0] || ""; $("hZ").innerText = bH[1] || "";
-
-    $("meta").innerText = `${disp.meta?.solarText || ""} / ${disp.meta?.lunarText || ""}`.trim();
-
-    // 3) 五行：吃 contract
+    // 2) 五行（contract-only）
     renderBar("surfaceWx", bazi.wuxing?.surface, 4);
     renderBar("strategicWx", bazi.wuxing?.strategic, bazi.wuxing?.maxStrategic || 1);
 
-    // 4) 流月：吃 contract（12）
+    // 3) 流月（contract-only）
     const bounds = bazi.liuyue2026?.bounds;
-    const monthGrid = $("monthGrid");
+    const monthGrid = document.getElementById("monthGrid");
     monthGrid.innerHTML = "";
 
+    const redM = [];
     if (Array.isArray(bounds) && bounds.length) {
-      bounds.forEach(b => {
+      bounds.forEach(b=>{
         const red = b.light === "RED";
+        if (red) redM.push(b.gz);
         monthGrid.innerHTML += `
           <div class="p-3 rounded border-l-4 ${red?"border-red-500":"border-emerald-500"} bg-black/20">
-            <div class="font-bold">
-              ${b.gz} <span class="text-xs text-slate-400">${b.range || ""}</span>
-            </div>
-            <div class="text-xs text-slate-300">
-              ${red?"🔴 壓力":"🟢 穩進"}｜本氣：${b.ssBranch || ""}
-            </div>
+            <div class="font-bold">${b.gz} <span class="text-xs text-slate-400">${b.range}</span></div>
+            <div class="text-xs">${red?"🔴 壓力":"🟢 穩進"}｜${b.ssBranch}</div>
           </div>`;
       });
     } else {
-      monthGrid.innerHTML = `<div class="text-xs text-slate-400 italic">（尚未取得流月 bounds）</div>`;
+      monthGrid.innerHTML = `<div class="text-sm text-slate-400">（尚未取得流月資料）</div>`;
     }
 
-    // 5) 分析 fallback：不依賴 render/report
+    // 4) 分析（contract-only fallback）
     const dominant = (bazi.tenGod?.dominant || "").trim() || "未定";
-    const redMonths = (bounds || []).filter(x => x.light === "RED").map(x => x.gz);
-
-    $("analysisBox").innerHTML = `
-      <p>年度主軸：<span class="text-amber-400 font-black">${dominant}</span></p>
-      <p>${redMonths.length ? `壓力月：${redMonths.join("、")}（先守規則，不硬衝）` : "壓力月偏少：可以穩穩推進。"}</p>
-      <p class="text-xs text-slate-400 mt-2">（Phase 1 會換成後端 render/report 的完整敘事）</p>
+    const analysisBox = document.getElementById("analysisBox");
+    analysisBox.innerHTML = `
+      <p>年度主軸：<b>${dominant}</b></p>
+      <p>${redM.length ? `壓力月：${redM.join("、")}` : "壓力月偏少，可穩步推進。"}</p>
+      <p class="text-xs text-slate-400 mt-2">Phase 1：目前以 contract-only fallback 敘事為主；Phase 2 會接 render/report。</p>
     `;
 
-    $("report").classList.remove("hidden");
-    $("hint").innerText = `OK：bounds=${Array.isArray(bounds)?bounds.length:0}`;
+    // 顯示報告
+    document.getElementById("report").classList.remove("hidden");
+    document.getElementById("report").scrollIntoView({ behavior:"smooth", block:"start" });
+
   } catch (e) {
     console.error(e);
-    $("hint").innerText = "";
     alert("計算失敗：" + (e?.message || e));
   }
 }
 
-/* ========= 綁定 ========= */
-document.addEventListener("DOMContentLoaded", () => {
-  initSelectors();
-  $("btnLaunch").addEventListener("click", calculate);
-});
+document.addEventListener("DOMContentLoaded", initSelectors);
 </script>
+
 </body>
 </html>
 
