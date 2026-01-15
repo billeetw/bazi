@@ -98,7 +98,6 @@
     </div>
 
     <div id="report" class="hidden space-y-10 w-full animate-in fade-in slide-in-from-bottom-10 duration-1000 flex flex-col items-center">
-
       <div id="archetype" class="archetype-badge gold-text mb-2 tracking-tighter italic"></div>
 
       <div class="w-full">
@@ -109,19 +108,16 @@
             <div id="yG" class="bazi-char"></div><div id="yZ" class="bazi-char"></div>
             <div id="ySG" class="shishen-tag"></div><div id="ySZ" class="shishen-tag opacity-40 italic text-[8px]"></div>
           </div>
-
           <div class="glass py-5 rounded-2xl flex flex-col items-center border border-white/5">
             <p class="text-[10px] text-slate-600 mb-2 font-bold uppercase">月</p>
             <div id="mG" class="bazi-char"></div><div id="mZ" class="bazi-char"></div>
             <div id="mSG" class="shishen-tag"></div><div id="mSZ" class="shishen-tag opacity-40 italic text-[8px]"></div>
           </div>
-
           <div class="glass py-5 rounded-2xl flex flex-col items-center border-2 border-amber-500/30 bg-amber-500/5">
             <p class="text-[10px] text-amber-500 mb-2 font-black uppercase tracking-tighter">日</p>
             <div id="dG" class="bazi-char text-amber-500"></div><div id="dZ" class="bazi-char text-amber-500"></div>
             <div class="shishen-tag text-amber-600 font-bold border-amber-900/50 uppercase">命主</div>
           </div>
-
           <div class="glass py-5 rounded-2xl flex flex-col items-center">
             <p class="text-[10px] text-slate-600 mb-2 font-bold uppercase">時</p>
             <div id="hG" class="bazi-char text-slate-200"></div><div id="hZ" class="bazi-char text-slate-200"></div>
@@ -133,19 +129,16 @@
 
       <div class="glass p-8 rounded-[2.5rem] shadow-xl w-full">
         <h2 class="text-xs font-black gold-text mb-6 tracking-widest uppercase text-center mx-auto">❷ 五行能量深度演算法</h2>
-
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
           <div>
             <p class="text-[10px] font-black text-slate-500 mb-4 uppercase flex items-center"><i class="fas fa-eye mr-2"></i> 表層能量 (天干字數)</p>
             <div id="surfaceWx" class="space-y-3"></div>
           </div>
-
           <div>
             <p class="text-[10px] font-black text-amber-500 mb-4 uppercase flex items-center"><i class="fas fa-shield-alt mr-2"></i> 實戰能量 (天干+藏干+月令)</p>
             <div id="strategicWx" class="space-y-3"></div>
           </div>
         </div>
-
         <div class="mt-8 p-5 bg-slate-800/40 rounded-3xl text-[11px] text-slate-400 border border-white/5 leading-relaxed italic text-left">
           <p class="font-bold text-slate-300 mb-2 uppercase">🛡️ 演算法說明：</p>
           表層=天干統計；實戰=天干+藏干+月令加權（後端計算回傳）。
@@ -179,7 +172,6 @@
           </a>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -188,9 +180,10 @@
   </div>
 
   <script>
-    // ✅ 改成你自己的 Worker 網址
+    // ✅ 只宣告一次（不要再重複宣告）
     const API_BASE = "https://17gonplay-api.billeetw.workers.dev";
-    // ===== 前端仍保留十神/敘事工具（不負責起盤）=====
+
+    // ===== 十神工具（前端只做展示，不做起盤）=====
     const ELEMENTS = {"甲":"木","乙":"木","丙":"火","丁":"火","戊":"土","己":"土","庚":"金","辛":"金","壬":"水","癸":"水",
       "子":"水","丑":"土","寅":"木","卯":"木","辰":"土","巳":"火","午":"火","未":"土","申":"金","酉":"金","戌":"土","亥":"水"};
     const STEM_POLARITY = {"甲":"陽","乙":"陰","丙":"陽","丁":"陰","戊":"陽","己":"陰","庚":"陽","辛":"陰","壬":"陽","癸":"陰"};
@@ -239,7 +232,7 @@
       return "";
     }
 
-    // ✅ 讓 renderBar 在 console 也能用（不要再出現 renderBar undefined）
+    // ✅ 讓 renderBar 在 console 也能用
     function formatVal(v) {
       const x = Number(v || 0);
       if (x > 0 && x < 0.05) return "<0.1";
@@ -263,13 +256,12 @@
       });
     }
 
-    // ===== fallback 敘事（後端還沒 render/report 時也不會空白）=====
-    function buildFallbackNarrative({ dmElement, strategicWx, dominantSS, redMonths }) {
+    function buildFallbackNarrative({ dmElement, dominantSS, redMonths }) {
       const lines = [];
       lines.push(`你屬於「${dmElement}」主場的人，做事靠直覺與節奏。`);
-      lines.push(`你今年的主軸偏向「${dominantSS || "未定"}」，關鍵在：先立規則，再出手。`);
+      lines.push(`今年的主軸偏向「${dominantSS || "未定"}」，關鍵是：先立規則再出手。`);
       if (Array.isArray(redMonths) && redMonths.length) lines.push(`壓力月：${redMonths.join("、")}（這些月先守住，不要硬衝）。`);
-      lines.push(`策略：把行動拆小，把交付寫成清單，把節奏固定。`);
+      lines.push(`策略：把行動拆小、把交付寫成清單、把節奏固定。`);
       return lines;
     }
 
@@ -280,7 +272,7 @@
         calculate();
       }, 900);
     }
-    const API_BASE = "https://17gonplay-api.billeetw.workers.dev";
+
     async function calculate() {
       const vy = parseInt(document.getElementById('birthYear').value, 10);
       const vm = parseInt(document.getElementById('birthMonth').value, 10);
@@ -289,7 +281,6 @@
       const vmin = parseInt(document.getElementById('birthMinute').value, 10);
 
       try {
-        // 1) 起盤：後端
         const resp = await fetch(`${API_BASE}/compute/bazi`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -304,7 +295,7 @@
         const data = await resp.json();
         if (!data.ok) throw new Error(data.error || "API error");
 
-        // 2) 判斷：judge/merge（有就用，沒有也不會死）
+        // judge/merge：有就用，沒有也不死
         let judge = null;
         try {
           const judgeResp = await fetch(`${API_BASE}/judge/merge`, {
@@ -316,7 +307,7 @@
           if (j && j.ok) judge = j;
         } catch (_) {}
 
-        // 3) 敘事：render/report（有就用；沒有就 fallback）
+        // render/report：你如果還沒做這支，這裡會自動 fallback
         let report = null;
         try {
           const reportResp = await fetch(`${API_BASE}/render/report`, {
@@ -328,7 +319,6 @@
           if (r && r.ok) report = r;
         } catch (_) {}
 
-        // ====== 4) 渲染四柱 ======
         const bY = data.pillars.year;
         const bM = data.pillars.month;
         const bD = data.pillars.day;
@@ -345,19 +335,14 @@
         document.getElementById('mSG').innerText = getSS(dm, bM[0]); document.getElementById('mSZ').innerText = mSSZ;
         document.getElementById('hSG').innerText = getSS(dm, bH[0]); document.getElementById('hSZ').innerText = getSS(dm, bH[1]);
 
-        // ====== 5) 五行 bars：吃後端 features ======
         const surface = data.features?.wuxing?.surface;
         const strategic = data.features?.wuxing?.strategic;
         const maxStrat = data.features?.wuxing?.maxStrategic || 1;
+        if (!surface || !strategic) throw new Error("features.wuxing missing");
 
-        if (surface && strategic) {
-          renderBar('surfaceWx', surface, 4);
-          renderBar('strategicWx', strategic, maxStrat);
-        } else {
-          throw new Error("features.wuxing missing");
-        }
+        renderBar('surfaceWx', surface, 4);
+        renderBar('strategicWx', strategic, maxStrat);
 
-        // ====== 6) 流月燈號：吃後端 bounds ======
         const bounds = data.features?.liuyue2026?.bounds;
         const mGrid = document.getElementById('monthGrid');
         mGrid.innerHTML = '';
@@ -380,26 +365,23 @@
           });
         }
 
-        // ====== 7) strategy + analysis：優先用後端 report，沒有就 fallback ======
         if (report?.strategyHtml) {
           document.getElementById('strategyBox').innerHTML = report.strategyHtml;
         } else {
-          document.getElementById('strategyBox').innerHTML = `<p>年度主軸：${mSSZ || "未定"}</p>`;
+          document.getElementById('strategyBox').innerHTML = `<p class="text-amber-200 font-bold">年度主軸：${mSSZ || "未定"}</p>`;
         }
 
         if (report?.html) {
           document.getElementById('analysisBox').innerHTML = report.html;
         } else {
           const dmElement = data.features?.dmElement || ELEMENTS[dm];
-          const lines = buildFallbackNarrative({ dmElement, strategicWx: strategic, dominantSS: mSSZ, redMonths: redM });
+          const lines = buildFallbackNarrative({ dmElement, dominantSS: mSSZ, redMonths: redM });
           document.getElementById('analysisBox').innerHTML = `<div class="space-y-2">${lines.map(x => `<p>${x}</p>`).join("")}</div>`;
         }
 
-        // ====== 8) Archetype ======
         const archetypes = {"傷官":"內容革命家","食神":"生活產品經理","正財":"精準執行者","偏財":"資源整合商","正官":"秩序守護者","七殺":"邊際破局者","正印":"智慧導師","偏印":"靈魂奇才","比肩":"意志型推手","劫財":"人脈開拓者"};
         document.getElementById('archetype').innerText = archetypes[mSSZ] || "平衡觀察者";
 
-        // ✅ shareText 永遠安全（不依賴 profile）
         window.shareText = report?.text
           || document.getElementById('analysisBox')?.innerText
           || "請先生成報告再複製。";
@@ -471,6 +453,7 @@
   </script>
 </body>
 </html>
+
 
 
 
