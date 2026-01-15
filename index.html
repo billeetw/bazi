@@ -94,23 +94,199 @@ function renderBar(id, data, max){
 }
 
 /* ========= 主流程 ========= */
-async function calculate(){
-  const vy=+birthYear.value, vm=+birthMonth.value, vd=+birthDay.value;
-  const vh=+birthHour.value, vmin=+birthMinute.value;
 
-  const resp = await fetch(`${API_BASE}/compute/bazi`,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({year:vy,month:vm,day:vd,hour:vh,minute:vmin})
-  });
-  const data = await resp.json();
-  if(!data.ok) throw new Error(data.error);
+  function launch() {
+  const loading = document.getElementById("loading");
+  if (loading) loading.style.display = "flex";
 
-  /* 四柱 */
-  yG.innerText=data.pillars.year[0]; yZ.innerText=data.pillars.year[1];
-  mG.innerText=data.pillars.month[0]; mZ.innerText=data.pillars.month[1];
-  dG.innerText=data.pillars.day[0]; dZ.innerText=data.pillars.day[1];
-  hG.innerText=data.pillars.time[0]; hZ.innerText=data.pillars.time[1];
+  // 小延遲讓 loading 動畫看得到
+  setTimeout(() => {
+    if (loading) loading.style.display = "none";
+    calculate();
+  }, 650);
+}
+
+async function calculate() {
+  const vy = parseInt(document.getElementById("birthYear")?.value, 10);
+  const vm = parseInt(document.getElementById("birthMonth")?.value, 10);
+  const vd = parseInt(document.getElementById("birthDay")?.value, 10);
+  const vh = parseInt(document.getElementById("birthHour")?.value, 10);
+  const vmin = parseInt(document.getElementById("birthMinute")?.value, 10);
+
+  try {
+    // 0) 防呆
+    if (![vy, vm, vd, vh, vmin].every((n) => Number.isFinite(n))) {
+      throw new Error("請先選好出生年月日與時間");
+    }
+
+    // 1) 走 Phase 0 contract：只打 /compute/all
+    const resp = await fetch(`${API_BASE}/compute/all`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ year: vy, month: vm, day: vd, hour: vh, minute: vmin }),
+    });
+
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => "");
+      throw new Error(`API HTTP ${resp.status} ${txt || ""}`.trim());
+    }
+
+    const payload = await resp.json();
+    if (!payload?.ok) throw new Error(payload?.error || "API error");
+
+    // payload = { ok:true, features: StrategicFeaturesV1 }
+    const contract = payload.features;
+    if (!contract || contract.version !== "strategic_features_v1") {
+      throw new Error("contract 格式不正確（features.version != strategic_features_v1）");
+    }
+
+    const bazi = contract.bazi;
+    if (!bazi) throw new Error("contract.bazi 不存在（後端 Phase 0 應該一定要有）");
+
+    // 2) （可選）judge/merge：失敗也不影響畫面
+    let judge = null;
+    try {
+      const jResp = await fetch(`${API_BASE}/judge/merge`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ features: contract }),
+      });
+      const j = await jResp.json().catch(() => null);
+      if (j && j.ok) judge = j;
+    } catch (_) {}
+
+    // 3) 四柱渲染：從 bazi 的 pillars（Phase 0 contract 內沒有 pillars，所以我們用 compute/bazi 補一份 display）
+    // ✅ 最佳做法：Phase 0 contract 也帶 pillars，但你現在 Phase 0 只回 features
+    // 所以這裡用 /compute/bazi 補「顯示用」資料（不影響核心算法）
+    const dispResp = await fetch(`${API_BASE}/compute/bazi`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ year: vy, month: vm, day: vd, hour: vh, minute: vmin }),
+    });
+    const disp = await dispResp.json();
+    if (!disp?.ok) throw new Error(disp?.error || "compute/bazi error（顯示用）");
+
+    const dm = disp.pillars?.dm; // "丙"
+    const bY = disp.pillars?.year;
+    const bM = disp.pillars?.month;
+    const bD = disp.pillars?.day;
+    const bH = disp.pillars?.time;
+
+    // 3a) 渲染四柱字
+    document.getElementById("yG").innerText = bY?.[0] || "";
+    document.getElementById("yZ").innerText = bY?.[1] || "";
+    document.getElementById("mG").innerText = bM?.[0] || "";
+    document.getElementById("mZ").innerText = bM?.[1] || "";
+    document.getElementById("dG").innerText = bD?.[0] || "";
+    document.getElementById("dZ").innerText = bD?.[1] || "";
+    document.getElementById("hG").innerText = bH?.[0] || "";
+    document.getElementById("hZ").innerText = bH?.[1] || "";
+
+    // 3b) 十神顯示（前端 getSS 只吃 dm + 柱字，不再起盤）
+    const mSSZ = (dm && bM?.[1]) ? getSS(dm, bM[1]) : (bazi?.tenGod?.dominant || "");
+    document.getElementById("ySG").innerText = (dm && bY?.[0]) ? getSS(dm, bY[0]) : "";
+    document.getElementById("ySZ").innerText = (dm && bY?.[1]) ? getSS(dm, bY[1]) : "";
+    document.getElementById("mSG").innerText = (dm && bM?.[0]) ? getSS(dm, bM[0]) : "";
+    document.getElementById("mSZ").innerText = mSSZ || "";
+    document.getElementById("hSG").innerText = (dm && bH?.[0]) ? getSS(dm, bH[0]) : "";
+    document.getElementById("hSZ").innerText = (dm && bH?.[1]) ? getSS(dm, bH[1]) : "";
+
+    // 4) 五行 bars：完全吃 contract.bazi.wuxing
+    if (!bazi.wuxing?.surface || !bazi.wuxing?.strategic) {
+      throw new Error("bazi.wuxing 缺資料（surface/strategic）");
+    }
+    renderBar("surfaceWx", bazi.wuxing.surface, 4);
+    renderBar("strategicWx", bazi.wuxing.strategic, bazi.wuxing.maxStrategic || 1);
+
+    // 5) 流月：完全吃 contract.bazi.liuyue2026.bounds（你看到 12 就是這裡）
+    const bounds = bazi.liuyue2026?.bounds;
+    const mGrid = document.getElementById("monthGrid");
+    if (!mGrid) throw new Error("#monthGrid 不存在");
+
+    mGrid.innerHTML = "";
+    const redM = [];
+
+    if (Array.isArray(bounds) && bounds.length) {
+      bounds.forEach((b) => {
+        const isRed = b.light === "RED";
+        if (isRed) redM.push(b.gz);
+
+        mGrid.innerHTML += `
+          <div class="glass p-5 rounded-2xl border-l-4 ${
+            isRed ? "border-red-500 bg-red-500/5" : "border-emerald-500 bg-emerald-500/5"
+          } flex justify-between items-center w-full">
+            <div class="text-left">
+              <p class="font-black text-base">${b.gz}
+                <span class="text-[9px] font-normal text-slate-500 ml-1 uppercase">${b.range || ""}</span>
+              </p>
+              <p class="text-[10px] text-slate-400 mt-1 font-bold italic">本氣戰略：${b.ssBranch || ""}</p>
+            </div>
+            <span class="text-[10px] font-bold px-3 py-1 rounded-lg bg-white/10 tracking-widest">
+              ${isRed ? "🔴 壓力" : "🟢 穩進"}
+            </span>
+          </div>
+        `;
+      });
+    } else {
+      // 沒 bounds 也不要讓頁面空白
+      mGrid.innerHTML = `<div class="text-[12px] text-slate-400 italic">（尚未取得流月資料）</div>`;
+    }
+
+    // 6) 年度戰略方針：先用 dominant + judge（有就加料）
+    const dominant = (bazi.tenGod?.dominant || "").trim() || "未定";
+    const strategyBox = document.getElementById("strategyBox");
+    if (strategyBox) {
+      const judgeHint = judge?.result?.theme ? `<div class="text-[11px] text-slate-400 mt-2">${judge.result.theme}</div>` : "";
+      strategyBox.innerHTML = `<p class="font-black text-amber-500 text-2xl mb-2 tracking-tighter">年度主軸：${dominant}</p>${judgeHint}`;
+    }
+
+    // 7) 命盤分析：你現在 Phase 0 還沒上 /render/report，所以這裡給「不空白」的 fallback
+    const analysisBox = document.getElementById("analysisBox");
+    if (analysisBox) {
+      const dmElement = bazi.dmElement || "火";
+      const lacks = (judge?.result?.hints?.lacks || []).join("、");
+      const strengths = (judge?.result?.hints?.strengths || []).join("、");
+      const redText = redM.length ? `壓力月：${redM.join("、")}（先守規則，不硬碰）` : "今年壓力月偏少，可以穩穩推進。";
+
+      analysisBox.innerHTML = `
+        <div class="space-y-2">
+          <p>你的日主五行主場是「${dmElement}」，今年核心策略語言偏向「${dominant}」。</p>
+          <p>${redText}</p>
+          <p>${lacks ? `結構缺口：${lacks}（補這個，人生會順很多）` : "結構缺口：目前不明顯（資料完整度良好）"}</p>
+          <p>${strengths ? `結構強項：${strengths}（把強項做成制度輸出）` : "結構強項：先把你最順的能力寫成 SOP"}</p>
+          <p class="text-[11px] text-slate-400 mt-3">（Phase 1：這段之後會改成 render/report 的完整敘事輸出）</p>
+        </div>
+      `;
+    }
+
+    // 8) Archetype
+    const archetypes = {
+      "傷官": "內容革命家",
+      "食神": "生活產品經理",
+      "正財": "精準執行者",
+      "偏財": "資源整合商",
+      "正官": "秩序守護者",
+      "七殺": "邊際破局者",
+      "正印": "智慧導師",
+      "偏印": "靈魂奇才",
+      "比肩": "意志型推手",
+      "劫財": "人脈開拓者",
+    };
+    document.getElementById("archetype").innerText = archetypes[dominant] || "平衡觀察者";
+
+    // 9) 分享文字：永遠不依賴 profile
+    window.shareText =
+      (analysisBox && analysisBox.innerText && analysisBox.innerText.trim()) ||
+      `【一起出來玩。2026 深度戰略報告】年度主軸：${dominant}`;
+
+    // 10) 顯示報告區
+    document.getElementById("report").classList.remove("hidden");
+    document.getElementById("report").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    console.error(e);
+    alert("計算失敗：" + (e?.message || e));
+  }
+}
 
   /* 五行 */
   renderBar("surfaceWx",data.features.wuxing.surface,4);
@@ -139,8 +315,6 @@ async function calculate(){
 }
 
 /* ========= UI ========= */
-function launch(){ calculate().catch(e=>alert(e.message)); }
-
 function initSelectors(){
   for(let i=2026;i>=1940;i--) birthYear.add(new Option(i,i));
   for(let i=1;i<=12;i++) birthMonth.add(new Option(i,i));
