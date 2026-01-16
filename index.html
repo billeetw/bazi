@@ -92,56 +92,201 @@
 /* ========= 基本設定 ========= */
 const API_BASE = "https://17gonplay-api.billeetw.workers.dev";
 
-/* ========= UI：selectors ========= */
-function initSelectors(){
-  const y = document.getElementById("birthYear");
-  const m = document.getElementById("birthMonth");
-  const d = document.getElementById("birthDay");
-  const h = document.getElementById("birthHour");
+/* ========= 工具 ========= */
+function renderBar(id, data, max) {
+  const box = document.getElementById(id);
+  if (!box) return;
+  box.innerHTML = "";
+  ["木","火","土","金","水"].forEach(e => {
+    const v = Number(data?.[e] || 0);
+    const w = max ? Math.max(2, (v / max) * 100) : 0;
+    box.innerHTML += `
+      <div class="mb-1">
+        <div class="flex justify-between text-xs">
+          <span>${e}</span>
+          <span>${v.toFixed(1)}</span>
+        </div>
+        <div class="h-2 bg-white/10 rounded overflow-hidden">
+          <div class="h-full wuxing-${e}" style="width:${w}%"></div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+/* ========= 主流程：只打 /compute/all ========= */
+
+async function calculate() {
+  const vy   = parseInt(document.getElementById("birthYear")?.value, 10);
+  const vm   = parseInt(document.getElementById("birthMonth")?.value, 10);
+  const vd   = parseInt(document.getElementById("birthDay")?.value, 10);
+  const vh   = parseInt(document.getElementById("birthHour")?.value, 10);
+  const vmin = parseInt(document.getElementById("birthMinute")?.value, 10);
+
+  try {
+    if (![vy, vm, vd, vh, vmin].every(n => Number.isFinite(n))) {
+      throw new Error("請先選好出生年月日與時間");
+    }
+
+    // ✅ 只打 /compute/all，拿到 StrategicFeaturesV1 contract
+    const resp = await fetch(`${API_BASE}/compute/all`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ year: vy, month: vm, day: vd, hour: vh, minute: vmin }),
+    });
+
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => "");
+      throw new Error(`API HTTP ${resp.status} ${txt || ""}`.trim());
+    }
+
+    const payload = await resp.json();
+    if (!payload?.ok) throw new Error(payload?.error || "API error");
+
+    // 暫存給你在 console inspect 用
+    window.__payload  = payload;
+    window.__contract = payload.features;
+
+    const contract = payload.features;
+    if (!contract || contract.version !== "strategic_features_v1") {
+      throw new Error("contract 格式不正確（features.version != strategic_features_v1）");
+    }
+
+    const bazi = contract.bazi;
+    if (!bazi) throw new Error("contract.bazi 不存在（後端 Phase 0 應該一定要有）");
+
+    /* === 1) 四柱：直接吃 contract.bazi.display / pillars === */
+    const disp = bazi.display;
+    document.getElementById("yG").innerText = disp.yG || "";
+    document.getElementById("yZ").innerText = disp.yZ || "";
+    document.getElementById("mG").innerText = disp.mG || "";
+    document.getElementById("mZ").innerText = disp.mZ || "";
+    document.getElementById("dG").innerText = disp.dG || "";
+    document.getElementById("dZ").innerText = disp.dZ || "";
+    document.getElementById("hG").innerText = disp.hG || "";
+    document.getElementById("hZ").innerText = disp.hZ || "";
+
+    /* === 2) 五行：完全吃 contract.bazi.wuxing === */
+    if (!bazi.wuxing?.surface || !bazi.wuxing?.strategic) {
+      throw new Error("bazi.wuxing 缺資料");
+    }
+    renderBar("surfaceWx",   bazi.wuxing.surface,   4);
+    renderBar("strategicWx", bazi.wuxing.strategic, bazi.wuxing.maxStrategic || 1);
+
+    /* === 3) 2026 流月：吃 contract.bazi.liuyue2026.bounds === */
+    const bounds = bazi.liuyue2026?.bounds || [];
+    const mGrid  = document.getElementById("monthGrid");
+    mGrid.innerHTML = "";
+
+    const redMonths = [];
+
+    if (bounds.length) {
+      bounds.forEach(b => {
+        const isRed = b.light === "RED";
+        if (isRed) redMonths.push(b.gz);
+
+        mGrid.innerHTML += `
+          <div class="p-3 rounded border-l-4 ${isRed ? "border-red-500 bg-red-500/10" : "border-emerald-500 bg-emerald-500/10"}">
+            <div class="font-bold">
+              ${b.gz}
+              <span class="text-xs text-slate-400 ml-1">${b.range || ""}</span>
+            </div>
+            <div class="text-xs text-slate-300 mt-1">
+              ${isRed ? "🔴 壓力" : "🟢 穩進"} ｜ 本氣：${b.ssBranch || ""}
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      mGrid.innerHTML = `<div class="text-xs text-slate-400 italic">（暫無流月資料）</div>`;
+    }
+
+    /* === 4) 戰略解讀：先用 tenGod.dominant + 流月當 fallback === */
+    const analysisBox = document.getElementById("analysisBox");
+    const dominant = (bazi.tenGod?.dominant || "").trim() || "未定";
+    const dmElement = bazi.dmElement || "火";
+
+    const redText = redMonths.length
+      ? `壓力月：${redMonths.join("、")}（這些月先守規則，不要硬衝）。`
+      : "今年壓力月偏少，可以穩穩推進。";
+
+    analysisBox.innerHTML = `
+      <p>你的日主五行主場是「${dmElement}」，2026 年度主軸偏向「${dominant}」。</p>
+      <p>${redText}</p>
+      <p>策略：把行動拆小、目標變少、節奏固定，壓力月優先守住現有盤面。</p>
+      <p class="text-[11px] text-slate-400 mt-2">
+        （之後 Phase 1 會改用 /render/report 把這段換成完整 AI 敘事）
+      </p>
+    `;
+
+    // 顯示報告區
+    document.getElementById("report").classList.remove("hidden");
+    document.getElementById("report").scrollIntoView({ behavior:"smooth", block:"start" });
+
+  } catch (e) {
+    console.error(e);
+    alert("計算失敗：" + (e?.message || e));
+  }
+}
+
+/* ========= UI：日期選單 ========= */
+function initSelectors() {
+  const y   = document.getElementById("birthYear");
+  const m   = document.getElementById("birthMonth");
+  const d   = document.getElementById("birthDay");
+  const h   = document.getElementById("birthHour");
   const min = document.getElementById("birthMinute");
+  if (!y || !m || !d || !h || !min) return;
 
-  y.innerHTML = ""; m.innerHTML = ""; d.innerHTML = ""; h.innerHTML = ""; min.innerHTML = "";
+  // 年份：2026 -> 1940
+  for (let i = 2026; i >= 1940; i--) {
+    y.add(new Option(i + " 年", i));
+  }
+  // 月
+  for (let i = 1; i <= 12; i++) {
+    m.add(new Option(i + " 月", i));
+  }
+  // 時
+  for (let i = 0; i < 24; i++) {
+    const label = String(i).padStart(2,"0") + " 時";
+    h.add(new Option(label, i));
+  }
+  // 分
+  ["00","15","30","45"].forEach(v => {
+    min.add(new Option(v + " 分", v));
+  });
 
-  for(let i=2026;i>=1940;i--) y.add(new Option(i, i));
-  for(let i=1;i<=12;i++) m.add(new Option(i, i));
-  for(let i=0;i<24;i++) h.add(new Option(String(i).padStart(2,"0"), i));
-  ["00","15","30","45"].forEach(v => min.add(new Option(v, v)));
-
-  y.value = "1990";
-  m.value = "1";
-  h.value = "12";
+  // 預設值
+  y.value   = "1990";
+  m.value   = "1";
+  h.value   = "12";
   min.value = "00";
+
   updateDays();
 }
 
-function updateDays(){
-  const y = Number(document.getElementById("birthYear").value);
-  const m = Number(document.getElementById("birthMonth").value);
+function updateDays() {
+  const y = document.getElementById("birthYear");
+  const m = document.getElementById("birthMonth");
   const d = document.getElementById("birthDay");
+  if (!y || !m || !d) return;
+
+  const year  = parseInt(y.value, 10);
+  const month = parseInt(m.value, 10);
+  const current = d.value;
+
   d.innerHTML = "";
-  const days = new Date(y, m, 0).getDate();
-  for(let i=1;i<=days;i++) d.add(new Option(i, i));
-  d.value = "1";
+  const days = new Date(year, month, 0).getDate();
+  for (let i = 1; i <= days; i++) {
+    const opt = new Option(i + " 日", i);
+    if (String(i) === String(current) || (!current && i === 1)) opt.selected = true;
+    d.add(opt);
+  }
 }
 
-/* ========= 工具：bars ========= */
-function renderBar(id, data, max){
-  const box = document.getElementById(id);
-  if(!box) return;
-  box.innerHTML = "";
-  ["木","火","土","金","水"].forEach(e=>{
-    const v = Number(data?.[e] || 0);
-    const pct = max ? (v/max)*100 : 0;
-    const w = (v>0 && pct<2) ? 2 : pct;
-    box.innerHTML += `
-      <div>
-        <div class="flex justify-between text-xs"><span>${e}</span><span>${v.toFixed(1)}</span></div>
-        <div class="h-2 bg-white/10 rounded overflow-hidden">
-          <div class="h-full wuxing-${e}" style="width:${Math.max(0,Math.min(100,w))}%"></div>
-        </div>
-      </div>`;
-  });
-}
+document.addEventListener("DOMContentLoaded", initSelectors);
+</script>
+
 
 /* ========= 主流程 ========= */
 function launch(){
