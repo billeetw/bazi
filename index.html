@@ -5,7 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>2026 戰略導航｜一起出來玩</title>
 
+  <!-- Tailwind CDN（開發用） -->
   <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
     body {
       background:#050814;
@@ -16,33 +18,48 @@
       background: rgba(15,23,42,0.85);
       backdrop-filter: blur(14px);
       border:1px solid rgba(148,163,184,0.35);
+      border-radius: 1.5rem;
     }
     .bazi-char {
       font-size:1.8rem;
       font-weight:900;
       line-height:1.1;
     }
-    .wuxing-木{background:#2ecc71}
-    .wuxing-火{background:#e74c3c}
-    .wuxing-土{background:#f1c40f}
-    .wuxing-金{background:#ced4da}
-    .wuxing-水{background:#3498db}
+    .wuxing-木{background:#22c55e}
+    .wuxing-火{background:#ef4444}
+    .wuxing-土{background:#eab308}
+    .wuxing-金{background:#cbd5f5}
+    .wuxing-水{background:#3b82f6}
 
-    .tab-btn{
-      font-size:12px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid rgba(148,163,184,.5);
-      background:rgba(15,23,42,.8);
+    /* 🔹 五行 bar label */
+    .wx-row-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #94a3b8;
     }
-    .tab-btn:hover{background:rgba(30,64,175,.8)}
 
     /* ============ 五行星曜顏色 ============ */
-    .star-wx-木 { color: #86efac; text-shadow: 0 0 5px rgba(34,197,94,0.5); }
-    .star-wx-火 { color: #fca5a5; text-shadow: 0 0 5px rgba(239,68,68,0.5); }
-    .star-wx-土 { color: #fde047; text-shadow: 0 0 5px rgba(234,179,8,0.5); }
-    .star-wx-金 { color: #e2e8f0; text-shadow: 0 0 5px rgba(255,255,255,0.5); }
-    .star-wx-水 { color: #93c5fd; text-shadow: 0 0 5px rgba(59,130,246,0.5); }
+    .star-wx-木 {
+      color: #86efac;
+      text-shadow: 0 0 5px rgba(34,197,94,0.5);
+    }
+    .star-wx-火 {
+      color: #fca5a5;
+      text-shadow: 0 0 5px rgba(239,68,68,0.5);
+    }
+    .star-wx-土 {
+      color: #fde047;
+      text-shadow: 0 0 5px rgba(234,179,8,0.5);
+    }
+    .star-wx-金 {
+      color: #e2e8f0;
+      text-shadow: 0 0 5px rgba(255,255,255,0.5);
+    }
+    .star-wx-水 {
+      color: #93c5fd;
+      text-shadow: 0 0 5px rgba(59,130,246,0.5);
+    }
 
     /* ============ 紫微 12 宮格容器 ============ */
     .zw-grid-container {
@@ -56,23 +73,26 @@
       margin: 0 auto;
     }
 
+    /* 個別宮位方格基礎樣式 */
     .zw-palace {
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(148, 163, 184, 0.2);
-      border-radius: 0.75rem;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 0.85rem;
       padding: 8px;
       display: flex;
       flex-direction: column;
       position: relative;
       overflow: hidden;
-      transition: transform 0.3s ease, border-color 0.3s ease;
-    }
-    .zw-palace:hover {
-      transform: translateY(-2px);
-      border-color: rgba(255,255,255,0.4);
+      transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
     }
 
-    /* 宮位五行能量光暈 */
+    .zw-palace:hover {
+      transform: translateY(-2px);
+      border-color: rgba(248,250,252,0.8);
+      box-shadow: 0 10px 30px rgba(15,23,42,0.7);
+    }
+
+    /* ============ 宮位五行能量發光特效 ============ */
     .zw-palace::before {
       content: '';
       position: absolute;
@@ -84,537 +104,537 @@
       z-index: -1;
       pointer-events: none;
     }
+
     [class*="palace-glow-"]::before { opacity: 1; }
+
     .palace-glow-木::before {
-      background: radial-gradient(circle, rgba(34,197,94,0.15) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(34,197,94,0.18) 0%, transparent 70%);
     }
     .palace-glow-火::before {
-      background: radial-gradient(circle, rgba(239,68,68,0.15) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(239,68,68,0.20) 0%, transparent 70%);
     }
     .palace-glow-土::before {
-      background: radial-gradient(circle, rgba(234,179,8,0.15) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(234,179,8,0.20) 0%, transparent 70%);
     }
     .palace-glow-金::before {
-      background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(248,250,252,0.18) 0%, transparent 70%);
     }
     .palace-glow-水::before {
-      background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(59,130,246,0.20) 0%, transparent 70%);
     }
 
     .zw-palace-key {
       border-color: rgba(251, 191, 36, 0.8);
-      box-shadow: inset 0 0 15px rgba(251, 191, 36, 0.1);
+      box-shadow: inset 0 0 16px rgba(251, 191, 36, 0.25);
     }
 
+    /* 中心區域（命身＋五行局） */
     .zw-center-block {
       grid-area: 2 / 2 / 4 / 4;
-      background: radial-gradient(circle, #1e293b 30%, #020617 100%);
-      border: 1px dashed rgba(148, 163, 184, 0.4);
-      border-radius: 1rem;
+      background: radial-gradient(circle, #1e293b 35%, #020617 100%);
+      border: 1px dashed rgba(148, 163, 184, 0.5);
+      border-radius: 1.1rem;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       text-align: center;
-      padding: 10px;
+      padding: 12px;
       z-index: 10;
+    }
+
+    .zw-center-block-badge {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    .nav-bar {
+      background: linear-gradient(90deg, #ef4444, #f97316, #ef4444);
+      color: #fff;
+      padding: 10px 16px;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      box-shadow: 0 4px 20px rgba(220,38,38,0.6);
     }
   </style>
 </head>
 
-<body class="p-4">
-  <h1 class="text-3xl font-black text-center mb-2">2026 流年戰略報告</h1>
-  <p class="text-xs text-slate-400 text-center mb-6">一起出來玩 · 八字 × 紫微 · 戰略版</p>
-
-  <!-- 輸入 -->
-  <div class="glass p-6 rounded-xl max-w-xl mx-auto mb-8">
-    <div class="grid grid-cols-3 gap-2 mb-3">
-      <select id="birthYear" class="bg-black/40 p-2 rounded"></select>
-      <select id="birthMonth" class="bg-black/40 p-2 rounded" onchange="updateDays()"></select>
-      <select id="birthDay" class="bg-black/40 p-2 rounded"></select>
-    </div>
-    <div class="grid grid-cols-2 gap-2 mb-4">
-      <select id="birthHour" class="bg-black/40 p-2 rounded"></select>
-      <select id="birthMinute" class="bg-black/40 p-2 rounded"></select>
-    </div>
-    <button onclick="calculate()" class="w-full bg-amber-500 text-black py-3 rounded font-black">
-      生成我的 2026 戰略
-    </button>
-    <p id="hint" class="text-xs text-slate-400 mt-3 italic"></p>
-  </div>
+<body class="pb-16">
 
   <!-- 導航 bar -->
-  <div id="navBar" class="hidden max-w-3xl mx-auto mb-6 flex flex-wrap justify-center gap-2">
-    <button class="tab-btn" onclick="scrollToSection('sec-bazi')">四柱 & 五行</button>
-    <button class="tab-btn" onclick="scrollToSection('sec-ziwei')">紫微 12 宮</button>
-    <button class="tab-btn" onclick="scrollToSection('sec-liuyue')">2026 流月</button>
-    <button class="tab-btn" onclick="scrollToSection('sec-analysis')">戰略解讀</button>
+  <div class="nav-bar flex items-center justify-between">
+    <div class="text-xs md:text-sm font-bold tracking-[0.25em] uppercase">
+      一起出來玩 · 2026 戰略導航
+    </div>
+    <a
+      href="https://www.youtube.com/@billeetw1"
+      target="_blank"
+      class="text-[11px] md:text-xs bg-white text-red-600 font-black px-3 py-1 rounded-full shadow"
+    >
+      訂閱最新戰略 🔔
+    </a>
   </div>
 
-  <!-- 報告 -->
-  <div id="report" class="hidden max-w-3xl mx-auto space-y-8">
+  <main class="max-w-5xl mx-auto px-4 pt-6 space-y-8">
+    <!-- 標題 -->
+    <section class="text-center space-y-2">
+      <h1 class="text-3xl md:text-4xl font-black tracking-tight">
+        2026 流年戰略報告
+      </h1>
+      <p class="text-xs text-slate-400 tracking-[0.25em] uppercase">
+        BAZI × 紫微 × 流月節奏
+      </p>
+    </section>
 
-    <!-- 四柱 -->
-    <div id="sec-bazi" class="glass p-6 rounded-xl">
-      <h2 class="font-black mb-3">四柱（顯示用）</h2>
-      <div class="grid grid-cols-4 text-center gap-2">
-        <div>
-          <div class="text-[10px] text-slate-400 mb-1">年</div>
-          <div id="yG" class="bazi-char"></div>
-          <div id="yZ" class="text-sm text-slate-300"></div>
-        </div>
-        <div>
-          <div class="text-[10px] text-slate-400 mb-1">月</div>
-          <div id="mG" class="bazi-char"></div>
-          <div id="mZ" class="text-sm text-slate-300"></div>
-        </div>
-        <div>
-          <div class="text-[10px] text-slate-400 mb-1">日</div>
-          <div id="dG" class="bazi-char text-amber-400"></div>
-          <div id="dZ" class="text-sm text-slate-300"></div>
-        </div>
-        <div>
-          <div class="text-[10px] text-slate-400 mb-1">時</div>
-          <div id="hG" class="bazi-char"></div>
-          <div id="hZ" class="text-sm text-slate-300"></div>
-        </div>
+    <!-- 輸入 -->
+    <section class="glass p-6 md:p-7 space-y-4 max-w-xl mx-auto">
+      <h2 class="text-sm font-black text-slate-200 tracking-[0.28em] uppercase mb-1">
+        01. 輸入你的出生時間
+      </h2>
+      <p class="text-xs text-slate-400 mb-2">
+        使用西元（公曆），時區以當地出生地為主。分鐘選不準沒關係，先抓一個大概的整刻度。
+      </p>
+
+      <div class="grid grid-cols-3 gap-2 mb-3">
+        <select id="birthYear" class="bg-black/40 p-2 rounded border border-slate-700 text-sm"></select>
+        <select id="birthMonth" class="bg-black/40 p-2 rounded border border-slate-700 text-sm"></select>
+        <select id="birthDay" class="bg-black/40 p-2 rounded border border-slate-700 text-sm"></select>
       </div>
-      <div id="meta" class="text-[11px] text-slate-500 mt-3"></div>
-    </div>
+      <div class="grid grid-cols-2 gap-2 mb-4">
+        <select id="birthHour" class="bg-black/40 p-2 rounded border border-slate-700 text-sm"></select>
+        <select id="birthMinute" class="bg-black/40 p-2 rounded border border-slate-700 text-sm"></select>
+      </div>
 
-    <!-- 五行 -->
-    <div class="glass p-6 rounded-xl">
-      <h2 class="font-black mb-3">五行能量</h2>
-      <div class="text-xs text-slate-400 mb-2">表層（天干計數）</div>
-      <div id="surfaceWx" class="space-y-2 mb-5"></div>
-
-      <div class="text-xs text-slate-400 mb-2">實戰（天干 + 藏干 + 月令加權）</div>
-      <div id="strategicWx" class="space-y-2"></div>
-    </div>
-
-    <!-- 紫微命盤 12 宮 -->
-    <div id="sec-ziwei" class="glass p-6 rounded-xl">
-      <h2 class="font-black mb-3">紫微命盤 12 宮總覽</h2>
-      <p class="text-xs text-slate-400 mb-3">
-        命盤以「命宮－官祿宮－財帛宮」為主軸，先用主星＋五行能量呈現；之後可以再接完整星曜資料。
-      </p>
-      <div id="ziweiGrid" class="zw-grid-container"></div>
-      <div id="ziweiMeta" class="text-[11px] text-slate-400 mt-4"></div>
-    </div>
-
-    <!-- 流月 -->
-    <div id="sec-liuyue" class="glass p-6 rounded-xl">
-      <h2 class="font-black mb-3">2026 流月節奏（12）</h2>
-      <div id="monthGrid" class="space-y-2"></div>
-    </div>
-
-    <!-- 分析 -->
-    <div id="sec-analysis" class="glass p-6 rounded-xl">
-      <h2 class="font-black mb-3">戰略解讀（fallback）</h2>
-      <div id="analysisBox" class="space-y-2 text-sm text-slate-200"></div>
-    </div>
-
-    <!-- 諮詢 CTA -->
-    <div class="glass p-6 rounded-xl text-center">
-      <p class="text-sm text-slate-200 mb-4 leading-relaxed">
-        如果你希望我把你的命格組成、人生大運、流年流月、生涯規劃和最適合自己的人生節奏做成可保用一生的
-        <span class="font-bold text-amber-400">50 頁人生使用說明書</span>，
-        歡迎預約線上諮詢。
-      </p>
-      <a
-        href="https://forms.gle/UVCSq1udEC549gzYA"
-        target="_blank"
-        class="inline-flex items-center justify-center px-6 py-3 rounded-full bg-amber-500 text-black font-black text-sm"
+      <button
+        id="btnLaunch"
+        class="w-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-black py-3.5 rounded-xl font-black tracking-[0.25em] text-xs md:text-sm uppercase shadow-lg active:scale-[0.98] transition"
       >
-        前往預約與李伯彥老師諮詢
-      </a>
-    </div>
+        生成我的 2026 戰略
+      </button>
 
-  </div>
+      <p id="hint" class="text-[11px] text-slate-400 mt-3 italic"></p>
+    </section>
 
-<script>
-/* ========= 基本設定 ========= */
-const API_BASE = "https://17gonplay-api.billeetw.workers.dev";
+    <!-- 報告 -->
+    <section id="report" class="hidden space-y-8">
 
-/* ========= 小工具 ========= */
-function renderBar(id, data, max) {
-  const box = document.getElementById(id);
-  if (!box) return;
-  box.innerHTML = "";
-  ["木","火","土","金","水"].forEach(e => {
-    const v = Number(data?.[e] || 0);
-    const w = max ? Math.max(2, (v / max) * 100) : 0;
-    box.innerHTML += `
-      <div class="mb-1">
-        <div class="flex justify-between text-xs">
-          <span>${e}</span>
-          <span>${v.toFixed(1)}</span>
+      <!-- 八字：四柱 + 五行 -->
+      <section class="glass p-6 md:p-7 space-y-5">
+        <div class="flex items-center justify-between mb-1">
+          <h2 class="text-sm font-black tracking-[0.3em] uppercase text-slate-200">
+            02. 河圖時空座標（四柱＋五行）
+          </h2>
+          <span id="baziDmTag" class="text-[11px] px-2 py-1 rounded-full border border-amber-400/70 text-amber-300 font-bold">
+            日主：—
+          </span>
         </div>
-        <div class="h-2 bg-white/10 rounded overflow-hidden">
-          <div class="h-full wuxing-${e}" style="width:${w}%"></div>
+
+        <!-- 四柱 -->
+        <div class="grid grid-cols-4 gap-2 text-center">
+          <div class="py-3 rounded-xl bg-slate-900/70">
+            <div class="text-[10px] text-slate-400 tracking-[0.2em] uppercase mb-1">年</div>
+            <div id="yG" class="bazi-char"></div>
+            <div id="yZ" class="text-sm text-slate-300"></div>
+          </div>
+          <div class="py-3 rounded-xl bg-slate-900/70">
+            <div class="text-[10px] text-slate-400 tracking-[0.2em] uppercase mb-1">月</div>
+            <div id="mG" class="bazi-char"></div>
+            <div id="mZ" class="text-sm text-slate-300"></div>
+          </div>
+          <div class="py-3 rounded-xl bg-slate-900/70 border border-amber-400/60">
+            <div class="text-[10px] text-amber-300 tracking-[0.2em] uppercase mb-1">日</div>
+            <div id="dG" class="bazi-char text-amber-300"></div>
+            <div id="dZ" class="text-sm text-amber-100"></div>
+          </div>
+          <div class="py-3 rounded-xl bg-slate-900/70">
+            <div class="text-[10px] text-slate-400 tracking-[0.2em] uppercase mb-1">時</div>
+            <div id="hG" class="bazi-char"></div>
+            <div id="hZ" class="text-sm text-slate-300"></div>
+          </div>
         </div>
-      </div>
-    `;
-  });
-}
 
-/* ========= 紫微 12 宮方盤（含五行能量） ========= */
-const PALACE_ORDER = ["命宮","兄弟","夫妻","子女","財帛","疾厄","遷移","僕役","官祿","田宅","福德","父母"];
-const gridAreas = [
-  "1/1/2/2","1/2/2/3","1/3/2/4","1/4/2/5", // 上排 4 格
-  "2/4/3/5","3/4/4/5","4/4/5/5",          // 右側 3 格
-  "4/3/5/4","4/2/5/3","4/1/5/2",          // 下排 3 格
-  "3/1/4/2","2/1/3/2"                     // 左側 2 格
-];
-
-// 14 主星五行
-const STAR_WUXING_MAP = {
-  "紫微": "土", "天機": "木", "太陽": "火", "武曲": "金", "天同": "水",
-  "廉貞": "火", "天府": "土", "太陰": "水", "貪狼": "木",
-  "巨門": "水", "天相": "水", "天梁": "土", "七殺": "金", "破軍": "水"
-};
-
-function renderZiwei(ziwei) {
-  const container = document.getElementById("ziweiGrid");
-  const meta = document.getElementById("ziweiMeta");
-  if (!container || !meta) return;
-
-  // 1. 修正檢查邏輯：只要有 core 資料就渲染，不再檢查不存在的 ziwei.version
-  if (!ziwei || !ziwei.core) {
-    container.className = "zw-grid-container";
-    container.innerHTML = `
-      <div class="text-xs text-slate-400 italic col-span-4 flex items-center justify-center border border-dashed border-slate-700 rounded-xl h-40">
-        （目前尚未取得紫微核心資料）
-      </div>`;
-    meta.innerText = "";
-    return;
-  }
-
-  container.className = "zw-grid-container";
-  container.innerHTML = "";
-
-  // 2. 準備 12 宮位星曜資料映射
-  // 這裡確保即便 API 只給了部分宮位，其餘宮位也能正確顯示為「空宮」
-  const palStars = {};
-  PALACE_ORDER.forEach(p => palStars[p] = []);
-
-  // 映射主星資料 (依據 strategic_features_v1 規格)
-  if (ziwei.core?.minggong) palStars["命宮"].push(ziwei.core.minggong);
-  
-  if (ziwei.mainStars) {
-    if (Array.isArray(ziwei.mainStars.minggong)) palStars["命宮"].push(...ziwei.mainStars.minggong);
-    if (Array.isArray(ziwei.mainStars.career))   palStars["官祿"].push(...ziwei.mainStars.career);
-    if (Array.isArray(ziwei.mainStars.wealth))   palStars["財帛"].push(...ziwei.mainStars.wealth);
-  }
-
-  // 3. 執行渲染迴圈
-  PALACE_ORDER.forEach((name, idx) => {
-    // 過濾掉重複或空的星曜
-    const starsList = [...new Set(palStars[name].filter(Boolean))];
-    const isKey = ["命宮","官祿","財帛"].includes(name);
-
-    let starsHtml = "";
-    let palaceMainElement = "";
-
-    if (starsList.length > 0) {
-      starsHtml = starsList.map((starName, i) => {
-        const wx = STAR_WUXING_MAP[starName] || "";
-        if (i === 0 && wx) palaceMainElement = wx; // 取第一顆主星決定宮位氣氛
-        return `<span class="${wx ? "star-wx-" + wx : ""}">${starName}</span>`;
-      }).join("<br>");
-    } else {
-      starsHtml = '<span class="text-slate-700 text-[10px] italic font-normal">空宮</span>';
-    }
-
-    const glowClass = palaceMainElement ? `palace-glow-${palaceMainElement}` : "";
-
-    container.innerHTML += `
-      <div class="zw-palace ${isKey ? "zw-palace-key" : ""} ${glowClass}"
-           style="grid-area: ${gridAreas[idx]}">
-        <div class="text-[10px] font-bold text-slate-500 mb-1">${name}</div>
-        <div class="text-[13px] font-black leading-tight tracking-wide">
-          ${starsHtml}
+        <!-- 五行 -->
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div>
+            <div class="wx-row-label mb-1">表層能量（天干計數）</div>
+            <div id="surfaceWx" class="space-y-2"></div>
+          </div>
+          <div>
+            <div class="wx-row-label mb-1">實戰能量（天干＋藏干＋月令加權）</div>
+            <div id="strategicWx" class="space-y-2"></div>
+          </div>
         </div>
-      </div>
-    `;
-  });
+      </section>
 
-  // 4. 插入中心區塊 (確保蓋在 2x2 的位置)
-  container.innerHTML += `
-    <div class="zw-center-block">
-      <div class="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-1">
-        Destiny Core
-      </div>
-      <div class="text-amber-400 font-black text-lg tracking-widest leading-none">
-        ${ziwei.core?.minggong || "—"}
-      </div>
-      <div class="flex flex-col gap-1 mt-2">
-        <span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-400">
-          身：${ziwei.core?.shengong || "—"}
-        </span>
-        <span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-400">
-          ${ziwei.core?.wuxingju || "—"}局
-        </span>
-      </div>
-    </div>
-  `;
-
-  meta.innerHTML = `<p class="text-[10px] text-slate-500 italic">※ 目前僅顯示三方四正核心主星，完整星盤模組載入中...</p>`;
-}
-
-  container.className = "zw-grid-container";
-  container.innerHTML = "";
-
-  // 把 API 英文欄位對應到 12 宮名稱
-  const palStars = {};
-  palStars["命宮"] = [];
-  palStars["官祿"] = [];
-  palStars["財帛"] = [];
-
-  if (ziwei.core?.minggong) palStars["命宮"].push(ziwei.core.minggong);
-  if (Array.isArray(ziwei.mainStars?.minggong)) {
-    palStars["命宮"].push(...ziwei.mainStars.minggong);
-  }
-  if (Array.isArray(ziwei.mainStars?.career)) {
-    palStars["官祿"].push(...ziwei.mainStars.career);
-  }
-  if (Array.isArray(ziwei.mainStars?.wealth)) {
-    palStars["財帛"].push(...ziwei.mainStars.wealth);
-  }
-
-  PALACE_ORDER.forEach((name, idx) => {
-    const rawStars = palStars[name] || [];
-    const starsList = rawStars.filter(Boolean);
-    const isKey = ["命宮","官祿","財帛"].includes(name);
-
-    let starsHtml = "";
-    let palaceMainElement = "";
-
-    if (starsList.length > 0) {
-      starsHtml = starsList.map((starName, i) => {
-        const wx = STAR_WUXING_MAP[starName] || "";
-        if (i === 0 && wx) palaceMainElement = wx;
-        return `<span class="${wx ? "star-wx-" + wx : ""}">${starName}</span>`;
-      }).join("<br>");
-    } else {
-      starsHtml = '<span class="text-slate-600 text-xs italic font-normal">空宮</span>';
-    }
-
-    const glowClass = palaceMainElement ? `palace-glow-${palaceMainElement}` : "";
-
-    container.innerHTML += `
-      <div class="zw-palace ${isKey ? "zw-palace-key" : ""} ${glowClass}"
-           style="grid-area: ${gridAreas[idx]}">
-        <div class="text-[10px] font-bold text-slate-500 mb-1">${name}</div>
-        <div class="text-[13px] font-black leading-snug tracking-wide">
-          ${starsHtml}
+      <!-- 紫微命盤 12 宮 -->
+      <section class="glass p-6 md:p-7 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-black tracking-[0.3em] uppercase text-slate-200">
+            03. 紫微命盤 · 12 宮總覽
+          </h2>
+          <span class="text-[11px] text-slate-400">
+            命 · 官 · 財 為主戰場
+          </span>
         </div>
-      </div>
-    `;
-  });
+        <p class="text-[11px] text-slate-400 mb-2">
+          命盤以「命宮－官祿宮－財帛宮」為主軸，用主星＋五行發光標出你的主戰場。
+        </p>
 
-  meta.innerHTML = `
-    <div>命宮主星：<span class="text-amber-300">${ziwei.core?.minggong || "—"}</span></div>
-    <div class="mt-1 text-[11px]">
-      身宮：${ziwei.core?.shengong || "—"} ｜ 五行局：${ziwei.core?.wuxingju || "—"}局
-    </div>
-  `;
+        <div id="ziweiGrid" class="zw-grid-container">
+          <!-- 由 JS renderZiwei() 注入 -->
+        </div>
 
-  // 中心區塊蓋在 grid 上
-  container.innerHTML += `
-    <div class="zw-center-block">
-      <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold mb-1">
-        Destiny Core
-      </div>
-      <div class="text-amber-400 font-black text-xl tracking-widest">
-        ${ziwei.core?.minggong || "—"}
-      </div>
-      <div class="text-[10px] text-slate-400 mt-2">
-        <span class="px-2 py-1 rounded-full bg-slate-900/50 border border-slate-800">
-          身宮：${ziwei.core?.shengong || "—"}
-        </span>
-      </div>
-      <div class="text-[10px] text-slate-400 mt-1">
-        <span class="px-2 py-1 rounded-full bg-slate-900/50 border border-slate-800">
-          ${ziwei.core?.wuxingju || "—"}局
-        </span>
-      </div>
-    </div>
-  `;
-}
+        <div id="ziweiMeta" class="text-[11px] text-slate-400 mt-3"></div>
+      </section>
 
-/* ========= 主流程 ========= */
-async function calculate() {
-  const vy   = Number(document.getElementById("birthYear").value);
-  const vm   = Number(document.getElementById("birthMonth").value);
-  const vd   = Number(document.getElementById("birthDay").value);
-  const vh   = Number(document.getElementById("birthHour").value);
-  const vmin = Number(document.getElementById("birthMinute").value);
+      <!-- 流月 -->
+      <section class="glass p-6 md:p-7 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-black tracking-[0.3em] uppercase text-slate-200">
+            04. 2026 節氣流月節奏（三色燈）
+          </h2>
+          <span class="text-[11px] text-slate-400">
+            紅燈先守住，綠燈再加速
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-500">
+          採節氣月區間（如 02.04–03.05），用紅／綠標示壓力月與穩進月。
+        </p>
+        <div id="monthGrid" class="space-y-2"></div>
+      </section>
 
-  try {
-    if (![vy, vm, vd, vh, vmin].every(n => Number.isFinite(n))) {
-      throw new Error("請先選好出生年月日與時間");
-    }
+      <!-- 戰略解讀 -->
+      <section class="glass p-6 md:p-7 space-y-3">
+        <h2 class="text-sm font-black tracking-[0.3em] uppercase text-slate-200">
+          05. 戰略解讀（簡易版）
+        </h2>
+        <div id="analysisBox" class="text-sm text-slate-200 space-y-2"></div>
+      </section>
 
-    const resp = await fetch(`${API_BASE}/compute/all`, {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ year: vy, month: vm, day: vd, hour: vh, minute: vmin })
-    });
+      <!-- 諮詢 CTA -->
+      <section class="glass p-6 md:p-7 space-y-3 border border-amber-400/60">
+        <h2 class="text-base md:text-lg font-black text-amber-300">
+          想要一份可保用一生的「人生使用說明書」？
+        </h2>
+        <p class="text-sm text-slate-200 leading-relaxed">
+          如果你希望我把你的命格組成、人生大運、流年流月、生涯規劃和最適合自己的人生節奏做成可保用一生的 50 頁人生使用說明書，歡迎預約線上諮詢。
+        </p>
+        <a
+          href="https://forms.gle/UVCSq1udEC549gzYA"
+          target="_blank"
+          class="inline-flex items-center justify-center mt-2 px-4 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-500 text-slate-900 font-black text-sm shadow-lg active:scale-[0.98] transition"
+        >
+          前往預約線上諮詢
+        </a>
+      </section>
 
-    if (!resp.ok) {
-      const txt = await resp.text().catch(()=> "");
-      throw new Error(`API HTTP ${resp.status} ${txt || ""}`.trim());
-    }
+    </section>
+  </main>
 
-    const payload = await resp.json();
-    console.log("API payload:", payload);
-    window.__payload  = payload;
-    window.__contract = payload?.features;
+  <script>
+    /* ========= 基本設定 ========= */
+    const API_BASE = "https://17gonplay-api.billeetw.workers.dev";
 
-    if (!payload?.ok) throw new Error(payload?.error || "API error");
-
-    const contract = payload.features;
-    if (!contract || contract.version !== "strategic_features_v1") {
-      throw new Error("contract 格式不正確（features.version != strategic_features_v1）");
-    }
-
-    const bazi  = contract.bazi;
-    const ziwei = contract.ziwei;
-    if (!bazi) throw new Error("contract.bazi 不存在");
-
-    /* 四柱 */
-    const disp = bazi.display || {};
-    document.getElementById("yG").innerText = disp.yG || "";
-    document.getElementById("yZ").innerText = disp.yZ || "";
-    document.getElementById("mG").innerText = disp.mG || "";
-    document.getElementById("mZ").innerText = disp.mZ || "";
-    document.getElementById("dG").innerText = disp.dG || "";
-    document.getElementById("dZ").innerText = disp.dZ || "";
-    document.getElementById("hG").innerText = disp.hG || "";
-    document.getElementById("hZ").innerText = disp.hZ || "";
-
-    document.getElementById("meta").innerText =
-      `陽曆 ${vy}/${vm}/${vd} ${String(vh).padStart(2,"0")}:${String(vmin).padStart(2,"0")} ｜ 日主：${bazi.dmElement}`;
-
-    /* 五行 */
-    renderBar("surfaceWx",   bazi.wuxing?.surface,   4);
-    renderBar("strategicWx", bazi.wuxing?.strategic, bazi.wuxing?.maxStrategic || 1);
-
-    /* 紫微 */
-    renderZiwei(ziwei);
-
-    /* 流月 */
-    const bounds = bazi.liuyue2026?.bounds || [];
-    const monthGrid = document.getElementById("monthGrid");
-    monthGrid.innerHTML = "";
-
-    const redMonths = [];
-    if (bounds.length) {
-      bounds.forEach(b => {
-        const isRed = b.light === "RED";
-        if (isRed) redMonths.push(b.gz);
-        monthGrid.innerHTML += `
-          <div class="p-3 rounded border-l-4 ${isRed ? "border-red-500 bg-red-500/10" : "border-emerald-500 bg-emerald-500/10"}">
-            <div class="font-bold">
-              ${b.gz}
-              <span class="text-xs text-slate-400 ml-1">${b.range || ""}</span>
+    /* ========= 五行 bar ========= */
+    function renderBar(id, data, max) {
+      const box = document.getElementById(id);
+      if (!box) return;
+      box.innerHTML = "";
+      ["木","火","土","金","水"].forEach(e => {
+        const v = Number(data?.[e] || 0);
+        const w = max ? Math.max(2, (v / max) * 100) : 0;
+        box.innerHTML += `
+          <div class="mb-1">
+            <div class="flex justify-between text-[11px] text-slate-300">
+              <span>${e}</span>
+              <span>${v.toFixed(1)}</span>
             </div>
-            <div class="text-xs text-slate-300 mt-1">
-              ${isRed ? "🔴 壓力" : "🟢 穩進"} ｜ 本氣：${b.ssBranch || ""}
+            <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div class="h-full wuxing-${e}" style="width:${w}%"></div>
             </div>
           </div>
         `;
       });
-    } else {
-      monthGrid.innerHTML = `<div class="text-xs text-slate-400 italic">（暫無流月資料）</div>`;
     }
 
-    /* 戰略解讀 fallback */
-    const analysisBox = document.getElementById("analysisBox");
-    const dominant = (bazi.tenGod?.dominant || "").trim() || "未定";
-    const dmElement = bazi.dmElement || "火";
+    /* ========= 紫微方盤渲染 (含五行能量) ========= */
+    const PALACE_ORDER = ["命宮","兄弟","夫妻","子女","財帛","疾厄","遷移","僕役","官祿","田宅","福德","父母"];
 
-    const redText = redMonths.length
-      ? `壓力月：${redMonths.join("、")}（這些月先守規則，不要硬衝）。`
-      : "今年壓力月偏少，可以穩穩推進。";
+    const gridAreas = [
+      "1/1/2/2","1/2/2/3","1/3/2/4","1/4/2/5", // 上排 4 格
+      "2/4/3/5","3/4/4/5","4/4/5/5",          // 右側 3 格
+      "4/3/5/4","4/2/5/3","4/1/5/2",          // 下排 3 格
+      "3/1/4/2","2/1/3/2"                     // 左側 2 格
+    ];
 
-    analysisBox.innerHTML = `
-      <p>你的日主五行主場是「${dmElement}」，2026 年度主軸偏向「${dominant}」。</p>
-      <p>${redText}</p>
-      <p>策略：把行動拆小、目標變少、節奏固定，壓力月優先守住現有盤面。</p>
-      <p class="text-[11px] text-slate-400 mt-2">
-        （之後可改用 /render/report 把這段換成完整 AI 敘事）
-      </p>
-    `;
+    // 14 主星五行對照表（視覺用）
+    const STAR_WUXING_MAP = {
+      "紫微": "土", "天機": "木", "太陽": "火", "武曲": "金", "天同": "水",
+      "廉貞": "火", "天府": "土", "太陰": "水", "貪狼": "木",
+      "巨門": "水", "天相": "水", "天梁": "土", "七殺": "金", "破軍": "水"
+    };
 
-    document.getElementById("hint").innerText =
-      "資料來源：/compute/all strategic_features_v1（含八字 + 紫微 features）";
+    function renderZiwei(ziwei) {
+      const container = document.getElementById("ziweiGrid");
+      const meta = document.getElementById("ziweiMeta");
+      if (!container || !meta) return;
 
-    document.getElementById("navBar").classList.remove("hidden");
-    document.getElementById("report").classList.remove("hidden");
-    document.getElementById("report").scrollIntoView({ behavior:"smooth", block:"start" });
+      // 只要沒有 ziwei 物件，就顯示 fallback 文案
+      if (!ziwei) {
+        container.className = "zw-grid-container";
+        container.innerHTML = `
+          <div class="text-xs text-slate-400 italic col-span-4 flex items-center justify-center">
+            （目前尚未取得紫微資料，之後可接 iztro 完整命盤）
+          </div>
+        `;
+        meta.innerText = "";
+        return;
+      }
 
-  } catch (e) {
-    console.error(e);
-    alert("計算失敗：" + (e?.message || e));
-  }
-}
+      container.className = "zw-grid-container";
+      container.innerHTML = "";
 
-/* ========= 日期選單 ========= */
-function initSelectors() {
-  const y   = document.getElementById("birthYear");
-  const m   = document.getElementById("birthMonth");
-  const d   = document.getElementById("birthDay");
-  const h   = document.getElementById("birthHour");
-  const min = document.getElementById("birthMinute");
-  if (!y || !m || !d || !h || !min) return;
+      const mainStarsData = ziwei.mainStars || {};
 
-  for (let i = 2026; i >= 1940; i--) y.add(new Option(i + " 年", i));
-  for (let i = 1; i <= 12; i++)      m.add(new Option(i + " 月", i));
-  for (let i = 0; i < 24; i++) {
-    const label = String(i).padStart(2,"0") + " 時";
-    h.add(new Option(label, i));
-  }
-  ["00","15","30","45"].forEach(v => min.add(new Option(v + " 分", v)));
+      PALACE_ORDER.forEach((name, idx) => {
+        const starsList = mainStarsData[name] || [];
+        const isKey = ["命宮", "官祿", "財帛"].includes(name);
 
-  y.value   = "1990";
-  m.value   = "1";
-  h.value   = "12";
-  min.value = "00";
+        let starsHtml = "";
+        let palaceMainElement = "";
 
-  updateDays();
-}
-function updateDays() {
-  const y = document.getElementById("birthYear");
-  const m = document.getElementById("birthMonth");
-  const d = document.getElementById("birthDay");
-  if (!y || !m || !d) return;
+        if (starsList.length > 0) {
+          starsHtml = starsList.map((starName, i) => {
+            const wx = STAR_WUXING_MAP[starName] || "";
+            if (i === 0 && wx) palaceMainElement = wx;
+            return `<span class="${wx ? 'star-wx-' + wx : ''}">${starName}</span>`;
+          }).join("<br>");
+        } else {
+          starsHtml = '<span class="text-slate-600 text-xs italic font-normal">空宮</span>';
+        }
 
-  const year  = parseInt(y.value, 10);
-  const month = parseInt(m.value, 10);
-  const current = d.value;
+        const glowClass = palaceMainElement ? `palace-glow-${palaceMainElement}` : "";
 
-  d.innerHTML = "";
-  const days = new Date(year, month, 0).getDate();
-  for (let i = 1; i <= days; i++) {
-    const opt = new Option(i + " 日", i);
-    if (String(i) === String(current) || (!current && i === 1)) opt.selected = true;
-    d.add(opt);
-  }
-}
+        container.innerHTML += `
+          <div class="zw-palace ${isKey ? 'zw-palace-key' : ''} ${glowClass}"
+               style="grid-area:${gridAreas[idx]}">
+            <div class="text-[10px] font-bold text-slate-500 mb-1">${name}</div>
+            <div class="text-[13px] font-black leading-snug tracking-wide">
+              ${starsHtml}
+            </div>
+          </div>
+        `;
+      });
 
-/* ========= 導航 scroll ========= */
-function scrollToSection(id) {
-  const el = document.getElementById(id);
-  if (el) el.scrollIntoView({ behavior:"smooth", block:"start" });
-}
+      container.innerHTML += `
+        <div class="zw-center-block">
+          <div class="zw-center-block-badge mb-1">DESTINY CORE</div>
+          <div class="text-amber-400 font-black text-xl tracking-widest mb-1">
+            ${ziwei.core?.minggong || "—"}
+          </div>
+          <div class="text-[11px] text-slate-300 mt-1">
+            身宮：${ziwei.core?.shengong || "—"}
+          </div>
+          <div class="text-[11px] text-slate-300 mt-1">
+            ${ziwei.core?.wuxingju || "—"}局
+          </div>
+        </div>
+      `;
 
-document.addEventListener("DOMContentLoaded", initSelectors);
-</script>
+      meta.innerHTML = `
+        命宮：${ziwei.core?.minggong || "—"} ｜ 身宮：${ziwei.core?.shengong || "—"} ｜ 五行局：${ziwei.core?.wuxingju || "—"}局
+      `;
+    }
 
+    /* ========= 主流程：只打 /compute/all ========= */
+    async function calculate() {
+      const vy   = parseInt(document.getElementById("birthYear")?.value, 10);
+      const vm   = parseInt(document.getElementById("birthMonth")?.value, 10);
+      const vd   = parseInt(document.getElementById("birthDay")?.value, 10);
+      const vh   = parseInt(document.getElementById("birthHour")?.value, 10);
+      const vmin = parseInt(document.getElementById("birthMinute")?.value, 10);
+
+      try {
+        if (![vy, vm, vd, vh, vmin].every(n => Number.isFinite(n))) {
+          throw new Error("請先選好出生年月日與時間");
+        }
+
+        const hint = document.getElementById("hint");
+        if (hint) hint.innerText = "計算中…（約 1–2 秒）";
+
+        const resp = await fetch(`${API_BASE}/compute/all`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ year: vy, month: vm, day: vd, hour: vh, minute: vmin }),
+        });
+
+        if (!resp.ok) {
+          const txt = await resp.text().catch(() => "");
+          throw new Error(`API HTTP ${resp.status} ${txt || ""}`.trim());
+        }
+
+        const payload = await resp.json();
+
+        // debug 用
+        window.__payload = payload;
+        window.__contract = payload?.features;
+
+        if (!payload?.ok) throw new Error(payload?.error || "API error");
+
+        const contract = payload.features;
+        const bazi = contract?.bazi;
+        const ziwei = contract?.ziwei;
+
+        if (!bazi) {
+          throw new Error("contract.bazi 不存在（後端 /compute/all 應該會帶 bazi）");
+        }
+
+        // --- 八字：四柱 & 日主 ---
+        const disp = bazi.display || {};
+        document.getElementById("yG").innerText = disp.yG || "";
+        document.getElementById("yZ").innerText = disp.yZ || "";
+        document.getElementById("mG").innerText = disp.mG || "";
+        document.getElementById("mZ").innerText = disp.mZ || "";
+        document.getElementById("dG").innerText = disp.dG || "";
+        document.getElementById("dZ").innerText = disp.dZ || "";
+        document.getElementById("hG").innerText = disp.hG || "";
+        document.getElementById("hZ").innerText = disp.hZ || "";
+
+        const dmElement = bazi.dmElement || "—";
+        const dmTag = document.getElementById("baziDmTag");
+        if (dmTag) dmTag.innerText = `日主：${dmElement}`;
+
+        // --- 五行 bars ---
+        if (!bazi.wuxing?.surface || !bazi.wuxing?.strategic) {
+          throw new Error("bazi.wuxing 缺資料");
+        }
+        renderBar("surfaceWx",   bazi.wuxing.surface,   4);
+        renderBar("strategicWx", bazi.wuxing.strategic, bazi.wuxing.maxStrategic || 1);
+
+        // --- 流月 ---
+        const bounds = bazi.liuyue2026?.bounds || [];
+        const monthGrid = document.getElementById("monthGrid");
+        monthGrid.innerHTML = "";
+        const redMonths = [];
+
+        if (bounds.length) {
+          bounds.forEach(b => {
+            const isRed = b.light === "RED";
+            if (isRed) redMonths.push(b.gz);
+            monthGrid.innerHTML += `
+              <div class="p-3 rounded-xl border-l-4 ${isRed ? "border-red-500 bg-red-500/10" : "border-emerald-500 bg-emerald-500/10"}">
+                <div class="font-bold text-sm">
+                  ${b.gz}
+                  <span class="text-[11px] text-slate-400 ml-1">${b.range || ""}</span>
+                </div>
+                <div class="text-[11px] text-slate-300 mt-1">
+                  ${isRed ? "🔴 壓力月" : "🟢 穩進月"} ｜ 本氣：${b.ssBranch || ""}
+                </div>
+              </div>
+            `;
+          });
+        } else {
+          monthGrid.innerHTML = `<div class="text-xs text-slate-400 italic">（暫無流月資料）</div>`;
+        }
+
+        // --- 戰略解讀（簡易版 fallback） ---
+        const dominant = (bazi.tenGod?.dominant || "").trim() || "未定";
+        const analysisBox = document.getElementById("analysisBox");
+
+        const redText = redMonths.length
+          ? `壓力月：${redMonths.join("、")}（這些月請先守規則、不硬衝，專心收斂與調整節奏）。`
+          : "今年壓力月偏少，可以把更多資源放在穩定推進與擴張上。";
+
+        analysisBox.innerHTML = `
+          <p>你的日主五行主場是「${dmElement}」，2026 年度主軸偏向「${dominant}」。</p>
+          <p>${redText}</p>
+          <p>整體策略：把「同時在做的事情」變少，把「固定每週要做的節奏」變清楚，壓力月優先守住現有盤面，穩定月再往外打仗。</p>
+          <p class="text-[11px] text-slate-400 mt-2">
+            （之後可以再把這段改成 /render/report 的完整 AI 敘事版）
+          </p>
+        `;
+
+        // --- 紫微命盤渲染 ---
+        // 如果後端還沒接好，可以在這裡暫時塞一份 demo，現在先直接吃 contract.ziwei
+        renderZiwei(ziwei);
+
+        // 顯示報告區
+        document.getElementById("report").classList.remove("hidden");
+        if (hint) hint.innerText = "";
+        document.getElementById("report").scrollIntoView({ behavior:"smooth", block:"start" });
+
+      } catch (e) {
+        console.error(e);
+        alert("計算失敗：" + (e?.message || e));
+        const hint = document.getElementById("hint");
+        if (hint) hint.innerText = "";
+      }
+    }
+
+    /* ========= 日期選單 ========= */
+    function initSelectors() {
+      const y   = document.getElementById("birthYear");
+      const m   = document.getElementById("birthMonth");
+      const d   = document.getElementById("birthDay");
+      const h   = document.getElementById("birthHour");
+      const min = document.getElementById("birthMinute");
+      if (!y || !m || !d || !h || !min) return;
+
+      for (let i = 2026; i >= 1940; i--) {
+        y.add(new Option(i + " 年", i));
+      }
+      for (let i = 1; i <= 12; i++) {
+        m.add(new Option(i + " 月", i));
+      }
+      for (let i = 0; i < 24; i++) {
+        const label = String(i).padStart(2,"0") + " 時";
+        h.add(new Option(label, i));
+      }
+      ["00","15","30","45"].forEach(v => {
+        min.add(new Option(v + " 分", v));
+      });
+
+      y.value   = "1990";
+      m.value   = "1";
+      h.value   = "12";
+      min.value = "00";
+
+      updateDays();
+    }
+
+    function updateDays() {
+      const y = document.getElementById("birthYear");
+      const m = document.getElementById("birthMonth");
+      const d = document.getElementById("birthDay");
+      if (!y || !m || !d) return;
+
+      const year  = parseInt(y.value, 10);
+      const month = parseInt(m.value, 10);
+      const current = d.value;
+
+      d.innerHTML = "";
+      const days = new Date(year, month, 0).getDate();
+      for (let i = 1; i <= days; i++) {
+        const opt = new Option(i + " 日", i);
+        if (String(i) === String(current) || (!current && i === 1)) opt.selected = true;
+        d.add(opt);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      initSelectors();
+      const y = document.getElementById("birthYear");
+      const m = document.getElementById("birthMonth");
+      if (y && m) {
+        y.addEventListener("change", updateDays);
+        m.addEventListener("change", updateDays);
+      }
+      const btn = document.getElementById("btnLaunch");
+      if (btn) btn.addEventListener("click", calculate);
+    });
+  </script>
 </body>
 </html>
-
-
-
