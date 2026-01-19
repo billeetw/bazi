@@ -44,6 +44,24 @@
       <select id="birthHour" class="bg-black/40 p-2 rounded"></select>
       <select id="birthMinute" class="bg-black/40 p-2 rounded"></select>
     </div>
+  <div class="grid grid-cols-2 gap-2 mb-4">
+    <select id="birthHour" class="bg-black/40 p-2 rounded"></select>
+    <select id="birthMinute" class="bg-black/40 p-2 rounded"></select>
+  </div>
+
+  <!-- ✅ 新增：性別（給紫微用） -->
+  <div class="mb-4">
+    <select id="gender" class="bg-black/40 p-2 rounded w-full">
+      <option value="male">生理男</option>
+      <option value="female">生理女</option>
+    </select>
+  </div>
+
+  <button id="btnLaunch" class="w-full bg-amber-500 text-black py-3 rounded font-black">
+    生成我的 2026 戰略
+  </button>
+
+
     <button id="btnLaunch" class="w-full bg-amber-500 text-black py-3 rounded font-black">
       生成我的 2026 戰略
     </button>
@@ -108,6 +126,13 @@
       </button>
       <span id="copyHint" class="text-[11px] text-emerald-300 ml-2 hidden">已複製 ✅</span>
     </div>
+  <!-- 紫微：戰略特徵 -->
+  <div id="ziweiBlock" class="glass p-6 rounded-xl hidden">
+    <h2 class="font-black mb-3">紫微命盤．戰略特徵</h2>
+    <div id="ziweiSummary" class="space-y-2 text-sm text-slate-200"></div>
+  </div>
+</div> <!-- report 結尾 -->
+
 
     <!-- 諮詢閉環 -->
     <div class="glass p-6 rounded-xl text-center">
@@ -130,7 +155,7 @@
 /* ========= 基本設定 ========= */
 const API_BASE = "https://17gonplay-api.billeetw.workers.dev";
 
-/* ========= 工具：五行長條圖 ========= */
+/* ========= 工具 ========= */
 function renderBar(id, data, max) {
   const box = document.getElementById(id);
   if (!box) return;
@@ -152,36 +177,31 @@ function renderBar(id, data, max) {
   });
 }
 
-/* ========= 主流程：/compute/all -> /judge/merge -> /render/report ========= */
-
+/* ========= 主流程：只打 /compute/all（八字 + 紫微） ========= */
 async function calculate() {
-  const btn   = document.getElementById("btnLaunch");
-  const hint  = document.getElementById("hint");
-
   const vy   = parseInt(document.getElementById("birthYear")?.value, 10);
   const vm   = parseInt(document.getElementById("birthMonth")?.value, 10);
   const vd   = parseInt(document.getElementById("birthDay")?.value, 10);
   const vh   = parseInt(document.getElementById("birthHour")?.value, 10);
   const vmin = parseInt(document.getElementById("birthMinute")?.value, 10);
+  const gender = (document.getElementById("gender")?.value || "male");
 
   try {
-    if (btn) {
-      btn.disabled = true;
-      btn.classList.add("opacity-70");
-    }
-    if (hint) {
-      hint.textContent = "運算中，幫你整理 2026 的戰略地圖…";
-    }
-
     if (![vy, vm, vd, vh, vmin].every(n => Number.isFinite(n))) {
       throw new Error("請先選好出生年月日與時間");
     }
 
-    // 1) 只打 /compute/all 拿 StrategicFeaturesV1 contract
     const resp = await fetch(`${API_BASE}/compute/all`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ year: vy, month: vm, day: vd, hour: vh, minute: vmin }),
+      body: JSON.stringify({
+        year: vy,
+        month: vm,
+        day: vd,
+        hour: vh,
+        minute: vmin,
+        gender, // ✅ 紫微需要
+      }),
     });
 
     if (!resp.ok) {
@@ -192,9 +212,10 @@ async function calculate() {
     const payload = await resp.json();
     if (!payload?.ok) throw new Error(payload?.error || "API error");
 
-    // 給 console debug 用
+    // ✅ debug 用：你可以在 console 看 window.__contract / __ziwei
     window.__payload  = payload;
     window.__contract = payload.features;
+    window.__ziwei    = payload.features?.ziwei;
 
     const contract = payload.features;
     if (!contract || contract.version !== "strategic_features_v1") {
@@ -202,36 +223,10 @@ async function calculate() {
     }
 
     const bazi = contract.bazi;
-    if (!bazi) throw new Error("contract.bazi 不存在（Phase 0 應該一定要有）");
+    if (!bazi) throw new Error("contract.bazi 不存在（後端 Phase 0 應該一定要有）");
 
-    // 2) judge/merge（失敗也不會讓畫面壞掉）
-    let judge = null;
-    try {
-      const jResp = await fetch(`${API_BASE}/judge/merge`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ features: contract }),
-      });
-      const j = await jResp.json().catch(() => null);
-      if (j && j.ok) judge = j;
-      window.__judge = judge;
-    } catch (_) {}
-
-    // 3) render/report：AI 敘事
-    let report = null;
-    try {
-      const rResp = await fetch(`${API_BASE}/render/report`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ features: contract, judge }),
-      });
-      const r = await rResp.json().catch(() => null);
-      if (r && r.ok) report = r;
-      window.__report = report;
-    } catch (_) {}
-
-    /* === 四柱：吃 contract.bazi.display === */
-    const disp = bazi.display || {};
+    /* === 1) 四柱：吃 bazi.display === */
+    const disp = bazi.display;
     document.getElementById("yG").innerText = disp.yG || "";
     document.getElementById("yZ").innerText = disp.yZ || "";
     document.getElementById("mG").innerText = disp.mG || "";
@@ -241,24 +236,23 @@ async function calculate() {
     document.getElementById("hG").innerText = disp.hG || "";
     document.getElementById("hZ").innerText = disp.hZ || "";
 
-    /* === 五行：contract.bazi.wuxing === */
+    /* === 2) 五行：完全吃 contract.bazi.wuxing === */
     if (!bazi.wuxing?.surface || !bazi.wuxing?.strategic) {
       throw new Error("bazi.wuxing 缺資料");
     }
     renderBar("surfaceWx",   bazi.wuxing.surface,   4);
     renderBar("strategicWx", bazi.wuxing.strategic, bazi.wuxing.maxStrategic || 1);
 
-    /* === 流月：contract.bazi.liuyue2026.bounds === */
+    /* === 3) 流月：吃 contract.bazi.liuyue2026.bounds === */
     const bounds = bazi.liuyue2026?.bounds || [];
     const mGrid  = document.getElementById("monthGrid");
     mGrid.innerHTML = "";
-    const redMonths = [];
 
+    const redMonths = [];
     if (bounds.length) {
       bounds.forEach(b => {
         const isRed = b.light === "RED";
         if (isRed) redMonths.push(b.gz);
-
         mGrid.innerHTML += `
           <div class="p-3 rounded border-l-4 ${isRed ? "border-red-500 bg-red-500/10" : "border-emerald-500 bg-emerald-500/10"}">
             <div class="font-bold">
@@ -275,56 +269,121 @@ async function calculate() {
       mGrid.innerHTML = `<div class="text-xs text-slate-400 italic">（暫無流月資料）</div>`;
     }
 
-    /* === 戰略解讀：優先用 /render/report，沒有就 fallback === */
+    /* === 4) 八字戰略解讀（fallback） === */
     const analysisBox = document.getElementById("analysisBox");
     const dominant = (bazi.tenGod?.dominant || "").trim() || "未定";
     const dmElement = bazi.dmElement || "火";
 
-    if (report && report.html) {
-      analysisBox.innerHTML = report.html;
-    } else {
-      const redText = redMonths.length
-        ? `壓力月：${redMonths.join("、")}（這些月先守規則，不要硬衝）。`
-        : "今年壓力月偏少，可以穩穩推進。";
+    const redText = redMonths.length
+      ? `壓力月：${redMonths.join("、")}（這些月先守規則，不要硬衝）。`
+      : "今年壓力月偏少，可以穩穩推進。";
 
-      analysisBox.innerHTML = `
-        <div class="space-y-2">
-          <p>你的日主五行主場是「${dmElement}」，2026 年度主軸偏向「${dominant}」。</p>
-          <p>${redText}</p>
-          <p>策略：把行動拆小、目標變少、節奏固定，壓力月優先守住現有盤面。</p>
-          <p class="text-[11px] text-slate-400 mt-2">
-            （目前為 fallback 版敘事；之後可再調整 render/report 模板）
-          </p>
-        </div>
+    analysisBox.innerHTML = `
+      <p>你的日主五行主場是「${dmElement}」，2026 年度主軸偏向「${dominant}」。</p>
+      <p>${redText}</p>
+      <p>策略：把行動拆小、目標變少、節奏固定，壓力月優先守住現有盤面。</p>
+      <p class="text-[11px] text-slate-400 mt-2">
+        （之後 Phase 1 會改用 /render/report 把這段換成完整 AI 敘事）
+      </p>
+    `;
+
+    /* === 5) 紫微：如果有 features.ziwei 就顯示 === */
+    const ziwei       = contract.ziwei;
+    const ziweiBlock  = document.getElementById("ziweiBlock");
+    const ziweiSummary = document.getElementById("ziweiSummary");
+
+    if (ziwei && ziweiBlock && ziweiSummary) {
+      const core = ziwei.core || {};
+      const ms   = ziwei.mainStars || {};
+      const t    = ziwei.tendencies || {};
+
+      const mingStars   = (ms.minggong || []).join("、") || "（無主要星）";
+      const careerStars = (ms.career   || []).join("、") || "（無主要星）";
+      const wealthStars = (ms.wealth   || []).join("、") || "（無主要星）";
+
+      const riskMap = {
+        high: "高風險｜敢衝敢拚，適合在可控風險內做大幅調整。",
+        mid:  "中風險｜會評估後出手，適合滾動修正。",
+        low:  "低風險｜偏保守穩健，適合長線經營。",
+      };
+      const authMap = {
+        strong: "權威感強｜適合帶團隊、掌控資源與節奏。",
+        mid:    "權威感中｜需要用專業與穩定度累積信任。",
+        weak:   "權威感弱｜適合扮演顧問、幕僚、智囊角色。",
+      };
+      const mobMap = {
+        high: "流動性高｜適合跨城市、跨領域或彈性工作型態。",
+        mid:  "流動性中｜可以適度轉換跑道，但要注意節奏。",
+        low:  "流動性低｜適合在固定場域深耕，穩定經營人脈與資源。",
+      };
+
+      const riskText = riskMap[t.risk] || "";
+      const authText = authMap[t.authority] || "";
+      const mobText  = mobMap[t.mobility] || "";
+
+      ziweiSummary.innerHTML = `
+        <p>命宮落在「${core.minggong || "未知"}」，身宮在「${core.shengong || "未知"}」，五行局屬於「${core.wuxingju || "未知"}」。</p>
+        <p>命宮主星組合：${mingStars}</p>
+        <p>事業宮主星組合：${careerStars}</p>
+        <p>財帛宮主星組合：${wealthStars}</p>
+        <hr class="border-slate-700 my-2" />
+        <p>${riskText}</p>
+        <p>${authText}</p>
+        <p>${mobText}</p>
+        <p class="text-[11px] text-slate-400 mt-2">
+          （這一塊給你一眼看出：你比較適合怎麼配置「權力、風險、移動性」。）
+        </p>
       `;
-    }
 
-    // 分享純文字
-    window.__shareText =
-      (report && report.text) ||
-      (analysisBox.innerText && analysisBox.innerText.trim()) ||
-      `【一起出來玩｜2026 深度戰略報告】年度主軸：${dominant}`;
+      ziweiBlock.classList.remove("hidden");
+    } else if (ziweiBlock) {
+      ziweiBlock.classList.add("hidden");
+    }
 
     // 顯示報告
     document.getElementById("report").classList.remove("hidden");
     document.getElementById("report").scrollIntoView({ behavior:"smooth", block:"start" });
 
-    if (hint) hint.textContent = "已完成計算，可以往下看戰略地圖 👇";
-
   } catch (e) {
     console.error(e);
     alert("計算失敗：" + (e?.message || e));
-    if (hint) hint.textContent = "發生錯誤，可以稍後再試一次。";
-  } finally {
-    const btn = document.getElementById("btnLaunch");
-    if (btn) {
-      btn.disabled = false;
-      btn.classList.remove("opacity-70");
-    }
   }
 }
 
 /* ========= UI：日期選單 ========= */
+function initSelectors() {
+  const y   = document.getElementById("birthYear");
+  const m   = document.getElementById("birthMonth");
+  const d   = document.getElementById("birthDay");
+  const h   = document.getElementById("birthHour");
+  const min = document.getElementById("birthMinute");
+  if (!y || !m || !d || !h || !min) return;
+
+  for (let i = 2026; i >= 1940; i--) {
+    y.add(new Option(i + " 年", i));
+  }
+  for (let i = 1; i <= 12; i++) {
+    m.add(new Option(i + " 月", i));
+  }
+  for (let i = 0; i < 24; i++) {
+    const label = String(i).padStart(2,"0") + " 時";
+    h.add(new Option(label, i));
+  }
+  ["00","15","30","45"].forEach(v => {
+    min.add(new Option(v + " 分", v));
+  });
+
+  y.value   = "1990";
+  m.value   = "1";
+  h.value   = "12";
+  min.value = "00";
+
+  updateDays();
+
+  const btn = document.getElementById("btnLaunch");
+  if (btn) btn.addEventListener("click", () => { calculate(); });
+}
+
 function updateDays() {
   const y = document.getElementById("birthYear");
   const m = document.getElementById("birthMonth");
@@ -344,103 +403,11 @@ function updateDays() {
   }
 }
 
-function initSelectors() {
-  const y   = document.getElementById("birthYear");
-  const m   = document.getElementById("birthMonth");
-  const d   = document.getElementById("birthDay");
-  const h   = document.getElementById("birthHour");
-  const min = document.getElementById("birthMinute");
-  if (!y || !m || !d || !h || !min) return;
-
-  // 年：2026 -> 1940
-  for (let i = 2026; i >= 1940; i--) {
-    y.add(new Option(i + " 年", i));
-  }
-  // 月
-  for (let i = 1; i <= 12; i++) {
-    m.add(new Option(i + " 月", i));
-  }
-  // 時
-  for (let i = 0; i < 24; i++) {
-    const label = String(i).padStart(2,"0") + " 時";
-    h.add(new Option(label, i));
-  }
-  // 分
-  ["00","15","30","45"].forEach(v => {
-    min.add(new Option(v + " 分", v));
-  });
-
-  // 預設
-  y.value   = "1990";
-  m.value   = "1";
-  h.value   = "12";
-  min.value = "00";
-
-  updateDays();
-}
-
-/* ========= 複製文字 ========= */
-async function copyShareText() {
-  const text = window.__shareText || "請先生成報告再複製。";
-  const hint = document.getElementById("copyHint");
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    // fallback
-    const ta = document.createElement("textarea");
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand("copy"); } catch (_) {}
-    document.body.removeChild(ta);
-  }
-  if (hint) {
-    hint.classList.remove("hidden");
-    setTimeout(() => hint.classList.add("hidden"), 2000);
-  }
-}
-
-/* ========= 綁定事件 ========= */
-document.addEventListener("DOMContentLoaded", () => {
-  initSelectors();
-
-  const btn = document.getElementById("btnLaunch");
-  if (btn) {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      calculate();
-    });
-  }
-
-  const btnCopy = document.getElementById("btnCopy");
-  if (btnCopy) {
-    btnCopy.addEventListener("click", (e) => {
-      e.preventDefault();
-      copyShareText();
-    });
-  }
-
-  const monthSel = document.getElementById("birthMonth");
-  const yearSel  = document.getElementById("birthYear");
-  if (monthSel) monthSel.addEventListener("change", updateDays);
-  if (yearSel)  yearSel.addEventListener("change", updateDays);
-});
+document.addEventListener("DOMContentLoaded", initSelectors);
 </script>
+
+
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
