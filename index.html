@@ -322,8 +322,8 @@ async function calculate() {
     const bazi = contract.bazi;
     if (!bazi) throw new Error("contract.bazi 不存在（後端 Phase 0 應該一定要有）");
 
-    const ziwei = contract.ziwei || null;
-    renderZiwei(ziwei);
+    renderZiwei(contract.ziwei || null);
+
 
 
 
@@ -511,6 +511,8 @@ document.addEventListener("DOMContentLoaded", initSelectors);
 
 </body>
 </html>
+
+
 
 
 
