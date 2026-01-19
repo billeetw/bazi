@@ -279,15 +279,88 @@ function renderZiwei(ziwei) {
   const meta = document.getElementById("ziweiMeta");
   if (!container || !meta) return;
 
-  if (!ziwei || ziwei.version !== "ziwei_features_v1") {
+  // 1. 修正檢查邏輯：只要有 core 資料就渲染，不再檢查不存在的 ziwei.version
+  if (!ziwei || !ziwei.core) {
     container.className = "zw-grid-container";
     container.innerHTML = `
-      <div class="text-xs text-slate-400 italic col-span-4">
-        （目前尚未取得紫微資料，之後可接 iztro 完整命盤）
+      <div class="text-xs text-slate-400 italic col-span-4 flex items-center justify-center border border-dashed border-slate-700 rounded-xl h-40">
+        （目前尚未取得紫微核心資料）
       </div>`;
     meta.innerText = "";
     return;
   }
+
+  container.className = "zw-grid-container";
+  container.innerHTML = "";
+
+  // 2. 準備 12 宮位星曜資料映射
+  // 這裡確保即便 API 只給了部分宮位，其餘宮位也能正確顯示為「空宮」
+  const palStars = {};
+  PALACE_ORDER.forEach(p => palStars[p] = []);
+
+  // 映射主星資料 (依據 strategic_features_v1 規格)
+  if (ziwei.core?.minggong) palStars["命宮"].push(ziwei.core.minggong);
+  
+  if (ziwei.mainStars) {
+    if (Array.isArray(ziwei.mainStars.minggong)) palStars["命宮"].push(...ziwei.mainStars.minggong);
+    if (Array.isArray(ziwei.mainStars.career))   palStars["官祿"].push(...ziwei.mainStars.career);
+    if (Array.isArray(ziwei.mainStars.wealth))   palStars["財帛"].push(...ziwei.mainStars.wealth);
+  }
+
+  // 3. 執行渲染迴圈
+  PALACE_ORDER.forEach((name, idx) => {
+    // 過濾掉重複或空的星曜
+    const starsList = [...new Set(palStars[name].filter(Boolean))];
+    const isKey = ["命宮","官祿","財帛"].includes(name);
+
+    let starsHtml = "";
+    let palaceMainElement = "";
+
+    if (starsList.length > 0) {
+      starsHtml = starsList.map((starName, i) => {
+        const wx = STAR_WUXING_MAP[starName] || "";
+        if (i === 0 && wx) palaceMainElement = wx; // 取第一顆主星決定宮位氣氛
+        return `<span class="${wx ? "star-wx-" + wx : ""}">${starName}</span>`;
+      }).join("<br>");
+    } else {
+      starsHtml = '<span class="text-slate-700 text-[10px] italic font-normal">空宮</span>';
+    }
+
+    const glowClass = palaceMainElement ? `palace-glow-${palaceMainElement}` : "";
+
+    container.innerHTML += `
+      <div class="zw-palace ${isKey ? "zw-palace-key" : ""} ${glowClass}"
+           style="grid-area: ${gridAreas[idx]}">
+        <div class="text-[10px] font-bold text-slate-500 mb-1">${name}</div>
+        <div class="text-[13px] font-black leading-tight tracking-wide">
+          ${starsHtml}
+        </div>
+      </div>
+    `;
+  });
+
+  // 4. 插入中心區塊 (確保蓋在 2x2 的位置)
+  container.innerHTML += `
+    <div class="zw-center-block">
+      <div class="text-[9px] text-slate-500 uppercase tracking-widest font-bold mb-1">
+        Destiny Core
+      </div>
+      <div class="text-amber-400 font-black text-lg tracking-widest leading-none">
+        ${ziwei.core?.minggong || "—"}
+      </div>
+      <div class="flex flex-col gap-1 mt-2">
+        <span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-400">
+          身：${ziwei.core?.shengong || "—"}
+        </span>
+        <span class="text-[9px] px-2 py-0.5 rounded-full bg-slate-900 border border-slate-800 text-slate-400">
+          ${ziwei.core?.wuxingju || "—"}局
+        </span>
+      </div>
+    </div>
+  `;
+
+  meta.innerHTML = `<p class="text-[10px] text-slate-500 italic">※ 目前僅顯示三方四正核心主星，完整星盤模組載入中...</p>`;
+}
 
   container.className = "zw-grid-container";
   container.innerHTML = "";
@@ -542,3 +615,6 @@ document.addEventListener("DOMContentLoaded", initSelectors);
 
 </body>
 </html>
+
+
+
