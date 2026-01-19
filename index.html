@@ -44,6 +44,10 @@
       <select id="birthHour" class="bg-black/40 p-2 rounded"></select>
       <select id="birthMinute" class="bg-black/40 p-2 rounded"></select>
     </div>
+  <div class="grid grid-cols-2 gap-2 mb-4">
+    <select id="birthHour" class="bg-black/40 p-2 rounded"></select>
+    <select id="birthMinute" class="bg-black/40 p-2 rounded"></select>
+  </div>
 
   <!-- ✅ 新增：性別（給紫微用） -->
   <div class="mb-4">
@@ -56,6 +60,11 @@
   <button id="btnLaunch" class="w-full bg-amber-500 text-black py-3 rounded font-black">
     生成我的 2026 戰略
   </button>
+
+
+    <button id="btnLaunch" class="w-full bg-amber-500 text-black py-3 rounded font-black">
+      生成我的 2026 戰略
+    </button>
 
     <p id="hint" class="text-xs text-slate-400 mt-3 italic"></p>
   </div>
@@ -104,6 +113,18 @@
         ※ 採節氣月區間（由後端演算法計算）
       </p>
     </div>
+
+<!-- 紫微 12宮 -->
+<div class="glass p-6 rounded-xl">
+  <h2 class="font-black mb-3">紫微斗數 12 宮戰略地圖</h2>
+
+  <!-- 上方：命宮 / 身宮 / 五行局 / 傾向 -->
+  <div id="ziweiInfo" class="mb-3 text-xs text-slate-300"></div>
+
+  <!-- 下方：12宮格 -->
+  <div id="ziweiGrid" class="grid grid-cols-3 gap-2 text-[11px]"></div>
+</div>
+
 
     <!-- 戰略解讀（AI 敘事） -->
     <div class="glass p-6 rounded-xl">
@@ -167,6 +188,91 @@ function renderBar(id, data, max) {
     `;
   });
 }
+function renderZiwei(ziwei) {
+  const grid = document.getElementById("ziweiGrid");
+  const info = document.getElementById("ziweiInfo");
+  if (!grid) return;
+
+  // 清空
+  grid.innerHTML = "";
+
+  // 沒資料的保險
+  if (!ziwei || ziwei.version !== "ziwei_features_v1") {
+    grid.innerHTML = `<div class="text-xs text-slate-400 italic">（暫無紫微資料）</div>`;
+    if (info) info.textContent = "";
+    return;
+  }
+
+  const core = ziwei.core || {};
+  const main = ziwei.mainStars || {};
+  const tendencies = ziwei.tendencies || {};
+
+  // 上面那行簡介
+  if (info) {
+    info.innerHTML = `
+      <div class="space-y-1">
+        <p>
+          命宮：<span class="font-bold">${core.minggong || "—"}</span>
+          ｜ 身宮：<span class="font-bold">${core.shengong || "—"}</span>
+        </p>
+        <p>五行局：<span class="font-bold">${core.wuxingju || "—"}</span></p>
+        <p>
+          風格傾向：
+          風險 ${tendencies.risk || "—"} ／
+          權威 ${tendencies.authority || "—"} ／
+          移動 ${tendencies.mobility || "—"}
+        </p>
+      </div>
+    `;
+  }
+
+  // 先做一個「簡化版 12宮盤」：
+  // 真的有主星資料的就放：命宮 / 事業 / 財帛
+  // 其他宮位先留空（之後如果 backend 多給 palace map，我們再補滿）
+  const palaceOrder = [
+    { key: "minggong", label: "命宮",    stars: main.minggong || [] },
+    { key: "brothers", label: "兄弟宮",  stars: [] },
+    { key: "spouse",   label: "夫妻宮",  stars: [] },
+    { key: "children", label: "子女宮",  stars: [] },
+    { key: "wealth",   label: "財帛宮",  stars: main.wealth || [] },
+    { key: "health",   label: "疾厄宮",  stars: [] },
+    { key: "travel",   label: "遷移宮",  stars: [] },
+    { key: "friends",  label: "僕役宮",  stars: [] },
+    { key: "career",   label: "事業宮",  stars: main.career || [] },
+    { key: "property", label: "田宅宮",  stars: [] },
+    { key: "fortune",  label: "福德宮",  stars: [] },
+    { key: "parents",  label: "父母宮",  stars: [] },
+  ];
+
+  palaceOrder.forEach(p => {
+    // 用 core 裡的資訊，粗暴高亮「命宮 / 身宮」
+    const isMG = core.minggong && p.label.includes("命");
+    const isSG = core.shengong && p.label.includes("身");
+    const highlight = isMG || isSG;
+
+    grid.innerHTML += `
+      <div class="
+        border rounded-lg p-2 text-left
+        ${highlight ? "border-amber-400 bg-amber-400/10" : "border-slate-700 bg-slate-900/40"}
+      ">
+        <div class="flex justify-between items-center mb-1">
+          <span class="font-bold">${p.label}</span>
+          <div class="flex gap-1">
+            ${isMG ? '<span class="text-[10px] px-1 rounded bg-amber-500/30 text-amber-100">命</span>' : ""}
+            ${isSG ? '<span class="text-[10px] px-1 rounded bg-sky-500/30 text-sky-100">身</span>' : ""}
+          </div>
+        </div>
+        <div class="min-h-[1.5rem] leading-snug">
+          ${
+            p.stars && p.stars.length
+              ? p.stars.join("、")
+              : '<span class="text-slate-500">（暫無主星資料）</span>'
+          }
+        </div>
+      </div>
+    `;
+  });
+}
 
 /* ========= 主流程：只打 /compute/all（八字 + 紫微） ========= */
 async function calculate() {
@@ -215,6 +321,11 @@ async function calculate() {
 
     const bazi = contract.bazi;
     if (!bazi) throw new Error("contract.bazi 不存在（後端 Phase 0 應該一定要有）");
+
+    const ziwei = contract.ziwei || null;
+    renderZiwei(ziwei);
+
+
 
     /* === 1) 四柱：吃 bazi.display === */
     const disp = bazi.display;
@@ -400,5 +511,7 @@ document.addEventListener("DOMContentLoaded", initSelectors);
 
 </body>
 </html>
+
+
 
 
