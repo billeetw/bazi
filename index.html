@@ -6,8 +6,6 @@
   <title>2026 全戰略指揮中心｜一起出來玩</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 本地 iztro，請確保路徑正確 -->
-  <script src="iztro.min.js"></script>
 
   <style>
     body {
@@ -156,7 +154,7 @@
     <section class="text-center md:text-left">
       <h1 class="text-3xl md:text-6xl font-black tracking-tighter mb-4">2026 指揮調度地圖</h1>
       <p class="text-slate-400 text-sm max-w-3xl">
-        點擊紫微命盤，將 2026 「丙午年：天同化祿、天機化權、文昌化科、廉貞化忌」格局
+        點擊紫微命盤，將 2026 「丙午年：天同化祿、天機化權、文昌化科、廉貞化忌」格局，
         與你的流月紅綠燈、五行戰力進行深度對齊。
       </p>
     </section>
@@ -198,7 +196,7 @@
         <div class="glass p-8 space-y-8">
           <div class="grid md:grid-cols-2 gap-8">
             <div>
-              <h3 class="text-xsfont-bold text-slate-400 mb-6 tracking-widest uppercase flex items-center">
+              <h3 class="text-xs font-bold text-slate-400 mb-6 tracking-widest uppercase flex items-center">
                 <span class="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
                 2026 五行加權戰力
               </h3>
@@ -266,7 +264,7 @@
   <script>
     const API_BASE = "https://17gonplay-api.billeetw.workers.dev";
 
-    // 宮位順序（繁體）
+    // 宮位順序（繁體，需跟後端 PALACE_S2T 轉出來的一致）
     const PALACE_NAMES = [
       "命宮","兄弟","夫妻","子女","財帛","疾厄",
       "遷移","僕役","官祿","田宅","福德","父母"
@@ -284,28 +282,9 @@
       "巨門":"水","天相":"水","天梁":"土","七殺":"金","破軍":"水"
     };
 
-    // 簡體 -> 繁體（前端本地 iztro 命盤結果轉換用）
-    const PALACE_S2T = {
-      "命宫": "命宮",
-      "兄弟": "兄弟",
-      "夫妻": "夫妻",
-      "子女": "子女",
-      "财帛": "財帛",
-      "疾厄": "疾厄",
-      "迁移": "遷移",
-      "仆役": "僕役",
-      "官禄": "官祿",
-      "田宅": "田宅",
-      "福德": "福德",
-      "父母": "父母"
-    };
-
-    // 若之後想做繁<->簡雙查找可再加 TRAD->SIMP，但現在後端一律繁體 key 即可。
-
     let globalLiuyue = [];
     let dominantSS = "";
 
-    // 資料字典與戰略建議
     const STRATEGY_DB = {
       palaces: {
         "命宮": "2026 核心戰略：「內穩外變」。藉由天同化祿帶來的舒適感，在天機化權的變動中掌握主動權。",
@@ -415,11 +394,12 @@
         </div>
         <div>
           <div class="text-[10px] text-slate-500 font-bold mb-3 uppercase tracking-widest">星曜戰略影響</div>
-          <div class="space-y-3">${sDesc || '<div class="text-[11px] text-slate-500">此宮目前為空宮，請以三方四正相關宮位為主。</div>'}</div>
+          <div class="space-y-3">
+            ${sDesc || '<div class="text-[11px] text-slate-500">此宮目前為空宮，請以三方四正相關宮位為主。</div>'}
+          </div>
         </div>
       `;
 
-      // 流月連動
       const rhythmBox = document.getElementById("monthlyRhythmBox");
       rhythmBox.innerHTML = (globalLiuyue || []).map(m => {
         const isRed = m.light === "RED";
@@ -442,7 +422,6 @@
           </div>`;
       }).join("");
 
-      // 三方四正視覺
       const pIdx = PALACE_NAMES.indexOf(name);
       const relations = [pIdx, (pIdx + 6) % 12, (pIdx + 4) % 12, (pIdx + 8) % 12];
 
@@ -455,15 +434,8 @@
 
     function pickStars(mainStars, palaceName) {
       if (!mainStars) return [];
-      // 直接用繁體 key
-      if (Array.isArray(mainStars[palaceName])) return mainStars[palaceName];
-      // 如果本地命盤曾存簡體 key，可透過 PALACE_S2T 反查（理論上不會用到，保險）
-      for (const [simp, trad] of Object.entries(PALACE_S2T)) {
-        if (trad === palaceName && Array.isArray(mainStars[simp])) {
-          return mainStars[simp];
-        }
-      }
-      return [];
+      const stars = mainStars[palaceName];
+      return Array.isArray(stars) ? stars : [];
     }
 
     function renderZiwei(ziwei) {
@@ -524,49 +496,10 @@
       try {
         document.getElementById("hint").innerText = "正在進行 2026 丙午年戰略模擬運算…";
 
-        // === 1) 前端用 iztro 算一份本地紫微（作為 fallback，也順便送給後端參考） ===
-        const dateStr = `${v.year}-${v.month}-${v.day}`;
-
-        // 這裡假設 iztro.min.js 暴露 window.iztro.astrolabe.fromSolar
-        const iz = window.iztro.astrolabe.fromSolar(dateStr, v.hour, v.minute || 0, "male", true);
-
-        const pMap = {};
-        (iz.palaces || []).forEach(p => {
-          const rawName = p.name;
-          const tradName = PALACE_S2T[rawName] || rawName; // ✅ 宮名轉繁體 key
-          const stars = (p.majorStars || []).map(s => s.name);
-          pMap[tradName] = stars;
-        });
-
-        const mingPalace = (iz.palaces || []).find(p => p.isTaiWei) || iz.palaces?.[0] || null;
-
-        const ziweiLocal = {
-          version: "ziwei_features_v1",
-          core: {
-            minggong: mingPalace ? mingPalace.name : "命宮",
-            shengong: iz.bodyPalace?.name || "",
-            wuxingju: iz.fiveElementsClass || ""
-          },
-          mainStars: pMap,
-          tendencies: {
-            risk: "mid",
-            authority: "mid",
-            mobility: "mid"
-          }
-        };
-
-        // === 2) 呼叫後端 /compute/all（新版會優先用後端紫微，失敗才吃前端傳來的 ziwei） ===
         const resp = await fetch(`${API_BASE}/compute/all`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            year: v.year,
-            month: v.month,
-            day: v.day,
-            hour: v.hour,
-            minute: v.minute,
-            ziwei: ziweiLocal
-          })
+          body: JSON.stringify(v)
         });
 
         if (!resp.ok) {
@@ -579,13 +512,10 @@
         }
 
         const { bazi, ziwei } = payload.features;
-        const ziweiUsed = ziwei || ziweiLocal; // ✅ 後端版優先，沒有就用本地
 
-        // === 3) 把 2026 流月紅綠燈、十神主軸拉出來 ===
         globalLiuyue = (bazi.liuyue2026 && bazi.liuyue2026.bounds) || [];
         dominantSS = (bazi.tenGod?.dominant || "").trim();
 
-        // 四柱顯示
         const pillarsBox = document.getElementById("pillarsBox");
         const pillarsLabel = ["年", "月", "日", "時"];
         const dispKeys = [
@@ -608,35 +538,31 @@
             </div>`;
         }).join("");
 
-        // 五行條
         renderBar("strategicWx", bazi.wuxing.strategic, bazi.wuxing.maxStrategic || 1);
         getElementalTactics(bazi.wuxing.strategic);
 
-        // 十神主軸戰術指令
         document.getElementById("tenGodCommand").innerText =
           STRATEGY_DB.tenGods[dominantSS] ||
           `2026 丙午年對你的「${dominantSS}」主軸而言，是流程重整與技術革新的重要年份。請搭配流月紅綠燈調整節奏。`;
 
-        // 紫微命盤渲染
-        renderZiwei(ziweiUsed);
+        renderZiwei(ziwei);
 
-        // 顯示整體報告
         document.getElementById("report").classList.remove("hidden");
         document.getElementById("hint").innerText = "";
 
-        // 預設打開命宮詳解
-        const defaultStars = pickStars(ziweiUsed.mainStars, "命宮");
-        updateDetail("命宮", defaultStars);
+        if (ziwei) {
+          const defaultStars = pickStars(ziwei.mainStars, "命宮");
+          updateDetail("命宮", defaultStars);
+        }
         document.getElementById("report").scrollIntoView({ behavior: "smooth" });
       } catch (e) {
         console.error(e);
-        alert("模擬失敗，請確認網路或 iztro.min.js 路徑是否正確。");
+        alert("模擬失敗，可能是網路或後端服務暫時異常，請稍後再試一次。");
         document.getElementById("hint").innerText = "";
       }
     }
 
     (function init() {
-      // 年月日時初始化
       for (let i = 2026; i >= 1940; i--) {
         birthYear.add(new Option(i + " 年", i));
       }
