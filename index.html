@@ -425,103 +425,154 @@
       });
     }
 
-    /* ========= 紫微 12 宮格渲染 ========= */
-    const PALACE_ORDER = ["命宮","兄弟","夫妻","子女","財帛","疾厄","遷移","僕役","官祿","田宅","福德","父母"];
-    const gridAreas = [
-      "1/1/2/2","1/2/2/3","1/3/2/4","1/4/2/5",
-      "2/4/3/5","3/4/4/5","4/4/5/5",
-      "4/3/5/4","4/2/5/3","4/1/5/2",
-      "3/1/4/2","2/1/3/2"
-    ];
-    const STAR_WUXING_MAP = {
-      "紫微": "土","天機": "木","太陽": "火","武曲": "金","天同": "水",
-      "廉貞": "火","天府": "土","太陰": "水","貪狼": "木",
-      "巨門": "水","天相": "水","天梁": "土","七殺": "金","破軍": "水"
-    };
+    <script>
+// ========= 紫微 12 宮：前端渲染層 =========
 
-    function renderZiwei(ziwei) {
-      const container = document.getElementById("ziweiGrid");
-      const summary   = document.getElementById("ziweiSummary");
-      const tendBox   = document.getElementById("ziweiTend");
+// 前端「標準」12 宮名稱（你格子上要看到的那 12 個字）
+const PALACE_ORDER = [
+  "命宮","兄弟","夫妻","子女",
+  "財帛","疾厄","遷移","僕役",
+  "官祿","田宅","福德","父母"
+];
 
-      if (!container) return;
+// 從後端/iztro 回來，可能出現的各種名字 → 對映到標準宮名
+const PALACE_ALIASES = {
+  "命宮": ["命宮","命"],
+  "兄弟": ["兄弟","兄弟宮"],
+  "夫妻": ["夫妻","夫妻宮"],
+  "子女": ["子女","子女宮"],
+  "財帛": ["財帛","財帛宮","財帛位"],
+  "疾厄": ["疾厄","疾厄宮","疾疾病"],
+  "遷移": ["遷移","遷移宮","遷徙","遷移位"],
+  "僕役": ["僕役","仆役","交友","交友宮","朋友"],
+  "官祿": ["官祿","事業","事業宮","官祿宮","官祿位"],
+  "田宅": ["田宅","田宅宮","不動產","房產"],
+  "福德": ["福德","福德宮","福祿"],
+  "父母": ["父母","父母宮","父母位"]
+};
 
-      if (!ziwei) {
-        container.className = "zw-grid-container";
-        container.innerHTML = `
-          <div class="col-span-4 flex items-center justify-center text-xs text-slate-500 text-center">
-            （目前尚未取得紫微資料，之後可接 iztro 完整命盤）
-          </div>`;
-        if (summary) summary.textContent = "";
-        if (tendBox) tendBox.textContent = "";
-        return;
-      }
+// 12 宮格子在 grid 中的位置（你原本的配置可保留）
+const ZW_GRID_AREAS = [
+  "1/1/2/2","1/2/2/3","1/3/2/4","1/4/2/5", // 上排 4 格
+  "2/4/3/5","3/4/4/5","4/4/5/5",          // 右側 3 格
+  "4/3/5/4","4/2/5/3","4/1/5/2",          // 下排 3 格
+  "3/1/4/2","2/1/3/2"                     // 左側 2 格
+];
 
-      container.className = "zw-grid-container";
-      container.innerHTML = "";
+// 14 主星的五行（用來做顏色＋光暈）
+// 有缺你可以再自己補
+const STAR_WUXING_MAP = {
+  "紫微": "土", "天機": "木", "太陽": "火", "武曲": "金", "天同": "水",
+  "廉貞": "火", "天府": "土", "太陰": "水", "貪狼": "木",
+  "巨門": "水", "天相": "水", "天梁": "土", "七殺": "金", "破軍": "水",
+  // 副星想加也行
+  "文昌": "木", "文曲": "水", "祿存": "土"
+};
 
-      const mainStarsData = ziwei.mainStars || {};
-
-      PALACE_ORDER.forEach((name, idx) => {
-        const starsList = mainStarsData[name] || [];
-        const isKey = ["命宮","官祿","財帛"].includes(name);
-
-        let starsHtml = "";
-        let palaceMainElement = "";
-
-        if (starsList.length > 0) {
-          starsHtml = starsList.map((starName, i) => {
-            const wx = STAR_WUXING_MAP[starName] || "";
-            if (i === 0 && wx) palaceMainElement = wx;
-            return `<span class="${wx ? 'star-wx-' + wx : ''}">${starName}</span>`;
-          }).join("<br>");
-        } else {
-          starsHtml = '<span class="text-slate-600 text-xs italic font-normal">空宮</span>';
-        }
-
-        const glowClass = palaceMainElement ? `palace-glow-${palaceMainElement}` : "";
-
-        container.innerHTML += `
-          <div class="zw-palace ${isKey ? 'zw-palace-key' : ''} ${glowClass}" style="grid-area:${gridAreas[idx]}">
-            <div class="text-[10px] font-bold text-slate-500 mb-1">${name}</div>
-            <div class="text-[13px] font-black leading-snug tracking-wide">
-              ${starsHtml}
-            </div>
-          </div>
-        `;
-      });
-
-      container.innerHTML += `
-        <div class="zw-center-block">
-          <div class="zw-center-block-badge mb-1">DESTINY CORE</div>
-          <div class="text-amber-400 font-black text-xl tracking-widest">
-            ${ziwei.core?.minggong || "—"}
-          </div>
-          <div class="text-[11px] text-slate-300 mt-1">
-            身宮：${ziwei.core?.shengong || "—"}
-          </div>
-          <div class="text-[11px] text-slate-400 mt-1">
-            五行局：${ziwei.core?.wuxingju || "—"}
-          </div>
-        </div>
-      `;
-
-      if (summary) {
-        summary.textContent = `命宮：${ziwei.core?.minggong || "—"}｜五行局：${ziwei.core?.wuxingju || "—"}`;
-      }
-
-      if (tendBox) {
-        const t = ziwei.tendencies || {};
-        tendBox.innerHTML = `
-          <p>風格傾向：
-            <span class="mr-2">風險：${t.risk || "mid"}</span>
-            <span class="mr-2">權威感：${t.authority || "mid"}</span>
-            <span class="mr-2">移動性：${t.mobility || "mid"}</span>
-          </p>
-          <p class="mt-1 text-[11px] text-slate-500">（之後可以用你自己的規則把這三項做得更精細）</p>
-        `;
-      }
+// 給一個工具：從 mainStars 裡，找出對應某個標準宮名的「第一個有東西的 key」
+function pickStarsForPalace(ziweiMainStars, canonicalName) {
+  const aliases = PALACE_ALIASES[canonicalName] || [canonicalName];
+  for (const key of aliases) {
+    const list = ziweiMainStars?.[key];
+    if (Array.isArray(list) && list.length > 0) {
+      return list;
     }
+  }
+  // 完全沒找到 → 回傳空陣列，前端就會顯示「空宮」
+  return [];
+}
+
+// ⭐ 主渲染函數：12 宮紫微方盤
+function renderZiwei(ziwei) {
+  const container = document.getElementById("ziweiGrid"); // 確認你的 HTML 容器 id 是這個
+  const summary   = document.getElementById("ziweiSummary");
+  const tendBox   = document.getElementById("ziweiTend");
+
+  if (!container) return;
+
+  if (!ziwei) {
+    container.className = "zw-grid-container";
+    container.innerHTML = `
+      <div class="zw-center-block">
+        <div class="zw-center-block-badge">Zi Wei Dou Shu</div>
+        <div class="mt-2 text-sm text-slate-300">（目前尚未取得紫微資料，之後可接 iztro 完整命盤）</div>
+      </div>
+    `;
+    if (summary) {
+      summary.innerHTML = `<p class="text-xs text-slate-400">紫微命盤尚未啟用，目前僅使用八字做 2026 戰略導航。</p>`;
+    }
+    return;
+  }
+
+  const mainStarsData = ziwei.mainStars || {};
+  container.className = "zw-grid-container";
+  container.innerHTML = "";
+
+  // 👉 Debug 用：你可以打開 console 看真正有哪些 key
+  console.log("[Ziwei] mainStars keys:", Object.keys(mainStarsData));
+
+  // 12 宮格
+  PALACE_ORDER.forEach((name, idx) => {
+    const starsList = pickStarsForPalace(mainStarsData, name);
+    const isKey = ["命宮","官祿","財帛"].includes(name);
+    let palaceMainElement = ""; // 用來決定光暈五行
+
+    const starsHtml = starsList.length
+      ? starsList.map((starName, i) => {
+          const wx = STAR_WUXING_MAP[starName] || "";
+          if (i === 0 && wx) palaceMainElement = wx;
+          return `<span class="${wx ? "star-wx-" + wx : ""}">${starName}</span>`;
+        }).join("<br>")
+      : `<span class="text-slate-600 text-[11px] italic">空宮</span>`;
+
+    const glowClass = palaceMainElement ? `palace-glow-${palaceMainElement}` : "";
+
+    container.innerHTML += `
+      <div class="zw-palace ${isKey ? "zw-palace-key" : ""} ${glowClass}"
+           style="grid-area:${ZW_GRID_AREAS[idx]}">
+        <div class="text-[10px] font-bold text-slate-400 mb-1">${name}</div>
+        <div class="text-[13px] font-black leading-snug tracking-wide">
+          ${starsHtml}
+        </div>
+      </div>
+    `;
+  });
+
+  // 中間 core 區
+  container.innerHTML += `
+    <div class="zw-center-block">
+      <div class="zw-center-block-badge">Destiny Core</div>
+      <div class="mt-2 text-amber-400 font-black text-xl tracking-wider">
+        ${ziwei.core?.minggong || "—"}
+      </div>
+      <div class="mt-1 text-[11px] text-slate-300">
+        身宮：${ziwei.core?.shengong || "—"}
+      </div>
+      <div class="mt-1 text-[10px] text-slate-400">
+        ${ziwei.core?.wuxingju || "—"}局
+      </div>
+    </div>
+  `;
+
+  // 右側摘要（如果你有這個區塊）
+  if (summary) {
+    summary.innerHTML = `
+      <p class="text-sm">命宮落在：<b>${ziwei.core?.minggong || "—"}</b>，五行局：<b>${ziwei.core?.wuxingju || "—"}局</b>。</p>
+      <p class="text-xs text-slate-400 mt-1">2026 年可以搭配八字流月節奏，一起看「命宮－官祿－財帛」這三個主戰線。</p>
+    `;
+  }
+
+  if (tendBox) {
+    const t = ziwei.tendencies || {};
+    tendBox.innerHTML = `
+      <p class="text-xs text-slate-300">
+        風險偏好：<b>${t.risk || "mid"}</b> ｜ 權威感：<b>${t.authority || "mid"}</b> ｜ 流動性：<b>${t.mobility || "mid"}</b>
+      </p>
+    `;
+  }
+}
+</script>
+
 
     /* ========= 主流程：同時算八字 + 紫微 ========= */
     async function calculate() {
