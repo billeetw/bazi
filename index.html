@@ -409,12 +409,53 @@
 
     // ====== CONSTANTS ======
     const PALACE_ORDER = ["命宮","兄弟","夫妻","子女","財帛","疾厄","遷移","僕役","官祿","田宅","福德","父母"];
+
+    // 👇 新增：宮位簡繁對照，防止「偽空宮」
+    const PALACE_KEY_MAP = {
+      "命宮": ["命宮","命宫"],
+      "兄弟": ["兄弟"],
+      "夫妻": ["夫妻"],
+      "子女": ["子女"],
+      "財帛": ["財帛","财帛"],
+      "疾厄": ["疾厄"],
+      "遷移": ["遷移","迁移"],
+      "僕役": ["僕役","仆役"],
+      "官祿": ["官祿","官禄"],
+      "田宅": ["田宅"],
+      "福德": ["福德"],
+      "父母": ["父母"],
+    };
+
     const gridAreas = [
       "1/1/2/2","1/2/2/3","1/3/2/4","1/4/2/5",
       "2/4/3/5","3/4/4/5","4/4/5/5",
       "4/3/5/4","4/2/5/3","4/1/5/2",
       "3/1/4/2","2/1/3/2"
     ];
+
+    // 👇 新增：星曜簡繁對照，所有顯示統一用繁體
+    const STAR_NAME_TRAD_MAP = {
+      "紫微": "紫微","紫薇": "紫微",
+      "天机": "天機","天機": "天機",
+      "太阳": "太陽","太陽": "太陽",
+      "太阴": "太陰","太陰": "太陰",
+      "武曲": "武曲",
+      "天同": "天同",
+      "廉贞": "廉貞","廉貞":"廉貞",
+      "天府": "天府",
+      "贪狼":"貪狼","貪狼":"貪狼",
+      "巨门":"巨門","巨門":"巨門",
+      "天相":"天相",
+      "天梁":"天梁",
+      "七杀":"七殺","七殺":"七殺",
+      "破军":"破軍","破軍":"破軍",
+      // 這裡之後可以繼續補小星／雜曜
+    };
+    function toTraditionalStarName(name){
+      return STAR_NAME_TRAD_MAP[name] || name;
+    }
+
+    // 五行 map 用「繁體星名」
     const STAR_WUXING_MAP = {
       "紫微":"土","天機":"木","太陽":"火","武曲":"金","天同":"水",
       "廉貞":"火","天府":"土","太陰":"水","貪狼":"木","巨門":"水",
@@ -453,6 +494,18 @@
 
     // ====== HELPERS ======
     function pad2(n){ return String(n).padStart(2,"0"); }
+
+    // 👇 新增：根據宮位名稱，從後端 ziwei.mainStars 裡把所有對應 key 合併起來
+    function getStarsForPalace(ziwei, palaceName){
+      if (!ziwei || !ziwei.mainStars) return [];
+      const keys = PALACE_KEY_MAP[palaceName] || [palaceName];
+      const all = [];
+      keys.forEach(k=>{
+        const list = ziwei.mainStars[k];
+        if (Array.isArray(list)) list.forEach(s => all.push(s));
+      });
+      return all;
+    }
 
     function renderBar(targetId, data, max){
       const box = document.getElementById(targetId);
@@ -661,7 +714,8 @@
 
       // 12 宮
       PALACE_ORDER.forEach((name, idx)=>{
-        const stars = ziwei?.mainStars?.[name] || [];
+        const rawStars = getStarsForPalace(ziwei, name); // 👈 支援簡繁
+        const stars = rawStars.map(toTraditionalStarName); // 👈 顯示繁體
         const isKey = ["命宮","官祿","財帛"].includes(name);
 
         let palaceMainElement = "";
@@ -721,7 +775,8 @@
       });
 
       const ziwei = contract?.ziwei;
-      const stars = ziwei?.mainStars?.[name] || [];
+      const rawStars = ziwei ? getStarsForPalace(ziwei, name) : [];
+      const stars = rawStars.map(toTraditionalStarName);
 
       // header
       document.getElementById("palaceTitle").textContent = `2026 ${name} · 作戰面板`;
@@ -832,7 +887,7 @@
         document.getElementById("workspaceNav").classList.remove("hidden");
         document.getElementById("navCta").classList.remove("hidden");
 
-        // 移除輸入卡（第 2 點需求）
+        // 移除輸入卡
         document.getElementById("inputCard").classList.add("hidden");
 
         // summary
@@ -856,7 +911,7 @@
         // liuyue
         renderLiuyue(bazi);
 
-        // ziwei grid
+        // ziwei grid（這裡已經做了簡繁對齊＋繁體顯示）
         renderZiwei(ziwei);
         document.getElementById("ziweiMeta").textContent =
           ziwei ? `命宮：${ziwei.core?.minggong || "—"}｜五行局：${ziwei.core?.wuxingju || "—"}` : "—";
@@ -872,14 +927,12 @@
         if (ziwei){
           selectPalace("命宮");
         } else {
-          // 即使沒有 ziwei，也先把右側面板換成提示
           document.getElementById("palaceTitle").textContent = "紫微暫不可用";
-          document.getElementById("palaceDetailBody").innerHTML = `<div class="p-4 rounded-xl border border-white/10 bg-white/5 text-sm text-slate-300">
+          document.getElementById("palaceDetailBody").innerHTML = `<div class="p-4 rounded-xl border border白/10 bg-white/5 text-sm text-slate-300">
             後端 iztro 可能出錯（或打包問題）。請先確認 worker build/依賴，再重試。
           </div>`;
         }
 
-        // scroll to system top
         document.getElementById("ws-summary").scrollIntoView({ behavior:"smooth", block:"start" });
 
       }catch(e){
@@ -934,13 +987,9 @@
     document.addEventListener("DOMContentLoaded", async ()=>{
       initSelectors();
       document.getElementById("btnLaunch").addEventListener("click", calculate);
-
-      // 先載入 DB 內容（不擋使用者輸入）
       await loadDbContent();
-
-      // 若你想本機測試，把 API_BASE 改成 http://localhost:8787
-      // 然後重新整理即可。
     });
   </script>
+
 </body>
 </html>
