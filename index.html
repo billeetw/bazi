@@ -935,23 +935,6 @@ function renderLiuyue(bazi){
 
     // ====== RENDER: ZIWEI GRID ======
     function renderZiwei(ziwei){
-      const container = document.getElementById("ziweiGrid");
-      const meta = document.getElementById("ziweiMeta");
-      const hint = document.getElementById("ziweiHint");
-      if (!container) return;
-
-      container.innerHTML = "";
-      if (!ziwei){
-        container.innerHTML = `
-          <div class="col-span-4 flex items-center justify-center text-xs text-slate-500 text-center">
-            紫微資料暫不可用（後端 iztro 出錯或未回傳）。請稍後重試。
-          </div>`;
-        if (meta) meta.textContent = "";
-        if (hint) hint.textContent = "";
-        return;
-      }
-
-    function renderZiwei(ziwei){
   const container = document.getElementById("ziweiGrid");
   const meta = document.getElementById("ziweiMeta");
   const hint = document.getElementById("ziweiHint");
@@ -1329,5 +1312,7 @@ if (ziwei && Array.isArray(ziwei.palaceRing)) {
   </div>
 </body>
 </html>
+
+
 
 
