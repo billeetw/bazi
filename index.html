@@ -1003,24 +1003,6 @@ function renderLiuyue(bazi){
   if (meta) meta.textContent = `命宮：${ziwei.core?.minggong || "—"}｜五行局：${ziwei.core?.wuxingju || "—"}`;
   if (hint) hint.innerHTML = `提示：三方四正＝本宮＋對宮＋三合兩宮（點宮位自動標示）。`;
 }
-
-
-
-const center = document.createElement("div");
-center.className = "zw-center-block";
-center.innerHTML = `
-  <div class="text-[10px] tracking-[0.18em] text-slate-500 font-black">DESTINY CORE</div>
-  <div class="text-amber-400 font-black text-xl tracking-widest mt-1">${ziwei.core?.minggong || "—"}</div>
-  <div class="text-[11px] text-slate-300 mt-1">身宮：${ziwei.core?.shengong || "—"}</div>
-  <div class="text-[11px] text-slate-400 mt-1">五行局：${ziwei.core?.wuxingju || "—"}</div>
-`;
-
-
-      container.appendChild(center);
-
-      if (meta) meta.textContent = `命宮：${ziwei.core?.minggong || "—"}｜五行局：${ziwei.core?.wuxingju || "—"}`;
-      if (hint) hint.innerHTML = `提示：三方四正＝本宮＋對宮＋三合兩宮（點宮位自動標示）。`;
-
     // ====== Palace Detail (DB-driven) ======
    function selectPalace(name){
   selectedPalace = name;
@@ -1063,6 +1045,9 @@ center.innerHTML = `
               <div class="text-xs text-slate-300 mt-2 leading-relaxed">${explain}</div>
             </div>
           `;
+
+
+
         }).join("");
       } else {
         starCards = `
