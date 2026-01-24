@@ -885,14 +885,16 @@ const gridAreas = [
         container.appendChild(el);
       });
 
-      const center = document.createElement("div");
-      center.className = "zw-center-block";
-      center.innerHTML = `
-        <div class="text-[10px] tracking-[0.18em] text-slate-500 font-black">DESTINY CORE</div>
-        <div class="text-amber-400 font-black text-xl tracking-widest mt-1">${ziwei.core?.minggong || "—"}</div>
-        <div class="text-[11px] text-slate-300 mt-1">身宮：${ziwei.core?.shengong || "—"}</div>
-        <div class="text-[11px] text-slate-400 mt-1">五行局：${ziwei.core?.wuxingju || "—"}</div>
-      `;
+const center = document.createElement("div");
+center.className = "zw-center-block";
+center.innerHTML = `
+  <div class="text-[10px] tracking-[0.18em] text-slate-500 font-black">DESTINY CORE</div>
+  <div class="text-amber-400 font-black text-xl tracking-widest mt-1">${ziwei.core?.minggong || "—"}</div>
+  <div class="text-[11px] text-slate-300 mt-1">身宮：${ziwei.core?.shengong || "—"}</div>
+  <div class="text-[11px] text-slate-400 mt-1">五行局：${ziwei.core?.wuxingju || "—"}</div>
+`;
+
+
       container.appendChild(center);
 
       if (meta) meta.textContent = `命宮：${ziwei.core?.minggong || "—"}｜五行局：${ziwei.core?.wuxingju || "—"}`;
