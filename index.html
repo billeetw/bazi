@@ -460,12 +460,21 @@
     document.getElementById("apiBaseLabel").textContent = API_BASE;
 
     // ====== CONSTANTS ======
-// 預設順序（fallback 用），真的用的會是 RUNTIME_PALACE_RING
-const PALACE_DEFAULT = ["命宮","兄弟","夫妻","子女","財帛","疾厄","遷移","僕役","官祿","田宅","福德","父母"];
-
-// 這個才是實際運行時用的「宮位環」，先用預設，等 API 回來再覆蓋
-let PALACE_RING = PALACE_DEFAULT.slice();
-
+con
+st PALACE_ORDER = [
+  "兄弟",
+  "命宮",
+  "父母",
+  "福德",
+  "田宅",
+  "官祿",
+  "僕役",
+  "遷移",
+  "疾厄",
+  "財帛",
+  "子女",
+  "夫妻",
+];
 
 
     // 宮位簡繁對照
@@ -553,46 +562,6 @@ const gridAreas = [
       "紅鸞": "紅鸞", "红鸾": "紅鸞",
       "天刑": "天刑",
       "解神": "解神",
-// --- 補足遺漏的雜曜與神煞 ---
-"天厨": "天廚", "天廚": "天廚",
-"截路": "截路",
-"孤辰": "孤辰",
-"寡宿": "寡宿",
-"空亡": "空亡",
-"破碎": "破碎",
-"天贵": "天貴", "天貴": "天貴",
-"华盖": "華蓋", "華蓋": "華蓋",
-"天哭": "天哭",
-"天虚": "天虛", "天虛": "天虛",
-"天德": "天德",
-"月德": "月德",
-"旬空": "旬空",
-"台辅": "台輔", "台輔": "台輔",
-"封诰": "封誥", "封誥": "封誥",
-"龙池": "龍池", "龍池": "龍池",
-"凤阁": "鳳閣", "鳳閣": "鳳閣",
-"年解": "年解",
-"咸池": "咸池",
-"三台": "三台",
-"八座": "八座",
-"恩光": "恩光",
-"蜚廉": "蜚廉",
-"阴煞": "陰煞", "陰煞": "陰煞",
-"天月": "天月",
-
-// --- 博士十二神 ---
-"博士": "博士",
-"力士": "力士",
-"青龍": "青龍", "青龙": "青龍",
-"小耗": "小耗",
-"將軍": "將軍", "将军": "將軍",
-"奏書": "奏書", "奏书": "奏書",
-"喜神": "喜神",
-"病符": "病符",
-"大耗": "大耗",
-"伏兵": "伏兵",
-"官府": "官府"
-
 
       // 類別型星曜
       "甲級主星": "甲級主星",
@@ -606,8 +575,6 @@ const gridAreas = [
     function toTraditionalStarName(name){
       return STAR_NAME_TRAD_MAP[name] || name;
     }
- 
-
 
     // 五行 map 用「繁體星名」
     const STAR_WUXING_MAP = {
@@ -1137,22 +1104,6 @@ center.innerHTML = `
 
         const bazi = contract.bazi;
         const ziwei = contract.ziwei;
-// 動態宮位環：從後端拿 iztro 的 palaces 排序
-if (ziwei && Array.isArray(ziwei.palaceRing)) {
-  PALACE_RING = ziwei.palaceRing.map((name) => {
-    // 把「命宫」這類簡體宮名轉成你前端統一用的繁體
-    // 這裡簡單粗暴處理一下
-    if (name === "命宫") return "命宮";
-    if (name === "财帛") return "財帛";
-    if (name === "官禄") return "官祿";
-    // 其他保持原樣（兄弟、夫妻、子女…本來就一樣）
-    return name;
-  });
-} else {
-  PALACE_RING = PALACE_DEFAULT.slice();
-}
-
-
 
         if (!bazi) throw new Error("後端未回傳 bazi");
 
