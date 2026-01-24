@@ -386,8 +386,8 @@
               <h2 class="text-xl font-black tracking-tight">2026 流月紅綠燈（12）</h2>
               <p class="text-xs text-slate-400 mt-1">🔴 壓力月：先守規則／🟢 穩進月：適合推進專案</p>
             </div>
-
-            <div id="monthGrid" class="space-y-2"></div>
+             <div id="monthGrid" class="space-y-2"></div>
+             <div id="monthDetailBox" class="mt-4 space-y-2 text-xs"></div>
           </section>
 
           <!-- 戰略面板 -->
@@ -762,53 +762,125 @@ const gridAreas = [
     }
 
     // ====== RENDER: LIUYUE ======
-    function renderLiuyue(bazi){
-      const mGrid = document.getElementById("monthGrid");
-      const rhythm = document.getElementById("monthlyRhythmBox");
-      if (!mGrid || !rhythm) return;
+function renderLiuyue(bazi){
+  const mGrid   = document.getElementById("monthGrid");
+  const detail  = document.getElementById("monthDetailBox");
+  const rhythm  = document.getElementById("monthlyRhythmBox");
+  if (!mGrid || !rhythm) return;
 
-      const bounds = bazi?.liuyue2026?.bounds || [];
-      mGrid.innerHTML = "";
-      rhythm.innerHTML = "";
+  const bounds = bazi?.liuyue2026?.bounds || [];
+  mGrid.innerHTML = "";
+  rhythm.innerHTML = "";
+  if (detail) detail.innerHTML = `
+    <div class="text-slate-400/80">
+      點任一個月份，這裡會顯示：對你個人而言的
+      <span class="text-amber-300 font-bold">危險指數＋觸發原因＋戰術指令</span>。
+    </div>
+  `;
 
-      if (!bounds.length){
-        mGrid.innerHTML = `<div class="text-xs text-slate-400 italic">（暫無流月資料）</div>`;
-        rhythm.innerHTML = `<div class="text-xs text-slate-400 italic">（暫無流月資料）</div>`;
-        return;
-      }
-
-      bounds.forEach(b=>{
-        const isRed = b.light === "RED";
-        const tag = isRed ? "🔴 壓力" : "🟢 穩進";
-        mGrid.innerHTML += `
-          <div class="flex items-center justify-between p-3 rounded-xl border-l-4
-                      ${isRed ? "border-red-500 bg-red-500/10" : "border-emerald-400 bg-emerald-500/10"}">
-            <div>
-              <div class="font-black text-sm">${b.gz}
-                <span class="text-[10px] text-slate-300 ml-2 font-mono">${b.range || ""}</span>
-              </div>
-              <div class="text-[11px] text-slate-200 mt-1">
-                十神：干 ${b.ssStem || "—"} ／ 支 ${b.ssBranch || "—"}
-              </div>
-            </div>
-            <span class="text-[11px] font-black px-3 py-1 rounded-full bg-black/40">${tag}</span>
-          </div>
-        `;
-
-        rhythm.innerHTML += `
-          <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
-            <div class="flex items-center">
-              <span class="month-dot ${isRed ? "bg-red-light" : "bg-green-light"}"></span>
-              <span class="text-[11px] font-black text-slate-200">${b.gz}</span>
-              <span class="text-[9px] text-slate-500 ml-2 font-mono">${b.range || ""}</span>
-            </div>
-            <div class="text-[10px] font-black ${isRed ? "text-red-300" : "text-emerald-300"}">
-              ${isRed ? "守規則" : "推進"}
-            </div>
-          </div>
-        `;
-      });
+  if (!bounds.length){
+    mGrid.innerHTML = `<div class="text-xs text-slate-400 italic">（暫無流月資料）</div>`;
+    if (detail){
+      detail.innerHTML = `<div class="text-xs text-slate-400 italic">（暫無流月資料）</div>`;
     }
+    return;
+  }
+
+  bounds.forEach((b)=>{
+    const isRed = b.light === "RED";
+    const tag   = isRed ? "🔴 壓力" : "🟢 穩進";
+
+    // 主列表卡片
+    const card = document.createElement("button");
+    card.type = "button";
+    card.className =
+      "w-full text-left flex flex-col gap-1 p-3 rounded-xl border-l-4 transition " +
+      (isRed ? "border-red-500 bg-red-500/10 hover:bg-red-500/20"
+             : "border-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20");
+
+    card.innerHTML = `
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="font-black text-sm text-slate-50">
+            ${b.gz}
+            <span class="text-[10px] text-slate-300 ml-2 font-mono">${b.range || ""}</span>
+          </div>
+          <div class="text-[11px] text-slate-200 mt-1">
+            十神：干 ${b.ssStem || "—"} ／ 支 ${b.ssBranch || "—"}
+          </div>
+        </div>
+        <div class="text-right">
+          <div class="text-[11px] font-black px-3 py-1 rounded-full bg-black/40">
+            ${tag}
+          </div>
+          <div class="text-[10px] text-slate-400 mt-1">
+            危險指數：
+            <span class="${isRed ? "text-red-300" : "text-emerald-300"} font-mono">
+              ${b.riskScore ?? "—"}
+            </span> / 100
+          </div>
+        </div>
+      </div>
+    `;
+
+    // 點某月 → 在下面 monthDetailBox 顯示個性化原因＋戰術
+    card.addEventListener("click", () => {
+      if (!detail) return;
+      const reasons = (b.reasonTags || []).join("．");
+
+      detail.innerHTML = `
+        <div class="p-4 rounded-xl border ${isRed ? "border-red-400/60 bg-red-500/10" : "border-emerald-400/60 bg-emerald-500/10"} text-sm leading-relaxed space-y-2">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-[11px] uppercase tracking-[0.18em] text-slate-300">Personalized Month Radar</div>
+              <div class="font-black text-base text-slate-50 mt-1">
+                ${b.gz}（${b.range}）
+              </div>
+            </div>
+            <div class="text-right text-[11px] text-slate-200">
+              危險指數
+              <div class="text-lg font-mono ${isRed ? "text-red-300" : "text-emerald-300"}">
+                ${b.riskScore ?? "—"}/100
+              </div>
+            </div>
+          </div>
+
+          <div class="text-[11px] text-slate-200">
+            個性化觸發：
+            <span class="text-slate-100">${reasons || "（尚未標註觸發原因）"}</span>
+          </div>
+
+          <div class="text-[11px] text-amber-100 mt-1">
+            戰術指令：
+            <span class="text-amber-50">${b.strategy || "（尚未撰寫戰術建議）"}</span>
+          </div>
+        </div>
+      `;
+
+      detail.scrollIntoView({ behavior:"smooth", block:"nearest" });
+    });
+
+    mGrid.appendChild(card);
+
+    // 右側「2026 流月節奏（快速參考）」：同時顯示 riskScore
+    rhythm.innerHTML += `
+      <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+        <div class="flex items-center">
+          <span class="month-dot ${isRed ? "bg-red-light" : "bg-green-light"}"></span>
+          <span class="text-[11px] font-black text-slate-200">${b.gz}</span>
+          <span class="text-[9px] text-slate-500 ml-2 font-mono">${b.range || ""}</span>
+        </div>
+        <div class="text-right">
+          <div class="text-[10px] font-black ${isRed ? "text-red-300" : "text-emerald-300"}">
+            ${isRed ? "守規則" : "推進"}
+          </div>
+          <div class="text-[9px] text-slate-400">危險 ${b.riskScore ?? "—"}</div>
+        </div>
+      </div>
+    `;
+  });
+}
+
 
     // ====== Mobile Bottom Sheet 控制 ======
     function openPalaceSheet(){
