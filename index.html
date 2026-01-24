@@ -460,20 +460,12 @@
     document.getElementById("apiBaseLabel").textContent = API_BASE;
 
     // ====== CONSTANTS ======
-const PALACE_ORDER = [
-  "兄弟",
-  "命宮",
-  "父母",
-  "福德",
-  "田宅",
-  "官祿",
-  "僕役",
-  "遷移",
-  "疾厄",
-  "財帛",
-  "子女",
-  "夫妻",
-];
+// 預設順序（fallback 用），真的用的會是 RUNTIME_PALACE_RING
+const PALACE_DEFAULT = ["命宮","兄弟","夫妻","子女","財帛","疾厄","遷移","僕役","官祿","田宅","福德","父母"];
+
+// 這個才是實際運行時用的「宮位環」，先用預設，等 API 回來再覆蓋
+let PALACE_RING = PALACE_DEFAULT.slice();
+
 
 
     // 宮位簡繁對照
@@ -512,68 +504,109 @@ const gridAreas = [
 ];
 
 
-    // 星曜簡繁對照 → 統一顯示繁體
-    const STAR_NAME_TRAD_MAP = {
-      // 14 主星
-      "紫微": "紫微", "紫薇": "紫微",
-      "天机": "天機", "天機": "天機",
-      "太阳": "太陽", "太陽": "太陽",
-      "太阴": "太陰", "太陰": "太陰",
-      "武曲": "武曲",
-      "天同": "天同",
-      "廉贞": "廉貞", "廉貞": "廉貞",
-      "天府": "天府",
-      "贪狼": "貪狼", "貪狼": "貪狼",
-      "巨门": "巨門", "巨門": "巨門",
-      "天相": "天相",
-      "天梁": "天梁",
-      "七杀": "七殺", "七殺": "七殺",
-      "破军": "破軍", "破軍": "破軍",
+ const STAR_NAME_TRAD_MAP = {
+  // 14 主星
+  "紫微": "紫微", "紫薇": "紫微",
+  "天机": "天機", "天機": "天機",
+  "太阳": "太陽", "太陽": "太陽",
+  "太阴": "太陰", "太陰": "太陰",
+  "武曲": "武曲",
+  "天同": "天同",
+  "廉贞": "廉貞", "廉貞": "廉貞",
+  "天府": "天府",
+  "贪狼": "貪狼", "貪狼": "貪狼",
+  "巨门": "巨門", "巨門": "巨門",
+  "天相": "天相",
+  "天梁": "天梁",
+  "七杀": "七殺", "七殺": "七殺",
+  "破军": "破軍", "破軍": "破軍",
 
-      // 六吉星
-      "左辅": "左輔", "左輔": "左輔",
-      "右弼": "右弼",
-      "文昌": "文昌",
-      "文曲": "文曲",
-      "天魁": "天魁",
-      "天钺": "天鉞", "天鉞": "天鉞",
+  // 六吉星
+  "左辅": "左輔", "左輔": "左輔",
+  "右弼": "右弼",
+  "文昌": "文昌",
+  "文曲": "文曲",
+  "天魁": "天魁",
+  "天钺": "天鉞", "天鉞": "天鉞",
 
-      // 六煞星
-      "擎羊": "擎羊",
-      "陀罗": "陀羅", "陀羅": "陀羅",
-      "火星": "火星",
-      "铃星": "鈴星", "鈴星": "鈴星",
-      "地劫": "地劫",
-      "地空": "地空",
+  // 六煞星
+  "擎羊": "擎羊",
+  "陀罗": "陀羅", "陀羅": "陀羅",
+  "火星": "火星",
+  "铃星": "鈴星", "鈴星": "鈴星",
+  "地劫": "地劫",
+  "地空": "地空",
 
-      // 重要輔星
-      "禄存": "祿存", "祿存": "祿存",
-      "天马": "天馬", "天馬": "天馬",
-      "天伤": "天傷", "天傷": "天傷",
-      "天使": "天使",
-      "天才": "天才",
-      "天寿": "天壽", "天壽": "天壽",
-      "天官": "天官",
-      "天福": "天福",
-      "天巫": "天巫",
-      "天喜": "天喜",
-      "天姚": "天姚",
-      "紅鸞": "紅鸞", "红鸾": "紅鸞",
-      "天刑": "天刑",
-      "解神": "解神",
+  // 重要輔星
+  "禄存": "祿存", "祿存": "祿存",
+  "天马": "天馬", "天馬": "天馬",
+  "天伤": "天傷", "天傷": "天傷",
+  "天使": "天使",
+  "天才": "天才",
+  "天寿": "天壽", "天壽": "天壽",
+  "天官": "天官",
+  "天福": "天福",
+  "天巫": "天巫",
+  "天喜": "天喜",
+  "天姚": "天姚",
+  "紅鸞": "紅鸞", "红鸾": "紅鸞",
+  "天刑": "天刑",
+  "解神": "解神",
 
-      // 類別型星曜
-      "甲級主星": "甲級主星",
-      "六吉星": "六吉星",
-      "六煞星": "六煞星",
-      "南斗、北斗星": "南斗、北斗星",
-      "中天星": "中天星",
-      "輔助星": "輔助星",
-      "祿存與天馬": "祿存與天馬"
-    };
+  // --- 補足雜曜與神煞 ---
+  "天厨": "天廚", "天廚": "天廚",
+  "截路": "截路",
+  "孤辰": "孤辰",
+  "寡宿": "寡宿",
+  "空亡": "空亡",
+  "破碎": "破碎",
+  "天贵": "天貴", "天貴": "天貴",
+  "华盖": "華蓋", "華蓋": "華蓋",
+  "天哭": "天哭",
+  "天虚": "天虛", "天虛": "天虛",
+  "天德": "天德",
+  "月德": "月德",
+  "旬空": "旬空",
+  "台辅": "台輔", "台輔": "台輔",
+  "封诰": "封誥", "封誥": "封誥",
+  "龙池": "龍池", "龍池": "龍池",
+  "凤阁": "鳳閣", "鳳閣": "鳳閣",
+  "年解": "年解",
+  "咸池": "咸池",
+  "三台": "三台",
+  "八座": "八座",
+  "恩光": "恩光",
+  "蜚廉": "蜚廉",
+  "阴煞": "陰煞", "陰煞": "陰煞",
+  "天月": "天月",
+
+  // 博士十二神
+  "博士": "博士",
+  "力士": "力士",
+  "青龍": "青龍", "青龙": "青龍",
+  "小耗": "小耗",
+  "將軍": "將軍", "将军": "將軍",
+  "奏書": "奏書", "奏书": "奏書",
+  "喜神": "喜神",
+  "病符": "病符",
+  "大耗": "大耗",
+  "伏兵": "伏兵",
+  "官府": "官府",
+
+  // 類別型星曜
+  "甲級主星": "甲級主星",
+  "六吉星": "六吉星",
+  "六煞星": "六煞星",
+  "南斗、北斗星": "南斗、北斗星",
+  "中天星": "中天星",
+  "輔助星": "輔助星",
+  "祿存與天馬": "祿存與天馬"
+};
+
     function toTraditionalStarName(name){
       return STAR_NAME_TRAD_MAP[name] || name;
     }
+
 
     // 五行 map 用「繁體星名」
     const STAR_WUXING_MAP = {
@@ -918,43 +951,77 @@ function renderLiuyue(bazi){
         return;
       }
 
-      PALACE_ORDER.forEach((name, idx)=>{
-        const rawStars = getStarsForPalace(ziwei, name);
-        const stars = rawStars.map(toTraditionalStarName);
-        const isKey = ["命宮","官祿","財帛"].includes(name);
+    function renderZiwei(ziwei){
+  const container = document.getElementById("ziweiGrid");
+  const meta = document.getElementById("ziweiMeta");
+  const hint = document.getElementById("ziweiHint");
+  if (!container) return;
 
-        let palaceMainElement = "";
-        if (stars.length){
-          palaceMainElement = STAR_WUXING_MAP[stars[0]] || "";
-        }
-        const glowClass = palaceMainElement ? `palace-glow-${palaceMainElement}` : "";
+  container.innerHTML = "";
+  if (!ziwei){
+    container.innerHTML = `
+      <div class="col-span-4 flex items-center justify-center text-xs text-slate-500 text-center">
+        紫微資料暫不可用（後端 iztro 出錯或未回傳）。請稍後重試。
+      </div>`;
+    if (meta) meta.textContent = "";
+    if (hint) hint.textContent = "";
+    return;
+  }
 
-        const starsHtml = stars.length
-          ? stars.map(s=>{
-              const wx = STAR_WUXING_MAP[s] || "";
-              return `<span class="${wx ? "star-wx-"+wx : ""}">${s}</span>`;
-            }).join("<br>")
-          : `<span class="text-slate-600 text-xs italic font-normal">空宮</span>`;
+  // 🔴 這裡用 PALACE_RING，不要再用 PALACE_ORDER
+  PALACE_RING.forEach((name, idx)=>{
+    const rawStars = getStarsForPalace(ziwei, name);
+    const stars = rawStars.map(toTraditionalStarName);
+    const isKey = ["命宮","官祿","財帛"].includes(name);
 
-        const el = document.createElement("div");
-        el.className = `zw-palace ${isKey ? "zw-palace-key" : ""} ${glowClass}`;
-        el.style.gridArea = gridAreas[idx];
-        el.innerHTML = `
-          <div class="text-[10px] font-black text-slate-500 mb-1">${name}</div>
-          <div class="text-[13px] font-black leading-snug tracking-wide">${starsHtml}</div>
-        `;
-        el.addEventListener("click", ()=>{
-          selectPalace(name);
+    let palaceMainElement = "";
+    if (stars.length){
+      palaceMainElement = STAR_WUXING_MAP[stars[0]] || "";
+    }
+    const glowClass = palaceMainElement ? `palace-glow-${palaceMainElement}` : "";
 
-          if (window.innerWidth <= 768){
-            openPalaceSheet();
-          } else {
-            document.getElementById("detailPanel").scrollIntoView({ behavior:"smooth", block:"start" });
-          }
-        });
+    const starsHtml = stars.length
+      ? stars.map(s=>{
+          const wx = STAR_WUXING_MAP[s] || "";
+          return `<span class="${wx ? "star-wx-"+wx : ""}">${s}</span>`;
+        }).join("<br>")
+      : `<span class="text-slate-600 text-xs italic font-normal">空宮</span>`;
 
-        container.appendChild(el);
-      });
+    const el = document.createElement("div");
+    el.className = `zw-palace ${isKey ? "zw-palace-key" : ""} ${glowClass}`;
+    el.style.gridArea = gridAreas[idx];
+    el.innerHTML = `
+      <div class="text-[10px] font-black text-slate-500 mb-1">${name}</div>
+      <div class="text-[13px] font-black leading-snug tracking-wide">${starsHtml}</div>
+    `;
+    el.addEventListener("click", ()=>{
+      selectPalace(name);
+
+      if (window.innerWidth <= 768){
+        openPalaceSheet();
+      } else {
+        document.getElementById("detailPanel").scrollIntoView({ behavior:"smooth", block:"start" });
+      }
+    });
+
+    container.appendChild(el);
+  });
+
+  const center = document.createElement("div");
+  center.className = "zw-center-block";
+  center.innerHTML = `
+    <div class="text-[10px] tracking-[0.18em] text-slate-500 font-black">DESTINY CORE</div>
+    <div class="text-amber-400 font-black text-xl tracking-widest mt-1">${ziwei.core?.minggong || "—"}</div>
+    <div class="text-[11px] text-slate-300 mt-1">身宮：${ziwei.core?.shengong || "—"}</div>
+    <div class="text-[11px] text-slate-400 mt-1">五行局：${ziwei.core?.wuxingju || "—"}</div>
+  `;
+  container.appendChild(center);
+
+  if (meta) meta.textContent = `命宮：${ziwei.core?.minggong || "—"}｜五行局：${ziwei.core?.wuxingju || "—"}`;
+  if (hint) hint.innerHTML = `提示：三方四正＝本宮＋對宮＋三合兩宮（點宮位自動標示）。`;
+}
+
+
 
 const center = document.createElement("div");
 center.className = "zw-center-block";
@@ -973,18 +1040,19 @@ center.innerHTML = `
     }
 
     // ====== Palace Detail (DB-driven) ======
-    function selectPalace(name){
-      selectedPalace = name;
+   function selectPalace(name){
+  selectedPalace = name;
 
-      // 三方四正：本宮 + 對宮( +6 ) + 三合( +4, +8 )
-      const idx = PALACE_ORDER.indexOf(name);
-      const related = new Set([idx, (idx+6)%12, (idx+4)%12, (idx+8)%12]);
+  // 三方四正：本宮 + 對宮( +6 ) + 三合( +4, +8 )
+  const idx = PALACE_RING.indexOf(name);   // 🔴 這裡改成 PALACE_RING
+  const related = new Set([idx, (idx+6)%12, (idx+4)%12, (idx+8)%12]);
 
-      document.querySelectorAll(".zw-palace").forEach((el, i)=>{
-        el.classList.remove("is-active","is-related");
-        if (i === idx) el.classList.add("is-active");
-        else if (related.has(i)) el.classList.add("is-related");
-      });
+  document.querySelectorAll(".zw-palace").forEach((el, i)=>{
+    el.classList.remove("is-active","is-related");
+    if (i === idx) el.classList.add("is-active");
+    else if (related.has(i)) el.classList.add("is-related");
+  });
+
 
       const ziwei = contract?.ziwei;
       const rawStars = ziwei ? getStarsForPalace(ziwei, name) : [];
@@ -1103,6 +1171,22 @@ center.innerHTML = `
 
         const bazi = contract.bazi;
         const ziwei = contract.ziwei;
+// 動態宮位環：從後端拿 iztro 的 palaces 排序
+if (ziwei && Array.isArray(ziwei.palaceRing)) {
+  PALACE_RING = ziwei.palaceRing.map((name) => {
+    // 把「命宫」這類簡體宮名轉成你前端統一用的繁體
+    // 這裡簡單粗暴處理一下
+    if (name === "命宫") return "命宮";
+    if (name === "财帛") return "財帛";
+    if (name === "官禄") return "官祿";
+    // 其他保持原樣（兄弟、夫妻、子女…本來就一樣）
+    return name;
+  });
+} else {
+  PALACE_RING = PALACE_DEFAULT.slice();
+}
+
+
 
         if (!bazi) throw new Error("後端未回傳 bazi");
 
