@@ -924,15 +924,18 @@ function renderLiuyue(bazi){
         const stars = rawStars.map(toTraditionalStarName);
         const isKey = ["命宮","官祿","財帛"].includes(name);
 
-         // 判斷這一宮是不是命宮 or 身宮（用主星粗抓，先解決「身宮沒出現」的 UX）
-    let label = name;
-    if (name === "命宮") {
-      if (mingStar && shenStar && mingStar === shenStar) {
-        label = "命宮 · 身宮";
-      } else {
-        label = "命宮";
-      }
-    }
+        let palaceMainElement = "";
+        if (stars.length){
+          palaceMainElement = STAR_WUXING_MAP[stars[0]] || "";
+        }
+        const glowClass = palaceMainElement ? `palace-glow-${palaceMainElement}` : "";
+
+        const starsHtml = stars.length
+          ? stars.map(s=>{
+              const wx = STAR_WUXING_MAP[s] || "";
+              return `<span class="${wx ? "star-wx-"+wx : ""}">${s}</span>`;
+            }).join("<br>")
+          : `<span class="text-slate-600 text-xs italic font-normal">空宮</span>`;
 
         const el = document.createElement("div");
         el.className = `zw-palace ${isKey ? "zw-palace-key" : ""} ${glowClass}`;
@@ -1243,6 +1246,7 @@ center.innerHTML = `
   </div>
 </body>
 </html>
+
 
 
 
