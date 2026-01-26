@@ -1108,19 +1108,27 @@ function renderLiuyue(bazi){
         btn.disabled = true;
         btn.textContent = "計算中…";
         hint.textContent = "正在連線後端計算（八字＋紫微＋流月＋十神）…";
+const resp = await fetch(`${API_BASE}/compute/all`, {
+  method:"POST",
+  headers: {"Content-Type":"application/json"},
+  body: JSON.stringify({ year:vy, month:vm, day:vd, hour:vh, minute:vmin })
+});
 
-        const resp = await fetch(`${API_BASE}/compute/all`, {
-          method:"POST",
-          headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({ year:vy, month:vm, day:vd, hour:vh, minute:vmin })
-        });
+if (!resp.ok){
+  const t = await resp.text().catch(()=> "");
+  throw new Error(`API HTTP ${resp.status} ${t}`.trim());
+}
 
-        if (!resp.ok){
-          const t = await resp.text().catch(()=> "");
-          throw new Error(`API HTTP ${resp.status} ${t}`.trim());
-        }
+// ✅ 這裡一定要是 payload，不是 data
+const payload = await resp.json();
 
-        const payload = await resp.json();
+// ⭐ 第一步：確認後端到底回了什麼
+console.log("compute/all returns payload:", payload);
+console.log("chartId from payload:", payload.chartId);
+
+
+
+
         if (!payload?.ok) throw new Error(payload?.error || "API error");
 
         contract = payload.features;
