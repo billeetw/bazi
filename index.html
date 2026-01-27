@@ -980,7 +980,7 @@
 
     return BRANCH_RING.map((branch, idx) => {
       // 讓「命宮」對齊命宮地支所在的那一格，其餘宮位照逆行順序排
-      const palaceIndex = (idx - mingIdx + 12) % 12;
+      const palaceIndex = (mingIdx - idx + 12) % 12;
       const palaceName  = palaceOrder[palaceIndex];
 
       const rawStars = getStarsForPalace(ziwei, palaceName);
