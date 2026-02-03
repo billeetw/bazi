@@ -220,8 +220,8 @@
       background: rgba(15,23,42,0.8);
     }
 
-    /* 手機限定顯示 Bottom Sheet（md 以上隱藏） */
-    @media (min-width: 768px){
+    /* 手機限定顯示 Bottom Sheet（1280px 以上隱藏） */
+    @media (min-width: 1280px){
       .palace-sheet,
       #palaceSheetBackdrop {
         display: none !important;
@@ -483,6 +483,24 @@
         </aside>
       </div>
     </section>
+
+    <!-- Mobile Palace Detail Bottom Sheet -->
+    <div id="palaceSheetBackdrop" class="fixed inset-0 bg-black/60 hidden"></div>
+    <div id="palaceSheet" class="palace-sheet">
+      <div class="palace-sheet-handle"></div>
+      <div class="palace-sheet-header">
+        <div>
+          <div id="mobilePalaceTitle" class="text-base font-black text-amber-300">請點宮位</div>
+          <div id="mobilePalaceSub" class="text-xs text-slate-400 mt-1"></div>
+        </div>
+        <button id="palaceSheetClose" type="button" class="palace-sheet-close text-xs">
+          收合
+        </button>
+      </div>
+      <div id="mobilePalaceBody" class="mt-4 space-y-4 text-xs text-slate-100">
+        <div class="text-slate-500 italic">點擊紫微方盤任一宮位，下方會顯示詳解與星曜解釋。</div>
+      </div>
+    </div>
   </main>
 
 <script>
@@ -1061,7 +1079,7 @@
       el.addEventListener("click", ()=>{
         selectPalace(slot.palaceName);
 
-        if (window.innerWidth <= 768){
+        if (window.innerWidth < 1280){
           openPalaceSheet();
         } else {
           document.getElementById("detailPanel").scrollIntoView({ behavior:"smooth", block:"start" });
