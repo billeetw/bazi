@@ -14,11 +14,14 @@
     PALACE_DEFAULT,
     STAR_WUXING_MAP,
     CANGGAN_DATA,
+    FIVE_ELEMENTS_ORDER,
     pad2,
     toTraditionalStarName,
     getStarsForPalace,
     buildSlotsFromZiwei,
     computeRelatedPalaces,
+    normalizeWxByMax,
+    generateFiveElementComment,
     computeDynamicTactics,
   } = window.Calc;
 
@@ -89,6 +92,110 @@
         </div>
       `;
     });
+  }
+
+  // ====== Radar Chart (SVG) ======
+  function renderRadarChart(containerId, wx) {
+    const box = document.getElementById(containerId);
+    if (!box) return;
+
+    const { order, raw, normalized } = normalizeWxByMax(wx, FIVE_ELEMENTS_ORDER);
+
+    const size = 220;
+    const cx = size / 2;
+    const cy = size / 2;
+    const r = 78;
+
+    const startAngle = -Math.PI / 2; // 由上方開始
+    const step = (Math.PI * 2) / order.length;
+
+    function polar(angle, radius) {
+      return { x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius };
+    }
+
+    function pointsForLevel(levelPct) {
+      return order
+        .map((_, i) => {
+          const a = startAngle + step * i;
+          const p = polar(a, (r * levelPct) / 100);
+          return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+        })
+        .join(" ");
+    }
+
+    const gridLevels = [20, 40, 60, 80, 100];
+    const gridPolys = gridLevels
+      .map((lvl) => `<polygon points="${pointsForLevel(lvl)}" fill="none" stroke="rgba(148,163,184,0.18)" stroke-width="1"/>`)
+      .join("");
+
+    const axisLines = order
+      .map((_, i) => {
+        const a = startAngle + step * i;
+        const p = polar(a, r);
+        return `<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}" stroke="rgba(148,163,184,0.18)" stroke-width="1" />`;
+      })
+      .join("");
+
+    const dataPoints = order
+      .map((k, i) => {
+        const a = startAngle + step * i;
+        const pct = Math.max(0, Math.min(100, Number(normalized[k] || 0)));
+        const p = polar(a, (r * pct) / 100);
+        return `${p.x.toFixed(1)},${p.y.toFixed(1)}`;
+      })
+      .join(" ");
+
+    const labels = order
+      .map((k, i) => {
+        const a = startAngle + step * i;
+        const p = polar(a, r + 18);
+        const v = Number(raw[k] || 0);
+        return `
+          <text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}"
+                fill="rgba(226,232,240,0.92)" font-size="11" font-weight="800"
+                text-anchor="middle" dominant-baseline="middle">
+            ${k}
+          </text>
+          <text x="${p.x.toFixed(1)}" y="${(p.y + 12).toFixed(1)}"
+                fill="rgba(148,163,184,0.9)" font-size="10"
+                text-anchor="middle" dominant-baseline="middle">
+            ${Number.isFinite(v) ? v.toFixed(1) : "0.0"}
+          </text>
+        `;
+      })
+      .join("");
+
+    box.innerHTML = `
+      <svg viewBox="0 0 ${size} ${size}" width="100%" height="auto" role="img" aria-label="五行雷達圖">
+        ${gridPolys}
+        ${axisLines}
+        <polygon points="${dataPoints}"
+                 fill="rgba(251,191,36,0.12)"
+                 stroke="rgba(251,191,36,0.75)"
+                 stroke-width="2" />
+        ${labels}
+      </svg>
+    `;
+  }
+
+  function renderFiveElementComment(containerId, wx, kind) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+
+    const c = generateFiveElementComment(wx);
+    const prefix =
+      kind === "surface"
+        ? `你在人前的操作風格：最強【${c.strongest}】、最弱【${c.weakest}】。`
+        : kind === "strategic"
+          ? `你真正扛住人生的實戰資源：最強【${c.strongest}】、最弱【${c.weakest}】。`
+          : `本局五行：最強【${c.strongest}】、最弱【${c.weakest}】。`;
+
+    // 一句話（用分號串起 strongest/weakest + 生/剋）
+    el.innerHTML = `
+      <div class="text-slate-100">${prefix}</div>
+      <div class="text-slate-300 mt-1">${c.strongComment} ${c.weakComment}</div>
+      <div class="text-slate-400 mt-1">${c.shengComment} ${c.keComment}</div>
+    `;
   }
 
   // ====== RENDER: BAZI ======
@@ -562,8 +669,13 @@
 
       // bazi + canggan + bars
       renderPillars(bazi);
-      renderBar("surfaceWx", bazi.wuxing?.surface, 4);
-      renderBar("strategicWx", bazi.wuxing?.strategic, bazi.wuxing?.maxStrategic || 1);
+      renderBar("surfaceWxBars", bazi.wuxing?.surface, 4);
+      renderRadarChart("surfaceWxRadar", bazi.wuxing?.surface);
+      renderFiveElementComment("surfaceWxComment", bazi.wuxing?.surface, "surface");
+
+      renderBar("strategicWxBars", bazi.wuxing?.strategic, bazi.wuxing?.maxStrategic || 1);
+      renderRadarChart("strategicWxRadar", bazi.wuxing?.strategic);
+      renderFiveElementComment("strategicWxComment", bazi.wuxing?.strategic, "strategic");
 
       // tenGod command box (DB first)
       const dominant = (bazi.tenGod?.dominant || "").trim();
@@ -586,7 +698,9 @@
       } else {
         const palaceBox = document.getElementById("ziweiPalaceScores");
         if (palaceBox) palaceBox.innerHTML = `<div class="text-xs text-slate-400">（暫無分數資料）</div>`;
-        renderBar("ziweiWx", { 木: 0, 火: 0, 土: 0, 金: 0, 水: 0 }, 1);
+        renderBar("ziweiWxBars", { 木: 0, 火: 0, 土: 0, 金: 0, 水: 0 }, 1);
+        renderRadarChart("ziweiWxRadar", { 金: 0, 木: 0, 水: 0, 火: 0, 土: 0 });
+        renderFiveElementComment("ziweiWxComment", { 金: 0, 木: 0, 水: 0, 火: 0, 土: 0 }, "ziwei");
       }
 
       // tactical panel
@@ -660,7 +774,9 @@
       水: (Number(ratios["水"]) || 0) * 100,
     };
 
-    renderBar("ziweiWx", wxForBar, 100);
+    renderBar("ziweiWxBars", wxForBar, 100);
+    renderRadarChart("ziweiWxRadar", wxForBar);
+    renderFiveElementComment("ziweiWxComment", wxForBar, "ziwei");
   }
 
   // ====== INIT SELECTORS ======

@@ -201,6 +201,97 @@
     return { total, pct };
   }
 
+  // ====== 五行：強弱 + 生剋一句話（純計算） ======
+  // 雷達圖與註解統一採用這個軸順序（依需求：金、木、水、火、土）
+  const FIVE_ELEMENTS_ORDER = ["金", "木", "水", "火", "土"];
+
+  const SHENG_MAP = Object.freeze({
+    "木": "火",
+    "火": "土",
+    "土": "金",
+    "金": "水",
+    "水": "木",
+  });
+
+  const KE_MAP = Object.freeze({
+    "木": "土",
+    "火": "金",
+    "土": "水",
+    "金": "木",
+    "水": "火",
+  });
+
+  const STRONG_COMMENTS = Object.freeze({
+    "木": "你的成長動能強，遇到事情會偏向突破與展開。",
+    "火": "你的行動與表達能量旺盛，節奏偏快。",
+    "土": "你有很強的穩定力，關鍵時刻通常靠沉住氣撐局面。",
+    "金": "你的判斷力與界線感強，能快速切割與做決定。",
+    "水": "你吸收資訊快，感受敏銳，是直覺與觀察型。",
+  });
+
+  const WEAK_COMMENTS = Object.freeze({
+    "木": "成長與規劃動能較低，事情太慢容易讓你失去耐心。",
+    "火": "外放能量較弱，不喜歡被逼著表達或站 spotlight。",
+    "土": "承載力有限，長期壓力會讓你容易疲乏。",
+    "金": "界線較弱，不喜衝突，容易委屈自己。",
+    "水": "資訊流偏弱，容易因『不知道 enough』而焦慮。",
+  });
+
+  function toNumberOrZero(v) {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+
+  function normalizeWxByMax(wx, order = FIVE_ELEMENTS_ORDER) {
+    const raw = {};
+    order.forEach((k) => (raw[k] = toNumberOrZero(wx?.[k])));
+    const max = Math.max(0, ...order.map((k) => raw[k]));
+    const normalized = {};
+    order.forEach((k) => (normalized[k] = max > 0 ? (raw[k] / max) * 100 : 0));
+    return { order, raw, max, normalized };
+  }
+
+  function getStrongestWeakest(wx, order = FIVE_ELEMENTS_ORDER) {
+    let strongest = order[0];
+    let weakest = order[0];
+    let max = -Infinity;
+    let min = Infinity;
+    order.forEach((k) => {
+      const v = toNumberOrZero(wx?.[k]);
+      if (v > max) {
+        max = v;
+        strongest = k;
+      }
+      if (v < min) {
+        min = v;
+        weakest = k;
+      }
+    });
+    return { strongest, weakest, max, min };
+  }
+
+  function generateFiveElementComment(wx) {
+    const { strongest, weakest } = getStrongestWeakest(wx);
+
+    const strongComment = STRONG_COMMENTS[strongest] || "";
+    const weakComment = WEAK_COMMENTS[weakest] || "";
+
+    const shengTo = SHENG_MAP[strongest] || "";
+    const keTo = KE_MAP[strongest] || "";
+
+    const shengComment = `你的【${strongest}】會自然生出【${shengTo}】，讓這個領域比較容易推動。`;
+    const keComment = `你的【${strongest}】也會剋【${keTo}】 ，讓那個領域比較弱或比較難啟動。`;
+
+    return {
+      strongest,
+      weakest,
+      strongComment,
+      weakComment,
+      shengComment,
+      keComment,
+    };
+  }
+
   // 三方四正：本宮 + 對宮( +6 ) + 三合( +4, +8 )
   function computeRelatedPalaces(palaceRing, palaceName) {
     const ring = Array.isArray(palaceRing) && palaceRing.length === 12 ? palaceRing : PALACE_DEFAULT;
@@ -284,11 +375,14 @@
     BRANCH_RING,
     STAR_WUXING_MAP,
     CANGGAN_DATA,
+    FIVE_ELEMENTS_ORDER,
 
     pad2,
     toTraditionalStarName,
     getStarsForPalace,
     pctFromWx,
+    normalizeWxByMax,
+    generateFiveElementComment,
     computeRelatedPalaces,
     buildSlotsFromZiwei,
     computeDynamicTactics,
