@@ -568,8 +568,11 @@
       // tenGod command box (DB first)
       const dominant = (bazi.tenGod?.dominant || "").trim();
       const cmd = dominant && dbContent.tenGods?.[dominant] ? dbContent.tenGods[dominant] : "";
-      document.getElementById("tenGodCommand").textContent =
-        cmd || `（資料庫尚未填入「${dominant || "—"}」的十神指令。你可以先在 ten_god_analysis 補上 2026 內容。）`;
+      const tenGodEl = document.getElementById("tenGodCommand");
+      if (tenGodEl) {
+        tenGodEl.textContent =
+          cmd || `（資料庫尚未填入「${dominant || "—"}」的十神指令。你可以先在 ten_god_analysis 補上 2026 內容。）`;
+      }
 
       // liuyue
       renderLiuyue(bazi);
