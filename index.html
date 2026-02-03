@@ -486,6 +486,24 @@
     </section>
   </main>
 
+  <!-- Mobile Palace Detail Bottom Sheet (shown when < 1280px) -->
+  <div id="palaceSheetBackdrop" class="fixed inset-0 bg-black/60 hidden z-40"></div>
+  <div id="palaceSheet" class="palace-sheet z-50">
+    <div class="palace-sheet-handle"></div>
+    <div class="palace-sheet-header">
+      <div>
+        <div id="mobilePalaceTitle" class="text-base font-black text-amber-300">請點宮位</div>
+        <div id="mobilePalaceSub" class="text-xs text-slate-400 mt-1"></div>
+      </div>
+      <button id="palaceSheetClose" type="button" class="palace-sheet-close text-xs">
+        收合
+      </button>
+    </div>
+    <div id="mobilePalaceBody" class="mt-4 space-y-4 text-xs text-slate-100">
+      <div class="text-slate-500 italic">點擊紫微方盤任一宮位，下方會顯示詳解與星曜解釋。</div>
+    </div>
+  </div>
+
   <script src="js/calc.js"></script>
   <script src="js/ui.js"></script>
 
