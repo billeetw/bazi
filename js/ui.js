@@ -391,6 +391,39 @@
     document.body.style.overflow = "";
   }
 
+  // ====== Generic "sheet" content (reuse palace bottom sheet) ======
+  function setMobileSheetContent({ title, sub, bodyHtml }) {
+    const mTitle = document.getElementById("mobilePalaceTitle");
+    const mSub = document.getElementById("mobilePalaceSub");
+    const mBody = document.getElementById("mobilePalaceBody");
+    if (mTitle) mTitle.textContent = title || "";
+    if (mSub) mSub.textContent = sub || "";
+    if (mBody) mBody.innerHTML = bodyHtml || "";
+  }
+
+  function flashPeek(el) {
+    if (!el) return;
+    el.classList.add("peek-highlight");
+    window.setTimeout(() => el.classList.remove("peek-highlight"), 1200);
+  }
+
+  function openWuxingMeaningLikePalace() {
+    const meaningBox = document.getElementById("wuxingMeaningBox");
+    const meaningSection = document.getElementById("wuxingMeaningSection");
+
+    if (window.innerWidth < 1280) {
+      setMobileSheetContent({
+        title: "金木水火土 · 基本意義",
+        sub: "點五行雷達圖展開（內容優先來自資料庫：wuxing_meanings）",
+        bodyHtml: meaningBox ? meaningBox.innerHTML : `<div class="text-slate-500 italic">（五行解釋暫不可用）</div>`,
+      });
+      openPalaceSheet();
+    } else {
+      meaningSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+      flashPeek(meaningSection);
+    }
+  }
+
   // ====== RENDER: ZIWEI GRID ======
   function renderZiwei(ziwei) {
     const container = document.getElementById("ziweiGrid");
@@ -819,6 +852,21 @@
     initSelectors();
     document.getElementById("btnLaunch").addEventListener("click", calculate);
     await loadDbContent();
+
+    // Click radar/bars → show Five Elements meanings (same behavior as palace click)
+    [
+      "ziweiWxRadar",
+      "surfaceWxRadar",
+      "strategicWxRadar",
+      "ziweiWxBars",
+      "surfaceWxBars",
+      "strategicWxBars",
+    ].forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.style.cursor = "pointer";
+      el.addEventListener("click", openWuxingMeaningLikePalace);
+    });
 
     // Mobile Bottom Sheet 關閉事件
     const closeBtn = document.getElementById("palaceSheetClose");

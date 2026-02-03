@@ -221,6 +221,13 @@
       background: rgba(15,23,42,0.8);
     }
 
+    /* 右側面板快速定位高亮 */
+    .peek-highlight{
+      border-color: rgba(251,191,36,0.75) !important;
+      box-shadow: 0 0 0 2px rgba(251,191,36,0.18), 0 16px 44px rgba(251,191,36,0.10);
+      transition: box-shadow .2s ease, border-color .2s ease;
+    }
+
     /* 手機限定顯示 Bottom Sheet（1280px 以上隱藏） */
     @media (min-width: 1280px){
       .palace-sheet,
@@ -494,7 +501,7 @@
             </div>
           </div>
 
-          <div class="glass p-6 border border-white/10">
+          <div id="wuxingMeaningSection" class="glass p-6 border border-white/10">
             <div class="section-subtitle mb-2">Five Elements Meanings</div>
             <div class="font-black text-lg">金木水火土 · 基本意義</div>
             <div class="text-xs text-slate-400 mt-1">（內容優先來自資料庫：wuxing_meanings；若無則顯示預設）</div>
