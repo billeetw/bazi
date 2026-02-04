@@ -222,7 +222,15 @@
         var data = await res.json().catch(function() { return {}; });
 
         if (!res.ok) {
-          showMsg(msgEl, data.error || '送出失敗，請稍後再試', true);
+          var errText = data && data.error ? String(data.error) : '';
+          if (!errText) {
+            // 若後端回傳非 JSON（例如 404 HTML / 平台錯誤頁），用文字片段幫你診斷
+            var raw = await res.text().catch(function () { return ''; });
+            raw = (raw || '').replace(/\s+/g, ' ').trim();
+            if (raw.length > 160) raw = raw.slice(0, 160) + '…';
+            errText = raw ? ('送出失敗（HTTP ' + res.status + '） ' + raw) : ('送出失敗（HTTP ' + res.status + '）');
+          }
+          showMsg(msgEl, errText, true);
           btn.disabled = false;
           btn.textContent = '送出報名';
           return;
