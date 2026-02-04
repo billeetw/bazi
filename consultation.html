@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>1:1 戰略諮詢報名</title>
+  <title>深度諮詢報名</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%); color: #e2e8f0; font-family: system-ui, sans-serif; }
@@ -12,8 +12,11 @@
 </head>
 <body class="min-h-screen p-4 md:p-8">
   <div class="max-w-xl mx-auto">
-    <h1 class="text-2xl font-black text-amber-400 mb-2">1:1 戰略諮詢報名</h1>
-    <p class="text-sm text-slate-400 mb-6">填寫後送出，我們將與您聯絡確認時段與付款。</p>
+    <h1 class="text-2xl font-black text-amber-400 mb-2">深度諮詢報名</h1>
+    <p class="text-sm text-slate-400">填寫後送出，我們將與您聯絡確認時段與付款。</p>
+    <p class="text-sm text-slate-300/90 mt-2 mb-6">
+      可預約時間：平日下午 13:30–17:30｜晚上 20:00–21:30
+    </p>
 
     <form id="consultForm" class="glass p-6 space-y-4" novalidate>
       <div>
@@ -219,7 +222,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-        var data = await res.json().catch(function() { return {}; });
+        // NOTE: response body can be non-JSON (e.g., 404 HTML on GitHub Pages).
+        // Use clone() so we can still read text when JSON parsing fails.
+        var resForJson = res.clone();
+        var data = await resForJson.json().catch(function() { return {}; });
 
         if (!res.ok) {
           var errText = data && data.error ? String(data.error) : '';
@@ -236,13 +242,75 @@
           return;
         }
 
+        // ===== SUCCESS: make it unmissable (modal) =====
+        var calendlyUrl = 'https://calendly.com/billeetw/30min';
+
+        // Create modal once
+        var modalId = 'successModal';
+        var modal = document.getElementById(modalId);
+        if (!modal) {
+          modal = document.createElement('div');
+          modal.id = modalId;
+          modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4';
+          modal.innerHTML = `
+            <div class="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+            <div class="relative w-full max-w-lg rounded-3xl border border-amber-300/30 bg-slate-950/95 shadow-2xl shadow-amber-900/30 p-6 md:p-8">
+              <div class="text-[11px] tracking-[0.24em] font-black text-amber-300/90">SUCCESS</div>
+              <div id="successTitle" class="mt-2 text-2xl md:text-3xl font-black text-amber-300">請稍後…</div>
+              <div id="successBody" class="mt-3 text-slate-100 text-sm md:text-base leading-relaxed"></div>
+              <div class="mt-6 grid gap-3">
+                <a id="successCta" href="${calendlyUrl}" target="_blank" rel="noopener noreferrer"
+                   class="w-full inline-flex items-center justify-center px-6 py-4 rounded-2xl bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 text-slate-950 font-black tracking-widest hover:brightness-110 active:scale-[0.98] transition shadow-xl shadow-amber-900/30">
+                  立即預約 Calendly
+                </a>
+                <button type="button" id="successClose"
+                        class="w-full inline-flex items-center justify-center px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-slate-200 font-semibold hover:bg-white/10 transition">
+                  我已完成預約／關閉
+                </button>
+              </div>
+              <div class="mt-4 text-[12px] text-slate-400">
+                若瀏覽器擋住彈出視窗，請直接點上方「立即預約 Calendly」。
+              </div>
+            </div>
+          `;
+          document.body.appendChild(modal);
+
+          // Close behavior
+          modal.addEventListener('click', function (e) {
+            if (e && e.target === modal) modal.remove();
+          });
+          var closeBtn = modal.querySelector('#successClose');
+          if (closeBtn) closeBtn.addEventListener('click', function () { modal.remove(); });
+        } else {
+          modal.classList.remove('hidden');
+        }
+
+        // Update modal content
+        var titleEl = modal.querySelector('#successTitle');
+        var bodyEl = modal.querySelector('#successBody');
+        if (titleEl) titleEl.textContent = '請稍後…';
+        if (bodyEl) {
+          bodyEl.innerHTML =
+            '<div class="text-slate-200">正在為你開啟預約頁面，稍後請進行預約。</div>' +
+            '<div class="mt-4 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-400/25">' +
+              '<div class="text-emerald-200 font-black text-base md:text-lg">報名已送出，我們已收到您的資料。</div>' +
+              '<div class="text-slate-100 mt-2">接下來請到以下 Calendly 連結選擇第一次線上訪談時間。</div>' +
+            '</div>';
+        }
+
+        // Also keep inline message for accessibility/scrolling
         msgEl.innerHTML =
-          '報名已送出，我們已收到您的資料。接下來請到以下 Calendly 連結選擇第一次線上訪談時間。<br>' +
-          '<a href="https://calendly.com/billeetw/30min" target="_blank" rel="noopener noreferrer" class="text-amber-400 underline font-semibold mt-2 inline-block">→ 開啟 Calendly 預約 30 分鐘訪談</a>';
-        msgEl.className = 'mt-4 text-sm text-center text-green-400';
+          '<span class="font-black text-emerald-300">報名已送出，我們已收到您的資料。</span><br>' +
+          '稍後將自動開啟預約頁面；若未自動開啟，請點：' +
+          '<a href="' + calendlyUrl + '" target="_blank" rel="noopener noreferrer" class="text-amber-300 underline font-black ml-1">立即預約 Calendly</a>';
+        msgEl.className = 'mt-6 text-base text-center';
         msgEl.classList.remove('hidden');
-        msgEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        window.open('https://calendly.com/billeetw/30min', '_blank');
+
+        // Give UI a moment to paint, then open Calendly (popup blockers may still block)
+        window.setTimeout(function () {
+          if (titleEl) titleEl.textContent = '請稍後，稍後進行預約';
+          try { window.open(calendlyUrl, '_blank'); } catch (_) {}
+        }, 800);
       } catch (err) {
         showMsg(msgEl, '網路錯誤，請檢查連線後再試。若為本機測試，請用 npx wrangler pages dev 啟動後再試。', true);
       } finally {
