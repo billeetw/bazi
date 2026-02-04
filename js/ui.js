@@ -25,6 +25,9 @@
     normalizeWxByMax,
     generateFiveElementComment,
     computeDynamicTactics,
+    getHoroscopeFromAge,
+    getMutagenStars,
+    getPalaceScoreWithWeights,
   } = window.Calc;
 
   // ====== CONFIG ======
@@ -42,9 +45,32 @@
   let dbContent = { palaces: {}, stars: {}, tenGods: {}, wuxing: {} };
   let contract = null;
   let selectedPalace = "命宮";
+  let lastBirthYear = null;
+  let lastGender = null;
 
   // 宮位環（以命宮為起點的 12 宮順序）
   let PALACE_RING = PALACE_DEFAULT.slice();
+
+  /** 取得當前年齡（虛歲）：從 #currentAgeSlider 或依出生年推算 */
+  function getCurrentAge() {
+    const slider = document.getElementById("currentAgeSlider");
+    if (slider && slider.value !== "" && Number.isFinite(Number(slider.value))) {
+      return Math.max(1, Math.min(120, Number(slider.value)));
+    }
+    if (lastBirthYear != null) {
+      return Math.max(1, new Date().getFullYear() - Number(lastBirthYear));
+    }
+    return 38;
+  }
+
+  /** 同步小限滑桿顯示與數值 */
+  function syncAgeSliderDisplay(age) {
+    const slider = document.getElementById("currentAgeSlider");
+    const display = document.getElementById("currentAgeDisplay");
+    const a = Math.max(1, Math.min(120, Number(age) || 38));
+    if (slider) slider.value = String(a);
+    if (display) display.textContent = String(a);
+  }
 
   // ====== DOM HELPERS ======
   function renderBar(targetId, data, max) {
@@ -426,8 +452,25 @@
     }
   }
 
+  /** 四化 Badge 的 HTML（祿紅/權橙/科綠/忌灰），無則回傳空字串 */
+  function getMutagenBadgeHtml(starName, mutagenStars) {
+    if (!mutagenStars || typeof mutagenStars !== "object") return "";
+    const badge = [];
+    if (mutagenStars["祿"] === starName) badge.push('<span class="zw-badge zw-badge-lu">祿</span>');
+    if (mutagenStars["權"] === starName) badge.push('<span class="zw-badge zw-badge-quan">權</span>');
+    if (mutagenStars["科"] === starName) badge.push('<span class="zw-badge zw-badge-ke">科</span>');
+    if (mutagenStars["忌"] === starName) badge.push('<span class="zw-badge zw-badge-ji">忌</span>');
+    return badge.join("");
+  }
+
+  /** 星名 + 四化 Badge（用於宮格內一行顯示） */
+  function starWithBadgeHtml(starName, mutagenStars) {
+    const badge = getMutagenBadgeHtml(starName, mutagenStars);
+    return badge ? starName + " " + badge : starName;
+  }
+
   // ====== RENDER: ZIWEI GRID ======
-  function renderZiwei(ziwei) {
+  function renderZiwei(ziwei, horoscope) {
     const container = document.getElementById("ziweiGrid");
     const hint = document.getElementById("ziweiHint");
     if (!container) return;
@@ -442,38 +485,45 @@
       return;
     }
 
-    const slots = buildSlotsFromZiwei(ziwei);
+    const slots = buildSlotsFromZiwei(ziwei, horoscope);
     const gridAreas = window.Calc.gridAreas;
+    const mutagenStars = horoscope?.mutagenStars || {};
 
     slots.forEach((slot) => {
       const isKey = ["命宮", "官祿", "財帛"].includes(slot.palaceName);
       const glowClass = slot.mainElement ? `palace-glow-${slot.mainElement}` : "";
+      const activeLimitClass = slot.isActiveLimit ? " is-active-limit" : "";
 
       const starsHtml = slot.stars.length
         ? slot.stars
             .map((s) => {
               const wx = STAR_WUXING_MAP[s] || "";
-              return `<span class="${wx ? "star-wx-" + wx : ""}">${s}</span>`;
+              const withBadge = starWithBadgeHtml(s, mutagenStars);
+              return `<span class="${wx ? "star-wx-" + wx : ""}">${withBadge}</span>`;
             })
             .join("<br>")
         : `<span class="text-slate-600 text-xs italic font-normal">空宮</span>`;
 
-      let title = slot.palaceName;
+      let title = slot.palaceName + " " + slot.branch;
       if (slot.isMing && slot.isShen) title += "（命身同宮）";
       else if (slot.isMing) title += "（命）";
       else if (slot.isShen) title += "（身）";
+      if (slot.isActiveLimit) title += " · 小限命宮";
 
       const el = document.createElement("div");
-      el.className = `zw-palace ${isKey ? "zw-palace-key" : ""} ${glowClass}`;
+      el.className = `zw-palace ${isKey ? "zw-palace-key" : ""} ${glowClass}${activeLimitClass}`;
       el.style.gridArea = gridAreas[slot.index];
       el.setAttribute("data-palace-name", slot.palaceName);
 
+      const dl = slot.decadalLimit || {};
+      const decadalText = (dl.start != null && dl.end != null) ? `大限 ${dl.start}–${dl.end}` : "";
+
       el.innerHTML = `
-        <div class="text-[10px] font-black text-slate-500 mb-1">
+        <div class="text-[13px] font-black text-slate-300 leading-snug mb-1">
           ${title}
         </div>
-        <div class="text-[11px] text-slate-400 mb-1">
-          ${slot.branch}宮
+        <div class="text-[11px] text-slate-500 mb-1">
+          ${decadalText}
         </div>
         <div class="text-[13px] font-black leading-snug tracking-wide">
           ${starsHtml}
@@ -493,22 +543,31 @@
       container.appendChild(el);
     });
 
-    // 中央 core
+    // 中央 core：命主、身主（繁體）。iztro 放在 basic.masterStar / basic.bodyStar，後端可能放在 core
     const center = document.createElement("div");
     center.className = "zw-center-block";
     const core = ziwei.core || {};
+    const basic = ziwei.basic || {};
+    const bazi = contract?.bazi;
+    const yearStem = (bazi?.display?.yG || "").toString().trim();
+    const birthMutagen = yearStem ? (getMutagenStars(yearStem) || {}) : {};
+    const stripStarLabel = (s) => String(s || "").replace(/^\d+\.?\s*/, "").trim();
+    const mingzhuRaw = basic.masterStar ?? core.mingzhu ?? core.命主 ?? core.minggong ?? "";
+    const shengongRaw = basic.bodyStar ?? core.shengong ?? core.身主 ?? "";
+    const mingzhu = toTraditionalStarName(stripStarLabel(mingzhuRaw));
+    const shengong = toTraditionalStarName(stripStarLabel(shengongRaw));
+    const siHuaText =
+      birthMutagen.祿 && birthMutagen.權 && birthMutagen.科 && birthMutagen.忌
+        ? `${birthMutagen.祿}化祿 · ${birthMutagen.權}化權 · ${birthMutagen.科}化科 · ${birthMutagen.忌}化忌`
+        : "—";
     center.innerHTML = `
       <div class="text-[10px] tracking-[0.18em] text-slate-500 font-black">DESTINY CORE</div>
-      <div class="text-amber-400 font-black text-xl tracking-widest mt-1">${core.minggong || "—"}</div>
-      <div class="text-[11px] text-slate-300 mt-1">
-        身主：${core.shengong || "—"}
-      </div>
-      <div class="text-[11px] text-slate-400 mt-1">
-        五行局：${core.wuxingju || "—"}
-      </div>
-      <div class="text-[10px] text-slate-500 mt-1">
-        命宮支：${core.minggongBranch || "—"} ｜ 身宮支：${core.shengongBranch || "—"}
-      </div>
+      <div class="text-amber-400 font-black text-xl tracking-wide mt-2">${mingzhu || "—"}</div>
+      <div class="text-slate-300 text-[11px] mt-1">身主：${shengong || "—"}</div>
+      <div class="text-[10px] text-slate-500 mt-2 font-black">生年四化</div>
+      <div class="text-slate-300 text-[10px] leading-tight mt-0.5">${siHuaText}</div>
+      <div class="text-[11px] text-slate-400 mt-2">五行局：${core.wuxingju || "—"}</div>
+      <div class="text-[10px] text-slate-500 mt-1">命宮支：${core.minggongBranch || "—"} ｜ 身宮支：${core.shengongBranch || "—"}</div>
     `;
     container.appendChild(center);
 
@@ -532,6 +591,10 @@
     });
 
     const ziwei = contract?.ziwei;
+    const bazi = contract?.bazi;
+    const horoscope = ziwei?.horoscope || getHoroscopeFromAge(getCurrentAge(), lastGender, ziwei, bazi);
+    const mutagenStars = horoscope?.mutagenStars || {};
+
     const rawStars = ziwei ? getStarsForPalace(ziwei, name) : [];
     const stars = rawStars.map(toTraditionalStarName);
 
@@ -549,10 +612,12 @@
         .map((s) => {
           const wx = STAR_WUXING_MAP[s] || "";
           const explain = (dbContent.stars && dbContent.stars[s]) ? dbContent.stars[s] : "（資料庫尚未填入此星曜解釋）";
+          const badgeHtml = getMutagenBadgeHtml(s, mutagenStars);
+          const titleDisplay = badgeHtml ? `【${s}】 ${badgeHtml}` : `【${s}】`;
           return `
             <div class="p-4 rounded-xl border border-white/10 bg-white/5">
               <div class="flex items-center justify-between gap-3">
-                <div class="font-black text-base ${wx ? "star-wx-" + wx : "text-slate-200"}">【${s}】</div>
+                <div class="font-black text-base ${wx ? "star-wx-" + wx : "text-slate-200"}">${titleDisplay}</div>
                 <div class="text-[10px] text-slate-500">${wx ? "五行：" + wx : ""}</div>
               </div>
               <div class="text-xs text-slate-300 mt-2 leading-relaxed">${explain}</div>
@@ -688,6 +753,10 @@
         throw new Error("features 格式錯誤（不是 strategic_features_v1）");
       }
 
+      lastBirthYear = vy;
+      lastGender = gender;
+      syncAgeSliderDisplay(Math.max(1, new Date().getFullYear() - vy));
+
       const chartId = payload.chartId || contract.chartId || null;
       const bazi = contract.bazi;
       const ziwei = contract.ziwei;
@@ -771,12 +840,15 @@
       // liuyue
       renderLiuyue(bazi);
 
-      // ziwei grid
-      renderZiwei(ziwei);
+      // 小限／四化（可與後端 iztro horoscope 並用）
+      const horoscope = ziwei?.horoscope || getHoroscopeFromAge(getCurrentAge(), lastGender, ziwei, bazi);
 
-      // 紫微分數
+      // ziwei grid
+      renderZiwei(ziwei, horoscope);
+
+      // 紫微分數（小限宮位依 SI_HUA_MAP 權重聯動 + Progress Bar）
       if (ziweiScores && ziweiScores.palaceScores) {
-        renderZiweiScores(ziweiScores);
+        renderZiweiScores(ziweiScores, horoscope, ziwei);
       } else {
         const palaceBox = document.getElementById("ziweiPalaceScores");
         if (palaceBox) palaceBox.innerHTML = `<div class="text-xs text-slate-400">（暫無分數資料）</div>`;
@@ -814,7 +886,7 @@
     }
   }
 
-  function renderZiweiScores(scores) {
+  function renderZiweiScores(scores, horoscope, ziwei) {
     const palaceBox = document.getElementById("ziweiPalaceScores");
     const wuxingBox = document.getElementById("ziweiWuxingScores");
 
@@ -823,22 +895,43 @@
       return;
     }
 
-    console.log("[renderZiweiScores] raw scores =", scores);
-
-    const entries = Object.entries(scores?.palaceScores || {});
-    console.log("[renderZiweiScores] palace entries =", entries);
-    const sortedPalaces = entries.sort((a, b) => Number(b[1]) - Number(a[1]));
-
-    if (!sortedPalaces.length) {
+    const baseEntries = Object.entries(scores?.palaceScores || {});
+    if (!baseEntries.length) {
       palaceBox.innerHTML = `<div class="text-xs text-slate-400">（尚未計算宮位權重）</div>`;
     } else {
-      palaceBox.innerHTML = sortedPalaces
-        .map(([name, val]) => {
-          const n = Number(val) || 0;
+      const activeLimitPalaceName = horoscope?.activeLimitPalaceName ?? null;
+      const yearlyStem = horoscope?.yearlyStem ?? null;
+
+      const rows = baseEntries.map(([name, val]) => {
+        const baseScore = Number(val) || 0;
+        let displayScore = baseScore;
+        if (activeLimitPalaceName != null && name === activeLimitPalaceName && yearlyStem && ziwei) {
+          const rawStars = getStarsForPalace(ziwei, name);
+          const stars = rawStars.map(toTraditionalStarName);
+          displayScore = getPalaceScoreWithWeights(baseScore, stars, yearlyStem);
+        }
+        return { name, baseScore, displayScore, isActiveLimit: name === activeLimitPalaceName };
+      });
+
+      const sorted = rows.sort((a, b) => b.displayScore - a.displayScore);
+      const maxScore = Math.max(...sorted.map((r) => r.displayScore), 0.01);
+
+      palaceBox.innerHTML = sorted
+        .map((r) => {
+          const pct = maxScore ? (r.displayScore / maxScore) * 100 : 0;
+          const rowClass = r.isActiveLimit ? "text-amber-300 font-semibold" : "text-slate-100";
+          const labelClass = r.isActiveLimit ? "text-amber-200" : "text-slate-300";
+          const labelSuffix = r.isActiveLimit ? " · 小限命宮" : "";
+          const barClass = r.isActiveLimit ? "bg-amber-400" : "bg-amber-500/70";
           return `
-            <div class="flex justify-between text-xs py-1 border-b border-white/5">
-              <span class="text-slate-300">${name}</span>
-              <span class="text-slate-100 font-mono">${n.toFixed(2)}</span>
+            <div class="py-1.5 border-b border-white/5">
+              <div class="flex justify-between text-xs mb-0.5">
+                <span class="${labelClass}">${r.name}${labelSuffix}</span>
+                <span class="font-mono ${rowClass}">${r.displayScore.toFixed(2)}</span>
+              </div>
+              <div class="h-1.5 bg-white/10 rounded overflow-hidden">
+                <div class="h-full ${barClass} rounded transition-all duration-300" style="width:${pct}%"></div>
+              </div>
             </div>
           `;
         })
@@ -964,6 +1057,22 @@
       el.style.cursor = "pointer";
       el.addEventListener("click", openWuxingMeaningLikePalace);
     });
+
+    // 小限滑桿 → 重算小限、重繪方盤與宮位強度、更新詳解四化 Badge
+    const currentAgeSlider = document.getElementById("currentAgeSlider");
+    const currentAgeDisplay = document.getElementById("currentAgeDisplay");
+    if (currentAgeSlider) {
+      currentAgeSlider.addEventListener("input", () => {
+        const age = Math.max(1, Math.min(120, Number(currentAgeSlider.value) || 38));
+        if (currentAgeDisplay) currentAgeDisplay.textContent = String(age);
+        if (!contract?.ziwei) return;
+        const bazi = contract.bazi;
+        const horoscope = contract.ziwei.horoscope || getHoroscopeFromAge(getCurrentAge(), lastGender, contract.ziwei, bazi);
+        renderZiwei(contract.ziwei, horoscope);
+        if (window.ziweiScores?.palaceScores) renderZiweiScores(window.ziweiScores, horoscope, contract.ziwei);
+        selectPalace(selectedPalace);
+      });
+    }
 
     // Mobile Bottom Sheet 關閉事件
     const closeBtn = document.getElementById("palaceSheetClose");

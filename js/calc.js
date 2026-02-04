@@ -52,6 +52,7 @@
   // 固定的「地支環」，對應上面 gridAreas 的順序
   const BRANCH_RING = ["寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥", "子", "丑"];
 
+  // 星曜簡→繁對照（單一來源）。後端請使用同份 data/star-name-trad.json，避免重複維護。
   const STAR_NAME_TRAD_MAP = {
     // 14 主星
     "紫微": "紫微", "紫薇": "紫微",
@@ -362,8 +363,112 @@
     return { active: palaceName, related };
   }
 
+  // ====== 小限／四化（依年齡、性別與命宮天干推算，與 iztro horoscope 對齊用）======
+  const STEMS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
+  const BRANCH_ORDER = { "寅": 0, "卯": 1, "辰": 2, "巳": 3, "午": 4, "未": 5, "申": 6, "酉": 7, "戌": 8, "亥": 9, "子": 10, "丑": 11 };
+  // 年干 → 寅宮天干（五虎遁）
+  const YIN_STEM_FROM_YEAR = { "甲": "丙", "乙": "戊", "丙": "庚", "丁": "壬", "戊": "甲", "己": "丙", "庚": "戊", "辛": "庚", "壬": "壬", "癸": "甲" };
+
+  /** 十天干與四化對應 + 權重（祿 3 / 權 2 / 科 1 / 忌 -3），供小限動態導覽與宮位強度聯動 */
+  const SI_HUA_MAP = {
+    "甲": { "廉貞": "祿", "破軍": "權", "武曲": "科", "太陽": "忌", weights: { "廉貞": 3, "破軍": 2, "武曲": 1, "太陽": -3 } },
+    "乙": { "天機": "祿", "天梁": "權", "紫微": "科", "太陰": "忌", weights: { "天機": 3, "天梁": 2, "紫微": 1, "太陰": -3 } },
+    "丙": { "天同": "祿", "天機": "權", "文昌": "科", "廉貞": "忌", weights: { "天同": 3, "天機": 2, "文昌": 1, "廉貞": -3 } },
+    "丁": { "太陰": "祿", "天同": "權", "天機": "科", "巨門": "忌", weights: { "太陰": 3, "天同": 2, "天機": 1, "巨門": -3 } },
+    "戊": { "貪狼": "祿", "太陰": "權", "右弼": "科", "天機": "忌", weights: { "貪狼": 3, "太陰": 2, "右弼": 1, "天機": -3 } },
+    "己": { "武曲": "祿", "貪狼": "權", "天梁": "科", "文曲": "忌", weights: { "武曲": 3, "貪狼": 2, "天梁": 1, "文曲": -3 } },
+    "庚": { "太陽": "祿", "武曲": "權", "太陰": "科", "天同": "忌", weights: { "太陽": 3, "武曲": 2, "太陰": 1, "天同": -3 } },
+    "辛": { "巨門": "祿", "太陽": "權", "文曲": "科", "文昌": "忌", weights: { "巨門": 3, "太陽": 2, "文曲": 1, "文昌": -3 } },
+    "壬": { "天梁": "祿", "紫微": "權", "左輔": "科", "武曲": "忌", weights: { "天梁": 3, "紫微": 2, "左輔": 1, "武曲": -3 } },
+    "癸": { "破軍": "祿", "巨門": "權", "太陰": "科", "貪狼": "忌", weights: { "破軍": 3, "巨門": 2, "太陰": 1, "貪狼": -3 } },
+  };
+
+  /** 小限宮位天干 → 四化星曜 { 祿, 權, 科, 忌 }（由 SI_HUA_MAP 反推，供 Badge 用） */
+  function getMutagenStars(stem) {
+    const row = SI_HUA_MAP[stem];
+    if (!row || !row.weights) return {};
+    const out = {};
+    Object.keys(row.weights).forEach((star) => {
+        const type = row[star];
+        if (type) out[type] = star;
+      });
+    return out;
+  }
+
+  /** 小限天干 → 四化權重 { 星名: 分數 } */
+  function getSiHuaWeights(stem) {
+    const row = SI_HUA_MAP[stem];
+    return (row && row.weights) ? row.weights : {};
+  }
+
+  /** 宮位強度 + 小限四化權重加成（僅小限宮位使用；stars 為該宮繁體星名陣列） */
+  function getPalaceScoreWithWeights(baseScore, stars, stem) {
+    if (!Array.isArray(stars) || !stem) return baseScore;
+    const weights = getSiHuaWeights(stem);
+    let add = 0;
+    stars.forEach((s) => { add += Number(weights[s]) || 0; });
+    return Math.max(0, (Number(baseScore) || 0) + add);
+  }
+
+  /** 依年齡、性別得小限所在宮位索引（0=命宮…11=父母）。男順女逆，1 歲起命宮。 */
+  function getYearlyIndexFromAge(age, gender) {
+    const a = Math.max(1, Number(age) || 1);
+    const n = (a - 1) % 12;
+    if (gender === "F" || gender === "女") return (12 - n) % 12;
+    return n;
+  }
+
+  /** 命宮地支 + 年干 → 命宮天干（寅宮天干 + 地支序） */
+  function getMinggongStem(mingBranch, yearStem) {
+    const yinStem = YIN_STEM_FROM_YEAR[yearStem] || "丙";
+    const yinIdx = STEMS.indexOf(yinStem);
+    const branchIdx = BRANCH_ORDER[mingBranch] ?? 0;
+    return STEMS[(yinIdx + branchIdx) % 10];
+  }
+
+  /** 命宮天干 + 宮位序 → 該宮天干 */
+  function getPalaceStem(mingStem, palaceIndex) {
+    const idx = STEMS.indexOf(mingStem);
+    return STEMS[(idx + (palaceIndex % 12)) % 10];
+  }
+
+  /** 從五行局字串解析起運歲數（水二局→2, 木三局→3, 金四局→4, 土五局→5, 火六局→6） */
+  function getStartAgeFromWuxingju(wuxingju) {
+    const s = String(wuxingju || "");
+    const n = s.match(/(\d)/);
+    if (n) return Math.max(2, Math.min(6, Number(n[1])));
+    const map = { "二": 2, "三": 3, "四": 4, "五": 5, "六": 6 };
+    for (const [k, v] of Object.entries(map)) if (s.includes(k)) return v;
+    return 4;
+  }
+
+  /** 依五行局算出 12 宮大限年齡區間（每宮 10 年）。回傳 [ { start, end }, ... ] 對應 命宮…父母 */
+  function getDecadalLimits(wuxingju) {
+    const startAge = getStartAgeFromWuxingju(wuxingju);
+    return PALACE_DEFAULT.map((_, i) => ({
+      start: startAge + i * 10,
+      end: startAge + i * 10 + 9,
+    }));
+  }
+
+  /**
+   * 依當前年齡、性別與命盤推算小限與四化（可與後端 iztro horoscope 並用）。
+   * 回傳 { yearlyIndex, yearlyStem, mutagenStars, activeLimitPalaceName }。
+   */
+  function getHoroscopeFromAge(age, gender, ziwei, bazi) {
+    const yearStem = (bazi?.display?.yG || "").toString().trim();
+    const mingBranch = ziwei?.core?.minggongBranch || "寅";
+    const mingStem = getMinggongStem(mingBranch, yearStem);
+    const yearlyIndex = getYearlyIndexFromAge(age, gender);
+    const yearlyStem = getPalaceStem(mingStem, yearlyIndex);
+    const mutagenStars = getMutagenStars(yearlyStem);
+    const activeLimitPalaceName = PALACE_DEFAULT[yearlyIndex];
+    return { yearlyIndex, yearlyStem, mutagenStars, activeLimitPalaceName };
+  }
+
   // 依「命宮地支」＋固定 PALACE_DEFAULT → 算出每一格要放哪個宮位（格子＝地支、內容＝宮位）
-  function buildSlotsFromZiwei(ziwei) {
+  // horoscope 可選：{ yearlyIndex, activeLimitPalaceName } 或後端回傳之 horoscope，用於 isActiveLimit
+  function buildSlotsFromZiwei(ziwei, horoscope) {
     if (!ziwei) return [];
 
     // 若後端沒給或給了非 12 地支的值，就 fallback 到「寅」
@@ -376,10 +481,11 @@
       mingBranch = BRANCH_RING[0];
     }
 
-    const palaceOrder = PALACE_DEFAULT; // 命、兄、夫、子… 這個順序是固定的「宮位邏輯」
+    const palaceOrder = PALACE_DEFAULT;
+    const activeLimitPalace = horoscope?.activeLimitPalaceName ?? (horoscope != null && Number.isInteger(horoscope.yearlyIndex) ? palaceOrder[horoscope.yearlyIndex] : null);
+    const decadalLimits = getDecadalLimits(ziwei?.core?.wuxingju);
 
     return BRANCH_RING.map((branch, idx) => {
-      // 讓「命宮」對齊命宮地支所在的那一格，其餘宮位照逆行順序排
       const palaceIndex = (mingIdx - idx + 12) % 12;
       const palaceName = palaceOrder[palaceIndex];
 
@@ -391,6 +497,9 @@
         palaceMainElement = STAR_WUXING_MAP[stars[0]] || "";
       }
 
+      const isActiveLimit = activeLimitPalace != null && palaceName === activeLimitPalace;
+      const decadalLimit = decadalLimits[palaceIndex] || { start: 0, end: 9 };
+
       return {
         index: idx,
         branch,
@@ -399,6 +508,8 @@
         isMing: branch === mingBranch,
         isShen: shenBranch ? branch === shenBranch : false,
         mainElement: palaceMainElement,
+        isActiveLimit,
+        decadalLimit,
       };
     });
   }
@@ -448,6 +559,10 @@
     normalizeWxByMax,
     generateFiveElementComment,
     computeRelatedPalaces,
+    getHoroscopeFromAge,
+    getMutagenStars,
+    getSiHuaWeights,
+    getPalaceScoreWithWeights,
     buildSlotsFromZiwei,
     computeDynamicTactics,
   });
