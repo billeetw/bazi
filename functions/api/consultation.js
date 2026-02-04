@@ -2,6 +2,13 @@ export async function onRequestPost(context) {
   const { request, env } = context;
 
   try {
+    if (!env || !env.CONSULT_DB) {
+      return new Response(
+        JSON.stringify({ error: '資料庫未綁定（缺少 CONSULT_DB）' }),
+        { status: 500, headers: { 'Content-Type': 'application/json; charset=utf-8' } }
+      );
+    }
+
     const data = await request.json();
 
     const {
@@ -82,7 +89,10 @@ export async function onRequestPost(context) {
 
   } catch (err) {
     console.error('Error in /api/consultation:', err);
-    return new Response(JSON.stringify({ error: '伺服器發生錯誤' }), {
+    // Most common reasons:
+    // - D1 binding missing
+    // - table not created yet (run D1 migrations)
+    return new Response(JSON.stringify({ error: '伺服器發生錯誤（可能尚未建立資料表）' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json; charset=utf-8' },
     });

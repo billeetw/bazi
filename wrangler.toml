@@ -9,5 +9,6 @@ pages_build_output_dir = "."
 binding = "CONSULT_DB"
 database_name = "consult-db"
 database_id = "9bdd8684-9fbe-444d-b2bd-16225ff8da79"
+migrations_dir = "migrations"
 
 # 後台 /admin.html 帳密（本機：建立 .dev.vars 設 ADMIN_USER、ADMIN_PASSWORD；正式：Pages 專案 → Settings → Environment variables）
