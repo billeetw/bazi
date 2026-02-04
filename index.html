@@ -319,86 +319,48 @@
       100% { background-position: -200% 50%; }
     }
 
-    /* 命運座標：圓形容器 aspect-ratio 1/1 + 動態 conic-gradient 羅盤邊框 */
-    .compass-field {
-      position: relative;
+    /* 命運座標：水平條狀排列 + 頂級玻璃擬態條（無圓形） */
+    .destiny-bar-row {
+      display: grid;
+      gap: 0.75rem;
+      align-items: stretch;
+    }
+    .destiny-bar-wrap {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      aspect-ratio: 1 / 1;
-      max-width: 140px;
-      min-width: 80px;
-      margin: 0 auto;
-    }
-    .compass-field::before {
-      content: '';
-      position: absolute;
-      inset: -4px;
-      border-radius: 50%;
-      background: conic-gradient(
-        rgba(255, 191, 0, 0.6),
-        rgba(0, 210, 255, 0.4),
-        rgba(255, 191, 0, 0.3),
-        rgba(0, 210, 255, 0.5),
-        rgba(255, 191, 0, 0.6));
-      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #fff calc(100% - 2px));
-      mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #fff calc(100% - 2px));
-      animation: compass-spin 8s linear infinite;
-      pointer-events: none;
-    }
-    .compass-field::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: 50%;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.3);
-      pointer-events: none;
-    }
-    .compass-field:focus-within::before {
-      filter: brightness(1.2);
-    }
-    @keyframes compass-spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-    .compass-field .destiny-select-wrap {
-      position: relative;
-      z-index: 1;
-      width: calc(100% - 16px);
-      max-width: calc(140px - 16px);
-      height: calc(100% - 16px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      align-items: stretch;
+      min-width: 0;
     }
     .destiny-select {
       appearance: none;
       -webkit-appearance: none;
       -moz-appearance: none;
       width: 100%;
-      max-width: 100%;
-      padding: 0.5rem 1.75rem 0.5rem 0.75rem;
-      background: transparent;
+      min-width: 0;
+      padding: 0.6rem 2rem 0.6rem 0.85rem;
+      background: rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 191, 0, 0.25);
-      border-radius: 999px;
+      border-radius: 10px;
       color: var(--amber-gold);
-      font-size: 0.8rem;
+      font-size: 0.875rem;
       cursor: pointer;
+      box-shadow: inset 0 0 10px rgba(255, 191, 0, 0.1);
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FFBF00' opacity='0.9'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
-      background-position: right 0.35rem center;
+      background-position: right 0.5rem center;
       background-size: 1rem;
-      transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
     }
     .destiny-select:hover {
-      border-color: rgba(255, 191, 0, 0.5);
-      box-shadow: 0 0 12px rgba(255, 191, 0, 0.15);
+      border-color: rgba(255, 191, 0, 0.45);
+      background: rgba(0, 0, 0, 0.38);
+      box-shadow: inset 0 0 12px rgba(255, 191, 0, 0.14), 0 0 8px rgba(255, 191, 0, 0.08);
     }
     .destiny-select:focus {
       outline: none;
-      border-color: var(--amber-gold);
-      box-shadow: 0 0 0 2px rgba(255, 191, 0, 0.2);
+      border-color: rgba(255, 191, 0, 0.5);
+      box-shadow: inset 0 0 10px rgba(255, 191, 0, 0.12), 0 0 0 1px rgba(255, 191, 0, 0.2);
     }
     .destiny-select option {
       background: #0f0f18;
@@ -711,48 +673,33 @@
       </div>
     </section>
 
-    <!-- 命運座標輸入（保留原有 id 與邏輯） -->
+    <!-- 命運座標輸入（條狀排列 + 頂級玻璃擬態，保留原有 id 與邏輯） -->
     <section id="inputCard" class="glass-container glass-input p-6 md:p-8 max-w-2xl mx-auto space-y-6">
       <h2 class="text-center hero-subtitle tracking-[0.2em] mb-2">命運座標輸入</h2>
 
-      <div class="grid grid-cols-3 gap-6">
-        <div class="compass-field">
-          <div class="destiny-select-wrap"><select id="birthYear" class="destiny-select" aria-label="年"></select></div>
-        </div>
-        <div class="compass-field">
-          <div class="destiny-select-wrap"><select id="birthMonth" class="destiny-select" aria-label="月"></select></div>
-        </div>
-        <div class="compass-field">
-          <div class="destiny-select-wrap"><select id="birthDay" class="destiny-select" aria-label="日"></select></div>
-        </div>
+      <!-- 第一行：年、月、日 -->
+      <div class="destiny-bar-row grid-cols-3">
+        <div class="destiny-bar-wrap"><select id="birthYear" class="destiny-select" aria-label="年"></select></div>
+        <div class="destiny-bar-wrap"><select id="birthMonth" class="destiny-select" aria-label="月"></select></div>
+        <div class="destiny-bar-wrap"><select id="birthDay" class="destiny-select" aria-label="日"></select></div>
       </div>
 
-      <div class="grid grid-cols-2 gap-6">
-        <div class="compass-field">
-          <div class="destiny-select-wrap"><select id="timeMode" class="destiny-select" aria-label="時間模式"></select></div>
-        </div>
-        <div class="compass-field">
-          <div class="destiny-select-wrap"><select id="gender" class="destiny-select" aria-label="性別"></select></div>
-        </div>
+      <!-- 第二行：性別、粗略時間 -->
+      <div class="destiny-bar-row grid-cols-2">
+        <div class="destiny-bar-wrap"><select id="timeMode" class="destiny-select" aria-label="時間模式"></select></div>
+        <div class="destiny-bar-wrap"><select id="gender" class="destiny-select" aria-label="性別"></select></div>
       </div>
 
-      <div id="exactTimeRow" class="grid grid-cols-2 gap-6">
-        <div class="compass-field">
-          <div class="destiny-select-wrap"><select id="birthHour" class="destiny-select" aria-label="時"></select></div>
-        </div>
-        <div class="compass-field">
-          <div class="destiny-select-wrap"><select id="birthMinute" class="destiny-select" aria-label="分"></select></div>
-        </div>
+      <!-- 第三行：精確時、分 -->
+      <div id="exactTimeRow" class="destiny-bar-row grid-cols-2">
+        <div class="destiny-bar-wrap"><select id="birthHour" class="destiny-select" aria-label="時"></select></div>
+        <div class="destiny-bar-wrap"><select id="birthMinute" class="destiny-select" aria-label="分"></select></div>
       </div>
 
       <div id="shichenRow" class="hidden space-y-4">
-        <div class="grid grid-cols-2 gap-6">
-          <div class="compass-field">
-            <div class="destiny-select-wrap"><select id="birthShichen" class="destiny-select w-full" aria-label="時辰"></select></div>
-          </div>
-          <div class="compass-field">
-            <div class="destiny-select-wrap"><select id="birthShichenHalf" class="destiny-select w-full" aria-label="上半/下半"></select></div>
-          </div>
+        <div class="destiny-bar-row grid-cols-2">
+          <div class="destiny-bar-wrap"><select id="birthShichen" class="destiny-select" aria-label="時辰"></select></div>
+          <div class="destiny-bar-wrap"><select id="birthShichenHalf" class="destiny-select" aria-label="上半/下半"></select></div>
         </div>
         <p class="text-[11px] text-slate-500 text-center">註：選「時辰」會換算成代表時刻（上半/下半時辰各取代表時間）送入系統計算。</p>
       </div>
@@ -760,7 +707,7 @@
       <div class="pt-2">
         <button id="btnLaunch" type="button"
           class="engine-button w-full py-4 rounded-2xl text-sm uppercase disabled:opacity-60 disabled:cursor-not-allowed">
-          啟動 · 2026 戰略引擎
+          啟動 · 人生戰略引擎
         </button>
       </div>
 
