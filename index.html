@@ -20,25 +20,42 @@
       --ghost-blue: #00D2FF;
       --bg-deep: #050505;
       --bg-mid: #1A1A2E;
+      --theme-amber: #FFBF00;
+      --theme-amber-glow: rgba(255, 191, 0, 0.3);
+      --theme-dark-blue: #0A0A16;
+      --glass-border: rgba(255, 255, 255, 0.08);
     }
 
     body {
-      background: var(--bg-deep);
-      color: #e2e8f0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      font-family: 'Noto Serif TC', system-ui, -apple-system, serif;
+      background-color: var(--theme-dark-blue);
+      color: #fff;
       min-height: 100vh;
       position: relative;
       overflow-x: hidden;
     }
-    /* 深邃漸層 + 星圖／幾何網格浮水印 */
+
+    /* 核心特效 1：活的星際背景 (The Living Cosmos) */
     body::before {
       content: '';
       position: fixed;
-      inset: 0;
-      background:
-        linear-gradient(180deg, var(--bg-mid) 0%, var(--bg-deep) 45%, #0a0a12 100%);
+      top: -10%;
+      left: -10%;
+      width: 120%;
+      height: 120%;
       z-index: -2;
+      background-image: url('assets/bg-destiny.png');
+      background-size: cover;
+      background-position: center center;
+      background-color: var(--bg-deep);
+      filter: brightness(0.7) contrast(1.1);
+      animation: cosmic-drift 120s infinite alternate ease-in-out;
       pointer-events: none;
+    }
+    @keyframes cosmic-drift {
+      0% { transform: scale(1) rotate(0deg) translateZ(0); }
+      50% { transform: scale(1.05) rotate(1deg) translateZ(0); }
+      100% { transform: scale(1) rotate(0deg) translateZ(0); }
     }
     /* 星圖網格：opacity 調低至 0.1，避免太明顯 */
     body::after {
@@ -98,6 +115,25 @@
     }
 
     /* 玻璃擬態：極透明深藍 + blur(12px) + 白邊 + 四角亮點 */
+    /* 核心特效 2：頂級玻璃擬態 (Premium Glassmorphism) */
+    .glass-container {
+      background: rgba(10, 10, 22, 0.4);
+      backdrop-filter: blur(16px) saturate(110%);
+      -webkit-backdrop-filter: blur(16px) saturate(110%);
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+      border-radius: 24px;
+      box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.02), 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+      transition: all 0.4s ease;
+    }
+    .glass-container:hover {
+      border-top: 1px solid var(--theme-amber-glow);
+      box-shadow: inset 0 0 25px rgba(255, 191, 0, 0.05), 0 15px 35px -5px rgba(0, 0, 0, 0.6);
+      transform: translateY(-2px);
+    }
+
     .glass-hero {
       background: rgba(26, 26, 46, 0.4);
       backdrop-filter: blur(12px);
@@ -219,6 +255,46 @@
       cursor: not-allowed;
     }
     .btn-strategy:disabled::before { animation: none; }
+
+    /* 核心特效 3：戰略引擎按鈕 (The Engine Button) */
+    .engine-button {
+      background: radial-gradient(circle at center, #FFBF00 0%, #D48800 70%, #A66200 100%);
+      color: #fff;
+      text-shadow: 0 2px 5px rgba(0,0,0,0.4);
+      border: none;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+      box-shadow: 0 0 20px var(--theme-amber-glow), 0 0 40px rgba(255, 191, 0, 0.1);
+      transition: all 0.3s ease;
+    }
+    .engine-button::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 60%);
+      opacity: 0;
+      animation: pulse-light 3s infinite ease-in-out;
+      pointer-events: none;
+    }
+    @keyframes pulse-light {
+      0%, 100% { opacity: 0; transform: scale(0.8); }
+      50% { opacity: 0.6; transform: scale(1); }
+    }
+    .engine-button:hover:not(:disabled) {
+      box-shadow: 0 0 30px var(--theme-amber-glow), 0 0 60px rgba(255, 191, 0, 0.3);
+      transform: scale(1.02);
+      filter: brightness(1.1);
+    }
+    .engine-button:disabled {
+      animation: none;
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .engine-button:disabled::after { animation: none; }
     .btn-strategy::before,
     .btn-metal::before {
       content: '';
@@ -617,7 +693,7 @@
   <main class="max-w-7xl mx-auto px-4 pt-6 space-y-8">
 
     <!-- 2/13 活動訊息（僅預告，報名請至獨立活動頁） -->
-    <section id="activity-213" class="glass-hero p-6 md:p-8 max-w-2xl mx-auto space-y-4 scroll-mt-24">
+    <section id="activity-213" class="glass-container glass-hero p-6 md:p-8 max-w-2xl mx-auto space-y-4 scroll-mt-24">
       <div class="text-center">
         <p class="text-amber-400 font-black text-sm tracking-widest">一起出來玩夥伴聚會</p>
         <h2 class="text-xl md:text-2xl font-black text-amber-300 mt-1">如何玩好人生遊戲</h2>
@@ -629,14 +705,14 @@
         <p class="text-amber-300 font-bold">一起出來玩吧！祝福你。</p>
       </div>
       <div class="text-center pt-2">
-        <a href="activity-213.html" class="btn-metal inline-flex items-center justify-center px-8 py-4 rounded-2xl text-sm font-black tracking-[0.2em] transition">
+        <a href="activity-213.html" class="engine-button inline-flex items-center justify-center px-8 py-4 rounded-2xl text-sm font-black tracking-[0.2em]">
           活動報名
         </a>
       </div>
     </section>
 
     <!-- 命運座標輸入（保留原有 id 與邏輯） -->
-    <section id="inputCard" class="glass-input p-6 md:p-8 max-w-2xl mx-auto space-y-6">
+    <section id="inputCard" class="glass-container glass-input p-6 md:p-8 max-w-2xl mx-auto space-y-6">
       <h2 class="text-center hero-subtitle tracking-[0.2em] mb-2">命運座標輸入</h2>
 
       <div class="grid grid-cols-3 gap-6">
@@ -683,7 +759,7 @@
 
       <div class="pt-2">
         <button id="btnLaunch" type="button"
-          class="btn-strategy w-full py-4 rounded-2xl text-sm uppercase disabled:opacity-50 disabled:cursor-not-allowed disabled:animate-none">
+          class="engine-button w-full py-4 rounded-2xl text-sm uppercase disabled:opacity-60 disabled:cursor-not-allowed">
           啟動 · 2026 戰略引擎
         </button>
       </div>
