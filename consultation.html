@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1:1 戰略諮詢報名</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%); color: #e2e8f0; font-family: system-ui, sans-serif; }
+    .glass { background: rgba(15,23,42,0.88); backdrop-filter: blur(18px); border: 1px solid rgba(148,163,184,0.35); border-radius: 1.25rem; }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+  <div class="max-w-xl mx-auto">
+    <h1 class="text-2xl font-black text-amber-400 mb-2">1:1 戰略諮詢報名</h1>
+    <p class="text-sm text-slate-400 mb-6">填寫後送出，我們將與您聯絡確認時段與付款。</p>
+
+    <form id="consultForm" class="glass p-6 space-y-4" novalidate>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">姓名 *</label>
+        <input type="text" name="name" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="您的姓名" />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Email *</label>
+        <input type="email" name="email" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="email@example.com" />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">電話 *</label>
+        <input type="tel" name="phone" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="09xxxxxxxx" />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">出生（國曆）* 年／月／日必選；時辰或時分選填</label>
+        <div class="grid grid-cols-3 gap-2 mb-2">
+          <select name="birthYear" id="birthYear" required class="bg-black/40 border border-white/10 rounded-xl px-2 py-3 text-slate-100 text-sm">
+            <option value="">年</option>
+          </select>
+          <select name="birthMonth" id="birthMonth" required class="bg-black/40 border border-white/10 rounded-xl px-2 py-3 text-slate-100 text-sm">
+            <option value="">月</option>
+          </select>
+          <select name="birthDay" id="birthDay" required class="bg-black/40 border border-white/10 rounded-xl px-2 py-3 text-slate-100 text-sm">
+            <option value="">日</option>
+          </select>
+        </div>
+        <div class="flex flex-wrap gap-3 mb-2">
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" name="birthTimeMode" value="none" checked class="rounded-full" /> 不填寫時辰／時分
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" name="birthTimeMode" value="exact" class="rounded-full" /> 精確時分
+          </label>
+          <label class="flex items-center gap-2 text-sm">
+            <input type="radio" name="birthTimeMode" value="shichen" class="rounded-full" /> 時辰
+          </label>
+        </div>
+        <div id="birthExactWrap" class="grid grid-cols-2 gap-2 mb-2 hidden">
+          <select name="birthHour" id="birthHour" class="bg-black/40 border border-white/10 rounded-xl px-2 py-3 text-slate-100 text-sm">
+            <option value="">時</option>
+          </select>
+          <select name="birthMinute" id="birthMinute" class="bg-black/40 border border-white/10 rounded-xl px-2 py-3 text-slate-100 text-sm">
+            <option value="">分</option>
+          </select>
+        </div>
+        <div id="birthShichenWrap" class="mb-2 hidden">
+          <select name="birthShichen" id="birthShichen" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100 text-sm">
+            <option value="">請選擇時辰</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">想討論的主題 *（可複選）</label>
+        <div class="space-y-2">
+          <label class="flex items-center gap-2"><input type="checkbox" name="topics" value="生涯規劃" class="rounded" /> 生涯規劃</label>
+          <label class="flex items-center gap-2"><input type="checkbox" name="topics" value="流年節奏" class="rounded" /> 流年節奏</label>
+          <label class="flex items-center gap-2"><input type="checkbox" name="topics" value="命盤解讀" class="rounded" /> 命盤解讀</label>
+          <label class="flex items-center gap-2"><input type="checkbox" name="topics" value="其他" class="rounded" /> 其他</label>
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">其他說明</label>
+        <textarea name="topicExtra" rows="3" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="選填"></textarea>
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">匯款帳號後五碼 *</label>
+        <input type="text" name="bankLast5" required maxlength="5" pattern="[0-9]{5}" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="五位數字" />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">統編（選填）</label>
+        <input type="text" name="taxId" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="需要開立發票請填" />
+      </div>
+      <input type="hidden" name="source" value="consultation-page" />
+      <button type="submit" id="submitBtn" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-slate-950 font-black tracking-wide hover:brightness-110 transition">
+        送出報名
+      </button>
+    </form>
+    <p id="message" class="mt-4 text-sm text-center hidden"></p>
+  </div>
+
+  <script>
+    (function initBirthSelects() {
+      var now = new Date();
+      var y = document.getElementById('birthYear');
+      var m = document.getElementById('birthMonth');
+      var d = document.getElementById('birthDay');
+      var h = document.getElementById('birthHour');
+      var min = document.getElementById('birthMinute');
+      var shichen = document.getElementById('birthShichen');
+      if (!y || !m || !d || !h || !min) return;
+      for (var i = now.getFullYear(); i >= 1940; i--) y.add(new Option(i + ' 年', i));
+      for (var i = 1; i <= 12; i++) m.add(new Option(i + ' 月', i));
+      for (var i = 1; i <= 31; i++) d.add(new Option(i + ' 日', i));
+      for (var i = 0; i < 24; i++) h.add(new Option(String(i).padStart(2, '0') + ' 時', i));
+      for (var i = 0; i < 60; i++) min.add(new Option(String(i).padStart(2, '0') + ' 分', i));
+      if (shichen) {
+        var branches = ['子','丑','寅','卯','辰','巳','午','未','申','酉','戌','亥'];
+        var hours = [23,1,3,5,7,9,11,13,15,17,19,21];
+        for (var i = 0; i < 12; i++) {
+          var b = branches[i];
+          var h1 = hours[i];
+          var h2 = (h1 + 1) % 24;
+          shichen.add(new Option(b + ' ' + String(h1).padStart(2,'0') + ':00~' + String(h1).padStart(2,'0') + ':59', b + '_' + h1));
+          shichen.add(new Option(b + ' ' + String(h2).padStart(2,'0') + ':00~' + String(h2).padStart(2,'0') + ':59', b + '_' + h2));
+        }
+      }
+    })();
+
+    (function initBirthTimeMode() {
+      var form = document.getElementById('consultForm');
+      if (!form) return;
+      var exactWrap = document.getElementById('birthExactWrap');
+      var shichenWrap = document.getElementById('birthShichenWrap');
+      var radios = form.querySelectorAll('input[name="birthTimeMode"]');
+      function updateVisibility() {
+        var mode = (form.querySelector('input[name="birthTimeMode"]:checked') || {}).value || 'none';
+        if (exactWrap) exactWrap.classList.toggle('hidden', mode !== 'exact');
+        if (shichenWrap) shichenWrap.classList.toggle('hidden', mode !== 'shichen');
+      }
+      radios.forEach(function(r) { r.addEventListener('change', updateVisibility); });
+      updateVisibility();
+    })();
+
+    function showMsg(el, text, isError) {
+      el.textContent = text;
+      el.className = 'mt-4 text-sm text-center ' + (isError ? 'text-amber-400' : 'text-green-400');
+      el.classList.remove('hidden');
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    document.getElementById('consultForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      var form = e.target;
+      var btn = document.getElementById('submitBtn');
+      var msgEl = document.getElementById('message');
+      if (!msgEl) return;
+
+      var name = (form.name && form.name.value || '').trim();
+      var email = (form.email && form.email.value || '').trim();
+      var phone = (form.phone && form.phone.value || '').trim();
+      var bankLast5 = (form.bankLast5 && form.bankLast5.value || '').trim();
+      if (!name) { showMsg(msgEl, '請填寫姓名', true); return; }
+      if (!email) { showMsg(msgEl, '請填寫 Email', true); return; }
+      if (!email.includes('@')) { showMsg(msgEl, '請填寫正確的 Email 格式', true); return; }
+      if (!phone) { showMsg(msgEl, '請填寫電話', true); return; }
+      if (!bankLast5 || bankLast5.length !== 5) { showMsg(msgEl, '請填寫匯款帳號後五碼（五位數字）', true); return; }
+
+      var topics = Array.from(form.querySelectorAll('input[name="topics"]:checked')).map(function(el) { return el.value; });
+      if (topics.length === 0) {
+        showMsg(msgEl, '請至少勾選一個想討論的主題', true);
+        return;
+      }
+
+      var by = form.birthYear && form.birthYear.value;
+      var bm = form.birthMonth && form.birthMonth.value;
+      var bd = form.birthDay && form.birthDay.value;
+      if (!by || !bm || !bd) {
+        showMsg(msgEl, '請選擇出生年、月、日（國曆）', true);
+        return;
+      }
+
+      var timeMode = (form.querySelector('input[name="birthTimeMode"]:checked') || {}).value || 'none';
+      var bh = form.birthHour && form.birthHour.value;
+      var bmin = form.birthMinute && form.birthMinute.value;
+      var shichenVal = form.birthShichen && form.birthShichen.value;
+      if (timeMode === 'exact' && (bh === '' || bh === undefined || bmin === '' || bmin === undefined)) {
+        showMsg(msgEl, '您選擇了精確時分，請填寫時與分', true);
+        return;
+      }
+      if (timeMode === 'shichen' && !shichenVal) {
+        showMsg(msgEl, '您選擇了時辰，請選擇一個時辰', true);
+        return;
+      }
+
+      var birthStr = by + '/' + bm + '/' + bd;
+      if (timeMode === 'exact' && bh !== '' && bmin !== '') {
+        birthStr += ' ' + String(bh).padStart(2, '0') + ':' + String(bmin).padStart(2, '0');
+      } else if (timeMode === 'shichen' && shichenVal) {
+        birthStr += ' ' + (shichenVal.split('_')[0] || shichenVal);
+      }
+
+      var payload = {
+        name: form.name.value.trim(),
+        email: form.email.value.trim(),
+        phone: form.phone.value.trim(),
+        birth: birthStr,
+        topics,
+        topicExtra: form.topicExtra.value.trim() || null,
+        bankLast5: form.bankLast5.value.trim(),
+        taxId: form.taxId.value.trim() || null,
+        paymentMethod: 'BANK_TRANSFER',
+        source: form.source.value.trim() || null,
+      };
+
+      btn.disabled = true;
+      btn.textContent = '送出中…';
+      msgEl.classList.add('hidden');
+
+      try {
+        var res = await fetch('/api/consultation', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        var data = await res.json().catch(function() { return {}; });
+
+        if (!res.ok) {
+          showMsg(msgEl, data.error || '送出失敗，請稍後再試', true);
+          btn.disabled = false;
+          btn.textContent = '送出報名';
+          return;
+        }
+
+        msgEl.innerHTML =
+          '報名已送出，我們已收到您的資料。接下來請到以下 Calendly 連結選擇第一次線上訪談時間。<br>' +
+          '<a href="https://calendly.com/billeetw/30min" target="_blank" rel="noopener noreferrer" class="text-amber-400 underline font-semibold mt-2 inline-block">→ 開啟 Calendly 預約 30 分鐘訪談</a>';
+        msgEl.className = 'mt-4 text-sm text-center text-green-400';
+        msgEl.classList.remove('hidden');
+        msgEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        window.open('https://calendly.com/billeetw/30min', '_blank');
+      } catch (err) {
+        showMsg(msgEl, '網路錯誤，請檢查連線後再試。若為本機測試，請用 npx wrangler pages dev 啟動後再試。', true);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '送出報名';
+      }
+    });
+  </script>
+</body>
+</html>

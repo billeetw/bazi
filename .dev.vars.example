@@ -1,0 +1,6 @@
+# 本機開發時複製為 .dev.vars 並填入後台帳密（勿提交 .dev.vars）
+# ADMIN_USER=你的後台帳號
+# ADMIN_PASSWORD=你的後台密碼
+
+ADMIN_USER=admin
+ADMIN_PASSWORD=請改為你的密碼

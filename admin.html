@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>報名紀錄後台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%); color: #e2e8f0; font-family: system-ui, sans-serif; }
+    .glass { background: rgba(15,23,42,0.88); backdrop-filter: blur(18px); border: 1px solid rgba(148,163,184,0.35); border-radius: 1.25rem; }
+    .table-wrap { overflow-x: auto; }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+  <div class="max-w-5xl mx-auto">
+    <h1 class="text-2xl font-black text-amber-400 mb-2">報名紀錄後台</h1>
+
+    <div id="loginWrap" class="glass p-6 max-w-sm">
+      <p class="text-sm text-slate-400 mb-4">請輸入後台帳號與密碼</p>
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">帳號</label>
+          <input type="text" id="loginUser" autocomplete="username" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="帳號" required />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">密碼</label>
+          <input type="password" id="loginPass" autocomplete="current-password" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="密碼" required />
+        </div>
+        <p id="loginError" class="text-sm text-amber-400 hidden"></p>
+        <button type="submit" id="loginBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-slate-950 font-bold">登入</button>
+      </form>
+    </div>
+
+    <div id="dashboardWrap" class="hidden">
+      <div class="flex flex-wrap items-center gap-2 mb-4">
+        <button type="button" id="logoutBtn" class="px-4 py-2 rounded-lg bg-slate-700 text-slate-200 text-sm hover:bg-slate-600">登出</button>
+        <button type="button" id="refreshBtn" class="px-4 py-2 rounded-lg bg-amber-600/80 text-slate-900 text-sm font-medium hover:bg-amber-500">重新整理</button>
+        <span id="listCount" class="text-sm text-slate-500"></span>
+      </div>
+      <div class="glass p-4 md:p-6">
+        <div id="listError" class="text-sm text-amber-400 hidden mb-2"></div>
+        <div id="listLoading" class="text-sm text-slate-500 py-4">載入中…</div>
+        <div id="listContent" class="table-wrap hidden">
+          <table class="w-full text-sm text-left">
+            <thead>
+              <tr class="border-b border-white/10 text-slate-400">
+                <th class="py-2 pr-2 whitespace-nowrap">報名時間</th>
+                <th class="py-2 pr-2">姓名</th>
+                <th class="py-2 pr-2">Email</th>
+                <th class="py-2 pr-2">電話</th>
+                <th class="py-2 pr-2">出生</th>
+                <th class="py-2 pr-2">主題</th>
+                <th class="py-2 pr-2">匯款後五碼</th>
+                <th class="py-2 pr-2">狀態</th>
+              </tr>
+            </thead>
+            <tbody id="listBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var AUTH_KEY = 'adminAuth';
+
+    function getStoredAuth() {
+      try { return sessionStorage.getItem(AUTH_KEY); } catch { return null; }
+    }
+    function setStoredAuth(value) {
+      try { if (value) sessionStorage.setItem(AUTH_KEY, value); else sessionStorage.removeItem(AUTH_KEY); } catch (_) {}
+    }
+
+    function showLogin() {
+      document.getElementById('loginWrap').classList.remove('hidden');
+      document.getElementById('dashboardWrap').classList.add('hidden');
+      setStoredAuth('');
+    }
+
+    function showDashboard() {
+      document.getElementById('loginWrap').classList.add('hidden');
+      document.getElementById('dashboardWrap').classList.remove('hidden');
+    }
+
+    function authHeader() {
+      var auth = getStoredAuth();
+      return auth ? { Authorization: 'Basic ' + auth } : {};
+    }
+
+    function loadList() {
+      var wrap = document.getElementById('listContent');
+      var loading = document.getElementById('listLoading');
+      var errEl = document.getElementById('listError');
+      var body = document.getElementById('listBody');
+      var countEl = document.getElementById('listCount');
+
+      loading.classList.remove('hidden');
+      wrap.classList.add('hidden');
+      errEl.classList.add('hidden');
+
+      fetch('/api/admin/consultations', { headers: authHeader() })
+        .then(function (res) {
+          if (res.status === 401) {
+            showLogin();
+            return Promise.reject(new Error('請重新登入'));
+          }
+          return res.json();
+        })
+        .then(function (data) {
+          loading.classList.add('hidden');
+          if (data.error) {
+            errEl.textContent = data.error;
+            errEl.classList.remove('hidden');
+            return;
+          }
+          var list = data.list || [];
+          countEl.textContent = '共 ' + list.length + ' 筆';
+          body.innerHTML = list.map(function (row) {
+            var created = row.created_at ? new Date(row.created_at).toLocaleString('zh-TW') : '';
+            return '<tr class="border-b border-white/5 hover:bg-white/5">' +
+              '<td class="py-2 pr-2 whitespace-nowrap">' + escapeHtml(created) + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.name || '') + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.email || '') + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.phone || '') + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.birth_info || '') + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.topics || '') + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.bank_last5 || '') + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.payment_status || '') + '</td>' +
+              '</tr>';
+          }).join('');
+          wrap.classList.remove('hidden');
+        })
+        .catch(function (err) {
+          loading.classList.add('hidden');
+          errEl.textContent = err.message || '載入失敗';
+          errEl.classList.remove('hidden');
+        });
+    }
+
+    function escapeHtml(s) {
+      if (s == null) return '';
+      var div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var user = (document.getElementById('loginUser').value || '').trim();
+      var pass = document.getElementById('loginPass').value || '';
+      var btn = document.getElementById('loginBtn');
+      var errEl = document.getElementById('loginError');
+
+      errEl.classList.add('hidden');
+      btn.disabled = true;
+
+      var auth = btoa(unescape(encodeURIComponent(user + ':' + pass)));
+      setStoredAuth(auth);
+
+      fetch('/api/admin/consultations', { headers: { Authorization: 'Basic ' + auth } })
+        .then(function (res) {
+          if (res.status === 401) {
+            setStoredAuth('');
+            errEl.textContent = '帳號或密碼錯誤';
+            errEl.classList.remove('hidden');
+            btn.disabled = false;
+            return;
+          }
+          if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || '失敗'); });
+          showDashboard();
+          loadList();
+          btn.disabled = false;
+        })
+        .catch(function (err) {
+          setStoredAuth('');
+          errEl.textContent = err.message || '登入失敗';
+          errEl.classList.remove('hidden');
+          btn.disabled = false;
+        });
+    });
+
+    document.getElementById('logoutBtn').addEventListener('click', function () {
+      showLogin();
+      document.getElementById('loginPass').value = '';
+    });
+
+    document.getElementById('refreshBtn').addEventListener('click', loadList);
+
+    if (getStoredAuth()) {
+      showDashboard();
+      loadList();
+    }
+  </script>
+</body>
+</html>

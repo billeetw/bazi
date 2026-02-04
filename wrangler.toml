@@ -1,0 +1,13 @@
+# Cloudflare Pages 本機開發與 D1 綁定
+# 本機測試 API：npx wrangler pages dev . --port 8788
+name = "bazi"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "."
+
+# D1 綁定（consult-db）
+[[d1_databases]]
+binding = "CONSULT_DB"
+database_name = "consult-db"
+database_id = "9bdd8684-9fbe-444d-b2bd-16225ff8da79"
+
+# 後台 /admin.html 帳密（本機：建立 .dev.vars 設 ADMIN_USER、ADMIN_PASSWORD；正式：Pages 專案 → Settings → Environment variables）
