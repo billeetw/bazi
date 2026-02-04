@@ -33,6 +33,19 @@
   // ====== CONFIG ======
   const API_BASE = "https://17gonplay-api.billeetw.workers.dev";
 
+  /** 取得該宮位觸發的四化列表（祿/權/科/忌）。mutagenStars = { 祿: "廉貞", 權: "破軍", ... } */
+  function getSihuaForPalace(ziwei, palaceName, mutagenStars) {
+    if (!ziwei || !palaceName || !mutagenStars || typeof mutagenStars !== "object") return [];
+    const rawStars = getStarsForPalace(ziwei, palaceName);
+    const stars = rawStars.map(toTraditionalStarName);
+    const out = [];
+    ["祿", "權", "科", "忌"].forEach((hua) => {
+      const star = mutagenStars[hua];
+      if (star && stars.includes(star)) out.push(hua);
+    });
+    return out;
+  }
+
   const DEFAULT_WUXING_MEANINGS = {
     "木": { headline: "成長與規劃", content: "木代表生長、延展、規劃、學習與人際連結。木旺多主主動、願意推進；木弱常需補策略與長期布局。" },
     "火": { headline: "能見度與動能", content: "火代表表達、曝光、熱情、推動與決策速度。火旺易衝過頭、情緒決策；火弱則行動與自信不足。" },
@@ -644,6 +657,31 @@
 
     const palaceText = (dbContent.palaces && dbContent.palaces[name]) ? dbContent.palaces[name] : "（資料庫尚未填入此宮位解釋）";
 
+    const Strategy = typeof window.StrategyConfig !== "undefined" ? window.StrategyConfig : null;
+    let strategyHtml = "";
+    if (Strategy && window.ziweiScores?.palaceScores) {
+      const baseScore = Number(window.ziweiScores.palaceScores[name]) || 0;
+      const yearlyStem = horoscope?.yearlyStem ?? null;
+      let displayScore = baseScore;
+      if (name === (horoscope?.activeLimitPalaceName ?? null) && yearlyStem && ziwei) {
+        const rawStars = getStarsForPalace(ziwei, name);
+        const stars = rawStars.map(toTraditionalStarName);
+        displayScore = getPalaceScoreWithWeights(baseScore, stars, yearlyStem);
+      }
+      const maxScore = Math.max(...Object.values(window.ziweiScores.palaceScores).map(Number), 0.01);
+      const strength = Strategy.scoreToStrength(displayScore, maxScore);
+      const sihuaList = getSihuaForPalace(ziwei, name, horoscope?.mutagenStars || {});
+      const advice = Strategy.generateAdvice(name, strength, sihuaList);
+      if (advice && advice !== "（暫無戰略提示）") {
+        const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        strategyHtml = `
+      <div class="p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4">
+        <div class="text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2">戰略金句</div>
+        <div class="text-sm text-amber-100/95 leading-relaxed">${esc(advice)}</div>
+      </div>`;
+      }
+    }
+
     let starCards = "";
     if (stars.length) {
       starCards = stars
@@ -673,6 +711,7 @@
     }
 
     const detailHtml = `
+      ${strategyHtml}
       <div class="p-4 rounded-xl border border-amber-400/25 bg-amber-500/10">
         <div class="text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2">資料庫宮位解釋</div>
         <div class="text-sm text-slate-100 leading-relaxed">${palaceText}</div>
@@ -940,6 +979,7 @@
     } else {
       const activeLimitPalaceName = horoscope?.activeLimitPalaceName ?? null;
       const yearlyStem = horoscope?.yearlyStem ?? null;
+      const mutagenStars = horoscope?.mutagenStars ?? {};
 
       const rows = baseEntries.map(([name, val]) => {
         const baseScore = Number(val) || 0;
@@ -954,23 +994,26 @@
 
       const sorted = rows.sort((a, b) => b.displayScore - a.displayScore);
       const maxScore = Math.max(...sorted.map((r) => r.displayScore), 0.01);
+      const Strategy = typeof window.StrategyConfig !== "undefined" ? window.StrategyConfig : null;
 
       palaceBox.innerHTML = sorted
         .map((r) => {
           const pct = maxScore ? (r.displayScore / maxScore) * 100 : 0;
-          const rowClass = r.isActiveLimit ? "text-amber-300 font-semibold" : "text-slate-100";
+          const strength = Strategy ? Strategy.scoreToStrength(r.displayScore, maxScore) : 1;
+          const sihuaList = getSihuaForPalace(ziwei, r.name, mutagenStars);
+          const advice = Strategy ? Strategy.generateAdvice(r.name, strength, sihuaList) : "";
           const labelClass = r.isActiveLimit ? "text-amber-200" : "text-slate-300";
           const labelSuffix = r.isActiveLimit ? " · 小限命宮" : "";
           const barClass = r.isActiveLimit ? "bg-amber-400" : "bg-amber-500/70";
           return `
-            <div class="py-1.5 border-b border-white/5">
+            <div class="py-2 border-b border-white/5">
               <div class="flex justify-between text-xs mb-0.5">
                 <span class="${labelClass}">${r.name}${labelSuffix}</span>
-                <span class="font-mono ${rowClass}">${r.displayScore.toFixed(2)}</span>
               </div>
-              <div class="h-1.5 bg-white/10 rounded overflow-hidden">
+              <div class="h-2 bg-white/10 rounded overflow-hidden">
                 <div class="h-full ${barClass} rounded transition-all duration-300" style="width:${pct}%"></div>
               </div>
+              ${advice ? `<div class="text-[11px] text-amber-200/95 mt-1 leading-snug strategy-advice">${advice}</div>` : ""}
             </div>
           `;
         })
