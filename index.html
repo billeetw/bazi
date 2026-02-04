@@ -262,7 +262,7 @@
     <div class="flex items-center gap-2">
       <div class="font-black tracking-[0.22em] text-[10px] uppercase">一起出來玩</div>
       <div class="text-[10px] opacity-85">人生遊戲0.23</div>
-      <a href="#activity-213" class="nav-chip bg-amber-500/20 border-amber-300/40 text-amber-100" aria-label="2/13 活動報名">2/13 活動</a>
+      <a href="activity-213.html" class="nav-chip bg-amber-500/20 border-amber-300/40 text-amber-100" aria-label="2/13 活動報名">2/13 活動</a>
     </div>
 
     <!-- workspace nav (only after system entered) -->
@@ -303,50 +303,23 @@
       </p>
     </header>
 
-    <!-- 2/13 活動區塊（獨立活動頁內容，避免 SPA 導致連到首頁） -->
-    <section id="activity-213" class="glass p-6 md:p-8 max-w-2xl mx-auto space-y-6 scroll-mt-24">
+    <!-- 2/13 活動訊息（僅預告，報名請至獨立活動頁） -->
+    <section id="activity-213" class="glass p-6 md:p-8 max-w-2xl mx-auto space-y-4 scroll-mt-24">
       <div class="text-center">
-        <p class="text-amber-400 font-black text-sm tracking-widest">2/13 週五 · 夥伴聚會</p>
-        <h2 class="text-xl md:text-2xl font-black text-amber-300 mt-1">一起出來玩：如何玩好人生遊戲</h2>
+        <p class="text-amber-400 font-black text-sm tracking-widest">一起出來玩夥伴聚會</p>
+        <h2 class="text-xl md:text-2xl font-black text-amber-300 mt-1">如何玩好人生遊戲</h2>
         <p class="text-slate-400 text-sm mt-2">2/13 週五晚上 18:30–21:30（18:00 可進場）</p>
       </div>
       <div class="text-slate-200 text-sm leading-relaxed space-y-3">
-        <p>在這場活動裡，我們會為您介紹人生這場遊戲的真實面貌，讓您知道這個遊戲的前因後果、破關關鍵，還有專屬於您的通關密碼。</p>
-        <p>在這場說明會之後，你會對自己人生的過去、現在、未來，有更充足的理解。</p>
-        <p>我們希望所有參加聚會的夥伴，都能了解自己是誰，都能與自己、與過去、與世界和解，都能成為更好的自己，都能在未來的人生路上，提升自我，與我們一起實現自己的志願。</p>
+        <p>為您揭開人生這場遊戲的真實面貌，讓您知道這個遊戲的前因後果、破關關鍵，還有專屬於您的通關密碼。</p>
+        <p>在這場說明會之後，你會對自己人生的過去、現在、未來，有更充足的理解，都能在未來的人生路上，提升自我，與我們一起實現自己的志願。</p>
         <p class="text-amber-300 font-bold">一起出來玩吧！祝福你。</p>
       </div>
-      <div class="border-t border-white/10 pt-4 space-y-2 text-sm text-slate-300">
-        <p><strong class="text-slate-100">時間</strong>：2/13（五）晚上 18:30–21:30（18:00 可進場）</p>
-        <p><strong class="text-slate-100">地點</strong>：靠近台北市捷運東門站（報名成功後將寄送確認信及活動地址）</p>
-        <p><strong class="text-slate-100">費用</strong>：1,800 元 · <strong class="text-slate-100">轉帳</strong>：國泰世華（013）帳號 011-5777-63650</p>
-        <p class="text-slate-400 text-xs">完成轉帳後請在下方填入帳號後五碼，我們將寄出確認信及活動地址。</p>
+      <div class="text-center pt-2">
+        <a href="activity-213.html" class="inline-flex items-center justify-center px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-600 to-amber-500 text-slate-950 font-black tracking-widest hover:brightness-110 transition">
+          活動報名
+        </a>
       </div>
-      <form id="eventForm213" class="space-y-4 pt-2" novalidate>
-        <input type="hidden" name="eventSlug" value="213" />
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">電子郵件 *</label>
-          <input type="email" name="email" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="email@example.com" />
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">姓名（如何稱呼）*</label>
-          <input type="text" name="name" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="您的姓名" />
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">轉帳帳號後五碼 *</label>
-          <input type="text" name="bankLast5" required maxlength="5" pattern="[0-9]{5}" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="五位數字" />
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">電話（方便聯繫）*</label>
-          <input type="tel" name="phone" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="09xxxxxxxx" />
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">統一編號（如有請提供）</label>
-          <input type="text" name="taxId" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="選填" />
-        </div>
-        <button type="submit" id="eventForm213Btn" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-slate-950 font-black tracking-wide hover:brightness-110 transition">送出報名</button>
-      </form>
-      <p id="eventForm213Message" class="text-sm text-center hidden"></p>
     </section>
 
     <!-- INPUT (will be removed after entering system) -->
@@ -629,49 +602,6 @@
 
   <script src="js/calc.js"></script>
   <script src="js/ui.js"></script>
-  <script>
-    (function () {
-      var form = document.getElementById('eventForm213');
-      var btn = document.getElementById('eventForm213Btn');
-      var msgEl = document.getElementById('eventForm213Message');
-      if (!form || !btn || !msgEl) return;
-      function showMsg(text, isError) {
-        msgEl.textContent = text;
-        msgEl.className = 'text-sm text-center ' + (isError ? 'text-amber-400' : 'text-emerald-400');
-        msgEl.classList.remove('hidden');
-        msgEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-      form.addEventListener('submit', async function (e) {
-        e.preventDefault();
-        var name = (form.name && form.name.value || '').trim();
-        var email = (form.email && form.email.value || '').trim();
-        var phone = (form.phone && form.phone.value || '').trim();
-        var bankLast5 = (form.bankLast5 && form.bankLast5.value || '').trim();
-        if (!email) { showMsg('請填寫電子郵件', true); return; }
-        if (!email.includes('@')) { showMsg('請填寫正確的 Email 格式', true); return; }
-        if (!name) { showMsg('請填寫姓名', true); return; }
-        if (!bankLast5 || bankLast5.length !== 5 || !/^\d{5}$/.test(bankLast5)) { showMsg('請填寫轉帳帳號後五碼（五位數字）', true); return; }
-        if (!phone) { showMsg('請填寫電話', true); return; }
-        btn.disabled = true;
-        btn.textContent = '送出中…';
-        msgEl.classList.add('hidden');
-        try {
-          var res = await fetch('/api/event-registration', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-            eventSlug: (form.eventSlug && form.eventSlug.value) || '213',
-            name: name, email: email, phone: phone, bankLast5: bankLast5,
-            taxId: (form.taxId && form.taxId.value || '').trim() || null
-          }) });
-          var data = await res.json().catch(function () { return {}; });
-          if (!res.ok) { showMsg((data && data.error) || ('送出失敗（HTTP ' + res.status + '）'), true); return; }
-          msgEl.innerHTML = '<span class="font-black text-emerald-300">報名成功！</span><br>我們已收到您的資料，將寄出確認信及活動地址至您的信箱，期待您的光臨。';
-          msgEl.className = 'text-base text-center text-emerald-300';
-          msgEl.classList.remove('hidden');
-          form.reset();
-        } catch (err) { showMsg('網路錯誤，請檢查連線後再試。', true); }
-        finally { btn.disabled = false; btn.textContent = '送出報名'; }
-      });
-    })();
-  </script>
 
 </body>
 </html>
