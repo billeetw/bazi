@@ -179,6 +179,66 @@
     return String(n).padStart(2, "0");
   }
 
+  // ====== 時辰（子丑寅...）→ hour/minute（純換算） ======
+  const SHICHEN_ORDER = Object.freeze(["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"]);
+
+  // 時辰區間（每個 2 小時）的起始小時：子=23, 丑=1, 寅=3...（上半=起始那 1 小時、下半=下一個 1 小時）
+  const SHICHEN_START_HOUR = Object.freeze({
+    "子": 23,
+    "丑": 1,
+    "寅": 3,
+    "卯": 5,
+    "辰": 7,
+    "巳": 9,
+    "午": 11,
+    "未": 13,
+    "申": 15,
+    "酉": 17,
+    "戌": 19,
+    "亥": 21,
+  });
+
+  // 保留舊版「中間值」對照（相容/除錯用）
+  const SHICHEN_TO_HOUR = Object.freeze({
+    "子": 0,   // 23-01 → 00
+    "丑": 2,   // 01-03 → 02
+    "寅": 4,   // 03-05 → 04
+    "卯": 6,   // 05-07 → 06
+    "辰": 8,   // 07-09 → 08
+    "巳": 10,  // 09-11 → 10
+    "午": 12,  // 11-13 → 12
+    "未": 14,  // 13-15 → 14
+    "申": 16,  // 15-17 → 16
+    "酉": 18,  // 17-19 → 18
+    "戌": 20,  // 19-21 → 20
+    "亥": 22,  // 21-23 → 22
+  });
+
+  function resolveBirthTime({ mode, hour, minute, shichen, shichenHalf }) {
+    if (mode === "shichen") {
+      const s = SHICHEN_START_HOUR[shichen];
+      const half = shichenHalf === "lower" ? "lower" : "upper";
+      const h = (Number.isFinite(s) ? s : 23) + (half === "lower" ? 1 : 0);
+      return {
+        hour: ((Number.isFinite(h) ? h : 0) + 24) % 24,
+        minute: 30,
+        source: "shichen",
+        shichen: SHICHEN_ORDER.includes(shichen) ? shichen : "子",
+        shichenHalf: half,
+      };
+    }
+
+    const hh = Number(hour);
+    const mm = Number(minute);
+    return {
+      hour: Number.isFinite(hh) ? hh : 0,
+      minute: Number.isFinite(mm) ? mm : 0,
+      source: "exact",
+      shichen: null,
+      shichenHalf: null,
+    };
+  }
+
   function toTraditionalStarName(name) {
     return STAR_NAME_TRAD_MAP[name] || name;
   }
@@ -376,8 +436,12 @@
     STAR_WUXING_MAP,
     CANGGAN_DATA,
     FIVE_ELEMENTS_ORDER,
+    SHICHEN_ORDER,
+    SHICHEN_TO_HOUR,
+    SHICHEN_START_HOUR,
 
     pad2,
+    resolveBirthTime,
     toTraditionalStarName,
     getStarsForPalace,
     pctFromWx,

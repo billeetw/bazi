@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="人生遊戲 0.21：結合八字五行、紫微斗數與 2026 流月紅綠燈的個人戰略指揮中心，協助你規劃節奏與決策。" />
-  <title>人生遊戲0.21｜一起出來玩</title>
+  <meta name="description" content="人生遊戲 0.23：結合八字五行、紫微斗數與 2026 流月紅綠燈的個人戰略指揮中心，協助你規劃節奏與決策。" />
+  <title>人生遊戲0.23｜一起出來玩</title>
 
   <!-- Tailwind CDN（開發用） -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -244,7 +244,7 @@
   <div class="nav-bar flex items-center justify-between gap-3">
     <div class="flex items-center gap-2">
       <div class="font-black tracking-[0.22em] text-[10px] uppercase">一起出來玩</div>
-      <div class="text-[10px] opacity-85">人生遊戲0.21</div>
+      <div class="text-[10px] opacity-85">人生遊戲0.23</div>
     </div>
 
     <!-- workspace nav (only after system entered) -->
@@ -268,7 +268,7 @@
     <header id="landing" class="text-center space-y-3">
       <p class="section-subtitle">2026 Strategic Command Hub</p>
       <h1 class="text-3xl md:text-5xl font-black tracking-tight">
-        人生遊戲0.21
+        人生遊戲0.23
       </h1>
       <p class="text-sm text-slate-400 max-w-3xl mx-auto">
         後端同步計算：八字五行（含藏干加權）＋十神主軸＋2026 流月紅綠燈＋紫微 12 宮主/副星。<br/>
@@ -292,9 +292,24 @@
         <select id="birthDay"   class="bg-black/40 p-3 rounded-xl text-sm border border-white/10"></select>
       </div>
 
-      <div class="grid grid-cols-3 gap-2">
+      <div class="grid grid-cols-2 gap-2">
+        <select id="gender" class="bg-black/40 p-3 rounded-xl text-sm border border-white/10"></select>
+        <select id="timeMode" class="bg-black/40 p-3 rounded-xl text-sm border border-white/10"></select>
+      </div>
+
+      <div id="exactTimeRow" class="grid grid-cols-3 gap-2">
         <select id="birthHour"   class="bg-black/40 p-3 rounded-xl text-sm border border-white/10 col-span-2"></select>
         <select id="birthMinute" class="bg-black/40 p-3 rounded-xl text-sm border border-white/10"></select>
+      </div>
+
+      <div id="shichenRow" class="hidden">
+        <div class="grid grid-cols-2 gap-2">
+          <select id="birthShichen" class="w-full bg-black/40 p-3 rounded-xl text-sm border border-white/10"></select>
+          <select id="birthShichenHalf" class="w-full bg-black/40 p-3 rounded-xl text-sm border border-white/10"></select>
+        </div>
+        <div class="text-[11px] text-slate-500 mt-2">
+          註：選「時辰」會換算成代表時刻（上半/下半時辰各取代表時間）送入系統計算。
+        </div>
       </div>
 
       <button id="btnLaunch"
