@@ -73,17 +73,21 @@
   }
 
   // ====== DOM HELPERS ======
-  function renderBar(targetId, data, max) {
+  /** 橫向五行能量條，可標記 [最強] [最弱] */
+  function renderBar(targetId, data, max, opts) {
     const box = document.getElementById(targetId);
     if (!box) return;
+    const strongest = opts?.strongest ?? null;
+    const weakest = opts?.weakest ?? null;
     box.innerHTML = "";
     ["木", "火", "土", "金", "水"].forEach((e) => {
       const v = Number(data?.[e] || 0);
       const w = max ? Math.max(3, (v / max) * 100) : 0;
+      const tag = e === strongest ? " <span class=\"text-amber-400 text-[10px] font-black\">[ 最強 ]</span>" : e === weakest ? " <span class=\"text-slate-400 text-[10px] font-black\">[ 最弱 ]</span>" : "";
       box.innerHTML += `
         <div class="mb-1 wx-row">
           <div class="flex justify-between text-xs text-slate-300">
-            <span class="font-bold">${e}</span>
+            <span class="font-bold">${e}${tag}</span>
             <span class="font-mono">${v.toFixed(1)}</span>
           </div>
           <div class="h-2 bg-white/10 rounded overflow-hidden">
@@ -225,76 +229,38 @@
     return out;
   }
 
+  /** 伯彥戰略看板：一橫條（標 [最強][最弱]）+ 本局屬性 / 戰略亮點 / 系統風險 / 伯彥助推，總字數 ≤150 */
   function renderFiveElementComment(containerId, wx, kind) {
     const el = document.getElementById(containerId);
     if (!el) return;
 
-    // 新版：定調 / 相生 / 相剋 / 短板 + StrategistNote，標籤化、精簡 2 條
-    if (typeof window.Calc?.generateFiveElementDiagnosis === "function") {
-      const d = window.Calc.generateFiveElementDiagnosis(wx || {});
-      const ENERGY_LABEL = { 0: "低頻", 1: "平穩", 2: "強健", 3: "過旺" };
-      const tagStrong = d.levels && d.levels[d.strongest] !== undefined
-        ? `[ ${ENERGY_LABEL[d.levels[d.strongest]] || "平穩"} ]` : "";
-      const tagWeak = d.levels && d.levels[d.weakest] !== undefined
-        ? `[ ${ENERGY_LABEL[d.levels[d.weakest]] || "平穩"} ]` : "";
-      const prefix =
-        kind === "surface"
-          ? `人前操作風格：最強【${d.strongest}】${tagStrong}、最弱【${d.weakest}】${tagWeak}`
-          : kind === "strategic"
-            ? `實戰資源：最強【${d.strongest}】${tagStrong}、最弱【${d.weakest}】${tagWeak}`
-            : `本局五行：最強【${d.strongest}】${tagStrong}、最弱【${d.weakest}】${tagWeak}`;
-
-      function escapeHtml(s) {
-        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-      }
-      const toHtml = (txt, forMobile) => {
-        const lines = String(txt || "").split("\n").map((l) => l.trim()).filter(Boolean);
-        const chunks = forMobile ? lines.flatMap((line) => wrapForMobile(line, 20)) : lines;
-        return chunks
-          .map((line) => {
-            if (line.startsWith("- ")) return `<li class="ml-4 list-disc wuxing-line">${escapeHtml(line.slice(2))}</li>`;
-            return `<div class="wuxing-line">${escapeHtml(line)}</div>`;
-          })
-          .join("");
-      };
-      const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-      const blockClass = "text-slate-300 mt-1 leading-relaxed space-y-1.5";
-      const strategistHtml = d.strategistNote
-        ? `<div class="text-amber-200 mt-4 pt-4 border-t border-amber-500/30 font-black">李伯彥 · 戰略顧問</div>
-           <div class="text-slate-200 mt-2 leading-relaxed space-y-2 wuxing-strategist">${toHtml(d.strategistNote, isMobile)}</div>`
-        : "";
-
-      el.innerHTML = `
-        <div class="text-slate-100 font-bold wuxing-prefix">${escapeHtml(prefix)}</div>
-        <div class="text-amber-200 mt-2 font-black">定調</div>
-        <div class="${blockClass}">${toHtml(d.title, isMobile)}</div>
-
-        <div class="text-amber-200 mt-3 font-black">相生路徑</div>
-        <div class="${blockClass}">${toHtml(d.generation, isMobile)}</div>
-
-        <div class="text-amber-200 mt-3 font-black">相剋制衡</div>
-        <div class="${blockClass}">${toHtml(d.overcoming, isMobile)}</div>
-
-        <div class="text-amber-200 mt-3 font-black">短板分析</div>
-        <div class="${blockClass}">${toHtml(d.weakness, isMobile)}</div>
-
-        ${strategistHtml}
-      `;
+    if (typeof window.Calc?.getBoyanBoard !== "function") {
+      const c = generateFiveElementComment(wx || {});
+      el.innerHTML = `<div class="text-slate-100">本局五行：最強【${c.strongest}】、最弱【${c.weakest}】。</div><div class="text-slate-300 mt-1">${c.strongComment} ${c.weakComment}</div>`;
       return;
     }
 
-    const c = generateFiveElementComment(wx);
-    const prefix =
-      kind === "surface"
-        ? `你在人前的操作風格：最強【${c.strongest}】、最弱【${c.weakest}】。`
-        : kind === "strategic"
-          ? `你真正扛住人生的實戰資源：最強【${c.strongest}】、最弱【${c.weakest}】。`
-          : `本局五行：最強【${c.strongest}】、最弱【${c.weakest}】。`;
+    let board;
+    try {
+      board = window.Calc.getBoyanBoard(wx || {});
+    } catch (err) {
+      console.warn("getBoyanBoard error:", err);
+      const c = generateFiveElementComment(wx || {});
+      el.innerHTML = `<div class="text-slate-100">本局五行：最強【${c.strongest}】、最弱【${c.weakest}】。</div><div class="text-slate-300 mt-1">${c.strongComment} ${c.weakComment}</div>`;
+      return;
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
 
     el.innerHTML = `
-      <div class="text-slate-100">${prefix}</div>
-      <div class="text-slate-300 mt-1">${c.strongComment} ${c.weakComment}</div>
-      <div class="text-slate-400 mt-1">${c.shengComment} ${c.keComment}</div>
+      <div class="boyan-board text-[11px] text-slate-200 space-y-2 leading-relaxed">
+        <div class="boyan-attr">${escapeHtml(board.本局屬性 || "")}</div>
+        <div class="boyan-highlight">${escapeHtml(board.戰略亮點 || "")}</div>
+        <div class="boyan-risk">${escapeHtml(board.系統風險 || "")}</div>
+        <div class="boyan-push text-amber-200/95 font-semibold">${escapeHtml(board.伯彥助推 || "")}</div>
+      </div>
     `;
   }
 
@@ -892,11 +858,12 @@
 
       // bazi + canggan + bars
       renderPillars(bazi);
-      renderBar("surfaceWxBars", bazi.wuxing?.surface, 4);
+      const surfaceBoard = typeof window.Calc?.getBoyanBoard === "function" ? (() => { try { return window.Calc.getBoyanBoard(bazi.wuxing?.surface || {}); } catch (_) { return null; } })() : null;
+      const strategicBoard = typeof window.Calc?.getBoyanBoard === "function" ? (() => { try { return window.Calc.getBoyanBoard(bazi.wuxing?.strategic || {}); } catch (_) { return null; } })() : null;
+      renderBar("surfaceWxBars", bazi.wuxing?.surface, 4, surfaceBoard ? { strongest: surfaceBoard.strongest, weakest: surfaceBoard.weakest } : undefined);
       renderRadarChart("surfaceWxRadar", bazi.wuxing?.surface);
       renderFiveElementComment("surfaceWxComment", bazi.wuxing?.surface, "surface");
-
-      renderBar("strategicWxBars", bazi.wuxing?.strategic, bazi.wuxing?.maxStrategic || 1);
+      renderBar("strategicWxBars", bazi.wuxing?.strategic, bazi.wuxing?.maxStrategic || 1, strategicBoard ? { strongest: strategicBoard.strongest, weakest: strategicBoard.weakest } : undefined);
       renderRadarChart("strategicWxRadar", bazi.wuxing?.strategic);
       renderFiveElementComment("strategicWxComment", bazi.wuxing?.strategic, "strategic");
 

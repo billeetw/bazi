@@ -453,8 +453,17 @@
   }
 
   function generateFiveElementDiagnosis(wx) {
-    const { strongest, weakest } = getStrongestWeakest(wx, ["木", "火", "土", "金", "水"]);
-    const { levels } = toEnergyLevelsFromWx(wx);
+    // 正規化：若 API 回傳英文鍵 (wood/fire/earth/metal/water)，轉成中文
+    const EN_TO_ZH = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
+    const keysZh = ["木", "火", "土", "金", "水"];
+    const wxUse = {};
+    keysZh.forEach((k) => {
+      const enKey = Object.keys(EN_TO_ZH).find((en) => EN_TO_ZH[en] === k);
+      wxUse[k] = toNumberOrZero(wx?.[k]) || (wx && enKey ? toNumberOrZero(wx[enKey]) : 0);
+    });
+
+    const { strongest, weakest } = getStrongestWeakest(wxUse, ["木", "火", "土", "金", "水"]);
+    const { levels } = toEnergyLevelsFromWx(wxUse);
     const keys = ["木", "火", "土", "金", "水"];
 
     const levelsArr = keys.map((k) => clampEnergyLevel(levels[k]));
@@ -549,6 +558,74 @@
     }
     lines.push(`這局不是算命，是給你一張拿回主導權的說明書。接下來，把精力投向能提款的地方，避開雷區，穩穩通關。`);
     return lines.join("\n");
+  }
+
+  /** 伯彥戰略看板：精簡四行 + 一橫條，總字數 ≤150，無 Level/母子/深度路徑字眼 */
+  const ELEMENT_TYPE = { "木": "執行型", "火": "傳播型", "土": "整合型", "金": "決斷型", "水": "流動型" };
+  const BOYAN_CONVERSION_ONE = {
+    "木->火": "將執行力（木）轉成能見度（火），這才是你能拿走的資產。",
+    "火->土": "將高關注度（火）沉澱為品牌信用（土），這才是你能拿走的資產。",
+    "土->金": "將根基（土）萃成規則與效率（金），這才是你能拿走的資產。",
+    "金->水": "將決斷與邊界（金）催生深度思考（水），這才是你能拿走的資產。",
+    "水->木": "將智慧（水）轉成具體執行（木），這才是你能拿走的資產。",
+  };
+  const BOYAN_RISK_ONE = {
+    "木->土": "擴張慾望（木）正在損害信用與穩定（土）。",
+    "土->水": "體制與穩健（土）正在限制智慧流動（水）。",
+    "水->火": "理性（水）壓制熱情（火），事業缺乏感性紅利。",
+    "火->金": "情緒衝動（火）正在燒毀決斷邊界（金）。你太好說話了，這會讓你能量耗損。",
+    "金->木": "規則與自我設限（金）正在扼殺執行活力（木）。",
+  };
+  const BOYAN_PUSH = {
+    "木": "別再只規劃不行動。這一關，你要練的是「動手做」。",
+    "火": "別再默默做事。這一關，你要練的是「傳播力」。",
+    "土": "別在沙灘上蓋房子。這一關，你要練的是「資產化」。",
+    "金": "別再為了討好而妥協。這一關，你要練的是「拒絕力」。",
+    "水": "別用體力對抗智力。這一關，你要練的是「深度思考」。",
+  };
+
+  function getBoyanBoard(wx) {
+    const EN_TO_ZH = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
+    const keysZh = ["木", "火", "土", "金", "水"];
+    const wxUse = {};
+    keysZh.forEach((k) => {
+      const enKey = Object.keys(EN_TO_ZH).find((en) => EN_TO_ZH[en] === k);
+      wxUse[k] = toNumberOrZero(wx?.[k]) || (wx && enKey ? toNumberOrZero(wx[enKey]) : 0);
+    });
+    const { strongest, weakest } = getStrongestWeakest(wxUse, keysZh);
+    const { levels } = toEnergyLevelsFromWx(wxUse);
+    const strongLv = clampEnergyLevel(levels[strongest]);
+    const weakLv = clampEnergyLevel(levels[weakest]);
+    const M = ELEMENT_CORE_MEANING;
+
+    const 本局屬性 =
+      `🔥 本局屬性：${strongest}系主導（${ELEMENT_TYPE[strongest] || "均衡型"}）。${meaningText(strongest, levels[strongest])}，但${M[weakest]?.core || ""}支撐不足。`;
+
+    const genPairs = [["木", "火"], ["火", "土"], ["土", "金"], ["金", "水"], ["水", "木"]];
+    const genPair = genPairs.find(([m]) => m === strongest);
+    const [m, c] = genPair || genPairs[0];
+    const onePath = BOYAN_CONVERSION_ONE[`${m}->${c}`];
+    const 戰略亮點 = onePath
+      ? `🚀 最優路徑：${onePath}`
+      : `🚀 最優路徑：將${M[m]?.core}（${m}）轉化為${M[c]?.core}（${c}），這才是你能拿走的資產。`;
+
+    const kePairs = [["木", "土"], ["土", "水"], ["水", "火"], ["火", "金"], ["金", "木"]];
+    let 系統風險 = "";
+    for (const [a, b] of kePairs) {
+      if (relationBadge(levels[a], levels[b]) !== "強弱") continue;
+      const one = BOYAN_RISK_ONE[`${a}->${b}`];
+      if (one) {
+        系統風險 = `🚨 系統風險：${one}`;
+        break;
+      }
+    }
+    if (!系統風險) {
+      系統風險 = `🚨 系統風險：${weakest}（${M[weakest]?.core}）偏弱，易拖慢整體。`;
+    }
+
+    const 伯彥助推 = BOYAN_PUSH[weakest] || `這一關，先把【${weakest}】補上再談放大。`;
+
+    return { levels, strongest, weakest, wxRaw: wxUse, 本局屬性, 戰略亮點, 系統風險, 伯彥助推 };
   }
 
   // 三方四正：本宮 + 對宮( +6 ) + 三合( +4, +8 )
@@ -757,6 +834,7 @@
     normalizeWxByMax,
     generateFiveElementComment,
     generateFiveElementDiagnosis,
+    getBoyanBoard,
     toEnergyLevelsFromWx,
     computeRelatedPalaces,
     getHoroscopeFromAge,

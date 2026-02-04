@@ -434,10 +434,13 @@
     .wx-bar-inner{
       transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    /* 五行說明：手機適配，每段不超過 20 字感、增加間距 */
+    /* 伯彥戰略看板：精簡四行，手機一屏看完 */
+    .boyan-board { max-width: 22em; }
+    .boyan-attr, .boyan-highlight, .boyan-risk { font-size: 11px; line-height: 1.5; }
+    .boyan-push { font-size: 11px; margin-top: 0.25rem; }
     @media (max-width: 767px) {
+      .boyan-board { padding-bottom: 0.5rem; }
       .wuxing-line { margin-bottom: 0.5em; line-height: 1.6; max-width: 20em; }
-      .wuxing-strategist .wuxing-line { margin-bottom: 0.6em; }
     }
     @keyframes fadeInUp{
       from{ opacity:0; transform: translateY(4px); }
