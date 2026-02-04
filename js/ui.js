@@ -210,6 +210,45 @@
     const el = document.getElementById(containerId);
     if (!el) return;
 
+    // 新版：四段式診斷（定調 / 相生 / 相剋 / 短板）
+    // 若新版診斷不存在，fallback 舊版一句話邏輯。
+    if (typeof window.Calc?.generateFiveElementDiagnosis === "function") {
+      const d = window.Calc.generateFiveElementDiagnosis(wx || {});
+      const prefix =
+        kind === "surface"
+          ? `你在人前的操作風格：最強【${d.strongest}】、最弱【${d.weakest}】。`
+          : kind === "strategic"
+            ? `你真正扛住人生的實戰資源：最強【${d.strongest}】、最弱【${d.weakest}】。`
+            : `本局五行：最強【${d.strongest}】、最弱【${d.weakest}】。`;
+
+      const toHtml = (txt) =>
+        String(txt || "")
+          .split("\n")
+          .map((line) => line.trim())
+          .filter(Boolean)
+          .map((line) => {
+            if (line.startsWith("- ")) return `<li class="ml-4 list-disc">${line.slice(2)}</li>`;
+            return `<div>${line}</div>`;
+          })
+          .join("");
+
+      el.innerHTML = `
+        <div class="text-slate-100 font-bold">${prefix}</div>
+        <div class="text-amber-200 mt-2 font-black">定調</div>
+        <div class="text-slate-200 mt-1 leading-relaxed">${toHtml(d.title)}</div>
+
+        <div class="text-amber-200 mt-3 font-black">相生路徑</div>
+        <div class="text-slate-300 mt-1 leading-relaxed">${toHtml(d.generation)}</div>
+
+        <div class="text-amber-200 mt-3 font-black">相剋制衡</div>
+        <div class="text-slate-300 mt-1 leading-relaxed">${toHtml(d.overcoming)}</div>
+
+        <div class="text-amber-200 mt-3 font-black">短板分析</div>
+        <div class="text-slate-300 mt-1 leading-relaxed">${toHtml(d.weakness)}</div>
+      `;
+      return;
+    }
+
     const c = generateFiveElementComment(wx);
     const prefix =
       kind === "surface"
@@ -218,7 +257,6 @@
           ? `你真正扛住人生的實戰資源：最強【${c.strongest}】、最弱【${c.weakest}】。`
           : `本局五行：最強【${c.strongest}】、最弱【${c.weakest}】。`;
 
-    // 一句話（用分號串起 strongest/weakest + 生/剋）
     el.innerHTML = `
       <div class="text-slate-100">${prefix}</div>
       <div class="text-slate-300 mt-1">${c.strongComment} ${c.weakComment}</div>

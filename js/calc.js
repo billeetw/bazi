@@ -353,6 +353,189 @@
     };
   }
 
+  // ====== 五行：能量等級診斷（0-3） ======
+  // 能量等級：0(微弱) 1(平穩) 2(強健) 3(過旺)
+  const ENERGY_LABEL = Object.freeze({
+    0: "微弱",
+    1: "平穩",
+    2: "強健",
+    3: "過旺",
+  });
+
+  const ELEMENT_CORE_MEANING = Object.freeze({
+    "木": { core: "執行、生長", low01: "猶豫不決、停滯", level2: "條理分明、穩定成長", level3: "盲目擴張、焦慮", remedy: "缺乏「動手做」的勇氣，你需要的是直接啟動，而不是持續規劃。" },
+    "火": { core: "傳播、名聲", low01: "默默無聞、冷淡", level2: "熱情、影響力強", level3: "虛火上升、易碎", remedy: "你的好只有你自己知道，缺乏「傳播力」將讓你陷入孤軍奮戰。" },
+    "土": { core: "信用、整合", low01: "缺乏根基、動盪", level2: "穩重、資源豐厚", level3: "頑固死板、阻礙", remedy: "所有的成就都像在沙灘上蓋房子，你需要的是「資產化」與「穩定性」。" },
+    "金": { core: "決斷、規則", low01: "界線模糊、軟弱", level2: "效率、紀律、果斷", level3: "冷酷無情、偏激", remedy: "你太好說話了，缺乏「拒絕力」是你目前能量耗損的核心原因。" },
+    "水": { core: "智慧、流動", low01: "思考枯竭、封閉", level2: "洞察力、靈活應變", level3: "憂慮多思、漂浮", remedy: "正在用體力對抗智力，缺乏「深度思考」會讓你陷入低效率的勤奮。" },
+  });
+
+  // 全域相生（深度貼文風格）
+  const GENERATION_POST_STYLE = Object.freeze({
+    "木->火": { headline: "策略引燃市場", text: "你的執行力（木）正精準轉化為市場名聲（火），品牌能量正處於上升期。" },
+    "火->土": { headline: "流量沉澱資產", text: "目前的高關注度（火）應迅速轉化為品牌信用與基礎建設（土），避免熱度流失。" },
+    "土->金": { headline: "資源轉化效率", text: "厚實的根基（土）是為了萃取更高效率的 SOP 與規則（金），讓組織自動運轉。" },
+    "金->水": { headline: "決斷催生智慧", text: "你的紀律與邊界（金）正在為深度的思考與策略（水）提供乾淨的環境。" },
+    "水->木": { headline: "智謀驅動執行", text: "充沛的智慧（水）正高效轉化為具體的執行管道（木），這是最強的變現路徑。" },
+  });
+
+  // 全域相剋（深度貼文風格）
+  const OVERCOMING_POST_STYLE = Object.freeze({
+    "木->土": { headline: "擴張動搖根基", text: "過度的擴張慾望（木）正在損害你的信用與穩定性（土），請注意步調。" },
+    "土->水": { headline: "體制限制創意", text: "僵化的制度或過度追求穩健（土），正在扼殺你原本靈活的智慧流動（水）。" },
+    "水->火": { headline: "理性壓制熱情", text: "絕對的冷靜理性（水）雖然能避險，但也可能讓你的事業缺乏感性紅利（火）。" },
+    "火->金": { headline: "情緒破壞規則", text: "突發的情緒衝動或追求曝光（火），正在挑戰你辛苦建立的決斷邊界（金）。" },
+    "金->木": { headline: "規則扼殺執行", text: "嚴苛的管理與自我設限（金），正在剪除你應有的執行活力與成長空間（木）。" },
+  });
+
+  function clampEnergyLevel(v) {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 0;
+    const i = Math.round(n);
+    if (i <= 0) return 0;
+    if (i === 1) return 1;
+    if (i === 2) return 2;
+    return 3;
+  }
+
+  function energyBand(level) {
+    const x = clampEnergyLevel(level);
+    if (x <= 1) return "low";
+    if (x === 2) return "healthy";
+    return "excess";
+  }
+
+  function meaningText(el, level) {
+    const m = ELEMENT_CORE_MEANING[el];
+    const lv = clampEnergyLevel(level);
+    if (!m) return "";
+    if (lv <= 1) return `Level 0-1（低能量）：${m.low01}`;
+    if (lv === 2) return `Level 2（強健）：${m.level2}`;
+    return `Level 3（過旺）：${m.level3}`;
+  }
+
+  function relationBadge(a, b) {
+    const A = clampEnergyLevel(a) >= 2 ? "強" : "弱";
+    const B = clampEnergyLevel(b) >= 2 ? "強" : "弱";
+    return `${A}${B}`; // 強弱/弱強/強強/弱弱
+  }
+
+  // 把任意五行數值映射成 0-3：以該組數值 max 為基準分桶
+  // 0: ≤25% max, 1: ≤50%, 2: ≤75%, 3: >75%
+  function toEnergyLevelsFromWx(wx) {
+    const raw = {
+      "木": toNumberOrZero(wx?.["木"]),
+      "火": toNumberOrZero(wx?.["火"]),
+      "土": toNumberOrZero(wx?.["土"]),
+      "金": toNumberOrZero(wx?.["金"]),
+      "水": toNumberOrZero(wx?.["水"]),
+    };
+    const max = Math.max(0, raw["木"], raw["火"], raw["土"], raw["金"], raw["水"]);
+    const levelOf = (v) => {
+      if (max <= 0) return 0;
+      const r = v / max;
+      if (r <= 0.25) return 0;
+      if (r <= 0.5) return 1;
+      if (r <= 0.75) return 2;
+      return 3;
+    };
+    return {
+      levels: {
+        "木": levelOf(raw["木"]),
+        "火": levelOf(raw["火"]),
+        "土": levelOf(raw["土"]),
+        "金": levelOf(raw["金"]),
+        "水": levelOf(raw["水"]),
+      },
+      raw,
+      max,
+    };
+  }
+
+  function generateFiveElementDiagnosis(wx) {
+    const { strongest, weakest } = getStrongestWeakest(wx, ["木", "火", "土", "金", "水"]);
+    const { levels } = toEnergyLevelsFromWx(wx);
+    const keys = ["木", "火", "土", "金", "水"];
+
+    const levelsArr = keys.map((k) => clampEnergyLevel(levels[k]));
+    const maxLv = Math.max(...levelsArr);
+    const minLv = Math.min(...levelsArr);
+
+    const strongestTxt = `${strongest}（${ENERGY_LABEL[clampEnergyLevel(levels[strongest])]}）`;
+    const weakestTxt = `${weakest}（${ENERGY_LABEL[clampEnergyLevel(levels[weakest])]}）`;
+
+    let title = "";
+    if (maxLv - minLv <= 1) title = `五行能量整體偏均衡：以${strongestTxt}帶動、${weakestTxt}需補位。`;
+    else if (maxLv === 3 && minLv === 0) title = `能量呈兩極：${strongestTxt}過度主導，${weakestTxt}成為瓶頸。`;
+    else if (maxLv === 3) title = `存在過旺能量：${strongestTxt}主導節奏，需注意失衡帶來的代價。`;
+    else if (minLv === 0) title = `存在明顯短板：${weakestTxt}偏弱，容易拖慢整體推進。`;
+    else title = `能量分布不均：${strongestTxt}偏強、${weakestTxt}偏弱，建議先補短板再談放大優勢。`;
+
+    // 相生母子：木→火→土→金→水→木（固定）
+    const genPairs = [["木", "火"], ["火", "土"], ["土", "金"], ["金", "水"], ["水", "木"]];
+    const elementMeaningLines = keys.map((k) => `- 【${k}｜${ELEMENT_CORE_MEANING[k].core}】${meaningText(k, levels[k])}`);
+
+    const motherChildLines = [];
+    const conversionHighlights = [];
+    genPairs.forEach(([m, c]) => {
+      const badge = relationBadge(levels[m], levels[c]);
+      const post = GENERATION_POST_STYLE[`${m}->${c}`];
+
+      if (post && (energyBand(levels[m]) === "healthy" || energyBand(levels[m]) === "excess") && clampEnergyLevel(levels[c]) >= 1) {
+        conversionHighlights.push(`【${m}生${c}｜${post.headline}】${post.text}`);
+      }
+      if (badge === "強弱") motherChildLines.push(`【母強子弱】${m}（${ENERGY_LABEL[clampEnergyLevel(levels[m])]}）生${c}（${ENERGY_LABEL[clampEnergyLevel(levels[c])]}）：母能量堆積，但轉化/落地到子端不足。`);
+      else if (badge === "弱強") motherChildLines.push(`【母弱子強】${m}（${ENERGY_LABEL[clampEnergyLevel(levels[m])]}）生${c}（${ENERGY_LABEL[clampEnergyLevel(levels[c])]}）：子端耗能快，母端供給跟不上，容易出現「燒乾／透支」。`);
+      else if (badge === "弱弱") motherChildLines.push(`【母弱子弱】${m}（${ENERGY_LABEL[clampEnergyLevel(levels[m])]}）→${c}（${ENERGY_LABEL[clampEnergyLevel(levels[c])]}）：相生鏈條偏弱，推進會斷續，宜先補母端再談擴張。`);
+    });
+
+    const generation =
+      `元素核心意涵（對照你的能量等級）：\n${elementMeaningLines.join("\n")}\n\n` +
+      `母子互動（相生轉化）：\n- ${motherChildLines.join("\n- ")}` +
+      (conversionHighlights.length ? `\n\n相生亮點（能量轉化路徑）：\n- ${conversionHighlights.join("\n- ")}` : "");
+
+    // 相剋：木剋土、土剋水、水剋火、火剋金、金剋木（固定）
+    const kePairs = [["木", "土"], ["土", "水"], ["水", "火"], ["火", "金"], ["金", "木"]];
+    const overcomeLines = [];
+    const destructiveNotes = [];
+    const constraintNotes = [];
+
+    kePairs.forEach(([a, b]) => {
+      const badge = relationBadge(levels[a], levels[b]);
+      const post = OVERCOMING_POST_STYLE[`${a}->${b}`];
+      if (badge === "強弱") {
+        overcomeLines.push(`【毀滅性破壞】${a}（${ENERGY_LABEL[clampEnergyLevel(levels[a])] }）壓制${b}（${ENERGY_LABEL[clampEnergyLevel(levels[b])] }）：屬於「強剋弱」，建議先止損，避免越補越被剋。`);
+        if (post) destructiveNotes.push(`【${a}剋${b}｜${post.headline}】${post.text}`);
+      } else if (badge === "弱強") {
+        overcomeLines.push(`【制衡不足】${a}（${ENERGY_LABEL[clampEnergyLevel(levels[a])] }）壓不住${b}（${ENERGY_LABEL[clampEnergyLevel(levels[b])] }）：需要補上規則/節奏，讓強項可被管理。`);
+        if (post) constraintNotes.push(`【${a}剋${b}｜${post.headline}】${post.text}`);
+      } else if (badge === "強強") {
+        overcomeLines.push(`【合理約束】${a}（${ENERGY_LABEL[clampEnergyLevel(levels[a])] }）剋${b}（${ENERGY_LABEL[clampEnergyLevel(levels[b])] }）：屬於「強強對抗」，多半是健康的制衡，能防止走偏。`);
+      }
+    });
+
+    const overcoming =
+      `相剋制衡（判斷是合理約束或破壞）：\n- ${overcomeLines.join("\n- ")}` +
+      (destructiveNotes.length ? `\n\n深度路徑警訊（強剋弱時最明顯）：\n- ${destructiveNotes.join("\n- ")}` : "") +
+      (constraintNotes.length ? `\n\n深度路徑提醒（制衡不足時容易出現）：\n- ${constraintNotes.join("\n- ")}` : "");
+
+    // 短板：以 weakest 為主 + 缺項(=0)補救
+    const weaknessLines = [];
+    weaknessLines.push(`短板是【${weakest}｜${ELEMENT_CORE_MEANING[weakest].core}】：${meaningText(weakest, levels[weakest])}。`);
+    weaknessLines.push(`目前等級：${ENERGY_LABEL[clampEnergyLevel(levels[weakest])]}。`);
+
+    const missing = keys.filter((k) => clampEnergyLevel(levels[k]) === 0);
+    if (missing.length) {
+      weaknessLines.push("");
+      weaknessLines.push("補救建議（分數=0 自動觸發，可適度調整）：");
+      missing.forEach((k) => weaknessLines.push(`- 缺${k}：${ELEMENT_CORE_MEANING[k].remedy}`));
+    }
+
+    const weakness = weaknessLines.join("\n");
+
+    return { title, generation, overcoming, weakness, levels, strongest, weakest };
+  }
+
   // 三方四正：本宮 + 對宮( +6 ) + 三合( +4, +8 )
   function computeRelatedPalaces(palaceRing, palaceName) {
     const ring = Array.isArray(palaceRing) && palaceRing.length === 12 ? palaceRing : PALACE_DEFAULT;
@@ -558,6 +741,8 @@
     pctFromWx,
     normalizeWxByMax,
     generateFiveElementComment,
+    generateFiveElementDiagnosis,
+    toEnergyLevelsFromWx,
     computeRelatedPalaces,
     getHoroscopeFromAge,
     getMutagenStars,
