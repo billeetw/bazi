@@ -354,9 +354,9 @@
   }
 
   // ====== 五行：能量等級診斷（0-3） ======
-  // 能量等級：0(微弱) 1(平穩) 2(強健) 3(過旺)
+  // 能量等級標籤：0(低頻) 1(平穩) 2(強健) 3(過旺)
   const ENERGY_LABEL = Object.freeze({
-    0: "微弱",
+    0: "低頻",
     1: "平穩",
     2: "強健",
     3: "過旺",
@@ -409,9 +409,9 @@
     const m = ELEMENT_CORE_MEANING[el];
     const lv = clampEnergyLevel(level);
     if (!m) return "";
-    if (lv <= 1) return `Level 0-1（低能量）：${m.low01}`;
-    if (lv === 2) return `Level 2（強健）：${m.level2}`;
-    return `Level 3（過旺）：${m.level3}`;
+    if (lv <= 1) return m.low01;
+    if (lv === 2) return m.level2;
+    return m.level3;
   }
 
   function relationBadge(a, b) {
@@ -461,79 +461,94 @@
     const maxLv = Math.max(...levelsArr);
     const minLv = Math.min(...levelsArr);
 
-    const strongestTxt = `${strongest}（${ENERGY_LABEL[clampEnergyLevel(levels[strongest])]}）`;
-    const weakestTxt = `${weakest}（${ENERGY_LABEL[clampEnergyLevel(levels[weakest])]}）`;
+    const tag = (lv) => `[ ${ENERGY_LABEL[clampEnergyLevel(lv)]} ]`;
+    const strongestTxt = `${strongest} ${tag(levels[strongest])}`;
+    const weakestTxt = `${weakest} ${tag(levels[weakest])}`;
 
     let title = "";
-    if (maxLv - minLv <= 1) title = `五行能量整體偏均衡：以${strongestTxt}帶動、${weakestTxt}需補位。`;
-    else if (maxLv === 3 && minLv === 0) title = `能量呈兩極：${strongestTxt}過度主導，${weakestTxt}成為瓶頸。`;
-    else if (maxLv === 3) title = `存在過旺能量：${strongestTxt}主導節奏，需注意失衡帶來的代價。`;
-    else if (minLv === 0) title = `存在明顯短板：${weakestTxt}偏弱，容易拖慢整體推進。`;
-    else title = `能量分布不均：${strongestTxt}偏強、${weakestTxt}偏弱，建議先補短板再談放大優勢。`;
+    if (maxLv - minLv <= 1) title = `五行偏均衡：以${strongestTxt}帶動，${weakestTxt}需補位。`;
+    else if (maxLv === 3 && minLv === 0) title = `能量兩極：${strongestTxt}過度主導，${weakestTxt}成瓶頸。`;
+    else if (maxLv === 3) title = `存在過旺：${strongestTxt}主導節奏，注意失衡代價。`;
+    else if (minLv === 0) title = `明顯短板：${weakestTxt}偏弱，易拖慢推進。`;
+    else title = `分布不均：${strongestTxt}偏強、${weakestTxt}偏弱，先補短板再放大。`;
 
-    // 相生母子：木→火→土→金→水→木（固定）
+    // 相生：木→火→土→金→水→木。僅保留標籤化與最多 2 條亮點
     const genPairs = [["木", "火"], ["火", "土"], ["土", "金"], ["金", "水"], ["水", "木"]];
-    const elementMeaningLines = keys.map((k) => `- 【${k}｜${ELEMENT_CORE_MEANING[k].core}】${meaningText(k, levels[k])}`);
-
-    const motherChildLines = [];
-    const conversionHighlights = [];
-    genPairs.forEach(([m, c]) => {
-      const badge = relationBadge(levels[m], levels[c]);
-      const post = GENERATION_POST_STYLE[`${m}->${c}`];
-
-      if (post && (energyBand(levels[m]) === "healthy" || energyBand(levels[m]) === "excess") && clampEnergyLevel(levels[c]) >= 1) {
-        conversionHighlights.push(`【${m}生${c}｜${post.headline}】${post.text}`);
-      }
-      if (badge === "強弱") motherChildLines.push(`【母強子弱】${m}（${ENERGY_LABEL[clampEnergyLevel(levels[m])]}）生${c}（${ENERGY_LABEL[clampEnergyLevel(levels[c])]}）：母能量堆積，但轉化/落地到子端不足。`);
-      else if (badge === "弱強") motherChildLines.push(`【母弱子強】${m}（${ENERGY_LABEL[clampEnergyLevel(levels[m])]}）生${c}（${ENERGY_LABEL[clampEnergyLevel(levels[c])]}）：子端耗能快，母端供給跟不上，容易出現「燒乾／透支」。`);
-      else if (badge === "弱弱") motherChildLines.push(`【母弱子弱】${m}（${ENERGY_LABEL[clampEnergyLevel(levels[m])]}）→${c}（${ENERGY_LABEL[clampEnergyLevel(levels[c])]}）：相生鏈條偏弱，推進會斷續，宜先補母端再談擴張。`);
+    const elementTagsLines = keys.map((k) => {
+      const lv = clampEnergyLevel(levels[k]);
+      const meaning = meaningText(k, levels[k]);
+      return `【${k}】${tag(lv)} ${meaning}`;
     });
 
-    const generation =
-      `元素核心意涵（對照你的能量等級）：\n${elementMeaningLines.join("\n")}\n\n` +
-      `母子互動（相生轉化）：\n- ${motherChildLines.join("\n- ")}` +
-      (conversionHighlights.length ? `\n\n相生亮點（能量轉化路徑）：\n- ${conversionHighlights.join("\n- ")}` : "");
+    const conversionHighlights = [];
+    genPairs.forEach(([m, c]) => {
+      const post = GENERATION_POST_STYLE[`${m}->${c}`];
+      if (post && (energyBand(levels[m]) === "healthy" || energyBand(levels[m]) === "excess") && clampEnergyLevel(levels[c]) >= 1) {
+        conversionHighlights.push(`${post.headline}：${post.text}`);
+      }
+    });
+    const conversionTop2 = conversionHighlights.slice(0, 2);
 
-    // 相剋：木剋土、土剋水、水剋火、火剋金、金剋木（固定）
+    const genOrder = ["木", "火", "土", "金", "水"];
+    const startIdx = genOrder.indexOf(strongest);
+    const path = Array.from({ length: 5 }, (_, i) => genOrder[(startIdx + i) % 5]).join("→");
+    const generation =
+      `五行狀態：\n${elementTagsLines.join("\n")}\n\n` +
+      `能量路徑（以最強為起點）：${path}\n\n` +
+      (conversionTop2.length ? `相生亮點：\n- ${conversionTop2.join("\n- ")}` : "");
+
+    // 相剋：精簡制衡描述，深度路徑警訊最多 2 條
     const kePairs = [["木", "土"], ["土", "水"], ["水", "火"], ["火", "金"], ["金", "木"]];
-    const overcomeLines = [];
     const destructiveNotes = [];
     const constraintNotes = [];
-
     kePairs.forEach(([a, b]) => {
       const badge = relationBadge(levels[a], levels[b]);
       const post = OVERCOMING_POST_STYLE[`${a}->${b}`];
-      if (badge === "強弱") {
-        overcomeLines.push(`【毀滅性破壞】${a}（${ENERGY_LABEL[clampEnergyLevel(levels[a])] }）壓制${b}（${ENERGY_LABEL[clampEnergyLevel(levels[b])] }）：屬於「強剋弱」，建議先止損，避免越補越被剋。`);
-        if (post) destructiveNotes.push(`【${a}剋${b}｜${post.headline}】${post.text}`);
-      } else if (badge === "弱強") {
-        overcomeLines.push(`【制衡不足】${a}（${ENERGY_LABEL[clampEnergyLevel(levels[a])] }）壓不住${b}（${ENERGY_LABEL[clampEnergyLevel(levels[b])] }）：需要補上規則/節奏，讓強項可被管理。`);
-        if (post) constraintNotes.push(`【${a}剋${b}｜${post.headline}】${post.text}`);
-      } else if (badge === "強強") {
-        overcomeLines.push(`【合理約束】${a}（${ENERGY_LABEL[clampEnergyLevel(levels[a])] }）剋${b}（${ENERGY_LABEL[clampEnergyLevel(levels[b])] }）：屬於「強強對抗」，多半是健康的制衡，能防止走偏。`);
-      }
+      if (badge === "強弱" && post) destructiveNotes.push(`${post.headline}：${post.text}`);
+      else if (badge === "弱強" && post) constraintNotes.push(`${post.headline}：${post.text}`);
     });
+    const destructiveTop2 = destructiveNotes.slice(0, 2);
+    const constraintTop2 = constraintNotes.slice(0, 2);
 
     const overcoming =
-      `相剋制衡（判斷是合理約束或破壞）：\n- ${overcomeLines.join("\n- ")}` +
-      (destructiveNotes.length ? `\n\n深度路徑警訊（強剋弱時最明顯）：\n- ${destructiveNotes.join("\n- ")}` : "") +
-      (constraintNotes.length ? `\n\n深度路徑提醒（制衡不足時容易出現）：\n- ${constraintNotes.join("\n- ")}` : "");
+      (destructiveTop2.length ? `深度路徑警訊：\n- ${destructiveTop2.join("\n- ")}` : "") +
+      (destructiveTop2.length && constraintTop2.length ? "\n\n" : "") +
+      (constraintTop2.length ? `制衡提醒：\n- ${constraintTop2.join("\n- ")}` : "");
 
-    // 短板：以 weakest 為主 + 缺項(=0)補救
+    // 短板：精簡，無學術字眼
     const weaknessLines = [];
-    weaknessLines.push(`短板是【${weakest}｜${ELEMENT_CORE_MEANING[weakest].core}】：${meaningText(weakest, levels[weakest])}。`);
-    weaknessLines.push(`目前等級：${ENERGY_LABEL[clampEnergyLevel(levels[weakest])]}。`);
+    weaknessLines.push(`短板【${weakest}】${tag(levels[weakest])}：${ELEMENT_CORE_MEANING[weakest].core}—${meaningText(weakest, levels[weakest])}`);
 
     const missing = keys.filter((k) => clampEnergyLevel(levels[k]) === 0);
     if (missing.length) {
-      weaknessLines.push("");
-      weaknessLines.push("補救建議（分數=0 自動觸發，可適度調整）：");
-      missing.forEach((k) => weaknessLines.push(`- 缺${k}：${ELEMENT_CORE_MEANING[k].remedy}`));
+      missing.forEach((k) => weaknessLines.push(`缺${k}：${ELEMENT_CORE_MEANING[k].remedy}`));
     }
-
     const weakness = weaknessLines.join("\n");
 
-    return { title, generation, overcoming, weakness, levels, strongest, weakest };
+    // StrategistNote：李伯彥口吻，主場/雷區/權重/通關/人生遊戲/算力/提款區/高難度副本
+    const strategistNote = buildStrategistNote({
+      strongest, weakest, levels, title,
+      conversionTop2, destructiveTop2, weakness,
+      ELEMENT_CORE_MEANING, ENERGY_LABEL, clampEnergyLevel,
+    });
+
+    return { title, generation, overcoming, weakness, levels, strongest, weakest, strategistNote };
+  }
+
+  function buildStrategistNote(opts) {
+    const { strongest, weakest, levels, conversionTop2, destructiveTop2, weakness, ELEMENT_CORE_MEANING, ENERGY_LABEL, clampEnergyLevel } = opts;
+    const lines = [];
+    const strongTag = ENERGY_LABEL[clampEnergyLevel(levels[strongest])];
+    const weakTag = ENERGY_LABEL[clampEnergyLevel(levels[weakest])];
+    lines.push(`你的主場在【${strongest}】${strongTag}，權重最高；雷區在【${weakest}】${weakTag}，容易變成人生遊戲裡的高難度副本。`);
+    if (destructiveTop2.length) {
+      lines.push(`系統 Bug：${destructiveTop2[0].split("：")[0]}—先止損再談通關。`);
+    }
+    if (conversionTop2.length) {
+      lines.push(`提款區：${conversionTop2[0].split("：")[0]}，把算力投在這裡變現。`);
+    }
+    lines.push(`這局不是算命，是給你一張拿回主導權的說明書。接下來，把精力投向能提款的地方，避開雷區，穩穩通關。`);
+    return lines.join("\n");
   }
 
   // 三方四正：本宮 + 對宮( +6 ) + 三合( +4, +8 )

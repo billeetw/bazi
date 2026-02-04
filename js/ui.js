@@ -206,45 +206,79 @@
     `;
   }
 
+  /** 手機適配：每段不超過 20 字、增加間距，易讀 */
+  function wrapForMobile(text, maxCharsPerLine) {
+    if (!text) return "";
+    const max = maxCharsPerLine || 20;
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+    const segments = String(text).split("\n").map((s) => s.trim()).filter(Boolean);
+    const out = [];
+    segments.forEach((seg) => {
+      if (!isMobile || seg.length <= max) {
+        out.push(seg);
+        return;
+      }
+      for (let i = 0; i < seg.length; i += max) {
+        out.push(seg.slice(i, i + max));
+      }
+    });
+    return out;
+  }
+
   function renderFiveElementComment(containerId, wx, kind) {
     const el = document.getElementById(containerId);
     if (!el) return;
 
-    // 新版：四段式診斷（定調 / 相生 / 相剋 / 短板）
-    // 若新版診斷不存在，fallback 舊版一句話邏輯。
+    // 新版：定調 / 相生 / 相剋 / 短板 + StrategistNote，標籤化、精簡 2 條
     if (typeof window.Calc?.generateFiveElementDiagnosis === "function") {
       const d = window.Calc.generateFiveElementDiagnosis(wx || {});
+      const ENERGY_LABEL = { 0: "低頻", 1: "平穩", 2: "強健", 3: "過旺" };
+      const tagStrong = d.levels && d.levels[d.strongest] !== undefined
+        ? `[ ${ENERGY_LABEL[d.levels[d.strongest]] || "平穩"} ]` : "";
+      const tagWeak = d.levels && d.levels[d.weakest] !== undefined
+        ? `[ ${ENERGY_LABEL[d.levels[d.weakest]] || "平穩"} ]` : "";
       const prefix =
         kind === "surface"
-          ? `你在人前的操作風格：最強【${d.strongest}】、最弱【${d.weakest}】。`
+          ? `人前操作風格：最強【${d.strongest}】${tagStrong}、最弱【${d.weakest}】${tagWeak}`
           : kind === "strategic"
-            ? `你真正扛住人生的實戰資源：最強【${d.strongest}】、最弱【${d.weakest}】。`
-            : `本局五行：最強【${d.strongest}】、最弱【${d.weakest}】。`;
+            ? `實戰資源：最強【${d.strongest}】${tagStrong}、最弱【${d.weakest}】${tagWeak}`
+            : `本局五行：最強【${d.strongest}】${tagStrong}、最弱【${d.weakest}】${tagWeak}`;
 
-      const toHtml = (txt) =>
-        String(txt || "")
-          .split("\n")
-          .map((line) => line.trim())
-          .filter(Boolean)
+      function escapeHtml(s) {
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      }
+      const toHtml = (txt, forMobile) => {
+        const lines = String(txt || "").split("\n").map((l) => l.trim()).filter(Boolean);
+        const chunks = forMobile ? lines.flatMap((line) => wrapForMobile(line, 20)) : lines;
+        return chunks
           .map((line) => {
-            if (line.startsWith("- ")) return `<li class="ml-4 list-disc">${line.slice(2)}</li>`;
-            return `<div>${line}</div>`;
+            if (line.startsWith("- ")) return `<li class="ml-4 list-disc wuxing-line">${escapeHtml(line.slice(2))}</li>`;
+            return `<div class="wuxing-line">${escapeHtml(line)}</div>`;
           })
           .join("");
+      };
+      const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+      const blockClass = "text-slate-300 mt-1 leading-relaxed space-y-1.5";
+      const strategistHtml = d.strategistNote
+        ? `<div class="text-amber-200 mt-4 pt-4 border-t border-amber-500/30 font-black">李伯彥 · 戰略顧問</div>
+           <div class="text-slate-200 mt-2 leading-relaxed space-y-2 wuxing-strategist">${toHtml(d.strategistNote, isMobile)}</div>`
+        : "";
 
       el.innerHTML = `
-        <div class="text-slate-100 font-bold">${prefix}</div>
+        <div class="text-slate-100 font-bold wuxing-prefix">${escapeHtml(prefix)}</div>
         <div class="text-amber-200 mt-2 font-black">定調</div>
-        <div class="text-slate-200 mt-1 leading-relaxed">${toHtml(d.title)}</div>
+        <div class="${blockClass}">${toHtml(d.title, isMobile)}</div>
 
         <div class="text-amber-200 mt-3 font-black">相生路徑</div>
-        <div class="text-slate-300 mt-1 leading-relaxed">${toHtml(d.generation)}</div>
+        <div class="${blockClass}">${toHtml(d.generation, isMobile)}</div>
 
         <div class="text-amber-200 mt-3 font-black">相剋制衡</div>
-        <div class="text-slate-300 mt-1 leading-relaxed">${toHtml(d.overcoming)}</div>
+        <div class="${blockClass}">${toHtml(d.overcoming, isMobile)}</div>
 
         <div class="text-amber-200 mt-3 font-black">短板分析</div>
-        <div class="text-slate-300 mt-1 leading-relaxed">${toHtml(d.weakness)}</div>
+        <div class="${blockClass}">${toHtml(d.weakness, isMobile)}</div>
+
+        ${strategistHtml}
       `;
       return;
     }
