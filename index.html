@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
   <meta name="description" content="人生遊戲 0.23：結合八字五行、紫微斗數與 2026 流月紅綠燈的個人戰略指揮中心，協助你規劃節奏與決策。" />
   <title>人生遊戲0.23｜一起出來玩</title>
 
@@ -24,6 +24,7 @@
       --theme-amber-glow: rgba(255, 191, 0, 0.3);
       --theme-dark-blue: #0A0A16;
       --glass-border: rgba(255, 255, 255, 0.08);
+      --vh: 1vh;
     }
 
     body {
@@ -31,8 +32,13 @@
       background-color: var(--theme-dark-blue);
       color: #fff;
       min-height: 100vh;
+      min-height: 100svh;
+      min-height: calc(var(--vh, 1vh) * 100);
       position: relative;
       overflow-x: hidden;
+      overscroll-behavior-y: none;
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
     }
 
     /* 核心特效 1：活的星際背景 (The Living Cosmos) */
@@ -627,6 +633,8 @@
       right: 0;
       bottom: 0;
       max-height: 80vh;
+      max-height: 80svh;
+      max-height: calc(var(--vh, 1vh) * 80);
       background: rgba(15,23,42,0.98);
       border-radius: 1.25rem 1.25rem 0 0;
       box-shadow: 0 -20px 40px rgba(0,0,0,0.7);
@@ -707,6 +715,55 @@
         opacity: 0.35;
       }
     }
+
+    /* LINE / 行動端：全頁與彈窗 SafeArea，避免被系統 UI 遮擋 */
+    .safe-area-top { padding-top: env(safe-area-inset-top); }
+    .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+    #identifyBirthTimeModal .p-5 { padding-top: max(1.25rem, env(safe-area-inset-top)); padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
+    #ceremonyModal.ceremony-visible { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+    .palace-sheet { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+
+    /* md 以下隱藏右側詳解欄，主內容不預留 margin */
+    @media (max-width: 767px) {
+      #detailPanel { display: none !important; }
+      #dashboardMainContent { grid-template-columns: 1fr; }
+    }
+
+    /* 行動端 BottomNav（md 以下顯示） */
+    .bottom-nav {
+      display: none;
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 45;
+      background: rgba(10,10,22,0.95);
+      border-top: 1px solid rgba(255,191,0,0.15);
+      padding: 8px 12px env(safe-area-inset-bottom) 12px;
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
+    }
+    @media (max-width: 767px) {
+      body.dashboard-visible .bottom-nav { display: flex; align-items: center; justify-content: space-around; gap: 4px; }
+    }
+    .bottom-nav a {
+      flex: 1;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .05em;
+      color: rgba(226,232,240,0.9);
+      padding: 8px 6px;
+      border-radius: 999px;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .bottom-nav a:hover, .bottom-nav a:active { background: rgba(255,191,0,0.12); color: rgb(245,158,11); }
+
+    /* LINE 內建瀏覽器：停用 backdrop-blur 以維持 60fps */
+    body.line-browser .glass,
+    body.line-browser .glass-container,
+    body.line-browser .glass-hero,
+    body.line-browser .glass-input { backdrop-filter: none; -webkit-backdrop-filter: none; }
   </style>
 </head>
 
@@ -1000,9 +1057,8 @@
 
         </div>
 
-        <!-- RIGHT DETAIL PANEL（桌機用） -->
-        <!-- ... 保持原樣 ... -->
-        <aside class="space-y-6" id="detailPanel">
+        <!-- RIGHT DETAIL PANEL（桌機用；md 以下隱藏，改由 BottomNav + 宮位 Bottom Sheet） -->
+        <aside class="space-y-6 dashboard-right-sidebar" id="detailPanel">
           <div class="glass dashboard-card p-6 md:p-7 sticky top-24 border border-amber-500/30 overflow-y-auto max-h-[85vh]">
             <div class="section-subtitle mb-2">Palace Detail</div>
             <div id="palaceTitle" class="text-3xl font-black text-amber-400">請點宮位</div>
@@ -1026,6 +1082,14 @@
       </div>
     </section>
   </main>
+
+  <!-- 行動端 BottomNav（md 以下且已進入儀表板時顯示） -->
+  <nav class="bottom-nav" aria-label="戰略導航">
+    <a href="#ws-ziwei">紫微</a>
+    <a href="#ws-bazi">八字</a>
+    <a href="#ws-liuyue">流月</a>
+    <a href="#ws-consult">諮詢</a>
+  </nav>
 
   <!-- 不確定時辰？問卷 Modal（一題一題顯示 + 進度條） -->
   <div id="identifyBirthTimeBackdrop" class="fixed inset-0 bg-black/70 hidden z-50" aria-hidden="true"></div>
@@ -1093,6 +1157,21 @@
     </div>
   </div>
 
+  <!-- 動態 VH Fallback + LINE 環境偵測 -->
+  <script>
+    (function () {
+      function setVh() {
+        var vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty("--vh", vh + "px");
+      }
+      setVh();
+      window.addEventListener("resize", setVh);
+      window.addEventListener("orientationchange", function () { setTimeout(setVh, 100); });
+      if (/Line\//i.test(navigator.userAgent) || /LIFF/i.test(navigator.userAgent)) {
+        document.body.classList.add("line-browser");
+      }
+    })();
+  </script>
   <script src="js/strategyConfig.js?v=2"></script>
   <script src="js/calc.js?v=2"></script>
   <script src="js/identifyBirthTime.js?v=1"></script>

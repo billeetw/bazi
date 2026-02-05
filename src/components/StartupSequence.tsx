@@ -4,6 +4,13 @@ import { motion, AnimatePresence } from "framer-motion";
 const PARTICLE_COUNT = 70;
 const TOTAL_DURATION = 4.5;
 
+/** LINE 內建瀏覽器偵測：用於降級粒子數與避免 backdrop-blur 以維持 60fps */
+export function isLineBrowser(): boolean {
+  if (typeof navigator === "undefined" || !navigator.userAgent) return false;
+  const ua = navigator.userAgent;
+  return /Line\//i.test(ua) || /LIFF/i.test(ua);
+}
+
 export interface StartupSequenceProps {
   isOpen: boolean;
   onFinished: () => void;
@@ -70,7 +77,8 @@ export function StartupSequence({
   personaLine = "",
   enableSound = true,
 }: StartupSequenceProps) {
-  const particles = useParticles(PARTICLE_COUNT);
+  const particleCount = useMemo(() => (isLineBrowser() ? Math.floor(PARTICLE_COUNT / 2) : PARTICLE_COUNT), []);
+  const particles = useParticles(particleCount);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -99,7 +107,11 @@ export function StartupSequence({
       {isOpen && (
         <motion.div
           key="startup-overlay"
-          className="fixed inset-0 bg-slate-950 z-[100] flex flex-col items-center justify-center overflow-hidden"
+          className="fixed inset-0 bg-slate-950 z-[100] flex flex-col items-center justify-center overflow-hidden box-border"
+          style={{
+            paddingTop: "env(safe-area-inset-top)",
+            paddingBottom: "env(safe-area-inset-bottom)",
+          }}
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3 }}

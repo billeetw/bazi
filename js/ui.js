@@ -859,7 +859,7 @@
     const content = document.getElementById("dashboardMainContent");
     if (!content || content.hasAttribute("data-transition-bound")) return;
     content.setAttribute("data-transition-bound", "1");
-    document.querySelectorAll(".nav-chip[href^=\"#\"]").forEach((a) => {
+    function bindHashLink(a) {
       a.addEventListener("click", function (e) {
         const href = (this.getAttribute("href") || "").trim();
         if (!href || href === "#") return;
@@ -876,7 +876,9 @@
           }, dur);
         }, dur);
       });
-    });
+    }
+    document.querySelectorAll(".nav-chip[href^=\"#\"]").forEach(bindHashLink);
+    document.querySelectorAll(".bottom-nav a[href^=\"#\"]").forEach(bindHashLink);
     window.addEventListener("hashchange", syncNavChipActive);
   }
 
@@ -1012,6 +1014,7 @@
 
       if (sysEl) {
         sysEl.classList.remove("hidden");
+        document.body.classList.add("dashboard-visible");
         if (!sysEl.hasAttribute("data-dashboard-entered")) {
           sysEl.setAttribute("data-dashboard-entered", "1");
           sysEl.classList.add("dashboard-enter");
