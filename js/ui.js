@@ -335,120 +335,184 @@
     });
   }
 
-  // ====== RENDER: LIUYUE ======
+  /** 流月戰略標籤：隱藏十神術語，改以戰略標籤 */
+  function getMonthStrategyTag(b) {
+    const risk = Number(b.riskScore) || 0;
+    const isHigh = risk >= 55 || b.light === "RED";
+    const reasons = (b.reasonTags || []).join("");
+    const hasCai = /財|才|偏財|正財/.test(reasons);
+    const hasGuanSha = /官|殺|七殺|正官|偏官/.test(reasons);
+    if (isHigh && (hasGuanSha || risk >= 70)) return "🚨 壓力監測";
+    if (!isHigh && hasCai) return "💰 資源收割";
+    if (!isHigh) return "🟢 穩進";
+    return "🟡 節奏調整";
+  }
+
+  function parseMonthFromRange(range) {
+    if (!range) return 0;
+    const s = String(range).trim();
+    const m1 = s.match(/^(\d{1,2})[/.-]/);
+    if (m1) return Math.min(12, Math.max(1, parseInt(m1[1], 10)));
+    const m2 = s.match(/^0?(\d)\./);
+    if (m2) return Math.min(12, Math.max(1, parseInt(m2[1], 10)));
+    return 0;
+  }
+
+  /** 副標：一句話當月重點（取 strategy 第一句或前段） */
+  function getMonthSubtitle(b) {
+    const s = (b.strategy || "").trim();
+    if (!s) return "本月宜依個人命盤調整節奏。";
+    const dot = s.indexOf("。");
+    const period = s.indexOf(".");
+    const end = dot >= 0 ? (period >= 0 ? Math.min(dot, period) : dot) : (period >= 0 ? period : s.length);
+    const one = s.slice(0, end + 1).trim() || s.slice(0, 36);
+    return one.length > 50 ? one.slice(0, 47) + "…" : one;
+  }
+
+  /** 危險指數 0–100 對應能量條顏色：0-35 綠、36-65 黃、66-100 紅 */
+  function riskToEnergyColor(risk) {
+    const r = Math.max(0, Math.min(100, Number(risk) || 0));
+    if (r <= 35) return "rgb(34, 197, 94)";   // 綠
+    if (r <= 65) return "rgb(234, 179, 8)";   // 黃
+    return "rgb(239, 68, 68)";                 // 紅
+  }
+
+  /** 狀態標籤：risk >= 65 高壓警示；risk <= 35 且財星 → 資源收割 */
+  function getMonthBadge(b) {
+    const risk = Math.max(0, Math.min(100, Number(b.riskScore) || 0));
+    const reasons = (b.reasonTags || []).join("");
+    const hasCai = /財|才|偏財|正財/.test(reasons);
+    if (risk >= 65) return { text: "⚠️ 高壓警示", type: "high" };
+    if (risk <= 35 && hasCai) return { text: "💰 資源收割", type: "cai" };
+    return null;
+  }
+
+  // ====== RENDER: LIUYUE（年度賽季導航：單一垂直列表、能量條、展開詳情）======
   function renderLiuyue(bazi) {
     const mGrid = document.getElementById("monthGrid");
-    const detail = document.getElementById("monthDetailBox");
-    const rhythm = document.getElementById("monthlyRhythmBox");
-    if (!mGrid || !rhythm) return;
+    const consultCta = document.getElementById("liuyueConsultCta");
+    if (!mGrid) return;
 
     const bounds = bazi?.liuyue2026?.bounds || [];
     mGrid.innerHTML = "";
-    rhythm.innerHTML = "";
-    if (detail) {
-      detail.innerHTML = `
-        <div class="text-slate-400/80">
-          點任一個月份，這裡會顯示：對你個人而言的
-          <span class="text-amber-300 font-bold">危險指數＋觸發原因＋戰術指令</span>。
-        </div>
-      `;
-    }
 
     if (!bounds.length) {
       mGrid.innerHTML = `<div class="text-xs text-slate-400 italic">（暫無流月資料）</div>`;
-      if (detail) detail.innerHTML = `<div class="text-xs text-slate-400 italic">（暫無流月資料）</div>`;
+      if (consultCta) consultCta.innerHTML = "";
       return;
     }
 
-    bounds.forEach((b) => {
+    const now = new Date();
+    const currentMonth2026 = now.getFullYear() === 2026 ? now.getMonth() + 1 : null;
+    const ordered = bounds.slice().sort((a, b) => {
+      const ma = parseMonthFromRange(a.range) || 99;
+      const mb = parseMonthFromRange(b.range) || 99;
+      if (currentMonth2026 != null) {
+        const da = ma === currentMonth2026 ? 0 : 1;
+        const db = mb === currentMonth2026 ? 0 : 1;
+        if (da !== db) return da - db;
+      }
+      return ma - mb;
+    });
+
+    function collapseAll() {
+      mGrid.querySelectorAll(".liuyue-expand").forEach((el) => {
+        el.style.maxHeight = "0";
+        el.setAttribute("aria-hidden", "true");
+      });
+      mGrid.querySelectorAll(".liuyue-card").forEach((c) => c.classList.remove("is-expanded"));
+    }
+
+    ordered.forEach((b) => {
+      const monthNum = parseMonthFromRange(b.range);
+      const isCurrent = currentMonth2026 != null && monthNum === currentMonth2026;
       const isRed = b.light === "RED";
-      const tag = isRed ? "🔴 壓力" : "🟢 穩進";
+      const risk = Math.max(0, Math.min(100, Number(b.riskScore) || 0));
+      const badge = getMonthBadge(b);
+      const subtitle = getMonthSubtitle(b);
+      const barColor = riskToEnergyColor(risk);
+
+      const wrap = document.createElement("div");
+      wrap.className = "liuyue-month-wrap";
 
       const card = document.createElement("button");
       card.type = "button";
       card.className =
-        "w-full text-left flex flex-col gap-1 p-3 rounded-xl border-l-4 transition " +
-        (isRed ? "border-red-500 bg-red-500/10 hover:bg-red-500/20" : "border-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20");
+        "liuyue-card monthly-flow-card w-full text-left flex flex-col gap-1.5 p-3 rounded-xl border border-white/15 transition " +
+        (isCurrent ? " is-current" : "") +
+        (isRed ? " hover:border-amber-500/30 hover:bg-amber-500/5" : " hover:border-amber-400/20 hover:bg-white/5");
+
+      const badgeHtml = badge
+        ? `<span class="liuyue-badge liuyue-badge-${badge.type} shrink-0 text-[10px] font-bold px-2 py-1 rounded-md border">${badge.text}</span>`
+        : "";
 
       card.innerHTML = `
-        <div class="flex items-center justify-between">
-          <div>
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0 flex-1">
             <div class="font-black text-sm text-slate-50">
-              ${b.gz}
-              <span class="text-[10px] text-slate-300 ml-2 font-mono">${b.range || ""}</span>
-            </div>
-            <div class="text-[11px] text-slate-200 mt-1">
-              十神：干 ${b.ssStem || "—"} ／ 支 ${b.ssBranch || "—"}
+              ${monthNum ? monthNum + "月" : ""} ${b.gz || ""}
+              ${isCurrent ? "<span class=\"text-amber-400 text-[10px] ml-1\">（當月）</span>" : ""}
             </div>
           </div>
-          <div class="text-right">
-            <div class="text-[11px] font-black px-3 py-1 rounded-full bg-black/40">
-              ${tag}
-            </div>
-            <div class="text-[10px] text-slate-400 mt-1">
-              危險指數：
-              <span class="${isRed ? "text-red-300" : "text-emerald-300"} font-mono">
-                ${b.riskScore ?? "—"}
-              </span> / 100
-            </div>
-          </div>
+          ${badgeHtml}
+        </div>
+        <div class="liuyue-energy-bar mt-1.5" title="風險指數 ${risk}">
+          <div class="liuyue-energy-fill" style="width:${risk}%; background:${barColor};"></div>
         </div>
       `;
 
-      card.addEventListener("click", () => {
-        if (!detail) return;
-        const reasons = (b.reasonTags || []).join("．");
+      const expand = document.createElement("div");
+      expand.className = "liuyue-expand";
+      expand.style.maxHeight = "0";
+      expand.setAttribute("aria-hidden", "true");
 
-        detail.innerHTML = `
-          <div class="p-4 rounded-xl border ${isRed ? "border-red-400/60 bg-red-500/10" : "border-emerald-400/60 bg-emerald-500/10"} text-sm leading-relaxed space-y-2">
-            <div class="flex items-center justify-between">
-              <div>
-                <div class="text-[11px] uppercase tracking-[0.18em] text-slate-300">Personalized Month Radar</div>
-                <div class="font-black text-base text-slate-50 mt-1">
-                  ${b.gz}（${b.range}）
-                </div>
-              </div>
-              <div class="text-right text-[11px] text-slate-200">
-                危險指數
-                <div class="text-lg font-mono ${isRed ? "text-red-300" : "text-emerald-300"}">
-                  ${b.riskScore ?? "—"}/100
-                </div>
-              </div>
-            </div>
+      const reasons = (b.reasonTags || []).join("．");
+      expand.innerHTML = `
+        <div class="p-3 mt-1 rounded-xl border border-amber-400/20 bg-black/30 text-[11px] leading-relaxed space-y-2">
+          <p class="text-amber-200/90 font-medium">${subtitle}</p>
+          <div class="text-slate-400 uppercase tracking-wider">十神技術參數</div>
+          <div class="text-slate-200">干 ${b.ssStem || "—"} ／ 支 ${b.ssBranch || "—"}${reasons ? " · " + reasons : ""}</div>
+          <div class="text-amber-200/90 font-medium pt-1 border-t border-white/10">李伯彥老師助推建議</div>
+          <div class="text-slate-100">${b.strategy || "（尚未撰寫戰術建議）"}</div>
+        </div>
+      `;
 
-            <div class="text-[11px] text-slate-200">
-              個性化觸發：
-              <span class="text-slate-100">${reasons || "（尚未標註觸發原因）"}</span>
-            </div>
-
-            <div class="text-[11px] text-amber-100 mt-1">
-              戰術指令：
-              <span class="text-amber-50">${b.strategy || "（尚未撰寫戰術建議）"}</span>
-            </div>
-          </div>
-        `;
-
-        detail.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      card.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isExpanded = card.classList.contains("is-expanded");
+        collapseAll();
+        if (!isExpanded) {
+          expand.style.maxHeight = expand.scrollHeight + "px";
+          expand.setAttribute("aria-hidden", "false");
+          card.classList.add("is-expanded");
+          expand.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          const closeOnOut = (ev2) => {
+            if (!wrap.contains(ev2.target)) {
+              collapseAll();
+              document.removeEventListener("click", closeOnOut);
+            }
+          };
+          setTimeout(() => document.addEventListener("click", closeOnOut), 0);
+        }
       });
 
-      mGrid.appendChild(card);
-
-      rhythm.innerHTML += `
-        <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
-          <div class="flex items-center">
-            <span class="month-dot ${isRed ? "bg-red-light" : "bg-green-light"}"></span>
-            <span class="text-[11px] font-black text-slate-200">${b.gz}</span>
-            <span class="text-[9px] text-slate-500 ml-2 font-mono">${b.range || ""}</span>
-          </div>
-          <div class="text-right">
-            <div class="text-[10px] font-black ${isRed ? "text-red-300" : "text-emerald-300"}">
-              ${isRed ? "守規則" : "推進"}
-            </div>
-            <div class="text-[9px] text-slate-400">危險 ${b.riskScore ?? "—"}</div>
-          </div>
-        </div>
-      `;
+      wrap.appendChild(card);
+      wrap.appendChild(expand);
+      mGrid.appendChild(wrap);
     });
+
+    if (currentMonth2026 != null) {
+      const firstCurrent = mGrid.querySelector(".liuyue-card.is-current");
+      if (firstCurrent) firstCurrent.scrollIntoView({ behavior: "auto", block: "start" });
+    }
+
+    if (consultCta) {
+      consultCta.innerHTML = `
+        <a href="consultation.html" class="inline-flex items-center gap-1.5 text-[11px] text-amber-400/90 hover:text-amber-300 font-medium">
+          📘 獲取更精細的 1:1 詳細攻略
+        </a>
+      `;
+    }
   }
 
   // ====== Mobile Bottom Sheet 控制 ======
@@ -658,7 +722,7 @@
     const palaceText = (dbContent.palaces && dbContent.palaces[name]) ? dbContent.palaces[name] : "（資料庫尚未填入此宮位解釋）";
 
     const Strategy = typeof window.StrategyConfig !== "undefined" ? window.StrategyConfig : null;
-    let strategyHtml = "";
+    let strategyHtml = '<div id="palaceStrategyBlock" class="mb-4 text-xs text-slate-500">載入戰略金句…</div>';
     if (Strategy && window.ziweiScores?.palaceScores) {
       const baseScore = Number(window.ziweiScores.palaceScores[name]) || 0;
       const yearlyStem = horoscope?.yearlyStem ?? null;
@@ -671,15 +735,21 @@
       const maxScore = Math.max(...Object.values(window.ziweiScores.palaceScores).map(Number), 0.01);
       const strength = Strategy.scoreToStrength(displayScore, maxScore);
       const sihuaList = getSihuaForPalace(ziwei, name, horoscope?.mutagenStars || {});
-      const advice = Strategy.generateAdvice(name, strength, sihuaList);
-      if (advice && advice !== "（暫無戰略提示）") {
-        const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-        strategyHtml = `
-      <div class="p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4">
-        <div class="text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2">戰略金句</div>
-        <div class="text-sm text-amber-100/95 leading-relaxed">${esc(advice)}</div>
-      </div>`;
-      }
+      Strategy.getStrategyNoteFromAPI(name, strength, sihuaList).then(function (advice) {
+        const block = document.getElementById("palaceStrategyBlock");
+        if (!block) return;
+        if (advice && advice !== "（暫無戰略提示）") {
+          const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+          block.outerHTML = "<div class=\"p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">戰略金句</div><div class=\"text-sm text-amber-100/95 leading-relaxed\">" + esc(advice) + "</div></div>";
+        } else {
+          block.textContent = "";
+        }
+      }).catch(function () {
+        const block = document.getElementById("palaceStrategyBlock");
+        if (block) block.textContent = "";
+      });
+    } else {
+      strategyHtml = "";
     }
 
     let starCards = "";
@@ -964,7 +1034,7 @@
     }
   }
 
-  function renderZiweiScores(scores, horoscope, ziwei) {
+  async function renderZiweiScores(scores, horoscope, ziwei) {
     const palaceBox = document.getElementById("ziweiPalaceScores");
     const wuxingBox = document.getElementById("ziweiWuxingScores");
 
@@ -996,12 +1066,20 @@
       const maxScore = Math.max(...sorted.map((r) => r.displayScore), 0.01);
       const Strategy = typeof window.StrategyConfig !== "undefined" ? window.StrategyConfig : null;
 
-      palaceBox.innerHTML = sorted
-        .map((r) => {
-          const pct = maxScore ? (r.displayScore / maxScore) * 100 : 0;
-          const strength = Strategy ? Strategy.scoreToStrength(r.displayScore, maxScore) : 1;
+      let notes = [];
+      if (Strategy) {
+        notes = await Promise.all(sorted.map((r) => {
+          const strength = Strategy.scoreToStrength(r.displayScore, maxScore);
           const sihuaList = getSihuaForPalace(ziwei, r.name, mutagenStars);
-          const advice = Strategy ? Strategy.generateAdvice(r.name, strength, sihuaList) : "";
+          return Strategy.getStrategyNoteFromAPI(r.name, strength, sihuaList);
+        }));
+      }
+
+      const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      palaceBox.innerHTML = sorted
+        .map((r, i) => {
+          const pct = maxScore ? (r.displayScore / maxScore) * 100 : 0;
+          const advice = notes[i] && notes[i] !== "（暫無戰略提示）" ? esc(notes[i]) : "";
           const labelClass = r.isActiveLimit ? "text-amber-200" : "text-slate-300";
           const labelSuffix = r.isActiveLimit ? " · 小限命宮" : "";
           const barClass = r.isActiveLimit ? "bg-amber-400" : "bg-amber-500/70";
@@ -1119,9 +1197,98 @@
     timeMode?.addEventListener("change", updateTimeModeUI);
   }
 
+  // ====== 不確定時辰？問卷 Modal ======
+  function initIdentifyBirthTime() {
+    if (typeof window.IdentifyBirthTime === "undefined") return;
+
+    const btn = document.getElementById("btnIdentifyBirthTime");
+    const modal = document.getElementById("identifyBirthTimeModal");
+    const backdrop = document.getElementById("identifyBirthTimeBackdrop");
+    const form = document.getElementById("identifyBirthTimeForm");
+    const questionsEl = document.getElementById("identifyBirthTimeQuestions");
+    const closeBtn = document.getElementById("identifyBirthTimeClose");
+
+    const timeMode = document.getElementById("timeMode");
+    const exactRow = document.getElementById("exactTimeRow");
+    const shichenRow = document.getElementById("shichenRow");
+    const birthShichen = document.getElementById("birthShichen");
+    const birthShichenHalf = document.getElementById("birthShichenHalf");
+
+    if (!modal || !backdrop || !form || !questionsEl) return;
+
+    function openModal() {
+      if (timeMode && timeMode.value !== "shichen") {
+        timeMode.value = "shichen";
+        timeMode.dispatchEvent(new Event("change"));
+      }
+      if (exactRow) exactRow.classList.add("hidden");
+      if (shichenRow) shichenRow.classList.remove("hidden");
+      backdrop.classList.remove("hidden");
+      backdrop.setAttribute("aria-hidden", "false");
+      modal.classList.remove("hidden");
+    }
+
+    function closeModal() {
+      backdrop.classList.add("hidden");
+      backdrop.setAttribute("aria-hidden", "true");
+      modal.classList.add("hidden");
+    }
+
+    function esc(s) {
+      if (s == null) return "";
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+    var questions = window.IdentifyBirthTime.questions;
+    var html = "";
+    questions.forEach(function (q) {
+      html += '<fieldset class="border border-white/10 rounded-xl p-3"><legend class="text-xs font-bold text-slate-300 mb-2">' + esc(q.text) + "</legend>";
+      q.options.forEach(function (opt) {
+        var id = "identify_" + q.id + "_" + opt.key;
+        html += '<label class="flex items-center gap-2 py-1 cursor-pointer"><input type="radio" name="' + q.id + '" value="' + opt.key + '" id="' + id + '" class="rounded-full" />';
+        html += '<span class="text-xs text-slate-200">' + esc(opt.text) + "</span></label>";
+      });
+      html += "</fieldset>";
+    });
+    questionsEl.innerHTML = html;
+
+    if (btn) btn.addEventListener("click", openModal);
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    backdrop.addEventListener("click", closeModal);
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var answers = {};
+      questions.forEach(function (q) {
+        var input = form.querySelector('input[name="' + q.id + '"]:checked');
+        if (input) answers[q.id] = input.value;
+      });
+      var submitBtn = form.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
+      window.IdentifyBirthTime.identifyBirthTimeFromAPI(answers)
+        .then(function (result) {
+          var topThree = result.topHours || [];
+          if (topThree.length > 0 && birthShichen) {
+            birthShichen.value = topThree[0];
+            if (birthShichenHalf) birthShichenHalf.value = "upper";
+          }
+          closeModal();
+          var hint = document.getElementById("hint");
+          if (hint) hint.textContent = "推算結果：候選時辰 " + topThree.join("、") + "（已選「" + (topThree[0] || "") + "」），可改選其他時辰後再排盤。";
+        })
+        .catch(function (err) {
+          var hint = document.getElementById("hint");
+          if (hint) hint.textContent = "推算失敗（" + (err && err.message ? err.message : "請稍後再試") + "）。";
+        })
+        .finally(function () {
+          if (submitBtn) submitBtn.disabled = false;
+        });
+    });
+  }
+
   // ====== BOOT ======
   document.addEventListener("DOMContentLoaded", async () => {
     initSelectors();
+    initIdentifyBirthTime();
     document.getElementById("btnLaunch").addEventListener("click", calculate);
     await loadDbContent();
 

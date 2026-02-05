@@ -442,6 +442,17 @@
       .boyan-board { padding-bottom: 0.5rem; }
       .wuxing-line { margin-bottom: 0.5em; line-height: 1.6; max-width: 20em; }
     }
+    /* 流月：MonthlyFlowCard 年度賽季導航、能量條、狀態標籤、展開區 */
+    .liuyue-nav { scroll-behavior: smooth; }
+    .liuyue-month-wrap { margin-bottom: 0.5rem; }
+    .liuyue-card.monthly-flow-card { transition: background 0.2s, border-color 0.2s; border-radius: 0.75rem; }
+    .liuyue-card.monthly-flow-card.is-current { border-color: rgba(255, 191, 0, 0.5); background: rgba(255, 191, 0, 0.08); box-shadow: 0 0 0 1px rgba(255, 191, 0, 0.2); }
+    .liuyue-energy-bar { height: 6px; border-radius: 999px; overflow: hidden; background: rgba(255,255,255,0.08); border: 1px solid rgba(255, 191, 0, 0.12); }
+    .liuyue-energy-fill { height: 100%; border-radius: 999px; transition: width 0.3s; min-width: 2%; }
+    .liuyue-badge { white-space: nowrap; }
+    .liuyue-badge-high { border-color: rgba(251, 191, 36, 0.5); background: rgba(251, 191, 36, 0.12); color: #fcd34d; }
+    .liuyue-badge-cai { border-color: rgba(255, 191, 0, 0.4); background: rgba(255, 191, 0, 0.08); color: #fde047; }
+    .liuyue-expand { overflow: hidden; transition: max-height 0.3s ease-out; }
     @keyframes fadeInUp{
       from{ opacity:0; transform: translateY(4px); }
       to{ opacity:1; transform: translateY(0); }
@@ -709,6 +720,11 @@
           <div class="destiny-bar-wrap"><select id="birthShichen" class="destiny-select" aria-label="時辰"></select></div>
           <div class="destiny-bar-wrap"><select id="birthShichenHalf" class="destiny-select" aria-label="上半/下半"></select></div>
         </div>
+        <div class="flex justify-center">
+          <button id="btnIdentifyBirthTime" type="button" class="identify-time-btn text-[11px] text-amber-400/90 hover:text-amber-300 font-medium border border-amber-400/30 hover:border-amber-400/50 rounded-lg px-3 py-2 transition">
+            不確定時辰？點我推算時辰
+          </button>
+        </div>
         <p class="text-[11px] text-slate-500 text-center">註：選「時辰」會換算成代表時刻（上半/下半時辰各取代表時間）送入系統計算。</p>
       </div>
 
@@ -854,17 +870,15 @@
             <!-- 十神指令（已移除：避免與上方 Summary 的「十神主軸」重複） -->
           </section>
 
-          <!-- 流月 -->
-          <!-- ...（中略，與你原本相同）... -->
-
+          <!-- 流月：年度賽季導航（單一垂直列表，可展開詳情） -->
           <section id="ws-liuyue" class="glass p-6 md:p-7 space-y-4">
             <div>
-              <div class="section-subtitle mb-1">2026 Monthly Flow</div>
-              <h2 class="text-xl font-black tracking-tight">2026 流月紅綠燈（12）</h2>
-              <p class="text-xs text-slate-400 mt-1">🔴 壓力月：先守規則／🟢 穩進月：適合推進專案</p>
+              <div class="section-subtitle mb-1">2026 年度賽季導航</div>
+              <h2 class="text-xl font-black tracking-tight">流月戰略（12）</h2>
+              <p class="text-xs text-slate-400 mt-1">點月份卡片展開十神參數與李伯彥助推建議</p>
             </div>
-            <div id="monthGrid" class="space-y-2"></div>
-            <div id="monthDetailBox" class="mt-4 space-y-2 text-xs"></div>
+            <div id="monthGrid" class="space-y-2 max-h-[70vh] overflow-y-auto liuyue-nav"></div>
+            <div id="liuyueConsultCta" class="pt-4 border-t border-white/10"></div>
           </section>
 
           <!-- 戰略面板、諮詢 CTA -->
@@ -920,10 +934,7 @@
               <div class="text-center py-10 text-slate-500 italic text-sm">點擊紫微方盤的任一宮位，這裡會顯示詳解。</div>
             </div>
 
-            <div class="mt-8 pt-6 border-t border-white/10">
-              <div class="text-[10px] text-slate-500 uppercase font-black mb-3 tracking-widest">2026 流月節奏（快速參考）</div>
-              <div id="monthlyRhythmBox" class="grid grid-cols-1 gap-2"></div>
-            </div>
+            <!-- 流月改為左側單一導航，右側不再重複 -->
           </div>
 
           <div id="wuxingMeaningSection" class="glass p-6 border border-white/10">
@@ -937,6 +948,26 @@
       </div>
     </section>
   </main>
+
+  <!-- 不確定時辰？問卷 Modal -->
+  <div id="identifyBirthTimeBackdrop" class="fixed inset-0 bg-black/70 hidden z-50" aria-hidden="true"></div>
+  <div id="identifyBirthTimeModal" class="identify-time-modal fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md max-h-[85vh] overflow-y-auto rounded-2xl border border-amber-400/30 bg-[var(--bg-mid)] shadow-2xl hidden z-50" role="dialog" aria-labelledby="identifyBirthTimeTitle" aria-modal="true">
+    <div class="p-5 md:p-6">
+      <h2 id="identifyBirthTimeTitle" class="text-lg font-black text-amber-400 mb-1">不確定時辰？</h2>
+      <p class="text-[11px] text-slate-400 mb-4">依行為特徵推算候選時辰，答完將自動填入排盤表單。</p>
+      <form id="identifyBirthTimeForm" class="space-y-4">
+        <div id="identifyBirthTimeQuestions"></div>
+        <div class="flex gap-2 pt-2">
+          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold text-sm hover:bg-amber-500/30 transition">
+            推算並填入
+          </button>
+          <button type="button" id="identifyBirthTimeClose" class="px-4 py-2.5 rounded-xl border border-white/20 text-slate-300 text-sm hover:bg-white/5 transition">
+            取消
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Mobile Palace Detail Bottom Sheet (shown when < 1280px) -->
   <div id="palaceSheetBackdrop" class="fixed inset-0 bg-black/60 hidden z-40"></div>
@@ -958,6 +989,7 @@
 
   <script src="js/strategyConfig.js?v=2"></script>
   <script src="js/calc.js?v=2"></script>
+  <script src="js/identifyBirthTime.js?v=1"></script>
   <script src="js/ui.js?v=2"></script>
 
 </body>
