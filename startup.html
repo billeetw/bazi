@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>啟動序列測試</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 min-h-screen">
+  <div id="startup-root"></div>
+  <div class="p-8 max-w-lg mx-auto space-y-4">
+    <h1 class="text-amber-400 font-bold">StartupSequence 測試</h1>
+    <p class="text-slate-300 text-sm">點下方按鈕觸發啟動序列（4.5s 後結束）。</p>
+    <button
+      type="button"
+      id="btnTest"
+      class="px-6 py-3 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-300 font-bold text-sm"
+    >
+      播放啟動序列
+    </button>
+  </div>
+  <script type="module" src="/src/startup-entry.tsx"></script>
+  <script type="module">
+    document.getElementById("btnTest").addEventListener("click", function () {
+      window.showStartupSequence({
+        branchLabel: "子時",
+        personaLine: "在世界安靜下來的瞬間，你能看見別人忽略的真相；這份深邃的洞察，讓你在人群中永遠不會被混淆。",
+        enableSound: true,
+        onFinished: function () {
+          console.log("Startup sequence finished.");
+        },
+      });
+    });
+  </script>
+</body>
+</html>

@@ -86,7 +86,30 @@
   }
 
   // ====== DOM HELPERS ======
-  /** 橫向五行能量條，可標記 [最強] [最弱] */
+  /** 數值緩動：僅在值實際變更時從 0（或當前值）動到目標值，支援 prefers-reduced-motion */
+  function animateValue(el, to, opts) {
+    if (!el || typeof to !== "number" || !Number.isFinite(to)) return;
+    const duration = (opts && opts.duration != null) ? opts.duration : 450;
+    const decimals = (opts && opts.decimals != null) ? opts.decimals : 1;
+    const prev = el.getAttribute("data-animated-value");
+    const from = prev !== null && prev !== "" ? Number(prev) : 0;
+    if (from === to && prev !== null) return;
+    el.setAttribute("data-animated-value", String(to));
+    const reduced = typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const dur = reduced ? 0 : duration;
+    const start = performance.now();
+    function tick(now) {
+      const t = dur <= 0 ? 1 : Math.min((now - start) / dur, 1);
+      const eased = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      const current = from + (to - from) * eased;
+      el.textContent = current.toFixed(decimals);
+      if (t < 1) requestAnimationFrame(tick);
+      else el.textContent = to.toFixed(decimals);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  /** 橫向五行能量條，可標記 [最強] [最弱]；數值使用 AnimatedNumber 緩動 */
   function renderBar(targetId, data, max, opts) {
     const box = document.getElementById(targetId);
     if (!box) return;
@@ -101,13 +124,17 @@
         <div class="mb-1 wx-row">
           <div class="flex justify-between text-xs text-slate-300">
             <span class="font-bold">${e}${tag}</span>
-            <span class="font-mono">${v.toFixed(1)}</span>
+            <span class="font-mono wx-value" data-value="${v}">0</span>
           </div>
           <div class="h-2 bg-white/10 rounded overflow-hidden">
             <div class="h-full wuxing-${e} wx-bar-inner" style="width:${w}%"></div>
           </div>
         </div>
       `;
+    });
+    box.querySelectorAll(".wx-value").forEach((span, i) => {
+      const v = Number(data?.[["木", "火", "土", "金", "水"][i]] || 0);
+      animateValue(span, v, { duration: 400, decimals: 1 });
     });
   }
 
@@ -817,8 +844,44 @@
     }
   }
 
+  /** 依當前 hash 同步導航／戰略標籤的 aria-current，並套用 amber 強調樣式 */
+  function syncNavChipActive() {
+    const hash = (window.location.hash || "").trim() || "#ws-ziwei";
+    document.querySelectorAll(".nav-chip[href^=\"#\"]").forEach((a) => {
+      const href = (a.getAttribute("href") || "").trim();
+      if (href === hash) a.setAttribute("aria-current", "page");
+      else a.removeAttribute("aria-current");
+    });
+  }
+
+  /** 戰略維度切換：點擊 nav-chip 時先淡出再滾動，再淡入（150–250ms） */
+  function initDashboardContentTransition() {
+    const content = document.getElementById("dashboardMainContent");
+    if (!content || content.hasAttribute("data-transition-bound")) return;
+    content.setAttribute("data-transition-bound", "1");
+    document.querySelectorAll(".nav-chip[href^=\"#\"]").forEach((a) => {
+      a.addEventListener("click", function (e) {
+        const href = (this.getAttribute("href") || "").trim();
+        if (!href || href === "#") return;
+        const id = href.slice(1);
+        if (!document.getElementById(id)) return;
+        e.preventDefault();
+        content.classList.add("dashboard-content-fade");
+        const dur = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 50 : 180;
+        setTimeout(() => {
+          window.location.hash = href;
+          document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+          setTimeout(() => {
+            content.classList.remove("dashboard-content-fade");
+          }, dur);
+        }, dur);
+      });
+    });
+    window.addEventListener("hashchange", syncNavChipActive);
+  }
+
   // ====== Calculate ======
-  async function calculate() {
+  async function calculate(skipStartupSequence) {
     const btn = document.getElementById("btnLaunch");
     const hint = document.getElementById("hint");
     const original = btn.textContent;
@@ -833,9 +896,19 @@
     const shichen = (document.getElementById("birthShichen")?.value || "").trim();
     const shichenHalf = (document.getElementById("birthShichenHalf")?.value || "").trim(); // "upper" | "lower"
 
+    if (!skipStartupSequence && typeof window.showStartupSequence === "function" && timeMode === "shichen" && shichen) {
+      window.showStartupSequence({
+        branchLabel: shichen + "時",
+        personaLine: CEREMONY_PERSONALITY_KEYS[shichen] || CEREMONY_PERSONALITY_KEYS["子"],
+        enableSound: true,
+        onFinished: function () { calculate(true); },
+      });
+      return;
+    }
+
     try {
       if (![vy, vm, vd].every((n) => Number.isFinite(n))) {
-        throw new Error("請先選完整出生資料");
+        throw new Error("請先選完整出生年／月／日。若不確定時辰，可點「不確定出生時間？點我推算時辰」。");
       }
 
       if (timeMode !== "exact" && timeMode !== "shichen") {
@@ -848,7 +921,7 @@
         }
       } else {
         if (!shichen) {
-          throw new Error("請先選時辰");
+          throw new Error("請先選時辰，或不確定時間可點「不確定出生時間？點我推算時辰」");
         }
         if (shichenHalf !== "upper" && shichenHalf !== "lower") {
           throw new Error("請先選上半/下半時辰");
@@ -937,10 +1010,23 @@
       const navCta = document.getElementById("navCta");
       const inputEl = document.getElementById("inputCard");
 
-      if (sysEl) sysEl.classList.remove("hidden");
+      if (sysEl) {
+        sysEl.classList.remove("hidden");
+        if (!sysEl.hasAttribute("data-dashboard-entered")) {
+          sysEl.setAttribute("data-dashboard-entered", "1");
+          sysEl.classList.add("dashboard-enter");
+          const delayStep = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 0.06;
+          sysEl.querySelectorAll(".dashboard-card").forEach((card, i) => {
+            card.style.animationDelay = `${i * delayStep}s`;
+          });
+        }
+      }
       if (navEl) navEl.classList.remove("hidden");
       if (navCta) navCta.classList.remove("hidden");
       if (inputEl) inputEl.classList.add("hidden");
+
+      syncNavChipActive();
+      initDashboardContentTransition();
 
       // summary
       const summaryBirthEl = document.getElementById("summaryBirth");
@@ -1084,7 +1170,7 @@
           const labelSuffix = r.isActiveLimit ? " · 小限命宮" : "";
           const barClass = r.isActiveLimit ? "bg-amber-400" : "bg-amber-500/70";
           return `
-            <div class="py-2 border-b border-white/5">
+            <div class="py-2 border-b border-white/5 cursor-pointer hover:bg-white/5 rounded-lg px-2 -mx-2 transition-colors palace-score-row" data-palace-name="${esc(r.name)}" role="button" tabindex="0">
               <div class="flex justify-between text-xs mb-0.5">
                 <span class="${labelClass}">${r.name}${labelSuffix}</span>
               </div>
@@ -1096,6 +1182,36 @@
           `;
         })
         .join("");
+
+      if (!palaceBox.hasAttribute("data-palace-click-bound")) {
+        palaceBox.setAttribute("data-palace-click-bound", "1");
+        palaceBox.addEventListener("click", function (e) {
+          var row = e.target.closest("[data-palace-name]");
+          if (!row) return;
+          var name = row.getAttribute("data-palace-name");
+          if (!name) return;
+          selectPalace(name);
+          if (window.innerWidth < 1280) {
+            openPalaceSheet();
+          } else {
+            document.getElementById("detailPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+        palaceBox.addEventListener("keydown", function (e) {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          var row = e.target.closest("[data-palace-name]");
+          if (!row) return;
+          e.preventDefault();
+          var name = row.getAttribute("data-palace-name");
+          if (!name) return;
+          selectPalace(name);
+          if (window.innerWidth < 1280) {
+            openPalaceSheet();
+          } else {
+            document.getElementById("detailPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      }
     }
 
     const ratios = scores?.elementRatios || {};
@@ -1197,7 +1313,45 @@
     timeMode?.addEventListener("change", updateTimeModeUI);
   }
 
-  // ====== 不確定時辰？問卷 Modal ======
+  /** 12 時辰人格鑰匙文案（座標鎖定儀式用） */
+  const CEREMONY_PERSONALITY_KEYS = {
+    "子": "在世界安靜下來的瞬間，你能看見別人忽略的真相；這份深邃的洞察，讓你在人群中永遠不會被混淆。",
+    "丑": "在壓力逼近的瞬間，你反而能站得更穩、扛得更久；這份沈穩的韌性，讓你在人群中永遠不會被混淆。",
+    "寅": "在一切還沒開始的瞬間，你已經踏上荒野；這份開拓的爆發力，讓你在人群中永遠不會被混淆。",
+    "卯": "在情緒開始流動的瞬間，你讓人安心敞開；這份優雅的共感，讓你在人群中永遠不會被混淆。",
+    "辰": "在混亂剛要發生的瞬間，你看見更高的全局；這份遼闊的視野，讓你在人群中永遠不會被混淆。",
+    "巳": "在變化降臨的瞬間，你能立刻切換生存模式；這份極致的靈活，讓你在人群中永遠不會被混淆。",
+    "午": "在所有目光聚來的瞬間，你自然站在光線中心；這份天生的光芒，讓你在人群中永遠不會被混淆。",
+    "未": "在資源開始累積的瞬間，你默默讓荒蕪成形；這份安定的力量，讓你在人群中永遠不會被混淆。",
+    "申": "在任務變得複雜的瞬間，你能將所有邏輯重排；這份理性的精準，讓你在人群中永遠不會被混淆。",
+    "酉": "在細節浮現的瞬間，你一眼就能找到缺口；這份銳利的品味，讓你在人群中永遠不會被混淆。",
+    "戌": "在界線被踩到的瞬間，你明確守護自己的立場；這份堅定的原則，讓你在人群中永遠不會被混淆。",
+    "亥": "在靈感閃過的瞬間，你將碎片拼湊成整體；這份超然的直覺，讓你在人群中永遠不會被混淆。",
+  };
+
+  /** 低沈合成器音效：模擬系統同步完成（Web Audio API） */
+  function playSyncSound() {
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      var ctx = new Ctx();
+      var now = ctx.currentTime;
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(120, now);
+      osc.frequency.exponentialRampToValueAtTime(80, now + 0.25);
+      osc.frequency.exponentialRampToValueAtTime(55, now + 0.6);
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.02, now + 0.6);
+      osc.start(now);
+      osc.stop(now + 0.65);
+    } catch (e) {}
+  }
+
+  // ====== 不確定時辰？問卷 Modal（一題一題顯示 + 進度條）======
   function initIdentifyBirthTime() {
     if (typeof window.IdentifyBirthTime === "undefined") return;
 
@@ -1206,6 +1360,11 @@
     const backdrop = document.getElementById("identifyBirthTimeBackdrop");
     const form = document.getElementById("identifyBirthTimeForm");
     const questionsEl = document.getElementById("identifyBirthTimeQuestions");
+    const progressText = document.getElementById("identifyBirthTimeProgressText");
+    const progressBar = document.getElementById("identifyBirthTimeProgressBar");
+    const prevBtn = document.getElementById("identifyBirthTimePrev");
+    const nextBtn = document.getElementById("identifyBirthTimeNext");
+    const submitBtn = document.getElementById("identifyBirthTimeSubmit");
     const closeBtn = document.getElementById("identifyBirthTimeClose");
 
     const timeMode = document.getElementById("timeMode");
@@ -1214,9 +1373,26 @@
     const birthShichen = document.getElementById("birthShichen");
     const birthShichenHalf = document.getElementById("birthShichenHalf");
 
+    const ceremonyBackdrop = document.getElementById("ceremonyBackdrop");
+    const ceremonyModal = document.getElementById("ceremonyModal");
+    const ceremonyLine0 = document.getElementById("ceremonyLine0");
+    const ceremonyLine1 = document.getElementById("ceremonyLine1");
+    const ceremonyLine2 = document.getElementById("ceremonyLine2");
+    const ceremonyConfirm = document.getElementById("ceremonyConfirm");
+
+    var pendingCeremonyResult = null;
+    var ceremonyTypewriterTimer = null;
+
     if (!modal || !backdrop || !form || !questionsEl) return;
 
+    var questions = window.IdentifyBirthTime.questions;
+    var total = questions.length;
+    var currentIndex = 0;
+    var answers = {};
+
     function openModal() {
+      currentIndex = 0;
+      answers = {};
       if (timeMode && timeMode.value !== "shichen") {
         timeMode.value = "shichen";
         timeMode.dispatchEvent(new Event("change"));
@@ -1226,6 +1402,9 @@
       backdrop.classList.remove("hidden");
       backdrop.setAttribute("aria-hidden", "false");
       modal.classList.remove("hidden");
+      renderQuestion(0);
+      updateProgress(0);
+      updateButtons();
     }
 
     function closeModal() {
@@ -1234,53 +1413,202 @@
       modal.classList.add("hidden");
     }
 
+    function closeCeremony() {
+      if (ceremonyBackdrop) ceremonyBackdrop.classList.remove("ceremony-visible");
+      if (ceremonyModal) ceremonyModal.classList.remove("ceremony-visible");
+      if (ceremonyTypewriterTimer) {
+        clearTimeout(ceremonyTypewriterTimer);
+        ceremonyTypewriterTimer = null;
+      }
+    }
+
+    function openCeremony(result) {
+      var branch = result && result.branch ? result.branch : "子";
+      var half = result && result.half === "lower" ? "lower" : "upper";
+      var text = CEREMONY_PERSONALITY_KEYS[branch] || CEREMONY_PERSONALITY_KEYS["子"];
+      pendingCeremonyResult = { branch: branch, half: half, hour_label: result && result.hour_label, hour_range: result && result.hour_range };
+
+      closeModal();
+      var hourLabel = (result && result.hour_label) ? result.hour_label : branch + "時";
+      if (ceremonyLine0) ceremonyLine0.textContent = "推算結果：你是" + hourLabel;
+      if (ceremonyLine1) ceremonyLine1.textContent = "";
+      if (ceremonyLine2) ceremonyLine2.textContent = "";
+      if (ceremonyConfirm) {
+        ceremonyConfirm.style.opacity = "0";
+        ceremonyConfirm.disabled = true;
+      }
+
+      if (ceremonyBackdrop) ceremonyBackdrop.classList.add("ceremony-visible");
+      if (ceremonyModal) ceremonyModal.classList.add("ceremony-visible");
+
+      if (ceremonyLine1) ceremonyLine1.textContent = "[ 系統鑑定 ]";
+      ceremonyTypewriterTimer = setTimeout(function () {
+        ceremonyTypewriterTimer = null;
+        var idx = 0;
+        var step = 55;
+        function tick() {
+          if (idx >= text.length) {
+            if (ceremonyConfirm) {
+              ceremonyConfirm.style.opacity = "1";
+              ceremonyConfirm.disabled = false;
+            }
+            return;
+          }
+          if (ceremonyLine2) ceremonyLine2.textContent = text.slice(0, idx + 1);
+          idx += 1;
+          ceremonyTypewriterTimer = setTimeout(tick, step);
+        }
+        ceremonyTypewriterTimer = setTimeout(tick, step);
+      }, 500);
+    }
+
     function esc(s) {
       if (s == null) return "";
       return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
-    var questions = window.IdentifyBirthTime.questions;
-    var html = "";
-    questions.forEach(function (q) {
-      html += '<fieldset class="border border-white/10 rounded-xl p-3"><legend class="text-xs font-bold text-slate-300 mb-2">' + esc(q.text) + "</legend>";
+
+    function saveCurrentAnswer() {
+      var q = questions[currentIndex];
+      if (!q) return;
+      if (q.multiSelect && q.maxSelect) {
+        var checked = form.querySelectorAll('input[name="' + q.id + '"]:checked');
+        answers[q.id] = Array.prototype.slice.call(checked, 0, q.maxSelect).map(function (el) { return el.value; });
+      } else {
+        var input = form.querySelector('input[name="' + q.id + '"]:checked');
+        answers[q.id] = input ? input.value : undefined;
+      }
+    }
+
+    function renderQuestion(index) {
+      if (index < 0 || index >= total) return;
+      var q = questions[index];
+      var saved = answers[q.id];
+      var isMulti = q.multiSelect && q.maxSelect;
+      var html = '<fieldset class="border border-white/10 rounded-xl p-3"><legend class="text-xs font-bold text-slate-300 mb-2">' + esc(q.text) + "</legend>";
+      if (isMulti) html += '<p class="text-[10px] text-slate-500 mb-2">可複選，最多 ' + q.maxSelect + ' 項</p>';
       q.options.forEach(function (opt) {
         var id = "identify_" + q.id + "_" + opt.key;
-        html += '<label class="flex items-center gap-2 py-1 cursor-pointer"><input type="radio" name="' + q.id + '" value="' + opt.key + '" id="' + id + '" class="rounded-full" />';
+        var checked = false;
+        if (isMulti && Array.isArray(saved)) checked = saved.indexOf(opt.key) !== -1;
+        else if (!isMulti) checked = saved === opt.key;
+        var checkedAttr = checked ? ' checked="checked"' : "";
+        var type = isMulti ? "checkbox" : "radio";
+        html += '<label class="flex items-center gap-2 py-1 cursor-pointer"><input type="' + type + '" name="' + q.id + '" value="' + opt.key + '" id="' + id + '" class="rounded-full"' + checkedAttr + ' />';
         html += '<span class="text-xs text-slate-200">' + esc(opt.text) + "</span></label>";
       });
       html += "</fieldset>";
-    });
-    questionsEl.innerHTML = html;
+      questionsEl.innerHTML = html;
+      if (isMulti) {
+        form.querySelectorAll('input[name="' + q.id + '"]').forEach(function (input) {
+          input.addEventListener("change", function () {
+            var checked = form.querySelectorAll('input[name="' + q.id + '"]:checked');
+            if (checked.length > q.maxSelect) this.checked = false;
+            updateButtons();
+          });
+        });
+      }
+      bindCurrentQuestionChange();
+    }
+
+    /** 目前題目選項變更時更新按鈕（下一題／推算並填入 可否點擊） */
+    function bindCurrentQuestionChange() {
+      var q = questions[currentIndex];
+      if (!q || q.multiSelect) return;
+      form.querySelectorAll('input[name="' + q.id + '"]').forEach(function (input) {
+        input.addEventListener("change", updateButtons);
+      });
+    }
+
+    function updateProgress(index) {
+      var n = index + 1;
+      var pct = total > 0 ? Math.round((n / total) * 100) : 0;
+      if (progressText) progressText.textContent = "第 " + n + " / " + total + " 題";
+      if (progressBar) progressBar.style.width = pct + "%";
+    }
+
+    /** 目前題目是否已填答（單選至少一個、複選至少一個） */
+    function hasCurrentAnswer() {
+      var q = questions[currentIndex];
+      if (!q) return false;
+      if (q.multiSelect && q.maxSelect) {
+        var checked = form.querySelectorAll('input[name="' + q.id + '"]:checked');
+        return checked.length > 0;
+      }
+      var input = form.querySelector('input[name="' + q.id + '"]:checked');
+      return !!input;
+    }
+
+    function updateButtons() {
+      if (prevBtn) prevBtn.disabled = currentIndex <= 0;
+      if (nextBtn) {
+        nextBtn.classList.toggle("hidden", currentIndex >= total - 1);
+        nextBtn.disabled = currentIndex >= total - 1 || !hasCurrentAnswer();
+      }
+      if (submitBtn) {
+        submitBtn.classList.toggle("hidden", currentIndex < total - 1);
+        submitBtn.disabled = currentIndex < total - 1 || !hasCurrentAnswer();
+      }
+    }
+
+    function goNext() {
+      if (!hasCurrentAnswer()) return;
+      saveCurrentAnswer();
+      if (currentIndex >= total - 1) return;
+      currentIndex++;
+      renderQuestion(currentIndex);
+      updateProgress(currentIndex);
+      updateButtons();
+      bindCurrentQuestionChange();
+    }
+
+    function goPrev() {
+      if (currentIndex <= 0) return;
+      saveCurrentAnswer();
+      currentIndex--;
+      renderQuestion(currentIndex);
+      updateProgress(currentIndex);
+      updateButtons();
+    }
+
+    if (prevBtn) prevBtn.addEventListener("click", goPrev);
+    if (nextBtn) nextBtn.addEventListener("click", goNext);
 
     if (btn) btn.addEventListener("click", openModal);
+    var btnGlobal = document.getElementById("btnIdentifyBirthTimeGlobal");
+    if (btnGlobal) btnGlobal.addEventListener("click", openModal);
     if (closeBtn) closeBtn.addEventListener("click", closeModal);
     backdrop.addEventListener("click", closeModal);
 
+    if (ceremonyConfirm) {
+      ceremonyConfirm.addEventListener("click", function () {
+        playSyncSound();
+        if (pendingCeremonyResult) {
+          if (birthShichen) birthShichen.value = pendingCeremonyResult.branch;
+          if (birthShichenHalf) birthShichenHalf.value = pendingCeremonyResult.half;
+          var hint = document.getElementById("hint");
+          var r = pendingCeremonyResult;
+          if (hint) hint.textContent = "推算結果：" + (r.hour_label || r.branch + "時") + (r.hour_range ? "（" + r.hour_range + "）" : "") + "，已選" + (r.half === "lower" ? "下半" : "上半") + "時辰。可改選後再排盤。";
+          pendingCeremonyResult = null;
+        }
+        closeCeremony();
+      });
+    }
+
     form.addEventListener("submit", function (e) {
       e.preventDefault();
-      var answers = {};
-      questions.forEach(function (q) {
-        var input = form.querySelector('input[name="' + q.id + '"]:checked');
-        if (input) answers[q.id] = input.value;
-      });
-      var submitBtn = form.querySelector('button[type="submit"]');
-      if (submitBtn) submitBtn.disabled = true;
+      saveCurrentAnswer();
+      var submitBtnEl = document.getElementById("identifyBirthTimeSubmit");
+      if (submitBtnEl) submitBtnEl.disabled = true;
       window.IdentifyBirthTime.identifyBirthTimeFromAPI(answers)
         .then(function (result) {
-          var topThree = result.topHours || [];
-          if (topThree.length > 0 && birthShichen) {
-            birthShichen.value = topThree[0];
-            if (birthShichenHalf) birthShichenHalf.value = "upper";
-          }
-          closeModal();
-          var hint = document.getElementById("hint");
-          if (hint) hint.textContent = "推算結果：候選時辰 " + topThree.join("、") + "（已選「" + (topThree[0] || "") + "」），可改選其他時辰後再排盤。";
+          openCeremony(result);
         })
         .catch(function (err) {
           var hint = document.getElementById("hint");
           if (hint) hint.textContent = "推算失敗（" + (err && err.message ? err.message : "請稍後再試") + "）。";
         })
         .finally(function () {
-          if (submitBtn) submitBtn.disabled = false;
+          if (submitBtnEl) submitBtnEl.disabled = false;
         });
     });
   }
@@ -1289,6 +1617,7 @@
   document.addEventListener("DOMContentLoaded", async () => {
     initSelectors();
     initIdentifyBirthTime();
+    syncNavChipActive();
     document.getElementById("btnLaunch").addEventListener("click", calculate);
     await loadDbContent();
 

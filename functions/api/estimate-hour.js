@@ -1,7 +1,7 @@
 /**
- * POST /api/estimate-hour
- * Body: { answers: Record<string, string> } 例如 { answers: { q1: "A", q2: "B", ... } }
- * 回傳：{ topHours: string[], confidence: number } 前三名時辰與可信度，加權數值不暴露於前端。
+ * POST /api/estimate-hour (V4：18+1 題)
+ * Body: { answers: { q1?: string[], q2?: string[], q3?: string, ... q19?: string } }  q1/q2 可複選最多 2 項
+ * 回傳：{ branch, hour_label, hour_range, half: "upper"|"lower" } 唯一地支與上半/下半，供紫微排盤用。
  */
 import { estimateHour } from "../logic/timeEstimator.js";
 

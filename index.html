@@ -405,11 +405,57 @@
       transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
       user-select: none;
     }
+    .nav-chip:hover,
+    .nav-chip:active,
+    .nav-chip[aria-current="page"] {
+      color: rgb(245 158 11);
+      border-color: rgba(245, 158, 11, 0.6);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
+    }
     .nav-chip:hover {
       transform: translateY(-1px);
       background: rgba(255,191,0,0.12);
-      border-color: rgba(255,191,0,0.4);
-      box-shadow: 0 0 16px rgba(255,191,0,0.15);
+    }
+    .nav-chip:active {
+      background: rgba(255,191,0,0.18);
+    }
+    .nav-chip[aria-current="page"] {
+      background: rgba(255,191,0,0.15);
+    }
+
+    /* 主儀表板：卡片依序登場（stagger），僅首次進入時播放 */
+    @keyframes dashboard-card-enter {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    #system.dashboard-enter .dashboard-card {
+      animation: dashboard-card-enter 0.35s ease-out forwards;
+    }
+    #system.dashboard-enter .dashboard-card { opacity: 0; }
+
+    /* 戰略維度切換：內容區塊淡入淡出 */
+    .dashboard-content-transition {
+      transition: opacity 0.2s ease;
+    }
+    .dashboard-content-transition.dashboard-content-fade {
+      opacity: 0;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #system.dashboard-enter .dashboard-card {
+        animation: none;
+        opacity: 1;
+        transform: none;
+      }
+      .dashboard-content-transition {
+        transition-duration: 0.05s;
+      }
     }
 
     .bazi-char{
@@ -632,6 +678,35 @@
         display: none !important;
       }
     }
+
+    /* 座標鎖定儀式：全螢幕半透明遮罩 + 中央琥珀光擴張 */
+    #ceremonyBackdrop.ceremony-visible,
+    #ceremonyModal.ceremony-visible {
+      display: flex !important;
+    }
+    #ceremonyModal.ceremony-visible {
+      pointer-events: auto;
+    }
+    .ceremony-glow::before {
+      content: '';
+      position: absolute;
+      width: 20vmin;
+      height: 20vmin;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 191, 0, 0.85) 0%, rgba(255, 191, 0, 0.4) 35%, rgba(255, 191, 0, 0.1) 55%, transparent 70%);
+      animation: ceremony-glow-expand 2.5s ease-out forwards;
+      pointer-events: none;
+    }
+    @keyframes ceremony-glow-expand {
+      0% {
+        transform: scale(0.3);
+        opacity: 0.6;
+      }
+      100% {
+        transform: scale(12);
+        opacity: 0.35;
+      }
+    }
   </style>
 </head>
 
@@ -643,7 +718,7 @@
   <div class="nav-bar flex items-center justify-between gap-3">
     <div class="flex items-center gap-2">
       <div class="font-black tracking-[0.22em] text-[10px] uppercase">一起出來玩</div>
-      <div class="text-[10px] opacity-85">人生遊戲0.23</div>
+      <div class="text-[10px] opacity-85">人生遊戲攻略</div>
       <a href="activity-213.html" class="nav-chip bg-amber-500/20 border-amber-300/40 text-amber-100" aria-label="2/13 活動報名">2/13 活動</a>
     </div>
 
@@ -673,25 +748,6 @@
 
   <main class="max-w-7xl mx-auto px-4 pt-6 space-y-8">
 
-    <!-- 2/13 活動訊息（僅預告，報名請至獨立活動頁） -->
-    <section id="activity-213" class="glass-container glass-hero p-6 md:p-8 max-w-2xl mx-auto space-y-4 scroll-mt-24">
-      <div class="text-center">
-        <p class="text-amber-400 font-black text-sm tracking-widest">一起出來玩夥伴聚會</p>
-        <h2 class="text-xl md:text-2xl font-black text-amber-300 mt-1">如何玩好人生遊戲</h2>
-        <p class="text-slate-400 text-sm mt-2">2/13 週五晚上 18:30–21:30（18:00 可進場）</p>
-      </div>
-      <div class="text-slate-200 text-sm leading-relaxed space-y-3">
-        <p>為您揭開人生這場遊戲的真實面貌，讓您知道這個遊戲的前因後果、破關關鍵，還有專屬於您的通關密碼。</p>
-        <p>在這場說明會之後，你會對自己人生的過去、現在、未來，有更充足的理解，都能在未來的人生路上，提升自我，與我們一起實現自己的志願。</p>
-        <p class="text-amber-300 font-bold">一起出來玩吧！祝福你。</p>
-      </div>
-      <div class="text-center pt-2">
-        <a href="activity-213.html" class="engine-button inline-flex items-center justify-center px-8 py-4 rounded-2xl text-sm font-black tracking-[0.2em]">
-          活動報名
-        </a>
-      </div>
-    </section>
-
     <!-- 命運座標輸入（條狀排列 + 頂級玻璃擬態，保留原有 id 與邏輯） -->
     <section id="inputCard" class="glass-container glass-input p-6 md:p-8 max-w-2xl mx-auto space-y-6">
       <h2 class="text-center hero-subtitle tracking-[0.2em] mb-2">命運座標輸入</h2>
@@ -702,11 +758,16 @@
         <div class="destiny-bar-wrap"><select id="birthMonth" class="destiny-select" aria-label="月"></select></div>
         <div class="destiny-bar-wrap"><select id="birthDay" class="destiny-select" aria-label="日"></select></div>
       </div>
-
       <!-- 第二行：性別、粗略時間 -->
       <div class="destiny-bar-row grid-cols-2">
         <div class="destiny-bar-wrap"><select id="timeMode" class="destiny-select" aria-label="時間模式"></select></div>
         <div class="destiny-bar-wrap"><select id="gender" class="destiny-select" aria-label="性別"></select></div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 pt-1">
+        <span class="text-[11px] text-slate-500">不確定出生時間？</span>
+        <button type="button" id="btnIdentifyBirthTimeGlobal" class="identify-time-btn text-[11px] text-amber-400/90 hover:text-amber-300 font-medium border border-amber-400/30 hover:border-amber-400/50 rounded-lg px-3 py-1.5 transition">
+          點我推算時辰
+        </button>
       </div>
 
       <!-- 第三行：精確時、分 -->
@@ -738,11 +799,30 @@
       <div id="hint" class="text-center text-xs text-slate-400 italic min-h-[1.2em]"></div>
     </section>
 
+    <!-- 一起出來玩夥伴聚會（2/13 活動預告，報名請至獨立活動頁） -->
+    <section id="activity-213" class="glass-container glass-hero p-6 md:p-8 max-w-2xl mx-auto space-y-4 scroll-mt-24">
+      <div class="text-center">
+        <p class="text-amber-400 font-black text-sm tracking-widest">一起出來玩夥伴聚會</p>
+        <h2 class="text-xl md:text-2xl font-black text-amber-300 mt-1">如何玩好人生遊戲</h2>
+        <p class="text-slate-400 text-sm mt-2">2/13 週五晚上 18:30–21:30（18:00 可進場）</p>
+      </div>
+      <div class="text-slate-200 text-sm leading-relaxed space-y-3">
+        <p>為您揭開人生這場遊戲的真實面貌，讓您知道這個遊戲的前因後果、破關關鍵，還有專屬於您的通關密碼。</p>
+        <p>在這場說明會之後，你會對自己人生的過去、現在、未來，有更充足的理解，都能在未來的人生路上，提升自我，與我們一起實現自己的志願。</p>
+        <p class="text-amber-300 font-bold">一起出來玩吧！祝福你。</p>
+      </div>
+      <div class="text-center pt-2">
+        <a href="activity-213.html" class="engine-button inline-flex items-center justify-center px-8 py-4 rounded-2xl text-sm font-black tracking-[0.2em]">
+          活動報名
+        </a>
+      </div>
+    </section>
+
     <!-- SYSTEM WORKSPACES -->
     <section id="system" class="hidden space-y-8">
 
       <!-- TOP SUMMARY BAR (after computed) -->
-      <section id="ws-summary" class="glass p-6 md:p-7">
+      <section id="ws-summary" class="glass dashboard-card p-6 md:p-7">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <div class="section-subtitle mb-1">Command Summary</div>
@@ -765,13 +845,13 @@
         </div>
       </section>
 
-      <div class="grid xl:grid-cols-[1fr,440px] gap-8">
+      <div id="dashboardMainContent" class="grid xl:grid-cols-[1fr,440px] gap-8 dashboard-content-transition">
 
         <!-- LEFT WORKSPACES -->
         <div class="space-y-8">
 
           <!-- 紫微 -->
-          <section id="ws-ziwei" class="glass p-6 md:p-7 space-y-4">
+          <section id="ws-ziwei" class="glass dashboard-card p-6 md:p-7 space-y-4">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div class="section-subtitle mb-1">ZiWei DouShu</div>
@@ -818,9 +898,7 @@
           </section>
 
           <!-- 八字五行 -->
-          <!-- （以下和你原本一樣，只在 renderBar 有改） -->
-
-          <section id="ws-bazi" class="glass p-6 md:p-7 space-y-6">
+          <section id="ws-bazi" class="glass dashboard-card p-6 md:p-7 space-y-6">
             <div>
               <div class="section-subtitle mb-1">BaZi + Elements</div>
               <h2 class="text-xl font-black tracking-tight">八字 · 四柱＋五行戰力</h2>
@@ -871,7 +949,7 @@
           </section>
 
           <!-- 流月：年度賽季導航（單一垂直列表，可展開詳情） -->
-          <section id="ws-liuyue" class="glass p-6 md:p-7 space-y-4">
+          <section id="ws-liuyue" class="glass dashboard-card p-6 md:p-7 space-y-4">
             <div>
               <div class="section-subtitle mb-1">2026 年度賽季導航</div>
               <h2 class="text-xl font-black tracking-tight">流月戰略（12）</h2>
@@ -884,7 +962,7 @@
           <!-- 戰略面板、諮詢 CTA -->
           <!-- ... 保持不變 ... -->
 
-          <section id="ws-strategy" class="glass p-6 md:p-7 space-y-4">
+          <section id="ws-strategy" class="glass dashboard-card p-6 md:p-7 space-y-4">
             <div>
               <div class="section-subtitle mb-1">Strategic Panel</div>
               <h2 class="text-xl font-black tracking-tight">2026 戰術建議（動態決策）</h2>
@@ -900,7 +978,7 @@
             </div>
           </section>
 
-          <section id="ws-consult" class="glass p-7 md:p-9 space-y-6 text-center border border-amber-400/40">
+          <section id="ws-consult" class="glass dashboard-card p-7 md:p-9 space-y-6 text-center border border-amber-400/40">
             <div>
               <h2 class="text-2xl md:text-4xl font-black text-amber-400 tracking-tight">✨ 別讓你的初始設定，限制了你的一生。</h2>
             </div>
@@ -925,7 +1003,7 @@
         <!-- RIGHT DETAIL PANEL（桌機用） -->
         <!-- ... 保持原樣 ... -->
         <aside class="space-y-6" id="detailPanel">
-          <div class="glass p-6 md:p-7 sticky top-24 border border-amber-500/30 overflow-y-auto max-h-[85vh]">
+          <div class="glass dashboard-card p-6 md:p-7 sticky top-24 border border-amber-500/30 overflow-y-auto max-h-[85vh]">
             <div class="section-subtitle mb-2">Palace Detail</div>
             <div id="palaceTitle" class="text-3xl font-black text-amber-400">請點宮位</div>
             <div id="palaceSub" class="text-xs text-slate-400 mt-2 leading-relaxed"></div>
@@ -937,7 +1015,7 @@
             <!-- 流月改為左側單一導航，右側不再重複 -->
           </div>
 
-          <div id="wuxingMeaningSection" class="glass p-6 border border-white/10">
+            <div id="wuxingMeaningSection" class="glass dashboard-card p-6 border border-white/10">
             <div class="section-subtitle mb-2">Five Elements Meanings</div>
             <div class="font-black text-lg">金木水火土 · 基本意義</div>
             <div class="text-xs text-slate-400 mt-1">（內容優先來自資料庫：wuxing_meanings；若無則顯示預設）</div>
@@ -949,16 +1027,30 @@
     </section>
   </main>
 
-  <!-- 不確定時辰？問卷 Modal -->
+  <!-- 不確定時辰？問卷 Modal（一題一題顯示 + 進度條） -->
   <div id="identifyBirthTimeBackdrop" class="fixed inset-0 bg-black/70 hidden z-50" aria-hidden="true"></div>
   <div id="identifyBirthTimeModal" class="identify-time-modal fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md max-h-[85vh] overflow-y-auto rounded-2xl border border-amber-400/30 bg-[var(--bg-mid)] shadow-2xl hidden z-50" role="dialog" aria-labelledby="identifyBirthTimeTitle" aria-modal="true">
     <div class="p-5 md:p-6">
       <h2 id="identifyBirthTimeTitle" class="text-lg font-black text-amber-400 mb-1">不確定時辰？</h2>
-      <p class="text-[11px] text-slate-400 mb-4">依行為特徵推算候選時辰，答完將自動填入排盤表單。</p>
+      <p class="text-[11px] text-slate-400 mb-3">依行為特徵推算候選時辰，答完將自動填入排盤表單。</p>
+      <div id="identifyBirthTimeProgressWrap" class="mb-4">
+        <div class="flex justify-between text-[11px] text-slate-500 mb-1">
+          <span id="identifyBirthTimeProgressText">第 1 / 19 題</span>
+        </div>
+        <div class="h-1.5 bg-white/10 rounded-full overflow-hidden">
+          <div id="identifyBirthTimeProgressBar" class="h-full bg-amber-400/80 rounded-full transition-all duration-300" style="width: 5.26%;"></div>
+        </div>
+      </div>
       <form id="identifyBirthTimeForm" class="space-y-4">
         <div id="identifyBirthTimeQuestions"></div>
-        <div class="flex gap-2 pt-2">
-          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold text-sm hover:bg-amber-500/30 transition">
+        <div class="flex gap-2 pt-3">
+          <button type="button" id="identifyBirthTimePrev" class="px-4 py-2.5 rounded-xl border border-white/20 text-slate-300 text-sm hover:bg-white/5 transition disabled:opacity-40 disabled:cursor-not-allowed">
+            上一題
+          </button>
+          <button type="button" id="identifyBirthTimeNext" class="flex-1 py-2.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold text-sm hover:bg-amber-500/30 transition">
+            下一題
+          </button>
+          <button type="submit" id="identifyBirthTimeSubmit" class="hidden flex-1 py-2.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold text-sm hover:bg-amber-500/30 transition">
             推算並填入
           </button>
           <button type="button" id="identifyBirthTimeClose" class="px-4 py-2.5 rounded-xl border border-white/20 text-slate-300 text-sm hover:bg-white/5 transition">
@@ -966,6 +1058,20 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- 座標鎖定儀式 (Coordinate Lock Ceremony) -->
+  <div id="ceremonyBackdrop" class="fixed inset-0 bg-black/80 hidden z-[60]" aria-hidden="true"></div>
+  <div id="ceremonyModal" class="ceremony-modal fixed inset-0 flex flex-col items-center justify-center z-[60] hidden pointer-events-none" aria-modal="true" role="dialog">
+    <div class="ceremony-glow absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true"></div>
+    <div class="ceremony-content relative z-10 max-w-lg w-[90vw] px-6 py-8 flex flex-col items-center justify-center pointer-events-auto">
+      <div id="ceremonyLine0" class="text-amber-300/90 font-bold text-sm tracking-wide mb-2 min-h-[1.25em]"></div>
+      <div id="ceremonyLine1" class="text-amber-400/95 font-black text-sm tracking-[0.2em] mb-4 min-h-[1.5em]"></div>
+      <div id="ceremonyLine2" class="text-slate-200 text-sm md:text-base leading-relaxed text-center min-h-[4em]"></div>
+      <button type="button" id="ceremonyConfirm" disabled class="mt-8 px-8 py-3 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-300 font-bold text-sm tracking-wider hover:bg-amber-500/30 transition opacity-0">
+        確認同步
+      </button>
     </div>
   </div>
 
@@ -991,6 +1097,9 @@
   <script src="js/calc.js?v=2"></script>
   <script src="js/identifyBirthTime.js?v=1"></script>
   <script src="js/ui.js?v=2"></script>
+  <!-- 啟動序列掛載點與 bundle（可選：npm run build:startup 後載入，點擊「啟動人生戰略引擎」會先播 4.5s 啟動動畫） -->
+  <div id="startup-root"></div>
+  <script src="dist/startup-sequence.js"></script>
 
 </body>
 </html>
