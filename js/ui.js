@@ -28,6 +28,7 @@
     getHoroscopeFromAge,
     getMutagenStars,
     getPalaceScoreWithWeights,
+    computeAllPalaceScores,
   } = window.Calc;
 
   // ====== CONFIG ======
@@ -757,7 +758,27 @@
       if (name === (horoscope?.activeLimitPalaceName ?? null) && yearlyStem && ziwei) {
         const rawStars = getStarsForPalace(ziwei, name);
         const stars = rawStars.map(toTraditionalStarName);
-        displayScore = getPalaceScoreWithWeights(baseScore, stars, yearlyStem);
+        // 使用 async/await 處理異步調用
+        getPalaceScoreWithWeights(baseScore, stars, yearlyStem, ziwei, name).then(function (score) {
+          displayScore = score;
+          const maxScore = Math.max(...Object.values(window.ziweiScores.palaceScores).map(Number), 0.01);
+          const strength = Strategy.scoreToStrength(displayScore, maxScore);
+          const sihuaList = getSihuaForPalace(ziwei, name, horoscope?.mutagenStars || {});
+          return Strategy.getStrategyNoteFromAPI(name, strength, sihuaList);
+        }).then(function (advice) {
+          const block = document.getElementById("palaceStrategyBlock");
+          if (!block) return;
+          if (advice && advice !== "（暫無戰略提示）") {
+            const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+            block.outerHTML = "<div class=\"p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">戰略金句</div><div class=\"text-sm text-amber-100/95 leading-relaxed\">" + esc(advice) + "</div></div>";
+          } else {
+            block.textContent = "";
+          }
+        }).catch(function () {
+          const block = document.getElementById("palaceStrategyBlock");
+          if (block) block.textContent = "";
+        });
+        return; // 異步處理中，提前返回
       }
       const maxScore = Math.max(...Object.values(window.ziweiScores.palaceScores).map(Number), 0.01);
       const strength = Strategy.scoreToStrength(displayScore, maxScore);
@@ -1083,16 +1104,27 @@
       // ziwei grid
       renderZiwei(ziwei, horoscope);
 
-      // 紫微分數（小限宮位依 SI_HUA_MAP 權重聯動 + Progress Bar）
-      if (ziweiScores && ziweiScores.palaceScores) {
-        renderZiweiScores(ziweiScores, horoscope, ziwei);
-      } else {
-        const palaceBox = document.getElementById("ziweiPalaceScores");
-        if (palaceBox) palaceBox.innerHTML = `<div class="text-xs text-slate-400">（暫無分數資料）</div>`;
-        renderBar("ziweiWxBars", { 木: 0, 火: 0, 土: 0, 金: 0, 水: 0 }, 1);
-        renderRadarChart("ziweiWxRadar", { 金: 0, 木: 0, 水: 0, 火: 0, 土: 0 });
-        renderFiveElementComment("ziweiWxComment", { 金: 0, 木: 0, 水: 0, 火: 0, 土: 0 }, "ziwei");
-      }
+      // 紫微分數（使用新的權重算法計算：ziweiWeights.json + 三方四正 + 四化 + 雜曜神煞）
+      // 優先使用前端新算法計算，確保所有宮位強度都基於最新的權重系統
+      computeAllPalaceScores(ziwei, horoscope).then(function (computedScores) {
+        // 使用新算法計算的分數，保留後端 API 的其他數據（如 elementRatios）
+        const scores = {
+          palaceScores: computedScores,
+          elementRatios: ziweiScores?.elementRatios || {},
+        };
+        // 更新 window.ziweiScores 以便其他地方使用
+        window.ziweiScores = scores;
+        renderZiweiScores(scores, horoscope, ziwei);
+      }).catch(function (err) {
+        console.error("計算宮位分數失敗:", err);
+        // 如果新算法計算失敗，嘗試使用後端數據作為 fallback
+        if (ziweiScores && ziweiScores.palaceScores) {
+          console.warn("使用後端 API 數據作為 fallback");
+          renderZiweiScores(ziweiScores, horoscope, ziwei);
+        } else {
+          renderZiweiScores({ palaceScores: {}, elementRatios: ziweiScores?.elementRatios || {} }, horoscope, ziwei);
+        }
+      });
 
       // tactical panel
       const tenGodText = dominant && dbContent.tenGods?.[dominant] ? dbContent.tenGods[dominant] : "";
@@ -1123,6 +1155,115 @@
     }
   }
 
+  /** 12 宮位說明文字（依強度等級 1-4 變化） */
+  const PALACE_DESCRIPTIONS = {
+    "命宮": {
+      1: "你的核心作業系統較弱：需要更多時間建立生命基調與格調。",
+      2: "你的核心作業系統穩定：能維持基本的生命基調與格調。",
+      3: "你的核心作業系統強：能有效決定一生生命的總體基調與格調。",
+      4: "你的核心作業系統極強：能主導一生生命的總體基調與格調。",
+    },
+    "兄弟": {
+      1: "你的戰友與近親資源較少：團隊作戰能力與人脈支援有限。",
+      2: "你的戰友與近親資源穩定：有基本的團隊作戰能力與人脈支援。",
+      3: "你的戰友與近親資源強：代表團隊作戰能力與最直接的人脈支援。",
+      4: "你的戰友與近親資源極強：團隊作戰能力與人脈支援是你的核心優勢。",
+    },
+    "夫妻": {
+      1: "你的親密連結與合夥狀態較弱：與伴侶或長期夥伴的磨合頻率較高。",
+      2: "你的親密連結與合夥狀態穩定：能維持基本的伴侶或夥伴關係。",
+      3: "你的親密連結與合夥狀態強：反映與伴侶或長期夥伴的良好磨合。",
+      4: "你的親密連結與合夥狀態極強：與伴侶或長期夥伴的磨合非常順暢。",
+    },
+    "子女": {
+      1: "你的產出效能與創造力較弱：新計畫、後代或才華的生命力表現有限。",
+      2: "你的產出效能與創造力穩定：能維持基本的新計畫與創造力表現。",
+      3: "你的產出效能與創造力強：衡量新計畫、後代或才華的生命力表現。",
+      4: "你的產出效能與創造力極強：新計畫、後代或才華的生命力表現突出。",
+    },
+    "財帛": {
+      1: "你的金錢獲取與理財邏輯較弱：物質能量流進與留出的路徑不順。",
+      2: "你的金錢獲取與理財邏輯穩定：能維持基本的物質能量流動。",
+      3: "你的金錢獲取與理財邏輯強：描述物質能量如何流進與留出的路徑。",
+      4: "你的金錢獲取與理財邏輯極強：物質能量流進與留出的路徑非常順暢。",
+    },
+    "疾厄": {
+      1: "你的生理硬體與身心基石較弱：維持系統運轉的體力上限與健康底層有限。",
+      2: "你的生理硬體與身心基石穩定：能維持基本的體力與健康水平。",
+      3: "你的生理硬體與身心基石強：代表維持系統運轉的體力上限與健康底層。",
+      4: "你的生理硬體與身心基石極強：體力上限與健康底層是你的核心優勢。",
+    },
+    "遷移": {
+      1: "你的外部接口與外界觀感較弱：向外擴張的空間與社會形象定位有限。",
+      2: "你的外部接口與外界觀感穩定：能維持基本的外部形象與擴張能力。",
+      3: "你的外部接口與外界觀感強：定義你向外擴張的空間與社會形象定位。",
+      4: "你的外部接口與外界觀感極強：向外擴張的空間與社會形象定位非常突出。",
+    },
+    "僕役": {
+      1: "你的社交網絡與眾生緣分較弱：廣大群眾或一般人脈帶來的助力有限。",
+      2: "你的社交網絡與眾生緣分穩定：能維持基本的人脈網絡與社交關係。",
+      3: "你的社交網絡與眾生緣分強：評估廣大群眾或一般人脈帶來的雜訊與助力。",
+      4: "你的社交網絡與眾生緣分極強：廣大群眾或一般人脈帶來的助力是你的優勢。",
+    },
+    "官祿": {
+      1: "你的事業軌道與執行強度較弱：在職場上的衝刺能力與實戰成效有限。",
+      2: "你的事業軌道與執行強度穩定：能維持基本的事業表現與執行力。",
+      3: "你的事業軌道與執行強度強：決定你在職場上的衝刺能力與實戰成效。",
+      4: "你的事業軌道與執行強度極強：在職場上的衝刺能力與實戰成效突出。",
+    },
+    "田宅": {
+      1: "你的資產根基與穩定堡壘較弱：家庭、不動產及防禦陣地有限。",
+      2: "你的資產根基與穩定堡壘穩定：能維持基本的家庭與資產基礎。",
+      3: "你的資產根基與穩定堡壘強：象徵家庭、不動產及你最後的防禦陣地。",
+      4: "你的資產根基與穩定堡壘極強：家庭、不動產及防禦陣地是你的核心優勢。",
+    },
+    "福德": {
+      1: "你的精神底蘊與內心平衡較弱：精神韌性、抗壓性與無形運氣有限。",
+      2: "你的精神底蘊與內心平衡穩定：能維持基本的精神狀態與抗壓性。",
+      3: "你的精神底蘊與內心平衡強：影響你的精神韌性、抗壓性與無形運氣。",
+      4: "你的精神底蘊與內心平衡極強：精神韌性、抗壓性與無形運氣是你的優勢。",
+    },
+    "父母": {
+      1: "你的規則約束與權威互動較弱：與體制、長輩及法規的磨合關係不順。",
+      2: "你的規則約束與權威互動穩定：能維持基本的體制與權威關係。",
+      3: "你的規則約束與權威互動強：反映你與體制、長輩及法規的良好磨合。",
+      4: "你的規則約束與權威互動極強：與體制、長輩及法規的磨合非常順暢。",
+    },
+  };
+
+  /** 根據分數百分比計算星級（1-5 顆星，區間更細緻） */
+  function getStarRating(pct) {
+    if (pct >= 90) return 5;
+    if (pct >= 70) return 4;
+    if (pct >= 50) return 3;
+    if (pct >= 30) return 2;
+    return 1;
+  }
+
+  /** 渲染星級 HTML（支持半顆星顯示：2.5, 3.0, 3.5, 4.0, 4.5） */
+  function renderStars(count) {
+    // 確保 count 在 2.5-4.5 範圍內
+    const clampedCount = Math.max(2.5, Math.min(4.5, count));
+    
+    // 計算整數部分和小數部分
+    const fullStars = Math.floor(clampedCount);
+    const hasHalfStar = (clampedCount % 1) >= 0.5;
+    
+    return Array.from({ length: 5 }, (_, i) => {
+      // 前 fullStars 顆星：完全填充
+      if (i < fullStars) {
+        return `<span class="text-amber-400 opacity-100">★</span>`;
+      }
+      // 如果有半顆星且是下一顆：使用 CSS 顯示半顆星
+      if (i === fullStars && hasHalfStar) {
+        // 使用相對定位和 clip-path 來顯示半顆星
+        return `<span class="text-amber-400 opacity-100 inline-block relative" style="width: 0.6em; overflow: hidden;"><span style="clip-path: inset(0 50% 0 0); display: inline-block;">★</span></span>`;
+      }
+      // 其餘：空星
+      return `<span class="text-amber-400 opacity-20">★</span>`;
+    }).join("");
+  }
+
   async function renderZiweiScores(scores, horoscope, ziwei) {
     const palaceBox = document.getElementById("ziweiPalaceScores");
     const wuxingBox = document.getElementById("ziweiWuxingScores");
@@ -1140,16 +1281,35 @@
       const yearlyStem = horoscope?.yearlyStem ?? null;
       const mutagenStars = horoscope?.mutagenStars ?? {};
 
-      const rows = baseEntries.map(([name, val]) => {
+      // 由於 getPalaceScoreWithWeights 是異步的，需要先收集所有 Promise
+      const rowPromises = baseEntries.map(async ([name, val]) => {
         const baseScore = Number(val) || 0;
         let displayScore = baseScore;
         if (activeLimitPalaceName != null && name === activeLimitPalaceName && yearlyStem && ziwei) {
           const rawStars = getStarsForPalace(ziwei, name);
           const stars = rawStars.map(toTraditionalStarName);
-          displayScore = getPalaceScoreWithWeights(baseScore, stars, yearlyStem);
+          displayScore = await getPalaceScoreWithWeights(baseScore, stars, yearlyStem, ziwei, name);
         }
-        return { name, baseScore, displayScore, isActiveLimit: name === activeLimitPalaceName };
+        
+        // 獲取該宮位的元數據（戰略建議、星等上限、L7 主觀頻率修正）
+        const metadata = window.ziweiPalaceMetadata?.[name] || {};
+        const maxStarRating = metadata.maxStarRating || null;
+        const strategicAdvice = metadata.strategicAdvice || [];
+        const isSubjectiveFocus = metadata.isSubjectiveFocus || false;
+        
+        return { 
+          name, 
+          baseScore, 
+          displayScore, 
+          isActiveLimit: name === activeLimitPalaceName,
+          maxStarRating,
+          strategicAdvice,
+          isSubjectiveFocus
+        };
       });
+      
+      // 等待所有 Promise 完成
+      const rows = await Promise.all(rowPromises);
 
       const sorted = rows.sort((a, b) => b.displayScore - a.displayScore);
       const maxScore = Math.max(...sorted.map((r) => r.displayScore), 0.01);
@@ -1167,22 +1327,99 @@
       const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
       palaceBox.innerHTML = sorted
         .map((r, i) => {
-          const pct = maxScore ? (r.displayScore / maxScore) * 100 : 0;
-          const advice = notes[i] && notes[i] !== "（暫無戰略提示）" ? esc(notes[i]) : "";
-          const labelClass = r.isActiveLimit ? "text-amber-200" : "text-slate-300";
-          const labelSuffix = r.isActiveLimit ? " · 小限命宮" : "";
-          const barClass = r.isActiveLimit ? "bg-amber-400" : "bg-amber-500/70";
-          return `
-            <div class="py-2 border-b border-white/5 cursor-pointer hover:bg-white/5 rounded-lg px-2 -mx-2 transition-colors palace-score-row" data-palace-name="${esc(r.name)}" role="button" tabindex="0">
-              <div class="flex justify-between text-xs mb-0.5">
-                <span class="${labelClass}">${r.name}${labelSuffix}</span>
+          // 優先使用 L9 輸出（如果存在）
+          const l9Output = window.ziweiPalaceMetadata?.[r.name]?.l9Output;
+          
+          if (l9Output) {
+            // 使用 L9 完整語義輸出
+            const starCount = l9Output.stars; // 已經是 2.5-4.5 格式
+            const starsHtml = renderStars(starCount);
+            const oneLiner = l9Output.oneLiner;
+            const strategicAdvice = l9Output.strategicAdvice;
+            const statusLabel = l9Output.statusLabel;
+            const colorCode = l9Output.colorCode;
+            
+            // 根據顏色代碼設置樣式
+            const labelClass = r.isActiveLimit ? "text-amber-200" : 
+                             colorCode === "green" ? "text-emerald-300" :
+                             colorCode === "red" ? "text-red-300" :
+                             "text-amber-300";
+            const labelSuffix = r.isActiveLimit ? " · 小限命宮" : "";
+            const barClass = colorCode === "green" ? "bg-emerald-500" :
+                           colorCode === "red" ? "bg-red-500/70" :
+                           r.isActiveLimit ? "bg-amber-400" : "bg-amber-500/70";
+            
+            const pct = maxScore ? (r.displayScore / maxScore) * 100 : 0;
+            
+            return `
+              <div class="py-3 border-b border-white/5 cursor-pointer hover:bg-white/5 rounded-lg px-2 -mx-2 transition-colors palace-score-row" data-palace-name="${esc(r.name)}" role="button" tabindex="0">
+                <div class="flex items-center justify-between gap-2 text-xs mb-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="${labelClass} font-bold">${r.name}${labelSuffix}</span>
+                    <span class="text-[10px] leading-none">${starsHtml}</span>
+                    ${l9Output.maxStarRating != null && Math.abs(starCount - (2.0 + l9Output.maxStarRating * 0.5)) < 0.1 ? `<span class="text-[9px] text-slate-500 italic">（上限${starCount}星）</span>` : ""}
+                    <span class="text-[9px] text-slate-500">${esc(statusLabel)}</span>
+                  </div>
+                </div>
+                <div class="text-[11px] text-slate-400 leading-relaxed mb-2">${esc(oneLiner)}</div>
+                <div class="h-2 bg-white/10 rounded overflow-hidden mb-1">
+                  <div class="h-full ${barClass} rounded transition-all duration-300" style="width:${pct}%"></div>
+                </div>
+                <div class="text-[11px] text-amber-200/95 mt-1 leading-snug strategy-advice">${esc(strategicAdvice)}</div>
               </div>
-              <div class="h-2 bg-white/10 rounded overflow-hidden">
-                <div class="h-full ${barClass} rounded transition-all duration-300" style="width:${pct}%"></div>
+            `;
+          } else {
+            // Fallback: 使用舊的邏輯（向後兼容）
+            const pct = maxScore ? (r.displayScore / maxScore) * 100 : 0;
+            let starCount = getStarRating(pct);
+            
+            // 應用星等上限限制（由神煞觸發）
+            if (r.maxStarRating != null && starCount > r.maxStarRating) {
+              starCount = r.maxStarRating;
+            }
+            
+            const starsHtml = renderStars(starCount);
+            const advice = notes[i] && notes[i] !== "（暫無戰略提示）" ? esc(notes[i]) : "";
+            const labelClass = r.isActiveLimit ? "text-amber-200" : "text-slate-300";
+            const labelSuffix = r.isActiveLimit ? " · 小限命宮" : "";
+            const barClass = r.isActiveLimit ? "bg-amber-400" : "bg-amber-500/70";
+            
+            // 根據強度等級（1-4）選擇對應的說明文字
+            const strength = Strategy ? Strategy.scoreToStrength(r.displayScore, maxScore) : (pct >= 85 ? 4 : pct >= 55 ? 3 : pct >= 25 ? 2 : 1);
+            const descriptionMap = PALACE_DESCRIPTIONS[r.name];
+            const description = descriptionMap && descriptionMap[strength] ? descriptionMap[strength] : (descriptionMap ? descriptionMap[3] : "");
+            
+            // 合併戰略建議（來自神煞的 strategicAdvice）
+            const allStrategicAdvice = [...r.strategicAdvice];
+            
+            // L7 主觀頻率修正：若觸發了 L7 增益，在建議文字前加入提示
+            if (r.isSubjectiveFocus) {
+              allStrategicAdvice.unshift("此領域為你本年度的生命重心，波動感將會特別強烈。");
+            }
+            
+            if (advice) allStrategicAdvice.push(advice);
+            const uniqueAdvice = [...new Set(allStrategicAdvice)];
+            const adviceHtml = uniqueAdvice.length > 0 
+              ? `<div class="text-[11px] text-amber-200/95 mt-1 leading-snug strategy-advice">${uniqueAdvice.map(a => esc(a)).join(" · ")}</div>`
+              : "";
+            
+            return `
+              <div class="py-3 border-b border-white/5 cursor-pointer hover:bg-white/5 rounded-lg px-2 -mx-2 transition-colors palace-score-row" data-palace-name="${esc(r.name)}" role="button" tabindex="0">
+                <div class="flex items-center justify-between gap-2 text-xs mb-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="${labelClass} font-bold">${r.name}${labelSuffix}</span>
+                    <span class="text-[10px] leading-none">${starsHtml}</span>
+                    ${r.maxStarRating != null && Math.abs(starCount - (2.0 + r.maxStarRating * 0.5)) < 0.1 ? `<span class="text-[9px] text-slate-500 italic">（上限${starCount}星）</span>` : ""}
+                  </div>
+                </div>
+                ${description ? `<div class="text-[11px] text-slate-400 leading-relaxed mb-2">${esc(description)}</div>` : ""}
+                <div class="h-2 bg-white/10 rounded overflow-hidden mb-1">
+                  <div class="h-full ${barClass} rounded transition-all duration-300" style="width:${pct}%"></div>
+                </div>
+                ${adviceHtml}
               </div>
-              ${advice ? `<div class="text-[11px] text-amber-200/95 mt-1 leading-snug strategy-advice">${advice}</div>` : ""}
-            </div>
-          `;
+            `;
+          }
         })
         .join("");
 
@@ -1650,8 +1887,23 @@
         const bazi = contract.bazi;
         const horoscope = contract.ziwei.horoscope || getHoroscopeFromAge(getCurrentAge(), lastGender, contract.ziwei, bazi);
         renderZiwei(contract.ziwei, horoscope);
-        if (window.ziweiScores?.palaceScores) renderZiweiScores(window.ziweiScores, horoscope, contract.ziwei);
-        selectPalace(selectedPalace);
+        // 使用新算法重新計算宮位強度（年齡變化會影響小限四化）
+        computeAllPalaceScores(contract.ziwei, horoscope).then(function (computedScores) {
+          const scores = {
+            palaceScores: computedScores,
+            elementRatios: window.ziweiScores?.elementRatios || {},
+          };
+          window.ziweiScores = scores;
+          renderZiweiScores(scores, horoscope, contract.ziwei);
+          selectPalace(selectedPalace);
+        }).catch(function (err) {
+          console.error("重新計算宮位分數失敗:", err);
+          // Fallback：使用現有數據
+          if (window.ziweiScores?.palaceScores) {
+            renderZiweiScores(window.ziweiScores, horoscope, contract.ziwei);
+          }
+          selectPalace(selectedPalace);
+        });
       });
     }
 

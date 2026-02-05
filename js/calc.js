@@ -632,10 +632,183 @@
   function computeRelatedPalaces(palaceRing, palaceName) {
     const ring = Array.isArray(palaceRing) && palaceRing.length === 12 ? palaceRing : PALACE_DEFAULT;
     const idx = ring.indexOf(palaceName);
-    if (idx < 0) return { active: palaceName, related: [] };
-    const relatedIdx = new Set([idx, (idx + 6) % 12, (idx + 4) % 12, (idx + 8) % 12]);
+    if (idx < 0) return { active: palaceName, related: [], opposite: null, triads: [] };
+    const oppositeIdx = (idx + 6) % 12;
+    const triad1Idx = (idx + 4) % 12;
+    const triad2Idx = (idx + 8) % 12;
+    const relatedIdx = new Set([idx, oppositeIdx, triad1Idx, triad2Idx]);
     const related = Array.from(relatedIdx).map((i) => ring[i]);
-    return { active: palaceName, related };
+    return { 
+      active: palaceName, 
+      related,
+      opposite: ring[oppositeIdx],
+      triads: [ring[triad1Idx], ring[triad2Idx]]
+    };
+  }
+
+  // ====== 星曜權重系統（基於 ziweiWeights.json）======
+  // 星曜繁體名稱 → JSON ID 映射表
+  const STAR_NAME_TO_ID_MAP = {
+    // 14 主星
+    "紫微": "ZiWei",
+    "天府": "TianFu",
+    "太陽": "TaiYang",
+    "武曲": "WuQu",
+    "廉貞": "LianZhen",
+    "天梁": "TianLiang",
+    "七殺": "QiSha",
+    "天相": "TianXiang",
+    "天機": "TianJi",
+    "巨門": "JuMen",
+    "貪狼": "TanLang",
+    "太陰": "TaiYin",
+    "天同": "TianTong",
+    "破軍": "PoJun",
+    // 輔星
+    "左輔": "ZuoFu",
+    "右弼": "YouBi",
+    "文昌": "WenChang",
+    "文曲": "WenQu",
+    "天魁": "TianKui",
+    "天鉞": "TianYue",
+    "祿存": "LuCun",
+    "天馬": "TianMa",
+    "擎羊": "QingYang",
+    "陀羅": "TuoLuo",
+    "火星": "HuoXing",
+    "鈴星": "LingXing",
+    "地劫": "DiJie",
+    "地空": "DiKong",
+  };
+
+  // 宮位繁體名稱 → JSON 英文標識映射表
+  const PALACE_NAME_TO_ID_MAP = {
+    "命宮": "Self",
+    "兄弟": "Siblings",
+    "夫妻": "Spouse",
+    "子女": "Children",
+    "財帛": "Wealth",
+    "疾厄": "Health",
+    "遷移": "Travel",
+    "僕役": "Friends",
+    "官祿": "Career",
+    "田宅": "Property",
+    "福德": "Karma",
+    "父母": "Parents",
+  };
+
+  // 權重資料緩存
+  let ziweiWeightsCache = null;
+  let ziweiWeightsLoadPromise = null;
+
+  /**
+   * 載入 ziweiWeights.json 權重資料（含錯誤處理與緩存）
+   * @returns {Promise<Object>} 權重資料物件
+   */
+  function loadZiweiWeights() {
+    if (ziweiWeightsCache) {
+      return Promise.resolve(ziweiWeightsCache);
+    }
+    if (ziweiWeightsLoadPromise) {
+      return ziweiWeightsLoadPromise;
+    }
+    ziweiWeightsLoadPromise = fetch("data/ziweiWeights.json")
+      .then((resp) => {
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        return resp.json();
+      })
+      .then((data) => {
+        ziweiWeightsCache = data;
+        return data;
+      })
+      .catch((err) => {
+        console.warn("無法載入 ziweiWeights.json，使用預設值:", err);
+        // 返回空結構作為預設值
+        ziweiWeightsCache = { mainStars: [], assistantStars: [], minorStars: [], deities: [] };
+        return ziweiWeightsCache;
+      });
+    return ziweiWeightsLoadPromise;
+  }
+
+  /**
+   * 動態構建完整的星曜名稱到 ID 映射表（包含雜曜和神煞）
+   * @param {Object} weightsData 權重資料
+   * @returns {Object} 完整的映射表 { "星名": "ID" }
+   */
+  function buildCompleteStarNameMap(weightsData) {
+    if (!weightsData) return STAR_NAME_TO_ID_MAP;
+    const map = { ...STAR_NAME_TO_ID_MAP };
+    
+    // 從雜曜構建映射
+    if (weightsData.minorStars) {
+      weightsData.minorStars.forEach((star) => {
+        if (star.name && star.id) {
+          map[star.name] = star.id;
+        }
+      });
+    }
+    
+    // 從神煞構建映射
+    if (weightsData.deities) {
+      weightsData.deities.forEach((deity) => {
+        if (deity.name && deity.id) {
+          map[deity.name] = deity.id;
+        }
+      });
+    }
+    
+    return map;
+  }
+
+  /**
+   * 根據星曜繁體名稱獲取權重配置（支持主星、輔星、雜曜、神煞）
+   * @param {string} starName 星曜繁體名稱
+   * @param {Object} weightsData 權重資料（可選，若未提供則從緩存載入）
+   * @returns {Object|null} 星曜權重配置物件，包含 baseScore, brightnessMultiplier, resonanceMap, strategicTag 等
+   */
+  function getStarWeightConfig(starName, weightsData) {
+    if (!starName) return null;
+    
+    const data = weightsData || ziweiWeightsCache;
+    if (!data) {
+      // 如果沒有權重資料，嘗試使用基本映射表
+      const starId = STAR_NAME_TO_ID_MAP[starName];
+      if (!starId) return null;
+      return null; // 需要權重資料才能返回配置
+    }
+
+    // 構建完整的映射表
+    const completeMap = buildCompleteStarNameMap(data);
+    const starId = completeMap[starName];
+    if (!starId) return null;
+
+    // 按優先級查找：主星 → 輔星 → 雜曜 → 神煞
+    const mainStar = data.mainStars?.find((s) => s.id === starId);
+    if (mainStar) return mainStar;
+
+    const assistantStar = data.assistantStars?.find((s) => s.id === starId);
+    if (assistantStar) return assistantStar;
+
+    const minorStar = data.minorStars?.find((s) => s.id === starId);
+    if (minorStar) return minorStar;
+
+    const deity = data.deities?.find((s) => s.id === starId);
+    if (deity) return deity;
+
+    return null;
+  }
+
+  /**
+   * 獲取星曜亮度狀態（暫時使用預設值 "Li" 1.0，未來可從 ziwei 資料中提取）
+   * @param {Object} ziwei 紫微命盤資料
+   * @param {string} starName 星曜名稱
+   * @param {string} palaceName 宮位名稱
+   * @returns {string} 亮度狀態：Miao, Wang, De, Li, Ping, Bu, Xian
+   */
+  function getStarBrightness(ziwei, starName, palaceName) {
+    // TODO: 未來可根據星曜在命盤中的位置計算實際亮度
+    // 目前使用預設值 "Li"（利地，乘數 1.0）
+    return "Li";
   }
 
   // ====== 小限／四化（依年齡、性別與命宮天干推算，與 iztro horoscope 對齊用）======
@@ -676,13 +849,1102 @@
     return (row && row.weights) ? row.weights : {};
   }
 
-  /** 宮位強度 + 小限四化權重加成（僅小限宮位使用；stars 為該宮繁體星名陣列） */
-  function getPalaceScoreWithWeights(baseScore, stars, stem) {
+  // ====== Pipeline 架構：紫微評分六階段 ======
+  
+  /**
+   * Stage 1: Base Score（基礎分數）
+   * 計算星曜的基礎權重分數
+   * @param {Object} context 評分上下文
+   * @param {Object} weightsData 權重資料
+   * @returns {Object} 更新後的上下文
+   */
+  function stageBaseScore(context, weightsData) {
+    const { stars } = context;
+    
+    stars.forEach(starCtx => {
+      const { config } = starCtx;
+      if (!config) {
+        // 預設值處理
+        starCtx.baseScore = starCtx.category === 'main' ? 5 : 1;
+        starCtx.correctionFactor = 1.0;
+        return;
+      }
+      
+      // 基礎分數 = baseScore
+      starCtx.baseScore = config.baseScore || 0;
+      starCtx.correctionFactor = 1.0; // 初始修正係數
+    });
+
+    // 計算主星和輔星的總基礎分數
+    context.baseScore = stars
+      .filter(s => s.category === 'main' || s.category === 'assistant')
+      .reduce((sum, s) => sum + s.baseScore, 0);
+
+    return context;
+  }
+
+  /**
+   * Stage 2: Brightness Multiplier（亮度乘數）
+   * 根據星曜亮度狀態應用乘數
+   * @param {Object} context 評分上下文
+   * @param {Object} ziwei 紫微命盤資料
+   * @param {string} palaceName 宮位名稱
+   * @returns {Object} 更新後的上下文
+   */
+  function stageBrightness(context, ziwei, palaceName) {
+    const { stars } = context;
+    
+    stars.forEach(starCtx => {
+      const { name, config } = starCtx;
+      if (!config) return;
+
+      // 獲取亮度狀態
+      starCtx.brightness = getStarBrightness(ziwei, name, palaceName);
+      
+      // 應用亮度乘數
+      const brightnessMultiplier = config.brightnessMultiplier?.[starCtx.brightness] || 1.0;
+      starCtx.correctionFactor *= brightnessMultiplier;
+      
+      // 更新基礎分數（應用亮度）
+      starCtx.baseScore *= brightnessMultiplier;
+    });
+
+    // 重新計算主星和輔星的總分數
+    context.baseScore = stars
+      .filter(s => s.category === 'main' || s.category === 'assistant')
+      .reduce((sum, s) => sum + s.baseScore, 0);
+
+    return context;
+  }
+
+  /**
+   * Stage 3: Resonance Map（宮位共鳴係數）
+   * 根據星曜與宮位的共鳴度應用係數
+   * @param {Object} context 評分上下文
+   * @returns {Object} 更新後的上下文
+   */
+  function stageResonance(context) {
+    const { stars, palaceId } = context;
+    
+    stars.forEach(starCtx => {
+      const { config } = starCtx;
+      if (!config) return;
+
+      // 應用共鳴係數
+      const resonance = config.resonanceMap?.[palaceId] || 1.0;
+      starCtx.correctionFactor *= resonance;
+      
+      // 更新基礎分數（應用共鳴）
+      starCtx.baseScore *= resonance;
+    });
+
+    // 重新計算主星和輔星的總分數
+    context.baseScore = stars
+      .filter(s => s.category === 'main' || s.category === 'assistant')
+      .reduce((sum, s) => sum + s.baseScore, 0);
+
+    return context;
+  }
+
+  /**
+   * Stage 4: Element Boost（五行增益）
+   * 根據五行相生相剋應用增益（預留擴展）
+   * @param {Object} context 評分上下文
+   * @param {Object} ziwei 紫微命盤資料
+   * @returns {Object} 更新後的上下文
+   */
+  function stageElement(context, ziwei) {
+    // 目前暫不實現五行增益，預留擴展接口
+    // 未來可以根據宮位五行、星曜五行等計算增益係數
+    return context;
+  }
+
+  /**
+   * Stage 5: SiHua Transformation（四化增益與減損）
+   * 處理化祿、化權、化科、化忌的權重調整
+   * @param {Object} context 評分上下文
+   * @param {Object} horoscope 小限資料
+   * @param {string} palaceName 宮位名稱
+   * @returns {Object} 更新後的上下文
+   */
+  function stageSiHua(context, horoscope, palaceName) {
+    const { stars } = context;
+    
+    if (!horoscope || !horoscope.mutagenStars) {
+      return context;
+    }
+
+    const mutagenStars = horoscope.mutagenStars;
+    const sihuaWeights = { "祿": 3, "權": 2, "科": 1, "忌": -3 };
+    
+    // 檢查該宮位的四化星曜
+    const starsInPalace = stars.map(s => s.name);
+    let sihuaBoost = 0;
+    let luCount = 0; // 祿存或化祿的數量（用於雙祿交會）
+
+    ["祿", "權", "科", "忌"].forEach(hua => {
+      const starName = mutagenStars[hua];
+      if (starName && starsInPalace.includes(starName)) {
+        sihuaBoost += sihuaWeights[hua];
+        if (hua === "祿") luCount++;
+      }
+    });
+
+    // 檢查祿存（如果存在）
+    if (starsInPalace.includes("祿存")) {
+      luCount++;
+    }
+
+    // 雙祿交會：若本宮與三方四正同時出現多個祿存或化祿，額外 +2
+    // 注意：這個邏輯需要在 computePalaceBaseScore 層級處理（因為需要三方四正資訊）
+    // 這裡先記錄到 metadata，後續在 finalizeStarRating 中處理
+    if (luCount >= 2) {
+      context.metadata = context.metadata || {};
+      context.metadata.doubleLuBoost = 2;
+      sihuaBoost += 2;
+    }
+
+    // 應用四化增益到修正係數
+    // 注意：四化增益是絕對值，不是乘數，所以直接加到 baseScore
+    context.baseScore += sihuaBoost;
+    context.metadata = context.metadata || {};
+    context.metadata.sihuaBoost = sihuaBoost;
+
+    return context;
+  }
+
+  /**
+   * Stage 6: Penalty & Special Rules（懲罰與特殊規則）
+   * 處理神煞的特殊機制：penaltyTrigger, maxStarRating, strategicAdvice, 2026預警
+   * @param {Object} context 評分上下文
+   * @param {Object} weightsData 權重資料
+   * @param {Object} options 選項 { horoscope, year }
+   * @returns {Object} 更新後的上下文
+   */
+  function stagePenalty(context, weightsData, options = {}) {
+    const { stars, palaceId, palaceName } = context;
+    const { horoscope, year } = options;
+
+    // 計算雜曜增壓（限制在 ±10）
+    let minorBoost = 0;
+    stars
+      .filter(s => s.category === 'minor' || s.category === 'deity')
+      .forEach(starCtx => {
+        const score = starCtx.baseScore * starCtx.correctionFactor;
+        minorBoost += score;
+      });
+    context.minorBoost = Math.max(-10, Math.min(10, minorBoost));
+
+    // 處理神煞的特殊機制
+    stars
+      .filter(s => s.category === 'deity')
+      .forEach(starCtx => {
+        const { name, config } = starCtx;
+        if (!config) return;
+
+        // 1. penaltyTrigger（特定宮位額外懲罰）
+        if (config.penaltyTrigger?.palaces?.includes(palaceId)) {
+          const penalty = config.penaltyTrigger.penalty || 0;
+          context.penaltyApplied = (context.penaltyApplied || 0) + penalty;
+        }
+
+        // 2. maxStarRating（星等上限鎖定）
+        if (config.penaltyTrigger?.maxStarRating) {
+          const trigger = config.penaltyTrigger;
+          if (!trigger.palaces || trigger.palaces.includes(palaceId)) {
+            const currentMax = context.maxStarRating;
+            const newMax = trigger.maxStarRating;
+            if (currentMax === null || newMax < currentMax) {
+              context.maxStarRating = newMax;
+            }
+          }
+        }
+
+        // 3. strategicAdvice（戰略建議）
+        if (config.strategicTag) {
+          context.strategicAdvice = context.strategicAdvice || [];
+          context.strategicAdvice.push(config.strategicTag);
+        }
+
+        // 4. 2026 預警機制：廉貞化忌 + 行政類神煞
+        if (horoscope && year === 2026) {
+          const mutagenStars = horoscope.mutagenStars || {};
+          const isLianZhenJi = mutagenStars.忌 === "廉貞";
+          const isAdministrativeDeity = config.strategicTag === "行政風險" || 
+                                       config.id === "GuanFu" || 
+                                       config.id === "ZhiBei";
+          
+          if (isLianZhenJi && isAdministrativeDeity && stars.some(s => s.name === "廉貞")) {
+            const starScore = starCtx.baseScore * starCtx.correctionFactor;
+            context.penaltyApplied = (context.penaltyApplied || 0) + Math.abs(starScore) * 2;
+          }
+        }
+
+        // 5. 官符 + 化忌的星等降級
+        if (config.penaltyTrigger?.withTransformation === "忌") {
+          const mutagenStars = horoscope?.mutagenStars || {};
+          const hasJi = stars.some(s => {
+            const jiStar = mutagenStars.忌;
+            return jiStar && s.name === jiStar;
+          });
+          if (hasJi && config.penaltyTrigger.starRatingReduction) {
+            const currentMax = context.maxStarRating;
+            if (currentMax === null || currentMax > 4) {
+              context.maxStarRating = 4;
+            }
+          }
+        }
+      });
+
+    return context;
+  }
+
+  /**
+   * 執行完整的評分 Pipeline
+   * @param {Object} ziwei 紫微命盤資料
+   * @param {string} palaceName 宮位名稱（繁體）
+   * @param {Object} weightsData 權重資料
+   * @param {Object} options 選項 { horoscope, year }
+   * @returns {Object} 評分上下文
+   */
+  function executePipeline(ziwei, palaceName, weightsData, options = {}) {
+    const { horoscope, year } = options;
+    
+    // 獲取宮位星曜
+    const stars = getStarsForPalace(ziwei, palaceName)
+      .map(toTraditionalStarName)
+      .map(starName => {
+        const config = getStarWeightConfig(starName, weightsData);
+        const isMainStar = config && config.baseScore >= 6 && 
+                          weightsData?.mainStars?.some(s => s.id === config.id);
+        const isAssistant = weightsData?.assistantStars?.some(s => s.id === config?.id);
+        const isMinor = weightsData?.minorStars?.some(s => s.id === config?.id);
+        const isDeity = weightsData?.deities?.some(s => s.id === config?.id);
+        
+        let category = 'minor';
+        if (isMainStar) category = 'main';
+        else if (isAssistant) category = 'assistant';
+        else if (isDeity) category = 'deity';
+
+        return {
+          name: starName,
+          config: config,
+          category: category,
+          brightness: null,
+          baseScore: 0,
+          correctionFactor: 1.0
+        };
+      });
+
+    const palaceId = PALACE_NAME_TO_ID_MAP[palaceName] || "Self";
+    
+    // 初始化上下文
+    let context = {
+      palaceName,
+      palaceId,
+      stars,
+      baseScore: 0,
+      minorBoost: 0,
+      correctionFactor: 1.0,
+      strategicAdvice: [],
+      maxStarRating: null,
+      penaltyApplied: 0,
+      metadata: {}
+    };
+
+    // 空宮處理：若當前宮位無主星，獲取對宮的主星與輔星資料
+    const hasMainStar = stars.some(s => s.category === 'main');
+    if (!hasMainStar) {
+      const { opposite } = computeRelatedPalaces(PALACE_DEFAULT, palaceName);
+      if (opposite && opposite !== palaceName) {
+        const oppositeStars = getStarsForPalace(ziwei, opposite)
+          .map(toTraditionalStarName)
+          .map(starName => {
+            const config = getStarWeightConfig(starName, weightsData);
+            const isMainStar = config && config.baseScore >= 6 && 
+                              weightsData?.mainStars?.some(s => s.id === config.id);
+            const isAssistant = weightsData?.assistantStars?.some(s => s.id === config?.id);
+            
+            if (isMainStar || isAssistant) {
+              return {
+                name: starName,
+                config: config,
+                category: isMainStar ? 'main' : 'assistant',
+                brightness: null,
+                baseScore: 0,
+                correctionFactor: 1.0
+              };
+            }
+            return null;
+          })
+          .filter(s => s !== null);
+
+        // 為對宮星曜創建臨時上下文並執行前三個階段
+        let oppositeContext = {
+          palaceName: opposite,
+          palaceId: PALACE_NAME_TO_ID_MAP[opposite] || "Self",
+          stars: oppositeStars,
+          baseScore: 0,
+          minorBoost: 0,
+          correctionFactor: 1.0,
+          strategicAdvice: [],
+          maxStarRating: null,
+          penaltyApplied: 0,
+          metadata: {}
+        };
+
+        oppositeContext = stageBaseScore(oppositeContext, weightsData);
+        oppositeContext = stageBrightness(oppositeContext, ziwei, opposite);
+        oppositeContext = stageResonance(oppositeContext);
+
+        // 對宮分數以 70% 計入當前宮位
+        context.baseScore += oppositeContext.baseScore * 0.7;
+      }
+    }
+
+    // 執行 Pipeline 六個階段
+    context = stageBaseScore(context, weightsData);
+    context = stageBrightness(context, ziwei, palaceName);
+    context = stageResonance(context);
+    context = stageElement(context, ziwei);
+    context = stageSiHua(context, horoscope, palaceName);
+    context = stagePenalty(context, weightsData, { horoscope, year });
+
+    return context;
+  }
+
+  /**
+   * 計算單一宮位的基礎星曜評分（Pipeline 重構版：使用六階段 Pipeline 架構）
+   * @param {Object} ziwei 紫微命盤資料
+   * @param {string} palaceName 宮位名稱（繁體）
+   * @param {Object} weightsData 權重資料（可選）
+   * @param {Object} options 選項 { horoscope, year } 用於神煞特殊機制
+   * @returns {Object} { score: number, minorBoost: number, strategicAdvice: string[], maxStarRating: number|null, penaltyApplied: number }
+   */
+  function computeSinglePalaceScore(ziwei, palaceName, weightsData, options = {}) {
+    // 使用 Pipeline 架構進行評分
+    if (!ziwei || !ziwei.mainStars) {
+      return { score: 0, minorBoost: 0, strategicAdvice: [], maxStarRating: null, penaltyApplied: 0 };
+    }
+    
+    const stars = getStarsForPalace(ziwei, palaceName).map(toTraditionalStarName);
+    if (!stars.length) {
+      return { score: 0, minorBoost: 0, strategicAdvice: [], maxStarRating: null, penaltyApplied: 0 };
+    }
+
+    // 執行 Pipeline
+    const context = executePipeline(ziwei, palaceName, weightsData, options);
+
+    // 轉換為舊格式（向後兼容）
+    const totalScore = context.baseScore + context.minorBoost - (context.penaltyApplied || 0);
+
+    return {
+      score: Math.max(0, totalScore),
+      minorBoost: context.minorBoost || 0,
+      strategicAdvice: context.strategicAdvice || [],
+      maxStarRating: context.maxStarRating,
+      penaltyApplied: context.penaltyApplied || 0
+    };
+  }
+
+  /**
+   * L7: 主觀頻率修正（Subjective Boost）
+   * 根據使用者的個人資料，判斷當前計算的宮位是否與其該年度的「小限宮位」重疊
+   * 模擬「個人化體感區分度」：小限宮位會產生更強烈的波動感
+   * 
+   * @param {Object} spatialScores 經過 L4 空間聚合後的分數物件
+   * @param {string} xiaoXianPalace 小限宮位名稱（繁體，如 "官祿"）
+   * @returns {Object} 包含 subjectiveAdjustedScore 和 isSubjectiveFocus 的結果物件
+   */
+  function stageSubjectiveBoost(spatialScores, xiaoXianPalace) {
+    if (!spatialScores || typeof spatialScores !== 'object' || !xiaoXianPalace) {
+      return spatialScores || {};
+    }
+
+    const subjectiveAdjustedScores = {};
+    const SUBJECTIVE_BOOST_COEFFICIENT = 1.5; // 增益係數 α = 1.5
+
+    // 遍歷所有宮位，檢查是否為小限宮位
+    Object.keys(spatialScores).forEach((palaceName) => {
+      const spatialData = spatialScores[palaceName];
+      if (!spatialData) {
+        subjectiveAdjustedScores[palaceName] = spatialData;
+        return;
+      }
+
+      // 判定邏輯：IF currentPalace.id == user.xiaoXianPalace
+      const isSubjectiveFocus = palaceName === xiaoXianPalace;
+      
+      if (isSubjectiveFocus) {
+        // 該宮位的 finalScore 乘以 1.5 倍（增益係數 α = 1.5）
+        const originalScore = spatialData.spatialAdjustedScore || spatialData.score || 0;
+        const boostedScore = originalScore * SUBJECTIVE_BOOST_COEFFICIENT;
+        
+        // 確保分數不超過 100（因為已經標準化過）
+        const cappedScore = Math.min(100, boostedScore);
+
+        subjectiveAdjustedScores[palaceName] = {
+          ...spatialData,
+          spatialAdjustedScore: Math.round(cappedScore * 10) / 10,
+          subjectiveAdjustedScore: Math.round(cappedScore * 10) / 10,
+          isSubjectiveFocus: true,
+          // 保留原始分數供參考
+          originalSpatialScore: originalScore,
+          boostApplied: SUBJECTIVE_BOOST_COEFFICIENT
+        };
+      } else {
+        // ELSE 保持原分數
+        subjectiveAdjustedScores[palaceName] = {
+          ...spatialData,
+          isSubjectiveFocus: false
+        };
+      }
+    });
+
+    return subjectiveAdjustedScores;
+  }
+
+  /**
+   * L4: 空間連動（三方四正聚合）
+   * 在計算完所有 12 宮位的基礎分後，統一應用三方四正加權
+   * 模擬「資源協作與環境牽制」的空間效應
+   * 
+   * @param {Object} baseScores 所有宮位的基礎分數物件 { "命宮": { score, ... }, ... }
+   * @param {Array<string>} palaceOrder 宮位順序陣列（預設為 PALACE_DEFAULT）
+   * @returns {Object} 包含 spatialAdjustedScore 的結果物件
+   */
+  function applySpatialAggregation(baseScores, palaceOrder = PALACE_DEFAULT) {
+    if (!baseScores || typeof baseScores !== 'object') {
+      return {};
+    }
+
+    const spatialAdjustedScores = {};
+    
+    // 遍歷 12 宮位，每個宮位的最終能效分需包含其「三方四正」的能量
+    palaceOrder.forEach((palaceName, index) => {
+      const baseData = baseScores[palaceName];
+      if (!baseData || typeof baseData.score !== 'number') {
+        spatialAdjustedScores[palaceName] = {
+          ...baseData,
+          spatialAdjustedScore: 0
+        };
+        return;
+      }
+
+      // 計算三方四正的索引位置
+      const oppositeIdx = (index + 6) % 12;  // 對宮：索引位 + 6
+      const triad1Idx = (index + 4) % 12;     // 三合位 1：索引位 + 4
+      const triad2Idx = (index + 8) % 12;     // 三合位 2：索引位 + 8
+
+      // 獲取相關宮位的基礎分數
+      const oppositePalace = palaceOrder[oppositeIdx];
+      const triad1Palace = palaceOrder[triad1Idx];
+      const triad2Palace = palaceOrder[triad2Idx];
+
+      const selfScore = baseData.score || 0;
+      const oppositeScore = baseScores[oppositePalace]?.score || 0;
+      const triad1Score = baseScores[triad1Palace]?.score || 0;
+      const triad2Score = baseScores[triad2Palace]?.score || 0;
+
+      // 權重比例設定：
+      // 本宮 (Self)：100% (權重 1.0)
+      // 對宮 (Opposite)：40% (權重 0.4)
+      // 三合位 1 (Triad 1)：20% (權重 0.2)
+      // 三合位 2 (Triad 2)：20% (權重 0.2)
+      const spatialScore = (selfScore * 1.0) + 
+                          (oppositeScore * 0.4) + 
+                          (triad1Score * 0.2) + 
+                          (triad2Score * 0.2);
+
+      // 空間聚合後的標準化處理：
+      // 基礎分未標準化，是原始分數（通常在 5-30 範圍內）
+      // 加權後的理論最大值估算：
+      // - 單宮最高約 30 分（主星 15 + 輔星 10 + 雜曜 5）
+      // - 對宮 30 * 0.4 = 12
+      // - 三合各 30 * 0.2 = 6，兩個共 12
+      // - 總計：30 + 12 + 12 = 54
+      // 但考慮實際情況，優秀宮位加權後分數通常在 20-40 範圍內
+      // 使用 40 作為標準化基準，讓分數分布更合理，避免過度壓縮
+      const MAX_THEORETICAL_SPATIAL_SCORE = 40;
+      const normalizedScore = Math.max(0, Math.min(100, (spatialScore / MAX_THEORETICAL_SPATIAL_SCORE) * 100));
+
+      spatialAdjustedScores[palaceName] = {
+        ...baseData,
+        spatialAdjustedScore: Math.round(normalizedScore * 10) / 10,
+        // 保留原始基礎分數供參考
+        baseScore: selfScore,
+        // 三方四正分數詳情（用於調試和顯示）
+        spatialDetails: {
+          self: selfScore,
+          opposite: { palace: oppositePalace, score: oppositeScore, weight: 0.4 },
+          triad1: { palace: triad1Palace, score: triad1Score, weight: 0.2 },
+          triad2: { palace: triad2Palace, score: triad2Score, weight: 0.2 }
+        }
+      };
+    });
+
+    return spatialAdjustedScores;
+  }
+
+  /**
+   * 計算單一宮位的基礎分數（L1-L3 + L8，不包含 L4 三方四正）
+   * 這是空間聚合前的基礎計算
+   * 
+   * @param {Object} ziwei 紫微命盤資料
+   * @param {string} palaceName 宮位名稱（繁體）
+   * @param {Object} weightsData 權重資料
+   * @param {Object} options 選項 { horoscope, year }
+   * @returns {Object} { score: number, strategicAdvice: string[], maxStarRating: number|null, ... }
+   */
+  function computeSinglePalaceBaseScore(ziwei, palaceName, weightsData, options = {}) {
+    // 使用 Pipeline 計算單宮基礎分數（L1-L3 + L8）
+    const result = computeSinglePalaceScore(ziwei, palaceName, weightsData, options);
+    
+    // 不在此階段標準化，保留原始分數
+    // 標準化將在 L4 空間聚合後統一處理
+    // 這樣可以保持分數的相對關係，避免過早壓縮
+    return {
+      score: Math.max(0, result.score), // 只確保非負數，不標準化
+      strategicAdvice: result.strategicAdvice || [],
+      maxStarRating: result.maxStarRating,
+      minorBoost: result.minorBoost || 0,
+      penaltyApplied: result.penaltyApplied || 0
+    };
+  }
+
+  /**
+   * 計算宮位基礎強度分數（重構版：基於 ziweiWeights.json + 三方四正加權 + 雜曜神煞整合）
+   * 注意：此函數保留用於向後兼容，內部已使用新的 L4 架構
+   * 
+   * @param {Object} ziwei 紫微命盤資料
+   * @param {string} palaceName 宮位名稱（繁體）
+   * @param {Object} horoscope 小限資料（可選，用於 2026 預警機制）
+   * @returns {Promise<Object>} { score: number, strategicAdvice: string[], maxStarRating: number|null }
+   */
+  async function computePalaceBaseScore(ziwei, palaceName, horoscope) {
+    if (!ziwei || !ziwei.mainStars) {
+      return { score: 0, strategicAdvice: [], maxStarRating: null };
+    }
+
+    // 載入權重資料
+    const weightsData = await loadZiweiWeights();
+    
+    // 獲取當前年份（用於 2026 預警機制）
+    const currentYear = new Date().getFullYear();
+    const options = { horoscope, year: currentYear };
+
+    // 1. 計算本宮基礎分數（包含雜曜和神煞）
+    const selfResult = computeSinglePalaceScore(ziwei, palaceName, weightsData, options);
+
+    // 2. 三方四正加權計算
+    const { opposite, triads } = computeRelatedPalaces(PALACE_DEFAULT, palaceName);
+    
+    // 對宮分數（40% 權重）
+    let oppositeResult = { score: 0, minorBoost: 0, strategicAdvice: [], maxStarRating: null, penaltyApplied: 0 };
+    if (opposite && opposite !== palaceName) {
+      oppositeResult = computeSinglePalaceScore(ziwei, opposite, weightsData, options);
+    }
+
+    // 三合宮位分數（各 20% 權重）
+    let triad1Result = { score: 0, minorBoost: 0, strategicAdvice: [], maxStarRating: null, penaltyApplied: 0 };
+    let triad2Result = { score: 0, minorBoost: 0, strategicAdvice: [], maxStarRating: null, penaltyApplied: 0 };
+    if (triads && triads.length >= 2) {
+      triad1Result = computeSinglePalaceScore(ziwei, triads[0], weightsData, options);
+      triad2Result = computeSinglePalaceScore(ziwei, triads[1], weightsData, options);
+    }
+
+    // 綜合分數：FinalScore = Score_Self + (Score_Opposite * 0.4) + (Score_Triad1 * 0.2) + (Score_Triad2 * 0.2)
+    // 注意：雜曜增壓只計入本宮，不計入三方四正
+    const mainScore = selfResult.score + (oppositeResult.score * 0.4) + (triad1Result.score * 0.2) + (triad2Result.score * 0.2);
+    const finalScore = mainScore + selfResult.minorBoost - selfResult.penaltyApplied;
+
+    // 合併戰略建議（去重）
+    const allStrategicAdvice = [
+      ...selfResult.strategicAdvice,
+      ...oppositeResult.strategicAdvice,
+      ...triad1Result.strategicAdvice,
+      ...triad2Result.strategicAdvice
+    ];
+    const uniqueStrategicAdvice = [...new Set(allStrategicAdvice)];
+
+    // 確定最終的星等上限（取最嚴格的值）
+    const allMaxStarRatings = [
+      selfResult.maxStarRating,
+      oppositeResult.maxStarRating,
+      triad1Result.maxStarRating,
+      triad2Result.maxStarRating
+    ].filter(r => r != null);
+    const finalMaxStarRating = allMaxStarRatings.length > 0 ? Math.min(...allMaxStarRatings) : null;
+
+    // 標準化處理：將分數映射到 0-100 範圍
+    // 理論最大值估算（考慮雜曜增壓上限 ±10）：
+    // - 本宮：主星 10 * 1.5 亮度 * 1.2 共鳴 = 18，多主星 + 輔星 ≈ 25
+    // - 對宮：25 * 0.4 = 10
+    // - 三合：25 * 0.2 * 2 = 10
+    // - 雜曜增壓：±10
+    // - 總計：25 + 10 + 10 + 10 = 55（保守估計）
+    const MAX_THEORETICAL_SCORE = 55;
+    const normalizedScore = Math.max(0, Math.min(100, (finalScore / MAX_THEORETICAL_SCORE) * 100));
+
+    return {
+      score: Math.round(normalizedScore * 10) / 10,
+      strategicAdvice: uniqueStrategicAdvice,
+      maxStarRating: finalMaxStarRating
+    };
+  }
+
+  /**
+   * 宮位強度 + 小限四化權重加成（重構版：整合四化邏輯與雙祿交會）
+   * @param {number} baseScore 基礎分數
+   * @param {string[]} stars 該宮繁體星名陣列
+   * @param {string} stem 小限天干
+   * @param {Object} ziwei 紫微命盤資料（可選，用於雙祿交會計算）
+   * @param {string} palaceName 宮位名稱（可選，用於雙祿交會計算）
+   * @returns {Promise<number>} 加權後分數（0-100 標準化）
+   */
+  async function getPalaceScoreWithWeights(baseScore, stars, stem, ziwei, palaceName) {
     if (!Array.isArray(stars) || !stem) return baseScore;
+
     const weights = getSiHuaWeights(stem);
     let add = 0;
-    stars.forEach((s) => { add += Number(weights[s]) || 0; });
-    return Math.max(0, (Number(baseScore) || 0) + add);
+    let luCount = 0; // 化祿計數（用於雙祿交會）
+
+    // 1. 計算四化增益與減損
+    stars.forEach((starName) => {
+      const weight = Number(weights[starName]) || 0;
+      add += weight;
+      
+      // 統計化祿數量（化祿權重為 +3）
+      if (weight === 3) {
+        luCount++;
+      }
+      
+      // 統計祿存（祿存本身也是祿）
+      if (starName === "祿存") {
+        luCount++;
+      }
+    });
+
+    // 2. 雙祿交會：若本宮與三方四正同時出現多個祿存或化祿，額外給予 +2 的加成
+    if (luCount >= 2 && ziwei && palaceName) {
+      const { opposite, triads } = computeRelatedPalaces(PALACE_DEFAULT, palaceName);
+      let relatedLuCount = luCount; // 本宮已統計的祿
+
+      // 檢查對宮
+      if (opposite && opposite !== palaceName) {
+        const oppositeStars = getStarsForPalace(ziwei, opposite).map(toTraditionalStarName);
+        const oppositeMutagen = getSiHuaWeights(stem);
+        oppositeStars.forEach((starName) => {
+          if (oppositeMutagen[starName] === 3 || starName === "祿存") {
+            relatedLuCount++;
+          }
+        });
+      }
+
+      // 檢查三合宮位
+      if (triads && triads.length >= 2) {
+        triads.forEach((triadPalace) => {
+          const triadStars = getStarsForPalace(ziwei, triadPalace).map(toTraditionalStarName);
+          const triadMutagen = getSiHuaWeights(stem);
+          triadStars.forEach((starName) => {
+            if (triadMutagen[starName] === 3 || starName === "祿存") {
+              relatedLuCount++;
+            }
+          });
+        });
+      }
+
+      // 若三方四正範圍內有 2 個或以上的祿，給予 +2 加成
+      if (relatedLuCount >= 2) {
+        add += 2;
+      }
+    }
+
+    // 3. 計算最終分數並標準化
+    const finalScore = Math.max(0, (Number(baseScore) || 0) + add);
+    
+    // 標準化到 0-100 範圍（假設基礎分數已在 0-100 範圍內）
+    const normalizedScore = Math.max(0, Math.min(100, finalScore));
+
+    return Math.round(normalizedScore * 10) / 10;
+  }
+
+  // ====== L9: 決策映射與語義輸出 ======
+  
+  /**
+   * 宮位一句話說明映射表（#深度貼文風格）
+   * 為 12 宮位提供直覺描述，符合系統思維與商務決策直覺
+   */
+  const PALACE_ONE_LINERS = {
+    "命宮": "你的核心作業系統",
+    "兄弟": "你的戰友與近親資源",
+    "夫妻": "你的親密連結與合夥狀態",
+    "子女": "你的產出效能與創造力",
+    "財帛": "你的金錢獲取與理財邏輯",
+    "疾厄": "你的生理硬體與身心基石",
+    "遷移": "你的外部接口與外界觀感",
+    "僕役": "你的社交網絡與眾生緣分",
+    "官祿": "你的事業軌道與執行強度",
+    "田宅": "你的資產根基與穩定堡壘",
+    "福德": "你的精神底蘊與內心平衡",
+    "父母": "你的規則約束與權威互動"
+  };
+
+  /**
+   * 戰略建議映射表（根據星等）
+   * 符合 #深度貼文 框架：語氣冷靜、中性、具備系統思維與商務決策直覺
+   * 蘊含溫和鼓勵性質，但保持不同級別的差異性
+   */
+  const STRATEGIC_ADVICE_BY_STARS = {
+    5: "全速推進。能量通道完全開啟，適合執行高槓桿計畫，把握優勢時機。",
+    4: "穩健擴張。系統運轉順暢，可適度增加資源投入與執行強度，持續優化流程。",
+    3: "維持節奏。當前狀態平穩，建議保持現有策略，在穩定中尋找微調機會。",
+    2: "聚焦優化。系統運作正常，建議優先處理核心任務，逐步建立更穩健的運作模式。",
+    1: "穩步調整。系統基礎穩固，建議從關鍵環節開始優化，為後續發展打好基礎。"
+  };
+
+  /**
+   * 狀態標籤映射表（根據星等）
+   * 調整為更溫和、鼓勵性的標籤
+   */
+  const STATUS_LABELS = {
+    5: "極佳",
+    4: "強勁",
+    3: "平穩",
+    2: "穩健",
+    1: "基礎"
+  };
+
+  /**
+   * 顏色代碼映射表（根據星等）
+   * 紅：風險高（1-2星）
+   * 黃：需注意（3星）
+   * 綠：狀態良好（4-5星）
+   */
+  const COLOR_CODES = {
+    5: "green",
+    4: "green",
+    3: "yellow",
+    2: "red",
+    1: "red"
+  };
+
+  /**
+   * L9: 將最終得分轉化為內部等級（1-5），用於描述文字映射
+   * 
+   * 使用百分位數劃分，確保每個星等都有合理的分布：
+   * - 5級：Top 20%（前20%）
+   * - 4級：20%-40%
+   * - 3級：40%-60%
+   * - 2級：60%-80%
+   * - 1級：Bottom 20%（后20%）
+   * 
+   * @param {number} finalScore 最終分數（0-100）
+   * @param {Object} allScores 所有12宮位的分數物件 { "命宮": 85.5, ... }
+   * @returns {number} 內部等級（1-5），用於映射描述文字
+   */
+  function mapScoreToInternalLevel(finalScore, allScores = null) {
+    // 如果提供了所有分數，使用相對排名（百分位數）
+    if (allScores && typeof allScores === 'object') {
+      const scores = Object.values(allScores).map(s => Number(s) || 0).filter(s => s >= 0);
+      if (scores.length >= 2) {
+        // 排序分數（降序）
+        const sortedScores = [...scores].sort((a, b) => b - a);
+        
+        // 計算當前分數的排名（計算有多少分數大於等於當前分數）
+        // 使用 >= 而不是 >，確保相同分數得到相同排名
+        const rank = sortedScores.filter(s => s >= finalScore).length - 1;
+        const percentile = (rank / (scores.length - 1)) * 100; // 使用 (n-1) 避免 100% 的情況
+        
+        // 基於百分位數劃分（確保每個等級約佔 20%）
+        if (percentile < 20) return 5;  // Top 20%
+        if (percentile < 40) return 4;  // 20%-40%
+        if (percentile < 60) return 3;  // 40%-60%
+        if (percentile < 80) return 2;  // 60%-80%
+        return 1;                       // Bottom 20%
+      }
+    }
+    
+    // Fallback: 使用絕對閾值（向後兼容）
+    // 調整後的閾值，更符合實際分數分布
+    if (finalScore >= 80) return 5;  // 極佳
+    if (finalScore >= 65) return 4;  // 強勁
+    if (finalScore >= 50) return 3;  // 平穩
+    if (finalScore >= 35) return 2;  // 吃力
+    return 1;                        // 審慎
+  }
+
+  /**
+   * L9: 將內部等級轉化為顯示星等（2.5-4.5顆星，每級0.5顆星）
+   * 
+   * 為了讓大家更有幸福感，最低分從2.5顆星開始：
+   * - 1級（Bottom 20%）→ 2.5星
+   * - 2級（60%-80%）→ 3.0星
+   * - 3級（40%-60%）→ 3.5星
+   * - 4級（20%-40%）→ 4.0星
+   * - 5級（Top 20%）→ 4.5星
+   * 
+   * @param {number} internalLevel 內部等級（1-5）
+   * @returns {number} 顯示星等（2.5, 3.0, 3.5, 4.0, 4.5）
+   */
+  function mapInternalLevelToDisplayStars(internalLevel) {
+    // 映射：1→2.5, 2→3.0, 3→3.5, 4→4.0, 5→4.5
+    return 2.0 + (internalLevel * 0.5);
+  }
+
+  /**
+   * L9: 將最終得分轉化為顯示星等（2.5-4.5顆星）
+   * 
+   * @param {number} finalScore 最終分數（0-100）
+   * @param {Object} allScores 所有12宮位的分數物件 { "命宮": 85.5, ... }
+   * @returns {number} 顯示星等（2.5, 3.0, 3.5, 4.0, 4.5）
+   */
+  function mapScoreToStarRating(finalScore, allScores = null) {
+    const internalLevel = mapScoreToInternalLevel(finalScore, allScores);
+    return mapInternalLevelToDisplayStars(internalLevel);
+  }
+
+  /**
+   * L9: 決策映射與語義輸出
+   * 將經過 L1-L7 處理的最終分數轉化為完整的語義輸出物件
+   * 
+   * @param {string} palaceName 宮位名稱（繁體）
+   * @param {number} finalScore 最終分數（0-100）
+   * @param {Object} metadata 元數據（包含 strategicAdvice, maxStarRating, isSubjectiveFocus, allScores 等）
+   * @returns {Object} 完整的語義輸出物件
+   */
+  function finalizeStarRating(palaceName, finalScore, metadata = {}) {
+    const { maxStarRating, strategicAdvice = [], isSubjectiveFocus = false, allScores = null } = metadata;
+    
+    // 1. 計算內部等級（1-5，用於描述文字映射）
+    let internalLevel = mapScoreToInternalLevel(finalScore, allScores);
+    
+    // 2. 應用星等上限限制（由神煞觸發）
+    // maxStarRating 可能是舊格式（1-5）或新格式（2.5-4.5）
+    if (maxStarRating != null) {
+      let maxInternalLevel = maxStarRating;
+      
+      // 如果是新格式（2.5-4.5），轉換為內部等級
+      if (maxStarRating >= 2.5 && maxStarRating <= 4.5) {
+        maxInternalLevel = Math.round((maxStarRating - 2.0) / 0.5);
+      }
+      // 如果是舊格式（1-5），直接使用
+      else if (maxStarRating >= 1 && maxStarRating <= 5) {
+        maxInternalLevel = maxStarRating;
+      }
+      
+      // 應用上限
+      if (internalLevel > maxInternalLevel) {
+        internalLevel = maxInternalLevel;
+      }
+    }
+    
+    // 3. 計算顯示星等（2.5-4.5）
+    let displayStars = mapInternalLevelToDisplayStars(internalLevel);
+    
+    // 如果 maxStarRating 是新格式（2.5-4.5），確保顯示星等不超過上限
+    if (maxStarRating != null && maxStarRating >= 2.5 && maxStarRating <= 4.5) {
+      if (displayStars > maxStarRating) {
+        displayStars = maxStarRating;
+      }
+    }
+
+    // 3. 獲取一句話宮位說明
+    const oneLiner = PALACE_ONE_LINERS[palaceName] || palaceName;
+
+    // 4. 獲取戰略建議（使用內部等級1-5來映射描述文字）
+    let strategicText = STRATEGIC_ADVICE_BY_STARS[internalLevel] || STRATEGIC_ADVICE_BY_STARS[3];
+    
+    // 合併來自神煞的戰略建議
+    const allStrategicAdvice = [...strategicAdvice];
+    
+    // L7 主觀頻率修正：若觸發了 L7 增益，在建議文字前加入提示
+    if (isSubjectiveFocus) {
+      allStrategicAdvice.unshift("此領域為你本年度的生命重心，波動感將會特別強烈。");
+    }
+    
+    // 將神煞建議附加到戰略文字後
+    if (allStrategicAdvice.length > 0) {
+      strategicText += " " + allStrategicAdvice.join(" · ");
+    }
+
+    // 5. 獲取狀態標籤和顏色代碼（使用內部等級）
+    const statusLabel = STATUS_LABELS[internalLevel] || "平穩";
+    const colorCode = COLOR_CODES[internalLevel] || "yellow";
+
+    return {
+      palaceName,
+      oneLiner,
+      stars: displayStars,  // 顯示星等（2.5-4.5）
+      internalLevel: internalLevel,  // 內部等級（1-5），供參考
+      statusLabel,
+      strategicAdvice: strategicText,
+      colorCode,
+      // 保留原始數據供參考
+      finalScore: Math.round(finalScore * 10) / 10,
+      maxStarRating,
+      isSubjectiveFocus
+    };
+  }
+
+  /**
+   * 流月八字戰略標籤生成器
+   * 根據月份的天干地支生成戰略標籤（#深度貼文風格）
+   * 
+   * @param {number} month 月份（1-12）
+   * @param {string} stem 天干（如 "庚"）
+   * @param {string} branch 地支（如 "寅"）
+   * @returns {string} 戰略標籤（如 "【剛毅開創】"）
+   */
+  function generateMonthStrategyTag(month, stem, branch) {
+    // 天干戰略屬性映射
+    const stemAttributes = {
+      "甲": "剛毅開創", "乙": "柔韌適應", "丙": "熱情擴張", "丁": "細緻執行",
+      "戊": "穩健累積", "己": "靈活整合", "庚": "剛毅開創", "辛": "精準優化",
+      "壬": "流動擴展", "癸": "深度滲透"
+    };
+
+    // 地支戰略屬性映射
+    const branchAttributes = {
+      "子": "潛藏蓄力", "丑": "穩固基礎", "寅": "開創啟動", "卯": "柔韌成長",
+      "辰": "整合擴張", "巳": "轉化突破", "午": "高峰執行", "未": "收穫整合",
+      "申": "理性分析", "酉": "精煉優化", "戌": "穩固防禦", "亥": "深度沉潛"
+    };
+
+    const stemAttr = stemAttributes[stem] || "執行";
+    const branchAttr = branchAttributes[branch] || "運轉";
+    
+    // 組合標籤（優先使用天干屬性，地支作為補充）
+    return `【${stemAttr}】`;
+  }
+
+  /**
+   * 計算所有 12 宮位的基礎分數（L4 + L7 + L9 架構重構版）
+   * 
+   * 流程：
+   * 1. 計算所有宮位的基礎分（L1-L3 + L8，不包含三方四正）
+   * 2. 應用 L4 空間連動（三方四正聚合）
+   * 3. 應用 L7 主觀頻率修正（小限宮位增益）
+   * 4. 應用 L9 決策映射與語義輸出
+   * 5. 返回包含完整語義輸出的結果
+   * 
+   * @param {Object} ziwei 紫微命盤資料
+   * @param {Object} horoscope 小限資料（可選）
+   * @returns {Promise<Object>} 宮位分數物件 { "命宮": 85.5, "兄弟": 72.3, ... }
+   * 同時將完整的 L9 語義輸出存儲到 window.ziweiPalaceMetadata
+   */
+  async function computeAllPalaceScores(ziwei, horoscope) {
+    if (!ziwei) return {};
+    
+    // 預先載入權重資料（避免重複載入）
+    const weightsData = await loadZiweiWeights();
+    
+    // 獲取當前年份（用於 2026 預警機制）
+    const currentYear = new Date().getFullYear();
+    const options = { horoscope, year: currentYear };
+    
+    // 步驟 1: 計算所有 12 宮位的基礎分數（L1-L3 + L8，不包含 L4 三方四正）
+    const baseScores = {};
+    const metadata = {};
+    
+    // 並行計算所有宮位的基礎分數
+    const promises = PALACE_DEFAULT.map(async (palace) => {
+      const result = computeSinglePalaceBaseScore(ziwei, palace, weightsData, options);
+      baseScores[palace] = result;
+      metadata[palace] = {
+        strategicAdvice: result.strategicAdvice || [],
+        maxStarRating: result.maxStarRating,
+        baseScore: result.score
+      };
+      return { palace, result };
+    });
+    
+    await Promise.all(promises);
+    
+    // 步驟 2: 應用 L4 空間連動（三方四正聚合）
+    const spatialAdjustedResults = applySpatialAggregation(baseScores, PALACE_DEFAULT);
+    
+    // 步驟 3: 應用 L7 主觀頻率修正（小限宮位增益）
+    const xiaoXianPalace = horoscope?.activeLimitPalaceName || null;
+    const subjectiveAdjustedResults = stageSubjectiveBoost(spatialAdjustedResults, xiaoXianPalace);
+    
+    // 步驟 4: 應用 L9 決策映射與語義輸出
+    const scores = {};
+    const finalMetadata = {};
+    
+    // 先收集所有最終分數，用於相對排名計算
+    const allFinalScores = {};
+    PALACE_DEFAULT.forEach((palace) => {
+      const subjectiveResult = subjectiveAdjustedResults[palace];
+      if (subjectiveResult) {
+        const finalScore = subjectiveResult.subjectiveAdjustedScore || 
+                          subjectiveResult.spatialAdjustedScore || 
+                          subjectiveResult.score || 0;
+        allFinalScores[palace] = finalScore;
+      } else {
+        allFinalScores[palace] = baseScores[palace]?.score || 0;
+      }
+    });
+    
+    // 使用相對排名計算星等
+    PALACE_DEFAULT.forEach((palace) => {
+      const subjectiveResult = subjectiveAdjustedResults[palace];
+      if (subjectiveResult) {
+        // 優先使用 subjectiveAdjustedScore（如果存在），否則使用 spatialAdjustedScore
+        const finalScore = subjectiveResult.subjectiveAdjustedScore || 
+                          subjectiveResult.spatialAdjustedScore || 
+                          subjectiveResult.score || 0;
+        
+        // L9: 生成完整的語義輸出物件（傳入所有分數用於相對排名）
+        const l9Output = finalizeStarRating(palace, finalScore, {
+          maxStarRating: subjectiveResult.maxStarRating || metadata[palace].maxStarRating,
+          strategicAdvice: metadata[palace].strategicAdvice || [],
+          isSubjectiveFocus: subjectiveResult.isSubjectiveFocus || false,
+          allScores: allFinalScores  // 傳入所有分數用於相對排名
+        });
+        
+        scores[palace] = finalScore;
+        
+        // 更新元數據，包含 L4、L7 和 L9 的完整輸出
+        finalMetadata[palace] = {
+          ...metadata[palace],
+          // L1-L3 + L8 基礎數據
+          baseScore: subjectiveResult.baseScore || metadata[palace].baseScore,
+          // L4 空間連動數據
+          spatialAdjustedScore: subjectiveResult.spatialAdjustedScore || subjectiveResult.score,
+          spatialDetails: subjectiveResult.spatialDetails,
+          // L7 主觀頻率修正數據
+          subjectiveAdjustedScore: subjectiveResult.subjectiveAdjustedScore || null,
+          isSubjectiveFocus: subjectiveResult.isSubjectiveFocus || false,
+          boostApplied: subjectiveResult.boostApplied || null,
+          // L9 決策映射與語義輸出（完整物件）
+          l9Output: l9Output
+        };
+      } else {
+        const finalScore = baseScores[palace]?.score || 0;
+        
+        // L9: 生成完整的語義輸出物件（即使沒有 L4/L7 調整）
+        const l9Output = finalizeStarRating(palace, finalScore, {
+          maxStarRating: metadata[palace].maxStarRating,
+          strategicAdvice: metadata[palace].strategicAdvice || [],
+          isSubjectiveFocus: false,
+          allScores: allFinalScores  // 傳入所有分數用於相對排名
+        });
+        
+        scores[palace] = finalScore;
+        finalMetadata[palace] = {
+          ...metadata[palace],
+          l9Output: l9Output
+        };
+      }
+    });
+    
+    // 將元數據存儲到全局變量，供 UI 使用
+    if (typeof window !== "undefined") {
+      window.ziweiPalaceMetadata = finalMetadata;
+    }
+    
+    return scores;
   }
 
   /** 依年齡、性別得小限所在宮位索引（0=命宮…11=父母）。男順女逆，1 歲起命宮。 */
@@ -841,8 +2103,14 @@
     getMutagenStars,
     getSiHuaWeights,
     getPalaceScoreWithWeights,
+    computePalaceBaseScore,
+    computeAllPalaceScores,
     buildSlotsFromZiwei,
     computeDynamicTactics,
+    // L9 導出
+    finalizeStarRating,
+    generateMonthStrategyTag,
+    mapScoreToStarRating,
   });
 
   if (typeof window !== "undefined") {

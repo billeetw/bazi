@@ -1,0 +1,3334 @@
+{
+  "mainStars": [
+    {
+      "id": "ZiWei",
+      "name": "紫微",
+      "baseScore": 10,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianFu",
+      "name": "天府",
+      "baseScore": 10,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.2,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TaiYang",
+      "name": "太陽",
+      "baseScore": 8,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "WuQu",
+      "name": "武曲",
+      "baseScore": 8,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 0.7,
+        "Wealth": 1.2,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "LianZhen",
+      "name": "廉貞",
+      "baseScore": 8,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 0.8,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.1,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianLiang",
+      "name": "天梁",
+      "baseScore": 8,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "QiSha",
+      "name": "七殺",
+      "baseScore": 8,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianXiang",
+      "name": "天相",
+      "baseScore": 7,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianJi",
+      "name": "天機",
+      "baseScore": 7,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "JuMen",
+      "name": "巨門",
+      "baseScore": 7,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TanLang",
+      "name": "貪狼",
+      "baseScore": 6,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TaiYin",
+      "name": "太陰",
+      "baseScore": 6,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianTong",
+      "name": "天同",
+      "baseScore": 6,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "PoJun",
+      "name": "破軍",
+      "baseScore": 6,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    }
+  ],
+  "assistantStars": [
+    {
+      "id": "ZuoFu",
+      "name": "左輔",
+      "baseScore": 2,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "YouBi",
+      "name": "右弼",
+      "baseScore": 2,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "WenChang",
+      "name": "文昌",
+      "baseScore": 2,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "WenQu",
+      "name": "文曲",
+      "baseScore": 2,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianKui",
+      "name": "天魁",
+      "baseScore": 2,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianYue",
+      "name": "天鉞",
+      "baseScore": 2,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "LuCun",
+      "name": "祿存",
+      "baseScore": 2,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianMa",
+      "name": "天馬",
+      "baseScore": 2,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "QingYang",
+      "name": "擎羊",
+      "baseScore": -1.5,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TuoLuo",
+      "name": "陀羅",
+      "baseScore": -1.5,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "HuoXing",
+      "name": "火星",
+      "baseScore": -1.5,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "LingXing",
+      "name": "鈴星",
+      "baseScore": -1.5,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "DiJie",
+      "name": "地劫",
+      "baseScore": -1.5,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "DiKong",
+      "name": "地空",
+      "baseScore": -1.5,
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    }
+  ],
+  "minorStars": [
+    {
+      "id": "SanTai",
+      "name": "三台",
+      "baseScore": 1.0,
+      "strategicTag": "名望加持",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.2,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "BaZuo",
+      "name": "八座",
+      "baseScore": 1.0,
+      "strategicTag": "名望加持",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.2,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "LongChi",
+      "name": "龍池",
+      "baseScore": 1.0,
+      "strategicTag": "名望加持",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.2,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "FengGe",
+      "name": "鳳閣",
+      "baseScore": 1.0,
+      "strategicTag": "名望加持",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.2,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianCai",
+      "name": "天才",
+      "baseScore": 0.8,
+      "strategicTag": "技術突破",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.1,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianShou",
+      "name": "天壽",
+      "baseScore": 0.8,
+      "strategicTag": "技術突破",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.1,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianWu",
+      "name": "天巫",
+      "baseScore": 0.8,
+      "strategicTag": "技術突破",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.1,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianYao",
+      "name": "天姚",
+      "baseScore": -0.5,
+      "strategicTag": "非理性干擾",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 0.8,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "XianChi",
+      "name": "咸池",
+      "baseScore": -0.5,
+      "strategicTag": "非理性干擾",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 0.8,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianXing",
+      "name": "天刑",
+      "baseScore": -0.5,
+      "strategicTag": "非理性干擾",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 0.9,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "PoSui",
+      "name": "破碎",
+      "baseScore": -0.8,
+      "strategicTag": "細微滲漏",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 0.9,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "FeiLian",
+      "name": "蜚廉",
+      "baseScore": -0.8,
+      "strategicTag": "細微滲漏",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 0.9,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianKong",
+      "name": "天空",
+      "baseScore": -0.8,
+      "strategicTag": "細微滲漏",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 0.9,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianShang",
+      "name": "天傷",
+      "baseScore": -0.5,
+      "strategicTag": "資源耗損",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 0.9,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianShi",
+      "name": "天使",
+      "baseScore": 0.5,
+      "strategicTag": "資源增益",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianGuan",
+      "name": "天官",
+      "baseScore": 0.6,
+      "strategicTag": "行政增益",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.1,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianFu",
+      "name": "天福",
+      "baseScore": 0.6,
+      "strategicTag": "資源增益",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.1,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianXi",
+      "name": "天喜",
+      "baseScore": 0.5,
+      "strategicTag": "情緒增益",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.1,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "HongLuan",
+      "name": "紅鸞",
+      "baseScore": 0.5,
+      "strategicTag": "情緒增益",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.1,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "JieShen",
+      "name": "解神",
+      "baseScore": 0.5,
+      "strategicTag": "風險緩解",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianChu",
+      "name": "天廚",
+      "baseScore": 0.5,
+      "strategicTag": "資源增益",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "JieLu",
+      "name": "截路",
+      "baseScore": -0.6,
+      "strategicTag": "流程阻斷",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 1.0,
+        "Travel": 0.9,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "GuChen",
+      "name": "孤辰",
+      "baseScore": -0.5,
+      "strategicTag": "情緒雜訊",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 0.9,
+        "Spouse": 0.9,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 0.9,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "GuaSu",
+      "name": "寡宿",
+      "baseScore": -0.5,
+      "strategicTag": "情緒雜訊",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 0.9,
+        "Spouse": 0.9,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 0.9,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "KongWang",
+      "name": "空亡",
+      "baseScore": -0.7,
+      "strategicTag": "細微滲漏",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 0.9,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianGui",
+      "name": "天貴",
+      "baseScore": 0.6,
+      "strategicTag": "名望增益",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.1,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "HuaGai",
+      "name": "華蓋",
+      "baseScore": 0.5,
+      "strategicTag": "技術突破",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.1,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianKu",
+      "name": "天哭",
+      "baseScore": -0.5,
+      "strategicTag": "情緒雜訊",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 0.9,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianXu",
+      "name": "天虛",
+      "baseScore": -0.6,
+      "strategicTag": "資源耗損",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 0.9,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianDe",
+      "name": "天德",
+      "baseScore": 0.6,
+      "strategicTag": "風險緩解",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "YueDe",
+      "name": "月德",
+      "baseScore": 0.6,
+      "strategicTag": "風險緩解",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "XunKong",
+      "name": "旬空",
+      "baseScore": -0.6,
+      "strategicTag": "細微滲漏",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 0.9,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TaiFu",
+      "name": "台輔",
+      "baseScore": 0.7,
+      "strategicTag": "名望增益",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.2,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "FengGao",
+      "name": "封誥",
+      "baseScore": 0.7,
+      "strategicTag": "名望增益",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.2,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianYue2",
+      "name": "天月",
+      "baseScore": 0.5,
+      "strategicTag": "資源增益",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianYin2",
+      "name": "天陰",
+      "baseScore": -0.5,
+      "strategicTag": "情緒雜訊",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 0.9,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 0.9,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianXing3",
+      "name": "天星",
+      "baseScore": 0.6,
+      "strategicTag": "技術突破",
+      "brightnessMultiplier": {
+        "Miao": 1.5,
+        "Wang": 1.3,
+        "De": 1.1,
+        "Li": 1.0,
+        "Ping": 0.8,
+        "Bu": 0.6,
+        "Xian": 0.4
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.1,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    }
+  ],
+  "deities": [
+    {
+      "id": "SuiJian",
+      "name": "歲建",
+      "baseScore": 0,
+      "strategicTag": "環境中性",
+      "category": "歲前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      },
+      "penaltyTrigger": {
+        "palaces": ["Health", "Parents"],
+        "penalty": -0.5
+      }
+    },
+    {
+      "id": "SangMen",
+      "name": "喪門",
+      "baseScore": -0.5,
+      "strategicTag": "環境阻力",
+      "category": "歲前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 0.9,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 0.9
+      },
+      "penaltyTrigger": {
+        "palaces": ["Health", "Parents"],
+        "penalty": -0.5
+      }
+    },
+    {
+      "id": "DiaoKe",
+      "name": "弔客",
+      "baseScore": -0.5,
+      "strategicTag": "環境阻力",
+      "category": "歲前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 0.9,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 0.9
+      },
+      "penaltyTrigger": {
+        "palaces": ["Health", "Parents"],
+        "penalty": -0.5
+      }
+    },
+    {
+      "id": "BingFu",
+      "name": "病符",
+      "baseScore": -0.5,
+      "strategicTag": "環境阻力",
+      "category": "歲前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 0.8,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      },
+      "penaltyTrigger": {
+        "palaces": ["Health"],
+        "maxStarRating": 4
+      }
+    },
+    {
+      "id": "TaiSui",
+      "name": "太歲",
+      "baseScore": 0,
+      "strategicTag": "環境中性",
+      "category": "歲前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "BaiHu",
+      "name": "白虎",
+      "baseScore": -0.5,
+      "strategicTag": "環境阻力",
+      "category": "歲前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 0.9,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "LongDe",
+      "name": "龍德",
+      "baseScore": 0.5,
+      "strategicTag": "環境增益",
+      "category": "歲前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianDe2",
+      "name": "天德",
+      "baseScore": 0.5,
+      "strategicTag": "環境增益",
+      "category": "歲前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "JiangXing",
+      "name": "將星",
+      "baseScore": 0.5,
+      "strategicTag": "執行節奏",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.1,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "JieSha",
+      "name": "劫煞",
+      "baseScore": -0.6,
+      "strategicTag": "執行阻斷",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      },
+      "strategicAdvice": "備用金預留"
+    },
+    {
+      "id": "ZaiSha",
+      "name": "災煞",
+      "baseScore": -0.6,
+      "strategicTag": "執行阻斷",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      },
+      "strategicAdvice": "備用金預留"
+    },
+    {
+      "id": "BoShi",
+      "name": "博士",
+      "baseScore": 0.5,
+      "strategicTag": "軟實力權衡",
+      "category": "博士十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "LiShi",
+      "name": "力士",
+      "baseScore": 0.3,
+      "strategicTag": "執行增益",
+      "category": "博士十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "QingLong",
+      "name": "青龍",
+      "baseScore": 0.4,
+      "strategicTag": "執行增益",
+      "category": "博士十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "XiaoHao",
+      "name": "小耗",
+      "baseScore": -0.4,
+      "strategicTag": "資源耗損",
+      "category": "博士十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "JiangJun",
+      "name": "將軍",
+      "baseScore": 0.4,
+      "strategicTag": "執行增益",
+      "category": "博士十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "ZouShu",
+      "name": "奏書",
+      "baseScore": 0.3,
+      "strategicTag": "行政增益",
+      "category": "博士十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "FeiLian2",
+      "name": "飛廉",
+      "baseScore": -0.4,
+      "strategicTag": "執行阻斷",
+      "category": "博士十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "XiShen",
+      "name": "喜神",
+      "baseScore": 0.3,
+      "strategicTag": "情緒增益",
+      "category": "博士十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "BingFu2",
+      "name": "病符",
+      "baseScore": -0.4,
+      "strategicTag": "環境阻力",
+      "category": "博士十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 0.9,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "DaHao",
+      "name": "大耗",
+      "baseScore": -1.0,
+      "strategicTag": "資源耗損",
+      "category": "博士十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.8,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 0.9,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "FuBing",
+      "name": "伏兵",
+      "baseScore": -0.3,
+      "strategicTag": "執行阻斷",
+      "category": "博士十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "GuanFu",
+      "name": "官符",
+      "baseScore": -1.0,
+      "strategicTag": "行政風險",
+      "category": "博士十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.8,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      },
+      "penaltyTrigger": {
+        "withTransformation": "忌",
+        "starRatingReduction": 1
+      },
+      "penaltyTrigger2026": {
+        "withStar": "廉貞",
+        "withTransformation": "忌",
+        "penaltyMultiplier": 2.0
+      }
+    },
+    {
+      "id": "ZhiBei",
+      "name": "指背",
+      "baseScore": -1.0,
+      "strategicTag": "行政風險",
+      "category": "博士十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 0.9,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 0.9,
+        "Career": 0.9,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "YueSha",
+      "name": "月煞",
+      "baseScore": -0.4,
+      "strategicTag": "環境阻力",
+      "category": "歲前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "YueDe2",
+      "name": "月德",
+      "baseScore": 0.5,
+      "strategicTag": "環境增益",
+      "category": "歲前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianSha",
+      "name": "天煞",
+      "baseScore": -0.4,
+      "strategicTag": "環境阻力",
+      "category": "歲前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianMa2",
+      "name": "天馬",
+      "baseScore": 0.3,
+      "strategicTag": "執行增益",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.1,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "HuaGai2",
+      "name": "華蓋",
+      "baseScore": 0.3,
+      "strategicTag": "技術突破",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianXing2",
+      "name": "天刑",
+      "baseScore": -0.5,
+      "strategicTag": "非理性干擾",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 0.9,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianYao2",
+      "name": "天姚",
+      "baseScore": -0.5,
+      "strategicTag": "非理性干擾",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 0.8,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianJie",
+      "name": "天解",
+      "baseScore": 0.4,
+      "strategicTag": "風險緩解",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "DiJie2",
+      "name": "地解",
+      "baseScore": 0.4,
+      "strategicTag": "風險緩解",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianYi",
+      "name": "天醫",
+      "baseScore": 0.5,
+      "strategicTag": "資源增益",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.1,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianShi2",
+      "name": "天使",
+      "baseScore": 0.3,
+      "strategicTag": "資源增益",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianShang2",
+      "name": "天傷",
+      "baseScore": -0.5,
+      "strategicTag": "資源耗損",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 0.9,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianKong2",
+      "name": "天空",
+      "baseScore": -0.8,
+      "strategicTag": "細微滲漏",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 0.9,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianKu2",
+      "name": "天哭",
+      "baseScore": -0.5,
+      "strategicTag": "情緒雜訊",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 0.9,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianXu2",
+      "name": "天虛",
+      "baseScore": -0.6,
+      "strategicTag": "資源耗損",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 0.9,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "LongChi2",
+      "name": "龍池",
+      "baseScore": 1.0,
+      "strategicTag": "名望加持",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.2,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "FengGe2",
+      "name": "鳳閣",
+      "baseScore": 1.0,
+      "strategicTag": "名望加持",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.2,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "HongLuan2",
+      "name": "紅鸞",
+      "baseScore": 0.5,
+      "strategicTag": "情緒增益",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.1,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianXi2",
+      "name": "天喜",
+      "baseScore": 0.5,
+      "strategicTag": "情緒增益",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.1,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "GuChen2",
+      "name": "孤辰",
+      "baseScore": -0.5,
+      "strategicTag": "情緒雜訊",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 0.9,
+        "Spouse": 0.9,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 0.9,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "GuaSu2",
+      "name": "寡宿",
+      "baseScore": -0.5,
+      "strategicTag": "情緒雜訊",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 0.9,
+        "Spouse": 0.9,
+        "Children": 1.0,
+        "Wealth": 1.0,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 0.9,
+        "Career": 1.0,
+        "Property": 1.0,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "TianKong3",
+      "name": "天空",
+      "baseScore": -0.8,
+      "strategicTag": "細微滲漏",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 0.9,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "DiJie3",
+      "name": "地劫",
+      "baseScore": -0.8,
+      "strategicTag": "細微滲漏",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 0.9,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    },
+    {
+      "id": "DiKong2",
+      "name": "地空",
+      "baseScore": -0.8,
+      "strategicTag": "細微滲漏",
+      "category": "將前十二神",
+      "brightnessMultiplier": {
+        "Miao": 1.0,
+        "Wang": 1.0,
+        "De": 1.0,
+        "Li": 1.0,
+        "Ping": 1.0,
+        "Bu": 1.0,
+        "Xian": 1.0
+      },
+      "resonanceMap": {
+        "Self": 1.0,
+        "Siblings": 1.0,
+        "Spouse": 1.0,
+        "Children": 1.0,
+        "Wealth": 0.9,
+        "Health": 1.0,
+        "Travel": 1.0,
+        "Friends": 1.0,
+        "Career": 0.9,
+        "Property": 0.9,
+        "Karma": 1.0,
+        "Parents": 1.0
+      }
+    }
+  ]
+}
