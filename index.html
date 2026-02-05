@@ -665,11 +665,25 @@
     }
     .palace-sheet-close {
       font-size: 11px;
-      color: #94a3b8;
-      padding: 4px 8px;
+      color: #fbbf24;
+      padding: 6px 12px;
       border-radius: 999px;
-      border: 1px solid rgba(148,163,184,0.4);
-      background: rgba(15,23,42,0.8);
+      border: 1.5px solid rgba(251,191,36,0.5);
+      background: rgba(251,191,36,0.15);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .palace-sheet-close:hover {
+      background: rgba(251,191,36,0.25);
+      border-color: rgba(251,191,36,0.7);
+      color: #fcd34d;
+    }
+    .palace-sheet-close:active {
+      transform: scale(0.95);
     }
 
     /* 右側面板快速定位高亮 */
@@ -1148,8 +1162,9 @@
         <div id="mobilePalaceTitle" class="text-base font-black text-amber-300">請點宮位</div>
         <div id="mobilePalaceSub" class="text-xs text-slate-400 mt-1"></div>
       </div>
-      <button id="palaceSheetClose" type="button" class="palace-sheet-close text-xs">
-        收合
+      <button id="palaceSheetClose" type="button" class="palace-sheet-close text-xs" aria-label="收合宮位說明">
+        <span>✕</span>
+        <span>收合</span>
       </button>
     </div>
     <div id="mobilePalaceBody" class="mt-4 space-y-4 text-xs text-slate-100">
@@ -1172,13 +1187,23 @@
       }
     })();
   </script>
+  <!-- 階段1優化：工具函數、配置常量、狀態管理 -->
+  <script src="js/utils.js?v=1"></script>
+  <script src="js/config.js?v=1"></script>
+  <script src="js/state.js?v=1"></script>
   <script src="js/strategyConfig.js?v=2"></script>
   <script src="js/calc.js?v=2"></script>
   <script src="js/identifyBirthTime.js?v=1"></script>
   <script src="js/ui.js?v=2"></script>
   <!-- 啟動序列掛載點與 bundle（可選：npm run build:startup 後載入，點擊「啟動人生戰略引擎」會先播 4.5s 啟動動畫） -->
   <div id="startup-root"></div>
-  <script src="dist/startup-sequence.js"></script>
+  <script>
+    // 為 startup-sequence.js 提供 process 對象（如果不存在）
+    if (typeof process === "undefined") {
+      window.process = { env: { NODE_ENV: "production" } };
+    }
+  </script>
+  <script src="dist/startup-sequence.js" onerror="console.warn('startup-sequence.js 載入失敗，啟動動畫將不可用')"></script>
 
 </body>
 </html>

@@ -1607,7 +1607,8 @@
    * 狀態標籤映射表（根據星等）
    * 調整為更溫和、鼓勵性的標籤
    */
-  const STATUS_LABELS = {
+  // 使用全局配置（如果可用），否則使用本地定義（向後兼容）
+  const STATUS_LABELS = (typeof window !== "undefined" && window.Config?.STATUS_LABELS) || {
     5: "極佳",
     4: "強勁",
     3: "平穩",
@@ -1617,16 +1618,14 @@
 
   /**
    * 顏色代碼映射表（根據星等）
-   * 紅：風險高（1-2星）
-   * 黃：需注意（3星）
-   * 綠：狀態良好（4-5星）
+   * 五級分級對應五種顏色，更精確地反映能量狀態
    */
-  const COLOR_CODES = {
-    5: "green",
-    4: "green",
-    3: "yellow",
-    2: "red",
-    1: "red"
+  const COLOR_CODES = (typeof window !== "undefined" && window.Config?.COLOR_CODES) || {
+    5: "emerald",  // 極佳：翠綠色（4.5星）
+    4: "green",    // 強勁：綠色（4.0星）
+    3: "amber",    // 平穩：琥珀色（3.5星）
+    2: "orange",   // 穩健：橙色（3.0星）
+    1: "slate"     // 基礎：灰藍色（2.5星）
   };
 
   /**
@@ -1702,6 +1701,178 @@
   function mapScoreToStarRating(finalScore, allScores = null) {
     const internalLevel = mapScoreToInternalLevel(finalScore, allScores);
     return mapInternalLevelToDisplayStars(internalLevel);
+  }
+
+  /**
+   * L9: 流月星等計算（與紫微對應）
+   * 
+   * 將流月的 riskScore（風險指數 0-100）轉換為能量指數，然後映射為星等
+   * 邏輯：riskScore 越低（風險越低）→ energyScore 越高（能量越高）→ 星等越高
+   * 
+   * @param {number} riskScore 風險指數（0-100），越高表示風險越大
+   * @param {Array} allMonths 所有12個月的流月數據陣列 [{ riskScore, ... }, ...]
+   * @param {Object} ziweiPalaceMetadata 紫微宮位元數據（可選，用於關聯說明）
+   * @param {Object} wuxingData 五行數據（可選，用於關聯說明）
+   * @param {number} monthNum 月份編號（1-12），用於生成關聯說明
+   * @returns {Object} { stars: 2.5-4.5, internalLevel: 1-5, statusLabel, colorCode, correlationNote }
+   */
+  function computeMonthlyStarRating(riskScore, allMonths = [], ziweiPalaceMetadata = null, wuxingData = null, monthNum = null) {
+    // 1. 將風險指數轉換為能量指數（反向映射）
+    // riskScore 0-100 → energyScore 100-0（風險越低，能量越高）
+    const energyScore = 100 - Math.max(0, Math.min(100, Number(riskScore) || 0));
+    
+    // 2. 收集所有月份的能量指數，用於相對排名
+    const allEnergyScores = {};
+    if (Array.isArray(allMonths) && allMonths.length > 0) {
+      allMonths.forEach((month, index) => {
+        const monthRisk = Math.max(0, Math.min(100, Number(month.riskScore) || 0));
+        const monthEnergy = 100 - monthRisk;
+        // 使用月份編號作為 key（1-12）
+        const monthNumKey = parseMonthFromRange(month.range) || (index + 1);
+        allEnergyScores[monthNumKey] = monthEnergy;
+      });
+    }
+    
+    // 3. 使用相對排名計算內部等級（與紫微保持一致）
+    const internalLevel = mapScoreToInternalLevel(energyScore, allEnergyScores);
+    
+    // 4. 轉換為顯示星等（2.5-4.5）
+    const displayStars = mapInternalLevelToDisplayStars(internalLevel);
+    
+    // 5. 獲取狀態標籤和顏色代碼
+    const statusLabel = STATUS_LABELS[internalLevel] || "平穩";
+    const colorCode = COLOR_CODES[internalLevel] || "amber";
+    
+    // 6. 生成與紫微、五行關聯的一句話說明
+    const correlationNote = generateMonthlyCorrelationNote(
+      monthNum,
+      internalLevel,
+      ziweiPalaceMetadata,
+      wuxingData
+    );
+    
+    return {
+      stars: displayStars,
+      internalLevel: internalLevel,
+      statusLabel: statusLabel,
+      colorCode: colorCode,
+      correlationNote: correlationNote,
+      energyScore: energyScore, // 供參考
+      riskScore: riskScore // 保留原始風險指數
+    };
+  }
+
+  /**
+   * 生成流月與紫微、五行關聯的一句話說明
+   * 
+   * @param {number} monthNum 月份編號（1-12）
+   * @param {number} internalLevel 內部等級（1-5）
+   * @param {Object} ziweiPalaceMetadata 紫微宮位元數據
+   * @param {Object} wuxingData 五行數據
+   * @returns {string} 一句話說明
+   */
+  function generateMonthlyCorrelationNote(monthNum, internalLevel, ziweiPalaceMetadata, wuxingData) {
+    if (!monthNum || monthNum < 1 || monthNum > 12) {
+      return "";
+    }
+    
+    // 月份對應的紫微宮位（流月宮位映射）
+    // 流月1月對應命宮，2月對應兄弟，以此類推（順時針）
+    const palaceMapping = [
+      "命宮", "兄弟", "夫妻", "子女", "財帛", "疾厄",
+      "遷移", "僕役", "官祿", "田宅", "福德", "父母"
+    ];
+    const correspondingPalace = palaceMapping[monthNum - 1] || "";
+    
+    // 獲取對應宮位的紫微數據
+    let palaceNote = "";
+    if (ziweiPalaceMetadata && correspondingPalace && ziweiPalaceMetadata[correspondingPalace]) {
+      const palaceData = ziweiPalaceMetadata[correspondingPalace];
+      const palaceStars = palaceData.l9Output?.stars || 0;
+      const palaceStatus = palaceData.l9Output?.statusLabel || "";
+      
+      // 根據星等差異生成說明
+      const starDiff = palaceStars - (2.0 + internalLevel * 0.5);
+      if (Math.abs(starDiff) < 0.3) {
+        palaceNote = `與${correspondingPalace}能量同步`;
+      } else if (starDiff > 0.5) {
+        palaceNote = `${correspondingPalace}能量強於本月`;
+      } else if (starDiff < -0.5) {
+        palaceNote = `本月能量強於${correspondingPalace}`;
+      } else {
+        palaceNote = `對應${correspondingPalace}（${palaceStatus}）`;
+      }
+    } else if (correspondingPalace) {
+      palaceNote = `對應${correspondingPalace}`;
+    }
+    
+    // 獲取五行數據
+    let wuxingNote = "";
+    if (wuxingData && wuxingData.strategic) {
+      const wuxing = wuxingData.strategic;
+      const elements = ["wood", "fire", "earth", "metal", "water"];
+      const elementNames = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
+      
+      // 找出最強和最弱的五行
+      let maxScore = -1, maxElement = "";
+      let minScore = 999, minElement = "";
+      
+      elements.forEach(elem => {
+        const score = wuxing[elem] || 0;
+        if (score > maxScore) {
+          maxScore = score;
+          maxElement = elementNames[elem];
+        }
+        if (score < minScore) {
+          minScore = score;
+          minElement = elementNames[elem];
+        }
+      });
+      
+      if (maxElement && minElement && maxElement !== minElement) {
+        wuxingNote = `五行${maxElement}強、${minElement}弱`;
+      }
+    }
+    
+    // 組合說明
+    const parts = [];
+    if (palaceNote) parts.push(palaceNote);
+    if (wuxingNote) parts.push(wuxingNote);
+    
+    if (parts.length > 0) {
+      return parts.join("，");
+    }
+    
+    // 如果沒有關聯數據，根據等級生成通用說明
+    const levelNotes = {
+      5: "能量通道完全開啟",
+      4: "系統運轉順暢",
+      3: "當前狀態平穩",
+      2: "運作正常",
+      1: "基礎穩固"
+    };
+    return levelNotes[internalLevel] || "";
+  }
+
+  /**
+   * 輔助函數：從 range 字串解析月份編號
+   * 優先使用全局 Utils.parseMonthFromRange（如果可用）
+   * @param {string} range 月份範圍字串（如 "1/1-1/31"）
+   * @returns {number} 月份編號（1-12），解析失敗返回 0
+   */
+  function parseMonthFromRange(range) {
+    // 優先使用全局工具函數
+    if (typeof window !== "undefined" && window.Utils?.parseMonthFromRange) {
+      return window.Utils.parseMonthFromRange(range);
+    }
+    // Fallback: 本地實現（向後兼容）
+    if (!range) return 0;
+    const s = String(range).trim();
+    const m1 = s.match(/^(\d{1,2})[/.-]/);
+    if (m1) return Math.min(12, Math.max(1, parseInt(m1[1], 10)));
+    const m2 = s.match(/^0?(\d)\./);
+    if (m2) return Math.min(12, Math.max(1, parseInt(m2[1], 10)));
+    return 0;
   }
 
   /**
@@ -1939,8 +2110,12 @@
       }
     });
     
-    // 將元數據存儲到全局變量，供 UI 使用
+    // 將元數據存儲到全局狀態管理器（優先），或直接存到 window（向後兼容）
     if (typeof window !== "undefined") {
+      if (window.BaziApp?.State) {
+        window.BaziApp.State.setState("ziweiPalaceMetadata", finalMetadata);
+      }
+      // 向後兼容：也存到 window.ziweiPalaceMetadata
       window.ziweiPalaceMetadata = finalMetadata;
     }
     
@@ -2111,6 +2286,11 @@
     finalizeStarRating,
     generateMonthStrategyTag,
     mapScoreToStarRating,
+    mapScoreToInternalLevel,
+    mapInternalLevelToDisplayStars,
+    // 流月星等計算
+    computeMonthlyStarRating,
+    parseMonthFromRange,
   });
 
   if (typeof window !== "undefined") {

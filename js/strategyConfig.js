@@ -27,14 +27,70 @@
    */
   function getStrategyNoteFromAPI(palace, strength, sihuaList) {
     const base = typeof window !== "undefined" && window.location && window.location.origin ? window.location.origin : "";
-    return fetch(base + "/api/strategy-note", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ palace, strength, sihuaList: sihuaList || [] }),
-    })
-      .then((r) => r.json())
-      .then((data) => (data && data.note != null ? data.note : "（暫無戰略提示）"))
-      .catch(() => "（暫無戰略提示）");
+    const hostname = typeof window !== "undefined" && window.location && window.location.hostname ? window.location.hostname : "";
+    const port = typeof window !== "undefined" && window.location && window.location.port ? window.location.port : "";
+    
+    // 如果本地服務器不支持 POST，改用 GET（向後兼容）
+    // 檢測 localhost、127.0.0.1 或端口 8081/8080
+    const isLocalhost = hostname === "localhost" || 
+                        hostname === "127.0.0.1" || 
+                        base.includes("localhost") || 
+                        base.includes("127.0.0.1");
+    const isDevPort = port === "8081" || port === "8080" || base.includes(":8081") || base.includes(":8080");
+    const useGet = isLocalhost || isDevPort;
+    
+    // 調試日誌（僅在開發環境）
+    if (useGet && console && console.log) {
+      console.log("[strategyConfig] 檢測到本地環境，使用 GET 請求", { hostname, port, base });
+    }
+    
+    if (useGet) {
+      // 本地開發環境：使用 GET 請求（避免 501 錯誤）
+      const params = new URLSearchParams({
+        palace: palace || "",
+        strength: String(strength || 1),
+        sihuaList: (sihuaList || []).join(",")
+      });
+      return fetch(base + "/api/strategy-note?" + params.toString(), {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      })
+        .then((r) => {
+          if (!r.ok && r.status !== 404) {
+            // 如果不是 404，記錄警告但繼續
+            console.warn(`[strategyConfig] GET /api/strategy-note 返回 ${r.status}`);
+          }
+          if (r.status === 404 || !r.ok) {
+            // 如果 API 不存在，返回默認值
+            return Promise.resolve({ note: "（暫無戰略提示）" });
+          }
+          return r.json();
+        })
+        .then((data) => (data && data.note != null ? data.note : "（暫無戰略提示）"))
+        .catch((err) => {
+          console.warn("[strategyConfig] 獲取戰略提示失敗:", err);
+          return "（暫無戰略提示）";
+        });
+    } else {
+      // 生產環境：使用 POST 請求
+      return fetch(base + "/api/strategy-note", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ palace, strength, sihuaList: sihuaList || [] }),
+      })
+        .then((r) => {
+          if (!r.ok) {
+            console.warn(`[strategyConfig] POST /api/strategy-note 返回 ${r.status}`);
+            return Promise.resolve({ note: "（暫無戰略提示）" });
+          }
+          return r.json();
+        })
+        .then((data) => (data && data.note != null ? data.note : "（暫無戰略提示）"))
+        .catch((err) => {
+          console.warn("[strategyConfig] 獲取戰略提示失敗:", err);
+          return "（暫無戰略提示）";
+        });
+    }
   }
 
   const StrategyConfig = {

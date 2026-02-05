@@ -6,8 +6,15 @@
 (function () {
   "use strict";
 
-  if (typeof window === "undefined" || !window.Calc) {
-    throw new Error("Missing dependency: js/calc.js (window.Calc not found)");
+  // 延遲檢查依賴，避免在模組載入前報錯
+  // 實際檢查會在 DOMContentLoaded 時進行
+  if (typeof window === "undefined") {
+    throw new Error("window object not available");
+  }
+  
+  // 如果 calc.js 未載入，在 DOMContentLoaded 時再檢查
+  if (!window.Calc) {
+    console.warn("[ui.js] window.Calc not found yet, will check again in DOMContentLoaded");
   }
 
   const {
@@ -239,7 +246,7 @@
       .join("");
 
     box.innerHTML = `
-      <svg viewBox="0 0 ${size} ${size}" width="100%" height="auto" role="img" aria-label="五行雷達圖">
+      <svg viewBox="0 0 ${size} ${size}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="五行雷達圖">
         ${gridPolys}
         ${axisLines}
         <polygon points="${dataPoints}"
@@ -377,6 +384,15 @@
   }
 
   function parseMonthFromRange(range) {
+    // 優先使用全局工具函數
+    if (window.Utils?.parseMonthFromRange) {
+      return window.Utils.parseMonthFromRange(range);
+    }
+    // 其次使用 calc.js 中的函數
+    if (window.Calc && window.Calc.parseMonthFromRange) {
+      return window.Calc.parseMonthFromRange(range);
+    }
+    // Fallback: 本地實現（向後兼容）
     if (!range) return 0;
     const s = String(range).trim();
     const m1 = s.match(/^(\d{1,2})[/.-]/);
@@ -397,22 +413,55 @@
     return one.length > 50 ? one.slice(0, 47) + "…" : one;
   }
 
-  /** 危險指數 0–100 對應能量條顏色：0-35 綠、36-65 黃、66-100 紅 */
-  function riskToEnergyColor(risk) {
-    const r = Math.max(0, Math.min(100, Number(risk) || 0));
-    if (r <= 35) return "rgb(34, 197, 94)";   // 綠
-    if (r <= 65) return "rgb(234, 179, 8)";   // 黃
-    return "rgb(239, 68, 68)";                 // 紅
+  /** 根據星等顏色代碼獲取對應的 RGB 顏色（用於能量條） */
+  function getColorFromCode(colorCode) {
+    // 優先使用全局配置
+    if (window.Config?.getRgbColor) {
+      return window.Config.getRgbColor(colorCode);
+    }
+    // Fallback: 本地實現（向後兼容）
+    const colorMap = {
+      "emerald": "rgb(16, 185, 129)",  // 翠綠色（4.5星）
+      "green": "rgb(34, 197, 94)",     // 綠色（4.0星）
+      "amber": "rgb(251, 191, 36)",    // 琥珀色（3.5星）
+      "orange": "rgb(249, 115, 22)",   // 橙色（3.0星）
+      "slate": "rgb(100, 116, 139)"    // 灰藍色（2.5星）
+    };
+    return colorMap[colorCode] || "rgb(251, 191, 36)"; // 預設琥珀色
   }
 
-  /** 狀態標籤：risk >= 65 高壓警示；risk <= 35 且財星 → 資源收割 */
-  function getMonthBadge(b) {
-    const risk = Math.max(0, Math.min(100, Number(b.riskScore) || 0));
-    const reasons = (b.reasonTags || []).join("");
-    const hasCai = /財|才|偏財|正財/.test(reasons);
-    if (risk >= 65) return { text: "⚠️ 高壓警示", type: "high" };
-    if (risk <= 35 && hasCai) return { text: "💰 資源收割", type: "cai" };
-    return null;
+  /** 根據星等獲取對應的邊框顏色類（用於卡片邊框） */
+  function getBorderColorClass(colorCode) {
+    // 優先使用全局配置
+    if (window.Config?.getBorderColorClass) {
+      return window.Config.getBorderColorClass(colorCode);
+    }
+    // Fallback: 本地實現（向後兼容）
+    const borderMap = {
+      "emerald": "border-emerald-400/40",
+      "green": "border-green-400/40",
+      "amber": "border-amber-400/40",
+      "orange": "border-orange-400/40",
+      "slate": "border-slate-400/40"
+    };
+    return borderMap[colorCode] || "border-amber-400/40";
+  }
+
+  /** 根據星等獲取對應的背景顏色類（用於卡片背景） */
+  function getBgColorClass(colorCode) {
+    // 優先使用全局配置
+    if (window.Config?.getBgColorClass) {
+      return window.Config.getBgColorClass(colorCode);
+    }
+    // Fallback: 本地實現（向後兼容）
+    const bgMap = {
+      "emerald": "bg-emerald-500/10",
+      "green": "bg-green-500/10",
+      "amber": "bg-amber-500/10",
+      "orange": "bg-orange-500/10",
+      "slate": "bg-slate-500/10"
+    };
+    return bgMap[colorCode] || "bg-amber-500/10";
   }
 
   // ====== RENDER: LIUYUE（年度賽季導航：單一垂直列表、能量條、展開詳情）======
@@ -429,6 +478,12 @@
       if (consultCta) consultCta.innerHTML = "";
       return;
     }
+
+    // 使用全局工具函數（如果可用），否則使用本地實現
+    const esc = window.Utils?.escHtml || ((s) => {
+      if (s == null) return "";
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    });
 
     const now = new Date();
     const currentMonth2026 = now.getFullYear() === 2026 ? now.getMonth() + 1 : null;
@@ -451,14 +506,73 @@
       mGrid.querySelectorAll(".liuyue-card").forEach((c) => c.classList.remove("is-expanded"));
     }
 
-    ordered.forEach((b) => {
+    // 獲取紫微宮位元數據和五行數據（用於生成關聯說明）
+    // 優先使用狀態管理器，否則使用直接訪問（向後兼容）
+    const ziweiPalaceMetadata = (window.BaziApp?.State?.getState("ziweiPalaceMetadata")) || window.ziweiPalaceMetadata || null;
+    const wuxingData = bazi?.wuxing || null;
+
+    // 計算所有月份的星等（使用相對排名，與紫微對應）
+    const monthlyStarRatings = {};
+    if (window.Calc && window.Calc.computeMonthlyStarRating) {
+      try {
+        ordered.forEach((b, index) => {
+          const monthNum = parseMonthFromRange(b.range);
+          // 如果解析失敗，使用索引+1作為月份編號（fallback）
+          const ratingKey = monthNum || (index + 1);
+          
+          try {
+            monthlyStarRatings[ratingKey] = window.Calc.computeMonthlyStarRating(
+              Number(b.riskScore) || 0,
+              ordered,
+              ziweiPalaceMetadata,
+              wuxingData,
+              ratingKey  // 使用 ratingKey 而不是 monthNum
+            );
+          } catch (err) {
+            console.warn(`計算月份 ${ratingKey} 星等失敗:`, err);
+          }
+        });
+      } catch (err) {
+        console.error("計算流月星等失敗:", err);
+      }
+    }
+
+    // 調試：檢查月份數據
+    console.log("[renderLiuyue] 總月份數:", ordered.length, "bounds:", bounds.length);
+    console.log("[renderLiuyue] ziweiPalaceMetadata 可用:", !!ziweiPalaceMetadata);
+    console.log("[renderLiuyue] 前5個月份 range:", ordered.slice(0, 5).map(b => b.range));
+    console.log("[renderLiuyue] 所有月份 range 樣本:", ordered.map(b => b.range).join(", "));
+    
+    // 確保所有月份都被渲染（即使 monthNum 為 0）
+    ordered.forEach((b, index) => {
       const monthNum = parseMonthFromRange(b.range);
-      const isCurrent = currentMonth2026 != null && monthNum === currentMonth2026;
+      // 如果解析失敗，使用索引+1作為月份編號（fallback）
+      const displayMonthNum = monthNum || (index + 1);
+      
+      // 如果解析失敗，記錄警告（但繼續渲染）
+      if (!monthNum && b.range) {
+        console.warn("[renderLiuyue] 無法解析月份:", b.range, "使用 fallback:", displayMonthNum);
+      }
+      const isCurrent = currentMonth2026 != null && displayMonthNum === currentMonth2026;
       const isRed = b.light === "RED";
       const risk = Math.max(0, Math.min(100, Number(b.riskScore) || 0));
-      const badge = getMonthBadge(b);
       const subtitle = getMonthSubtitle(b);
-      const barColor = riskToEnergyColor(risk);
+      // 移除 badge，改用星等分级系统
+
+      // 獲取流月星等（與紫微對應）
+      // 使用 displayMonthNum 作為 key（如果 monthNum 為 0，使用 fallback）
+      const ratingKey = monthNum || displayMonthNum;
+      const monthlyRating = monthlyStarRatings[ratingKey] || monthlyStarRatings[monthNum] || null;
+      const starsHtml = monthlyRating ? renderStars(monthlyRating.stars) : "";
+      const statusLabel = monthlyRating ? monthlyRating.statusLabel : "";
+      const colorCode = monthlyRating ? monthlyRating.colorCode : "amber";
+      const correlationNote = monthlyRating ? monthlyRating.correlationNote : "";
+
+      // 根據星等顏色設置卡片樣式
+      const borderColorClass = getBorderColorClass(colorCode);
+      const bgColorClass = getBgColorClass(colorCode);
+      // 如果沒有星等數據，使用舊的風險指數顏色
+      const barColorFromStars = monthlyRating ? getColorFromCode(colorCode) : (risk <= 35 ? "rgb(34, 197, 94)" : risk <= 65 ? "rgb(234, 179, 8)" : "rgb(239, 68, 68)");
 
       const wrap = document.createElement("div");
       wrap.className = "liuyue-month-wrap";
@@ -466,26 +580,26 @@
       const card = document.createElement("button");
       card.type = "button";
       card.className =
-        "liuyue-card monthly-flow-card w-full text-left flex flex-col gap-1.5 p-3 rounded-xl border border-white/15 transition " +
+        `liuyue-card monthly-flow-card w-full text-left flex flex-col gap-1.5 p-3 rounded-xl border ${borderColorClass} transition ` +
         (isCurrent ? " is-current" : "") +
-        (isRed ? " hover:border-amber-500/30 hover:bg-amber-500/5" : " hover:border-amber-400/20 hover:bg-white/5");
-
-      const badgeHtml = badge
-        ? `<span class="liuyue-badge liuyue-badge-${badge.type} shrink-0 text-[10px] font-bold px-2 py-1 rounded-md border">${badge.text}</span>`
-        : "";
+        ` hover:${bgColorClass}`;
 
       card.innerHTML = `
         <div class="flex items-center justify-between gap-2">
           <div class="min-w-0 flex-1">
             <div class="font-black text-sm text-slate-50">
-              ${monthNum ? monthNum + "月" : ""} ${b.gz || ""}
+              ${displayMonthNum ? displayMonthNum + "月" : ""} ${b.gz || ""}
               ${isCurrent ? "<span class=\"text-amber-400 text-[10px] ml-1\">（當月）</span>" : ""}
             </div>
+            ${starsHtml ? `<div class="flex items-center gap-1.5 mt-1">
+              <span class="text-[10px] leading-none">${starsHtml}</span>
+              ${statusLabel ? `<span class="text-[9px] text-slate-500">${esc(statusLabel)}</span>` : ""}
+            </div>` : ""}
+            ${correlationNote ? `<div class="text-[9px] text-slate-400 mt-0.5 italic">${esc(correlationNote)}</div>` : ""}
           </div>
-          ${badgeHtml}
         </div>
-        <div class="liuyue-energy-bar mt-1.5" title="風險指數 ${risk}">
-          <div class="liuyue-energy-fill" style="width:${risk}%; background:${barColor};"></div>
+        <div class="liuyue-energy-bar mt-1.5" title="能量指數 ${monthlyRating ? Math.round(monthlyRating.energyScore) : risk}">
+          <div class="liuyue-energy-fill" style="width:${monthlyRating ? monthlyRating.energyScore : risk}%; background:${barColorFromStars};"></div>
         </div>
       `;
 
@@ -497,7 +611,6 @@
       const reasons = (b.reasonTags || []).join("．");
       expand.innerHTML = `
         <div class="p-3 mt-1 rounded-xl border border-amber-400/20 bg-black/30 text-[11px] leading-relaxed space-y-2">
-          <p class="text-amber-200/90 font-medium">${subtitle}</p>
           <div class="text-slate-400 uppercase tracking-wider">十神技術參數</div>
           <div class="text-slate-200">干 ${b.ssStem || "—"} ／ 支 ${b.ssBranch || "—"}${reasons ? " · " + reasons : ""}</div>
           <div class="text-amber-200/90 font-medium pt-1 border-t border-white/10">李伯彥老師助推建議</div>
@@ -560,6 +673,12 @@
     sheet.classList.remove("open");
     if (backdrop) backdrop.classList.add("hidden");
     document.body.style.overflow = "";
+    // 清除當前選中的宮位追蹤（如果有的話）
+    if (window.BaziApp?.State) {
+      window.BaziApp.State.setState("currentSelectedPalace", null);
+    } else if (window.currentSelectedPalace) {
+      window.currentSelectedPalace = null;
+    }
   }
 
   // ====== Generic "sheet" content (reuse palace bottom sheet) ======
@@ -769,8 +888,11 @@
           const block = document.getElementById("palaceStrategyBlock");
           if (!block) return;
           if (advice && advice !== "（暫無戰略提示）") {
-            const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-            block.outerHTML = "<div class=\"p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">戰略金句</div><div class=\"text-sm text-amber-100/95 leading-relaxed\">" + esc(advice) + "</div></div>";
+            const escLocal = window.Utils?.escHtml || ((s) => {
+              if (s == null) return "";
+              return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+            });
+            block.outerHTML = "<div class=\"p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">戰略金句</div><div class=\"text-sm text-amber-100/95 leading-relaxed\">" + escLocal(advice) + "</div></div>";
           } else {
             block.textContent = "";
           }
@@ -787,7 +909,10 @@
         const block = document.getElementById("palaceStrategyBlock");
         if (!block) return;
         if (advice && advice !== "（暫無戰略提示）") {
-          const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+          const esc = window.Utils?.escHtml || ((s) => {
+            if (s == null) return "";
+            return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+          });
           block.outerHTML = "<div class=\"p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">戰略金句</div><div class=\"text-sm text-amber-100/95 leading-relaxed\">" + esc(advice) + "</div></div>";
         } else {
           block.textContent = "";
@@ -1095,9 +1220,6 @@
           cmd || `（資料庫尚未填入「${dominant || "—"}」的十神指令。你可以先在 ten_god_analysis 補上 2026 內容。）`;
       }
 
-      // liuyue
-      renderLiuyue(bazi);
-
       // 小限／四化（可與後端 iztro horoscope 並用）
       const horoscope = ziwei?.horoscope || getHoroscopeFromAge(getCurrentAge(), lastGender, ziwei, bazi);
 
@@ -1115,6 +1237,9 @@
         // 更新 window.ziweiScores 以便其他地方使用
         window.ziweiScores = scores;
         renderZiweiScores(scores, horoscope, ziwei);
+        
+        // 在紫微計算完成後再渲染流月，確保 ziweiPalaceMetadata 已準備好
+        renderLiuyue(bazi);
       }).catch(function (err) {
         console.error("計算宮位分數失敗:", err);
         // 如果新算法計算失敗，嘗試使用後端數據作為 fallback
@@ -1124,6 +1249,8 @@
         } else {
           renderZiweiScores({ palaceScores: {}, elementRatios: ziweiScores?.elementRatios || {} }, horoscope, ziwei);
         }
+        // 即使計算失敗，也渲染流月（使用現有數據）
+        renderLiuyue(bazi);
       });
 
       // tactical panel
@@ -1292,7 +1419,9 @@
         }
         
         // 獲取該宮位的元數據（戰略建議、星等上限、L7 主觀頻率修正）
-        const metadata = window.ziweiPalaceMetadata?.[name] || {};
+        // 優先使用狀態管理器，否則使用直接訪問（向後兼容）
+        const palaceMetadata = (window.BaziApp?.State?.getState("ziweiPalaceMetadata")) || window.ziweiPalaceMetadata || {};
+        const metadata = palaceMetadata[name] || {};
         const maxStarRating = metadata.maxStarRating || null;
         const strategicAdvice = metadata.strategicAdvice || [];
         const isSubjectiveFocus = metadata.isSubjectiveFocus || false;
@@ -1324,11 +1453,16 @@
         }));
       }
 
-      const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      const esc = window.Utils?.escHtml || ((s) => {
+        if (s == null) return "";
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      });
       palaceBox.innerHTML = sorted
         .map((r, i) => {
           // 優先使用 L9 輸出（如果存在）
-          const l9Output = window.ziweiPalaceMetadata?.[r.name]?.l9Output;
+          // 優先使用狀態管理器，否則使用直接訪問（向後兼容）
+          const palaceMetadata = (window.BaziApp?.State?.getState("ziweiPalaceMetadata")) || window.ziweiPalaceMetadata || {};
+          const l9Output = palaceMetadata[r.name]?.l9Output;
           
           if (l9Output) {
             // 使用 L9 完整語義輸出
@@ -1425,12 +1559,47 @@
 
       if (!palaceBox.hasAttribute("data-palace-click-bound")) {
         palaceBox.setAttribute("data-palace-click-bound", "1");
+        // 使用狀態管理器追蹤當前選中的宮位（優先），或直接使用 window（向後兼容）
+        if (window.BaziApp?.State) {
+          window.BaziApp.State.setState("currentSelectedPalace", null);
+        } else {
+          window.currentSelectedPalace = null;
+        }
+        
         palaceBox.addEventListener("click", function (e) {
           var row = e.target.closest("[data-palace-name]");
           if (!row) return;
           var name = row.getAttribute("data-palace-name");
           if (!name) return;
+          
+          // 如果點擊的是同一個宮位，則收合（toggle）
+          if (window.innerWidth < 1280) {
+            const sheet = document.getElementById("palaceSheet");
+            const isCurrentlyOpen = sheet && sheet.classList.contains("open");
+            // 優先使用狀態管理器獲取當前選中的宮位
+            const currentPalace = window.BaziApp?.State?.getState("currentSelectedPalace") || window.currentSelectedPalace;
+            const isSamePalace = currentPalace === name;
+            
+            if (isSamePalace && isCurrentlyOpen) {
+              // 點擊相同宮位且已展開，則收合
+              closePalaceSheet();
+              if (window.BaziApp?.State) {
+                window.BaziApp.State.setState("currentSelectedPalace", null);
+              } else {
+                window.currentSelectedPalace = null;
+              }
+              return;
+            }
+          }
+          
+          // 否則展開新宮位
           selectPalace(name);
+          if (window.BaziApp?.State) {
+            window.BaziApp.State.setState("currentSelectedPalace", name);
+          } else {
+            window.currentSelectedPalace = name;
+          }
+          
           if (window.innerWidth < 1280) {
             openPalaceSheet();
           } else {
@@ -1444,7 +1613,35 @@
           e.preventDefault();
           var name = row.getAttribute("data-palace-name");
           if (!name) return;
+          
+          // 如果按鍵觸發的是同一個宮位，則收合（toggle）
+          if (window.innerWidth < 1280) {
+            const sheet = document.getElementById("palaceSheet");
+            const isCurrentlyOpen = sheet && sheet.classList.contains("open");
+            // 優先使用狀態管理器獲取當前選中的宮位
+            const currentPalace = window.BaziApp?.State?.getState("currentSelectedPalace") || window.currentSelectedPalace;
+            const isSamePalace = currentPalace === name;
+            
+            if (isSamePalace && isCurrentlyOpen) {
+              // 按鍵觸發相同宮位且已展開，則收合
+              closePalaceSheet();
+              if (window.BaziApp?.State) {
+                window.BaziApp.State.setState("currentSelectedPalace", null);
+              } else {
+                window.currentSelectedPalace = null;
+              }
+              return;
+            }
+          }
+          
+          // 否則展開新宮位
           selectPalace(name);
+          if (window.BaziApp?.State) {
+            window.BaziApp.State.setState("currentSelectedPalace", name);
+          } else {
+            window.currentSelectedPalace = name;
+          }
+          
           if (window.innerWidth < 1280) {
             openPalaceSheet();
           } else {
@@ -1703,6 +1900,11 @@
     }
 
     function esc(s) {
+      // 優先使用全局工具函數
+      if (window.Utils?.escHtml) {
+        return window.Utils.escHtml(s);
+      }
+      // Fallback: 本地實現
       if (s == null) return "";
       return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
@@ -1855,11 +2057,45 @@
 
   // ====== BOOT ======
   document.addEventListener("DOMContentLoaded", async () => {
-    initSelectors();
-    initIdentifyBirthTime();
-    syncNavChipActive();
-    document.getElementById("btnLaunch").addEventListener("click", calculate);
-    await loadDbContent();
+    // 檢查必要依賴
+    if (!window.Calc) {
+      console.error("[ui.js] window.Calc not found! Make sure calc.js is loaded before ui.js");
+      const hint = document.getElementById("hint");
+      if (hint) {
+        hint.textContent = "系統載入失敗，請刷新頁面重試";
+        hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
+      }
+      return;
+    }
+    
+    try {
+      initSelectors();
+      initIdentifyBirthTime();
+      syncNavChipActive();
+      
+      // 綁定啟動按鈕事件
+      const btnLaunch = document.getElementById("btnLaunch");
+      if (btnLaunch) {
+        btnLaunch.addEventListener("click", function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          try {
+            calculate();
+          } catch (err) {
+            console.error("啟動引擎失敗:", err);
+            const hint = document.getElementById("hint");
+            if (hint) {
+              hint.textContent = "啟動失敗：" + (err.message || "未知錯誤");
+              hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
+            }
+          }
+        });
+        console.log("[ui.js] 啟動按鈕事件已綁定");
+      } else {
+        console.error("[ui.js] 找不到啟動按鈕 #btnLaunch");
+      }
+      
+      await loadDbContent();
 
     // Click radar/bars → show Five Elements meanings (same behavior as palace click)
     [
@@ -1910,8 +2146,50 @@
     // Mobile Bottom Sheet 關閉事件
     const closeBtn = document.getElementById("palaceSheetClose");
     const backdrop = document.getElementById("palaceSheetBackdrop");
-    if (closeBtn) closeBtn.addEventListener("click", closePalaceSheet);
+    const palaceSheet = document.getElementById("palaceSheet");
+    const mobilePalaceBody = document.getElementById("mobilePalaceBody");
+    
+    // 收合按钮点击事件
+    if (closeBtn) {
+      closeBtn.addEventListener("click", function(e) {
+        e.stopPropagation(); // 阻止事件冒泡，避免触发内容区域的点击事件
+        closePalaceSheet();
+      });
+    }
+    
+    // 背景遮罩点击事件
     if (backdrop) backdrop.addEventListener("click", closePalaceSheet);
+    
+    // 说明内容区域任意点击即可收回
+    if (mobilePalaceBody) {
+      mobilePalaceBody.addEventListener("click", function(e) {
+        // 如果点击的是链接或按钮，不关闭（让用户可以正常操作）
+        if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON' || e.target.closest('a') || e.target.closest('button')) {
+          return;
+        }
+        closePalaceSheet();
+      });
+    }
+    
+    // 整个 sheet 区域点击也可以关闭（除了按钮和链接）
+    if (palaceSheet) {
+      palaceSheet.addEventListener("click", function(e) {
+        // 如果点击的是按钮、链接或标题区域，不关闭
+        if (e.target.id === 'palaceSheetClose' || 
+            e.target.closest('#palaceSheetClose') ||
+            e.target.closest('.palace-sheet-header') ||
+            e.target.tagName === 'A' || 
+            e.target.tagName === 'BUTTON' ||
+            e.target.closest('a') || 
+            e.target.closest('button')) {
+          return;
+        }
+        closePalaceSheet();
+      });
+    }
+    } catch (err) {
+      console.error("[ui.js] DOMContentLoaded 初始化失敗:", err);
+    }
   });
 })();
 
