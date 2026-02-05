@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>模块加载测试</title>
+</head>
+<body>
+  <h1>Phase 2 模块加载测试</h1>
+  <div id="results"></div>
+
+  <script src="js/utils.js?v=1"></script>
+  <script src="js/config.js?v=1"></script>
+  <script src="js/state.js?v=1"></script>
+  <script src="js/calc/constants.js?v=1"></script>
+  <script src="js/calc/helpers.js?v=1"></script>
+  <script src="js/calc/ziweiPipeline.js?v=1"></script>
+  <script src="js/calc/ziweiOutput.js?v=1"></script>
+  <script src="js/strategyConfig.js?v=2"></script>
+  <script src="js/calc.js?v=2"></script>
+
+  <script>
+    const results = [];
+    const div = document.getElementById('results');
+
+    function test(name, condition, details = '') {
+      const passed = condition;
+      results.push({ name, passed, details });
+      const color = passed ? 'green' : 'red';
+      const icon = passed ? '✓' : '✗';
+      div.innerHTML += `<div style="color: ${color}; margin: 5px 0;">
+        <strong>${icon} ${name}</strong> ${details ? `: ${details}` : ''}
+      </div>`;
+    }
+
+    // 测试模块加载
+    test('CalcConstants 模块', typeof window.CalcConstants !== 'undefined', 
+      window.CalcConstants ? `包含 ${Object.keys(window.CalcConstants).length} 个常量` : '未加载');
+    
+    test('CalcHelpers 模块', typeof window.CalcHelpers !== 'undefined',
+      window.CalcHelpers ? `包含 ${Object.keys(window.CalcHelpers).length} 个函数` : '未加载');
+    
+    test('CalcPipeline 模块', typeof window.CalcPipeline !== 'undefined',
+      window.CalcPipeline ? `包含 ${Object.keys(window.CalcPipeline).length} 个函数` : '未加载');
+    
+    test('CalcOutput 模块', typeof window.CalcOutput !== 'undefined',
+      window.CalcOutput ? `包含 ${Object.keys(window.CalcOutput).length} 个函数` : '未加载');
+    
+    test('Calc 主模块', typeof window.Calc !== 'undefined',
+      window.Calc ? `包含 ${Object.keys(window.Calc).length} 个导出函数` : '未加载');
+
+    // 测试关键函数
+    if (window.CalcConstants) {
+      test('PALACE_DEFAULT 常量', Array.isArray(window.CalcConstants.PALACE_DEFAULT),
+        window.CalcConstants.PALACE_DEFAULT ? `包含 ${window.CalcConstants.PALACE_DEFAULT.length} 个宫位` : '');
+    }
+
+    if (window.CalcHelpers) {
+      test('pad2 函数', typeof window.CalcHelpers.pad2 === 'function');
+      test('getStarsForPalace 函数', typeof window.CalcHelpers.getStarsForPalace === 'function');
+    }
+
+    if (window.CalcPipeline) {
+      test('executePipeline 函数', typeof window.CalcPipeline.executePipeline === 'function');
+      test('computeSinglePalaceScore 函数', typeof window.CalcPipeline.computeSinglePalaceScore === 'function');
+      test('applySpatialAggregation 函数', typeof window.CalcPipeline.applySpatialAggregation === 'function');
+    }
+
+    if (window.CalcOutput) {
+      test('finalizeStarRating 函数', typeof window.CalcOutput.finalizeStarRating === 'function');
+      test('mapScoreToStarRating 函数', typeof window.CalcOutput.mapScoreToStarRating === 'function');
+      test('parseMonthFromRange 函数', typeof window.CalcOutput.parseMonthFromRange === 'function');
+    }
+
+    if (window.Calc) {
+      test('computeAllPalaceScores 函数', typeof window.Calc.computeAllPalaceScores === 'function');
+      test('finalizeStarRating 导出', typeof window.Calc.finalizeStarRating === 'function');
+      test('computeMonthlyStarRating 导出', typeof window.Calc.computeMonthlyStarRating === 'function');
+    }
+
+    // 总结
+    const passed = results.filter(r => r.passed).length;
+    const total = results.length;
+    div.innerHTML += `<hr><div style="margin-top: 20px; font-size: 18px; font-weight: bold;">
+      测试结果: ${passed}/${total} 通过
+    </div>`;
+
+    console.log('测试结果:', results);
+  </script>
+</body>
+</html>

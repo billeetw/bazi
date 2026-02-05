@@ -427,88 +427,64 @@
         }
       }
 
-      // 使用数据渲染服务模块
-      const DataRenderer = window.UiServices?.DataRenderer || {};
-      
-      // 渲染八字和五行数据
-      if (DataRenderer.renderBaziData) {
-        DataRenderer.renderBaziData({
-          bazi,
-          renderPillars,
-          renderBar,
-          renderRadarChart,
-          renderFiveElementComment,
-        });
-      } else {
-        // Fallback
-        renderPillars(bazi);
-        renderBar("surfaceWxBars", bazi.wuxing?.surface, 4);
-        renderRadarChart("surfaceWxRadar", bazi.wuxing?.surface);
-        renderFiveElementComment("surfaceWxComment", bazi.wuxing?.surface, "surface");
-        renderBar("strategicWxBars", bazi.wuxing?.strategic, bazi.wuxing?.maxStrategic || 1);
-        renderRadarChart("strategicWxRadar", bazi.wuxing?.strategic);
-        renderFiveElementComment("strategicWxComment", bazi.wuxing?.strategic, "strategic");
-      }
+      // bazi + canggan + bars
+      renderPillars(bazi);
+      const surfaceBoard = typeof window.Calc?.getBoyanBoard === "function" ? (() => { try { return window.Calc.getBoyanBoard(bazi.wuxing?.surface || {}); } catch (_) { return null; } })() : null;
+      const strategicBoard = typeof window.Calc?.getBoyanBoard === "function" ? (() => { try { return window.Calc.getBoyanBoard(bazi.wuxing?.strategic || {}); } catch (_) { return null; } })() : null;
+      renderBar("surfaceWxBars", bazi.wuxing?.surface, 4, surfaceBoard ? { strongest: surfaceBoard.strongest, weakest: surfaceBoard.weakest } : undefined);
+      renderRadarChart("surfaceWxRadar", bazi.wuxing?.surface);
+      renderFiveElementComment("surfaceWxComment", bazi.wuxing?.surface, "surface");
+      renderBar("strategicWxBars", bazi.wuxing?.strategic, bazi.wuxing?.maxStrategic || 1, strategicBoard ? { strongest: strategicBoard.strongest, weakest: strategicBoard.weakest } : undefined);
+      renderRadarChart("strategicWxRadar", bazi.wuxing?.strategic);
+      renderFiveElementComment("strategicWxComment", bazi.wuxing?.strategic, "strategic");
 
-      // 渲染十神指令
-      if (DataRenderer.renderTenGodCommand) {
-        DataRenderer.renderTenGodCommand({ bazi, dbContent });
-      } else {
-        // Fallback
-        const dominant = (bazi.tenGod?.dominant || "").trim();
-        const cmd = dominant && dbContent.tenGods?.[dominant] ? dbContent.tenGods[dominant] : "";
-        const tenGodEl = document.getElementById("tenGodCommand");
-        if (tenGodEl) {
-          tenGodEl.textContent = cmd || `（資料庫尚未填入「${dominant || "—"}」的十神指令。你可以先在 ten_god_analysis 補上 2026 內容。）`;
-        }
+      // tenGod command box (DB first)
+      const dominant = (bazi.tenGod?.dominant || "").trim();
+      const cmd = dominant && dbContent.tenGods?.[dominant] ? dbContent.tenGods[dominant] : "";
+      const tenGodEl = document.getElementById("tenGodCommand");
+      if (tenGodEl) {
+        tenGodEl.textContent =
+          cmd || `（資料庫尚未填入「${dominant || "—"}」的十神指令。你可以先在 ten_god_analysis 補上 2026 內容。）`;
       }
 
       // 小限／四化（可與後端 iztro horoscope 並用）
       const horoscope = ziwei?.horoscope || getHoroscopeFromAge(getCurrentAge(), lastGender, ziwei, bazi);
 
-      // 渲染紫微和流月数据（异步）
-      if (DataRenderer.renderZiweiAndLiuyue) {
-        DataRenderer.renderZiweiAndLiuyue({
-          ziwei,
-          horoscope,
-          bazi,
-          ziweiScores,
-          renderZiwei,
-          renderZiweiScores,
-          renderLiuyue,
-          selectPalace,
-          computeAllPalaceScores,
-          updateAnnualTactics,
-          selectedPalace: "命宮",
-        }).then(() => {
-          // 默认选择命宫
-          if (ziwei) {
-            selectPalace("命宮");
-          }
-        });
-      } else {
-        // Fallback
-        renderZiwei(ziwei, horoscope);
-        computeAllPalaceScores(ziwei, horoscope).then(function (computedScores) {
-          const scores = {
-            palaceScores: computedScores,
-            elementRatios: ziweiScores?.elementRatios || {},
-          };
-          window.ziweiScores = scores;
-          renderZiweiScores(scores, horoscope, ziwei);
-          renderLiuyue(bazi);
-          updateAnnualTactics(bazi, horoscope, ziwei);
-          if (ziwei) selectPalace("命宮");
-        }).catch(function (err) {
-          console.error("計算宮位分數失敗:", err);
-          if (ziweiScores?.palaceScores) {
-            renderZiweiScores(ziweiScores, horoscope, ziwei);
-          }
-          renderLiuyue(bazi);
-          updateAnnualTactics(bazi, horoscope, ziwei);
-          if (ziwei) selectPalace("命宮");
-        });
-      }
+      // ziwei grid
+      renderZiwei(ziwei, horoscope);
+
+      // 紫微分數（使用新的權重算法計算：ziweiWeights.json + 三方四正 + 四化 + 雜曜神煞）
+      // 優先使用前端新算法計算，確保所有宮位強度都基於最新的權重系統
+      computeAllPalaceScores(ziwei, horoscope).then(function (computedScores) {
+        // 使用新算法計算的分數，保留後端 API 的其他數據（如 elementRatios）
+        const scores = {
+          palaceScores: computedScores,
+          elementRatios: ziweiScores?.elementRatios || {},
+        };
+        // 更新 window.ziweiScores 以便其他地方使用
+        window.ziweiScores = scores;
+        renderZiweiScores(scores, horoscope, ziwei);
+        
+        // 在紫微計算完成後再渲染流月，確保 ziweiPalaceMetadata 已準備好
+        renderLiuyue(bazi);
+        
+        // 更新年度戰術建議（在紫微和流月數據都準備好後）
+        updateAnnualTactics(bazi, horoscope, ziwei);
+      }).catch(function (err) {
+        console.error("計算宮位分數失敗:", err);
+        // 如果新算法計算失敗，嘗試使用後端數據作為 fallback
+        if (ziweiScores && ziweiScores.palaceScores) {
+          console.warn("使用後端 API 數據作為 fallback");
+          renderZiweiScores(ziweiScores, horoscope, ziwei);
+        } else {
+          renderZiweiScores({ palaceScores: {}, elementRatios: ziweiScores?.elementRatios || {} }, horoscope, ziwei);
+        }
+        // 即使計算失敗，也渲染流月（使用現有數據）
+        renderLiuyue(bazi);
+        
+        // 更新年度戰術建議（即使計算失敗也嘗試更新）
+        updateAnnualTactics(bazi, horoscope, ziwei);
+      });
 
       // 初始戰術建議（僅基於五行和十神，不依賴紫微數據）
       if (CalculationFlow.renderTactics) {
@@ -569,43 +545,17 @@
         }
       }
 
-      // 默认选择命宫（在数据渲染完成后）
-      // 注意：这个逻辑现在在 DataRenderer.renderZiweiAndLiuyue 的 Promise 回调中处理
-      // 如果使用 fallback，则在这里处理
-      if (!DataRenderer.renderZiweiAndLiuyue && ziwei) {
-        // Fallback 情况下，selectPalace 会在 Promise 回调中调用
+      // default select 命宮
+      if (ziwei) {
+        selectPalace("命宮");
+      } else {
+        document.getElementById("palaceTitle").textContent = "紫微暫不可用";
+        document.getElementById("palaceDetailBody").innerHTML = `<div class="p-4 rounded-xl border border-white/10 bg-white/5 text-sm text-slate-300">
+          後端 iztro 可能出錯（或打包問題）。請先確認 worker build/依賴，再重試。
+        </div>`;
       }
 
       document.getElementById("ws-summary")?.scrollIntoView({ behavior: "smooth", block: "start" });
-
-      // 整合反馈系统到界面
-      if (chartId && window.UiComponents?.FeedbackIntegration) {
-        try {
-          // 使用整合模块，自动添加到多个位置
-          window.UiComponents.FeedbackIntegration.integrateFeedback(chartId, {
-            showInSummary: true,      // 在摘要区域添加反馈链接
-            showInNav: true,          // 在导航栏添加反馈链接
-            showInBottomNav: true,    // 在移动端底部导航添加
-            showPrompts: false,       // 不在各个section添加提示（可选）
-            showDelayedPrompt: false, // 不显示延迟提示（可选）
-          });
-          console.log("[ui.js] 反馈系统整合成功");
-        } catch (err) {
-          console.error("[ui.js] 反馈系统整合失败:", err);
-          // Fallback: 只创建浮动按钮
-          if (window.UiComponents?.FeedbackWidget) {
-            window.UiComponents.FeedbackWidget.createFeedbackButton({ chartId });
-          }
-        }
-      } else if (chartId && window.UiComponents?.FeedbackWidget) {
-        // Fallback: 只创建浮动按钮
-        try {
-          window.UiComponents.FeedbackWidget.createFeedbackButton({ chartId });
-          console.log("[ui.js] 反馈按钮创建成功（仅浮动按钮）");
-        } catch (err) {
-          console.error("[ui.js] Failed to create feedback button:", err);
-        }
-      }
     } catch (e) {
       console.error(e);
       alert("系統忙碌中或資料有誤，請稍後再試。\n\n詳細：" + (e?.message || e));
@@ -742,6 +692,267 @@
   const initIdentifyBirthTime = BirthTimeIdentifier.initIdentifyBirthTime || function() {
     console.warn("[ui.js] BirthTimeIdentifier component not available");
   };
+    if (typeof window.IdentifyBirthTime === "undefined") return;
+
+    const btn = document.getElementById("btnIdentifyBirthTime");
+    const modal = document.getElementById("identifyBirthTimeModal");
+    const backdrop = document.getElementById("identifyBirthTimeBackdrop");
+    const form = document.getElementById("identifyBirthTimeForm");
+    const questionsEl = document.getElementById("identifyBirthTimeQuestions");
+    const progressText = document.getElementById("identifyBirthTimeProgressText");
+    const progressBar = document.getElementById("identifyBirthTimeProgressBar");
+    const prevBtn = document.getElementById("identifyBirthTimePrev");
+    const nextBtn = document.getElementById("identifyBirthTimeNext");
+    const submitBtn = document.getElementById("identifyBirthTimeSubmit");
+    const closeBtn = document.getElementById("identifyBirthTimeClose");
+
+    const timeMode = document.getElementById("timeMode");
+    const exactRow = document.getElementById("exactTimeRow");
+    const shichenRow = document.getElementById("shichenRow");
+    const birthShichen = document.getElementById("birthShichen");
+    const birthShichenHalf = document.getElementById("birthShichenHalf");
+
+    const ceremonyBackdrop = document.getElementById("ceremonyBackdrop");
+    const ceremonyModal = document.getElementById("ceremonyModal");
+    const ceremonyLine0 = document.getElementById("ceremonyLine0");
+    const ceremonyLine1 = document.getElementById("ceremonyLine1");
+    const ceremonyLine2 = document.getElementById("ceremonyLine2");
+    const ceremonyConfirm = document.getElementById("ceremonyConfirm");
+
+    var pendingCeremonyResult = null;
+    var ceremonyTypewriterTimer = null;
+
+    if (!modal || !backdrop || !form || !questionsEl) return;
+
+    var questions = window.IdentifyBirthTime.questions;
+    var total = questions.length;
+    var currentIndex = 0;
+    var answers = {};
+
+    function openModal() {
+      currentIndex = 0;
+      answers = {};
+      if (timeMode && timeMode.value !== "shichen") {
+        timeMode.value = "shichen";
+        timeMode.dispatchEvent(new Event("change"));
+      }
+      if (exactRow) exactRow.classList.add("hidden");
+      if (shichenRow) shichenRow.classList.remove("hidden");
+      backdrop.classList.remove("hidden");
+      backdrop.setAttribute("aria-hidden", "false");
+      modal.classList.remove("hidden");
+      renderQuestion(0);
+      updateProgress(0);
+      updateButtons();
+    }
+
+    function closeModal() {
+      backdrop.classList.add("hidden");
+      backdrop.setAttribute("aria-hidden", "true");
+      modal.classList.add("hidden");
+    }
+
+    function closeCeremony() {
+      if (ceremonyBackdrop) ceremonyBackdrop.classList.remove("ceremony-visible");
+      if (ceremonyModal) ceremonyModal.classList.remove("ceremony-visible");
+      if (ceremonyTypewriterTimer) {
+        clearTimeout(ceremonyTypewriterTimer);
+        ceremonyTypewriterTimer = null;
+      }
+    }
+
+    function openCeremony(result) {
+      var branch = result && result.branch ? result.branch : "子";
+      var half = result && result.half === "lower" ? "lower" : "upper";
+      var text = CEREMONY_PERSONALITY_KEYS[branch] || CEREMONY_PERSONALITY_KEYS["子"];
+      pendingCeremonyResult = { branch: branch, half: half, hour_label: result && result.hour_label, hour_range: result && result.hour_range };
+
+      closeModal();
+      var hourLabel = (result && result.hour_label) ? result.hour_label : branch + "時";
+      if (ceremonyLine0) ceremonyLine0.textContent = "推算結果：你是" + hourLabel;
+      if (ceremonyLine1) ceremonyLine1.textContent = "";
+      if (ceremonyLine2) ceremonyLine2.textContent = "";
+      if (ceremonyConfirm) {
+        ceremonyConfirm.style.opacity = "0";
+        ceremonyConfirm.disabled = true;
+      }
+
+      if (ceremonyBackdrop) ceremonyBackdrop.classList.add("ceremony-visible");
+      if (ceremonyModal) ceremonyModal.classList.add("ceremony-visible");
+
+      if (ceremonyLine1) ceremonyLine1.textContent = "[ 系統鑑定 ]";
+      ceremonyTypewriterTimer = setTimeout(function () {
+        ceremonyTypewriterTimer = null;
+        var idx = 0;
+        var step = 55;
+        function tick() {
+          if (idx >= text.length) {
+            if (ceremonyConfirm) {
+              ceremonyConfirm.style.opacity = "1";
+              ceremonyConfirm.disabled = false;
+            }
+            return;
+          }
+          if (ceremonyLine2) ceremonyLine2.textContent = text.slice(0, idx + 1);
+          idx += 1;
+          ceremonyTypewriterTimer = setTimeout(tick, step);
+        }
+        ceremonyTypewriterTimer = setTimeout(tick, step);
+      }, 500);
+    }
+
+    function esc(s) {
+      // 優先使用全局工具函數
+      if (window.Utils?.escHtml) {
+        return window.Utils.escHtml(s);
+      }
+      // Fallback: 本地實現
+      if (s == null) return "";
+      return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function saveCurrentAnswer() {
+      var q = questions[currentIndex];
+      if (!q) return;
+      if (q.multiSelect && q.maxSelect) {
+        var checked = form.querySelectorAll('input[name="' + q.id + '"]:checked');
+        answers[q.id] = Array.prototype.slice.call(checked, 0, q.maxSelect).map(function (el) { return el.value; });
+      } else {
+        var input = form.querySelector('input[name="' + q.id + '"]:checked');
+        answers[q.id] = input ? input.value : undefined;
+      }
+    }
+
+    function renderQuestion(index) {
+      if (index < 0 || index >= total) return;
+      var q = questions[index];
+      var saved = answers[q.id];
+      var isMulti = q.multiSelect && q.maxSelect;
+      var html = '<fieldset class="border border-white/10 rounded-xl p-3"><legend class="text-xs font-bold text-slate-300 mb-2">' + esc(q.text) + "</legend>";
+      if (isMulti) html += '<p class="text-[10px] text-slate-500 mb-2">可複選，最多 ' + q.maxSelect + ' 項</p>';
+      q.options.forEach(function (opt) {
+        var id = "identify_" + q.id + "_" + opt.key;
+        var checked = false;
+        if (isMulti && Array.isArray(saved)) checked = saved.indexOf(opt.key) !== -1;
+        else if (!isMulti) checked = saved === opt.key;
+        var checkedAttr = checked ? ' checked="checked"' : "";
+        var type = isMulti ? "checkbox" : "radio";
+        html += '<label class="flex items-center gap-2 py-1 cursor-pointer"><input type="' + type + '" name="' + q.id + '" value="' + opt.key + '" id="' + id + '" class="rounded-full"' + checkedAttr + ' />';
+        html += '<span class="text-xs text-slate-200">' + esc(opt.text) + "</span></label>";
+      });
+      html += "</fieldset>";
+      questionsEl.innerHTML = html;
+      if (isMulti) {
+        form.querySelectorAll('input[name="' + q.id + '"]').forEach(function (input) {
+          input.addEventListener("change", function () {
+            var checked = form.querySelectorAll('input[name="' + q.id + '"]:checked');
+            if (checked.length > q.maxSelect) this.checked = false;
+            updateButtons();
+          });
+        });
+      }
+      bindCurrentQuestionChange();
+    }
+
+    /** 目前題目選項變更時更新按鈕（下一題／推算並填入 可否點擊） */
+    function bindCurrentQuestionChange() {
+      var q = questions[currentIndex];
+      if (!q || q.multiSelect) return;
+      form.querySelectorAll('input[name="' + q.id + '"]').forEach(function (input) {
+        input.addEventListener("change", updateButtons);
+      });
+    }
+
+    function updateProgress(index) {
+      var n = index + 1;
+      var pct = total > 0 ? Math.round((n / total) * 100) : 0;
+      if (progressText) progressText.textContent = "第 " + n + " / " + total + " 題";
+      if (progressBar) progressBar.style.width = pct + "%";
+    }
+
+    /** 目前題目是否已填答（單選至少一個、複選至少一個） */
+    function hasCurrentAnswer() {
+      var q = questions[currentIndex];
+      if (!q) return false;
+      if (q.multiSelect && q.maxSelect) {
+        var checked = form.querySelectorAll('input[name="' + q.id + '"]:checked');
+        return checked.length > 0;
+      }
+      var input = form.querySelector('input[name="' + q.id + '"]:checked');
+      return !!input;
+    }
+
+    function updateButtons() {
+      if (prevBtn) prevBtn.disabled = currentIndex <= 0;
+      if (nextBtn) {
+        nextBtn.classList.toggle("hidden", currentIndex >= total - 1);
+        nextBtn.disabled = currentIndex >= total - 1 || !hasCurrentAnswer();
+      }
+      if (submitBtn) {
+        submitBtn.classList.toggle("hidden", currentIndex < total - 1);
+        submitBtn.disabled = currentIndex < total - 1 || !hasCurrentAnswer();
+      }
+    }
+
+    function goNext() {
+      if (!hasCurrentAnswer()) return;
+      saveCurrentAnswer();
+      if (currentIndex >= total - 1) return;
+      currentIndex++;
+      renderQuestion(currentIndex);
+      updateProgress(currentIndex);
+      updateButtons();
+      bindCurrentQuestionChange();
+    }
+
+    function goPrev() {
+      if (currentIndex <= 0) return;
+      saveCurrentAnswer();
+      currentIndex--;
+      renderQuestion(currentIndex);
+      updateProgress(currentIndex);
+      updateButtons();
+    }
+
+    if (prevBtn) prevBtn.addEventListener("click", goPrev);
+    if (nextBtn) nextBtn.addEventListener("click", goNext);
+
+    if (btn) btn.addEventListener("click", openModal);
+    var btnGlobal = document.getElementById("btnIdentifyBirthTimeGlobal");
+    if (btnGlobal) btnGlobal.addEventListener("click", openModal);
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    backdrop.addEventListener("click", closeModal);
+
+    if (ceremonyConfirm) {
+      ceremonyConfirm.addEventListener("click", function () {
+        playSyncSound();
+        if (pendingCeremonyResult) {
+          if (birthShichen) birthShichen.value = pendingCeremonyResult.branch;
+          if (birthShichenHalf) birthShichenHalf.value = pendingCeremonyResult.half;
+          var hint = document.getElementById("hint");
+          var r = pendingCeremonyResult;
+          if (hint) hint.textContent = "推算結果：" + (r.hour_label || r.branch + "時") + (r.hour_range ? "（" + r.hour_range + "）" : "") + "，已選" + (r.half === "lower" ? "下半" : "上半") + "時辰。可改選後再排盤。";
+          pendingCeremonyResult = null;
+        }
+        closeCeremony();
+      });
+    }
+
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      saveCurrentAnswer();
+      var submitBtnEl = document.getElementById("identifyBirthTimeSubmit");
+      if (submitBtnEl) submitBtnEl.disabled = true;
+      window.IdentifyBirthTime.identifyBirthTimeFromAPI(answers)
+        .then(function (result) {
+          openCeremony(result);
+        })
+        .catch(function (err) {
+          var hint = document.getElementById("hint");
+          if (hint) hint.textContent = "推算失敗（" + (err && err.message ? err.message : "請稍後再試") + "）。";
+        })
+        .finally(function () {
+          if (submitBtnEl) submitBtnEl.disabled = false;
   // ====== BOOT ======
   document.addEventListener("DOMContentLoaded", async () => {
     // 檢查必要依賴
@@ -857,25 +1068,6 @@
         if (closeBtn) closeBtn.addEventListener("click", function(e) { e.stopPropagation(); closePalaceSheet(); });
         if (backdrop) backdrop.addEventListener("click", closePalaceSheet);
       }
-
-      // 应用移动端优化
-      if (window.UiUtils?.MobileHelpers) {
-        try {
-          window.UiUtils.MobileHelpers.applyMobileOptimizations();
-          
-          // 初始化紫微网格滑动切换
-          const ziweiGrid = document.querySelector('.ziwei-grid, [id*="ziwei"]');
-          if (ziweiGrid && window.UiComponents?.PalaceDetail?.selectPalace) {
-            window.UiUtils.MobileHelpers.initPalaceGridSwipe(ziweiGrid, (direction, palaceName) => {
-              window.UiComponents.PalaceDetail.selectPalace(palaceName);
-            });
-          }
-        } catch (err) {
-          console.warn("[ui.js] Mobile optimizations failed:", err);
-        }
-      }
-
-      console.log("[ui.js] DOMContentLoaded 初始化完成");
     } catch (err) {
       console.error("[ui.js] DOMContentLoaded 初始化失敗:", err);
     }

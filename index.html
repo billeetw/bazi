@@ -772,6 +772,10 @@
       transition: background 0.2s, color 0.2s;
     }
     .bottom-nav a:hover, .bottom-nav a:active { background: rgba(255,191,0,0.12); color: rgb(245,158,11); }
+    .bottom-nav .feedback-bottom-link {
+      flex: 0 0 auto;
+      min-width: 60px;
+    }
 
     /* LINE 內建瀏覽器：停用 backdrop-blur 以維持 60fps */
     body.line-browser .glass,
@@ -1191,9 +1195,45 @@
   <script src="js/utils.js?v=1"></script>
   <script src="js/config.js?v=1"></script>
   <script src="js/state.js?v=1"></script>
+  <!-- 階段2優化：拆分 calc.js 常數模組、純函數模組、Pipeline 模組、L9 輸出模組、八字核心和戰術建議模組 -->
+  <script src="js/calc/constants.js?v=1"></script>
+  <script src="js/calc/helpers.js?v=1"></script>
+  <script src="js/calc/ziweiPipeline.js?v=1"></script>
+  <script src="js/calc/ziweiOutput.js?v=1"></script>
+  <script src="js/calc/baziCore.js?v=1"></script>
+  <script src="js/calc/tactics.js?v=1"></script>
   <script src="js/strategyConfig.js?v=2"></script>
   <script src="js/calc.js?v=2"></script>
   <script src="js/identifyBirthTime.js?v=1"></script>
+  <!-- UI 常量模块（必须在 ui.js 之前加载） -->
+  <script src="js/ui/constants/ceremony-constants.js?v=1"></script>
+  <!-- UI 工具模块（必须在 ui.js 之前加载） -->
+  <script src="js/ui/utils/dom-helpers.js?v=1"></script>
+  <script src="js/ui/utils/render-helpers.js?v=1"></script>
+  <script src="js/ui/utils/strategy-tags.js?v=1"></script>
+  <script src="js/ui/utils/mobile-helpers.js?v=1"></script>
+  <!-- UI 服务模块（必须在 ui.js 之前加载） -->
+  <script src="js/ui/services/api-service.js?v=1"></script>
+  <script src="js/ui/services/navigation.js?v=1"></script>
+  <script src="js/ui/services/form-init.js?v=1"></script>
+  <script src="js/ui/services/sound-service.js?v=1"></script>
+  <script src="js/ui/services/calculation-flow.js?v=1"></script>
+  <script src="js/ui/services/event-bindings.js?v=1"></script>
+  <script src="js/ui/services/data-renderer.js?v=1"></script>
+  <script src="js/ui/services/user-identity.js?v=1"></script>
+  <script src="js/ui/services/feedback-service.js?v=3"></script>
+  <!-- UI 组件（必须在 ui.js 之前加载） -->
+  <script src="js/ui/components/wuxing-panel.js?v=1"></script>
+  <script src="js/ui/components/birth-time-identifier.js?v=1"></script>
+  <script src="js/ui/components/wuxing-meaning.js?v=1"></script>
+  <script src="js/ui/components/bazi-pillars.js?v=1"></script>
+  <script src="js/ui/components/ziwei-grid.js?v=1"></script>
+  <script src="js/ui/components/palace-scores.js?v=1"></script>
+  <script src="js/ui/components/palace-detail.js?v=1"></script>
+  <script src="js/ui/components/liuyue-month.js?v=1"></script>
+  <script src="js/ui/components/feedback-widget.js?v=1"></script>
+  <script src="js/ui/components/feedback-history.js?v=1"></script>
+  <script src="js/ui/components/feedback-integration.js?v=1"></script>
   <script src="js/ui.js?v=2"></script>
   <!-- 啟動序列掛載點與 bundle（可選：npm run build:startup 後載入，點擊「啟動人生戰略引擎」會先播 4.5s 啟動動畫） -->
   <div id="startup-root"></div>

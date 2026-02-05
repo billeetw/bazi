@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>测试反馈按钮</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+  <h1 class="text-2xl mb-4">反馈按钮测试页面</h1>
+  
+  <div class="space-y-4">
+    <button onclick="testCreateButton()" class="bg-blue-600 px-4 py-2 rounded">
+      1. 测试创建反馈按钮
+    </button>
+    
+    <button onclick="testShowDialog()" class="bg-green-600 px-4 py-2 rounded">
+      2. 测试显示反馈弹窗
+    </button>
+    
+    <button onclick="checkModules()" class="bg-purple-600 px-4 py-2 rounded">
+      3. 检查模块加载状态
+    </button>
+  </div>
+
+  <div id="log" class="mt-8 p-4 bg-gray-800 rounded text-sm font-mono" style="max-height: 400px; overflow-y: auto;"></div>
+
+  <!-- 加载必要的脚本 -->
+  <script>
+    // 模拟 window.UiServices
+    if (!window.UiServices) window.UiServices = {};
+    if (!window.UiServices.ApiService) {
+      window.UiServices.ApiService = {
+        API_BASE: 'https://17gonplay-api.billeetw.workers.dev'
+      };
+    }
+  </script>
+  <script src="js/ui/services/feedback-service.js"></script>
+  <script src="js/ui/components/feedback-widget.js"></script>
+
+  <script>
+    function log(message) {
+      const logEl = document.getElementById('log');
+      const time = new Date().toLocaleTimeString();
+      logEl.innerHTML += `[${time}] ${message}<br>`;
+      logEl.scrollTop = logEl.scrollHeight;
+      console.log(message);
+    }
+
+    function testCreateButton() {
+      log('开始测试创建反馈按钮...');
+      if (!window.UiComponents?.FeedbackWidget) {
+        log('❌ FeedbackWidget 未加载');
+        return;
+      }
+      log('✅ FeedbackWidget 已加载');
+      
+      try {
+        window.UiComponents.FeedbackWidget.createFeedbackButton({ 
+          chartId: 'test-' + Date.now() 
+        });
+        log('✅ 反馈按钮创建函数已调用');
+        
+        setTimeout(() => {
+          const btn = document.getElementById('feedback-float-btn');
+          if (btn) {
+            const rect = btn.getBoundingClientRect();
+            log(`✅ 反馈按钮存在！位置: left=${rect.left}, top=${rect.top}, width=${rect.width}, height=${rect.height}`);
+            log(`   样式: ${btn.className}`);
+            log(`   z-index: ${window.getComputedStyle(btn).zIndex}`);
+          } else {
+            log('❌ 反馈按钮未找到');
+          }
+        }, 200);
+      } catch (err) {
+        log(`❌ 错误: ${err.message}`);
+        console.error(err);
+      }
+    }
+
+    function testShowDialog() {
+      log('开始测试显示反馈弹窗...');
+      if (!window.UiComponents?.FeedbackWidget) {
+        log('❌ FeedbackWidget 未加载');
+        return;
+      }
+      
+      try {
+        window.UiComponents.FeedbackWidget.showSatisfactionDialog({
+          chartId: 'test-' + Date.now(),
+          onSubmitted: (result) => {
+            log(`✅ 反馈已提交: ${JSON.stringify(result)}`);
+          }
+        });
+        log('✅ 反馈弹窗显示函数已调用');
+      } catch (err) {
+        log(`❌ 错误: ${err.message}`);
+        console.error(err);
+      }
+    }
+
+    function checkModules() {
+      log('检查模块加载状态...');
+      log(`window.UiServices: ${!!window.UiServices}`);
+      log(`window.UiServices.FeedbackService: ${!!window.UiServices?.FeedbackService}`);
+      log(`window.UiComponents: ${!!window.UiComponents}`);
+      log(`window.UiComponents.FeedbackWidget: ${!!window.UiComponents?.FeedbackWidget}`);
+      
+      if (window.UiComponents?.FeedbackWidget) {
+        log('✅ 所有模块已加载');
+        log(`   可用方法: ${Object.keys(window.UiComponents.FeedbackWidget).join(', ')}`);
+      } else {
+        log('❌ FeedbackWidget 未加载');
+      }
+    }
+
+    // 页面加载完成后自动检查
+    window.addEventListener('DOMContentLoaded', () => {
+      log('页面加载完成');
+      checkModules();
+    });
+  </script>
+</body>
+</html>

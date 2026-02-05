@@ -19,33 +19,7 @@ export interface StartupSequenceProps {
   enableSound?: boolean;
 }
 
-/** Whoosh 音效：Web Audio API 模擬點火轉場 */
-function playWhoosh() {
-  try {
-    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(180, now);
-    osc.frequency.exponentialRampToValueAtTime(40, now + 0.4);
-    filter.type = "lowpass";
-    filter.frequency.setValueAtTime(800, now);
-    filter.frequency.exponentialRampToValueAtTime(100, now + 0.4);
-    gain.gain.setValueAtTime(0.25, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
-    osc.start(now);
-    osc.stop(now + 0.5);
-  } catch {
-    // ignore
-  }
-}
+// 音效已移除（保留動畫效果）
 
 /** 生成固定數量的粒子參數（穩定動畫，散佈全螢幕） */
 function useParticles(count: number) {
@@ -96,11 +70,7 @@ export function StartupSequence({
     return () => clearTimeout(t);
   }, [isOpen, onFinished]);
 
-  useEffect(() => {
-    if (!isOpen || !enableSound) return;
-    const t = setTimeout(() => playWhoosh(), 4000);
-    return () => clearTimeout(t);
-  }, [isOpen, enableSound]);
+  // 音效已移除（保留動畫效果）
 
   return (
     <AnimatePresence mode="wait">

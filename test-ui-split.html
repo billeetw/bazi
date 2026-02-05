@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UI 拆分测试页面</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #1e293b;
+      color: #e2e8f0;
+    }
+    .test-section {
+      background: #334155;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      border: 1px solid #475569;
+    }
+    .test-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #fbbf24;
+    }
+    .test-result {
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    .success {
+      background: #065f46;
+      color: #6ee7b7;
+    }
+    .error {
+      background: #7f1d1d;
+      color: #fca5a5;
+    }
+    .info {
+      background: #1e3a8a;
+      color: #93c5fd;
+    }
+    button {
+      background: #f59e0b;
+      color: #1e293b;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 5px;
+    }
+    button:hover {
+      background: #fbbf24;
+    }
+    #testOutput {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 UI 拆分功能测试</h1>
+  
+  <div class="test-section">
+    <div class="test-title">1. 模块加载检查</div>
+    <div id="moduleCheck" class="test-result info">检查中...</div>
+  </div>
+
+  <div class="test-section">
+    <div class="test-title">2. 工具函数可用性</div>
+    <div id="functionCheck" class="test-result info">检查中...</div>
+  </div>
+
+  <div class="test-section">
+    <div class="test-title">3. 功能测试</div>
+    <button onclick="testAnimateValue()">测试 animateValue</button>
+    <button onclick="testRenderBar()">测试 renderBar</button>
+    <button onclick="testRenderRadar()">测试 renderRadarChart</button>
+    <div id="functionTest" class="test-result info">点击按钮测试功能</div>
+  </div>
+
+  <div class="test-section">
+    <div class="test-title">4. 测试输出</div>
+    <div id="testOutput"></div>
+  </div>
+
+  <!-- 加载必要的依赖 -->
+  <script src="js/utils.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/calc/constants.js"></script>
+  <script src="js/calc/helpers.js"></script>
+  <script src="js/calc/ziweiPipeline.js"></script>
+  <script src="js/calc/ziweiOutput.js"></script>
+  <script src="js/calc/baziCore.js"></script>
+  <script src="js/calc/tactics.js"></script>
+  <script src="js/strategyConfig.js"></script>
+  <script src="js/calc.js"></script>
+  
+  <!-- UI 工具模块 -->
+  <script src="js/ui/utils/dom-helpers.js"></script>
+  <script src="js/ui/utils/render-helpers.js"></script>
+
+  <script>
+    function log(message, type = 'info') {
+      const output = document.getElementById('testOutput');
+      const div = document.createElement('div');
+      div.className = `test-result ${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      output.appendChild(div);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    // 1. 模块加载检查
+    function checkModules() {
+      const moduleCheck = document.getElementById('moduleCheck');
+      const checks = [];
+      
+      if (window.UiDomHelpers) {
+        checks.push('✅ window.UiDomHelpers 已加载');
+        log('window.UiDomHelpers 已加载', 'success');
+      } else {
+        checks.push('❌ window.UiDomHelpers 未找到');
+        log('window.UiDomHelpers 未找到', 'error');
+      }
+      
+      if (window.UiRenderHelpers) {
+        checks.push('✅ window.UiRenderHelpers 已加载');
+        log('window.UiRenderHelpers 已加载', 'success');
+      } else {
+        checks.push('❌ window.UiRenderHelpers 未找到');
+        log('window.UiRenderHelpers 未找到', 'error');
+      }
+      
+      if (window.Calc) {
+        checks.push('✅ window.Calc 已加载');
+        log('window.Calc 已加载', 'success');
+      } else {
+        checks.push('⚠️ window.Calc 未找到（某些功能可能不可用）');
+        log('window.Calc 未找到', 'error');
+      }
+      
+      moduleCheck.innerHTML = checks.join('<br>');
+      moduleCheck.className = checks.some(c => c.includes('❌')) ? 'test-result error' : 'test-result success';
+    }
+
+    // 2. 工具函数可用性检查
+    function checkFunctions() {
+      const functionCheck = document.getElementById('functionCheck');
+      const checks = [];
+      
+      if (!window.UiDomHelpers || !window.UiRenderHelpers) {
+        functionCheck.innerHTML = '❌ 模块未加载，无法检查函数';
+        functionCheck.className = 'test-result error';
+        return;
+      }
+      
+      const domFunctions = [
+        'animateValue', 'getCurrentAge', 'syncAgeSliderDisplay',
+        'flashPeek', 'openPalaceSheet', 'closePalaceSheet', 'setMobileSheetContent'
+      ];
+      
+      const renderFunctions = [
+        'getSihuaForPalace', 'renderBar', 'toneClass', 'wrapForMobile',
+        'renderRadarChart', 'renderFiveElementComment', 'getColorFromCode',
+        'getBorderColorClass', 'getBgColorClass', 'getTextColorClass',
+        'getStarRating', 'renderStars', 'getMutagenBadgeHtml', 'starWithBadgeHtml'
+      ];
+      
+      domFunctions.forEach(fn => {
+        if (typeof window.UiDomHelpers[fn] === 'function') {
+          checks.push(`✅ UiDomHelpers.${fn}`);
+        } else {
+          checks.push(`❌ UiDomHelpers.${fn} 未找到`);
+        }
+      });
+      
+      renderFunctions.forEach(fn => {
+        if (typeof window.UiRenderHelpers[fn] === 'function') {
+          checks.push(`✅ UiRenderHelpers.${fn}`);
+        } else {
+          checks.push(`❌ UiRenderHelpers.${fn} 未找到`);
+        }
+      });
+      
+      functionCheck.innerHTML = checks.join('<br>');
+      const hasErrors = checks.some(c => c.includes('❌'));
+      functionCheck.className = hasErrors ? 'test-result error' : 'test-result success';
+      
+      if (!hasErrors) {
+        log('所有工具函数检查通过', 'success');
+      }
+    }
+
+    // 3. 功能测试
+    function testAnimateValue() {
+      const testDiv = document.getElementById('functionTest');
+      if (!window.UiDomHelpers || !window.UiDomHelpers.animateValue) {
+        testDiv.innerHTML = '❌ animateValue 不可用';
+        testDiv.className = 'test-result error';
+        return;
+      }
+      
+      const testEl = document.createElement('div');
+      testEl.textContent = '0';
+      testEl.style.fontSize = '24px';
+      testEl.style.fontWeight = 'bold';
+      testDiv.innerHTML = '测试 animateValue: ';
+      testDiv.appendChild(testEl);
+      testDiv.className = 'test-result info';
+      
+      window.UiDomHelpers.animateValue(testEl, 100, { duration: 1000, decimals: 0 });
+      log('animateValue 测试执行中（应该从 0 动画到 100）', 'info');
+    }
+
+    function testRenderBar() {
+      const testDiv = document.getElementById('functionTest');
+      if (!window.UiRenderHelpers || !window.UiRenderHelpers.renderBar) {
+        testDiv.innerHTML = '❌ renderBar 不可用';
+        testDiv.className = 'test-result error';
+        return;
+      }
+      
+      // 创建测试容器
+      const container = document.createElement('div');
+      container.id = 'testBarContainer';
+      container.style.marginTop = '10px';
+      testDiv.innerHTML = '测试 renderBar: ';
+      testDiv.appendChild(container);
+      testDiv.className = 'test-result info';
+      
+      const testData = { 木: 2.5, 火: 3.0, 土: 2.0, 金: 3.5, 水: 2.8 };
+      window.UiRenderHelpers.renderBar('testBarContainer', testData, 4, {
+        strongest: '金',
+        weakest: '土'
+      });
+      log('renderBar 测试执行（应该显示五行能量条）', 'info');
+    }
+
+    function testRenderRadar() {
+      const testDiv = document.getElementById('functionTest');
+      if (!window.UiRenderHelpers || !window.UiRenderHelpers.renderRadarChart) {
+        testDiv.innerHTML = '❌ renderRadarChart 不可用';
+        testDiv.className = 'test-result error';
+        return;
+      }
+      
+      if (!window.Calc) {
+        testDiv.innerHTML = '⚠️ window.Calc 未加载，renderRadarChart 需要它';
+        testDiv.className = 'test-result error';
+        return;
+      }
+      
+      // 创建测试容器
+      const container = document.createElement('div');
+      container.id = 'testRadarContainer';
+      container.style.width = '220px';
+      container.style.height = '220px';
+      container.style.marginTop = '10px';
+      testDiv.innerHTML = '测试 renderRadarChart: ';
+      testDiv.appendChild(container);
+      testDiv.className = 'test-result info';
+      
+      const testData = { 木: 2.5, 火: 3.0, 土: 2.0, 金: 3.5, 水: 2.8 };
+      window.UiRenderHelpers.renderRadarChart('testRadarContainer', testData);
+      log('renderRadarChart 测试执行（应该显示五行雷达图）', 'info');
+    }
+
+    // 页面加载完成后运行检查
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        checkModules();
+        checkFunctions();
+      }, 100);
+    });
+  </script>
+</body>
+</html>
