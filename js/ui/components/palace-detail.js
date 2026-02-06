@@ -184,10 +184,10 @@
           return `
             <div class="p-4 md:p-4 rounded-xl border border-white/10 bg-white/5">
               <div class="flex items-center justify-between gap-3">
-                <div class="font-black text-lg md:text-base ${wx ? "star-wx-" + wx : "text-slate-200"}">${titleDisplay}</div>
+                <div class="font-black text-xl ${wx ? "star-wx-" + wx : "text-slate-200"}">${titleDisplay}</div>
                 <div class="text-xs md:text-[10px] text-slate-500">${wx ? "五行：" + wx : ""}</div>
               </div>
-              <div class="text-sm md:text-xs text-slate-300 mt-2 leading-relaxed">${explain}</div>
+              <div class="text-xl text-slate-300 mt-2 leading-relaxed">${explain}</div>
             </div>
           `;
         })
@@ -195,8 +195,8 @@
     } else {
       starCards = `
         <div class="p-4 md:p-4 rounded-xl border border-white/10 bg-white/5">
-          <div class="text-base md:text-sm text-slate-300 font-black">空宮</div>
-          <div class="text-sm md:text-xs text-slate-400 mt-2">空宮不等於沒有事件，重點是看三方四正與流月節奏如何引動。</div>
+          <div class="text-xl text-slate-300 font-black">空宮</div>
+          <div class="text-xl text-slate-400 mt-2">空宮不等於沒有事件，重點是看三方四正與流月節奏如何引動。</div>
         </div>
       `;
     }
@@ -205,7 +205,7 @@
       ${strategyHtml}
       <div class="p-4 md:p-4 rounded-xl border border-amber-400/25 bg-amber-500/10">
         <div class="text-xl text-emerald-400 font-black mb-2">資料庫宮位解釋</div>
-        <div class="text-base md:text-sm text-slate-100 leading-relaxed">${palaceText}</div>
+        <div class="text-xl text-slate-100 leading-relaxed">${palaceText}</div>
       </div>
 
       <div>

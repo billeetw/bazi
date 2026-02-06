@@ -398,8 +398,8 @@
           
           ${actions.length > 0 ? `
             <div class="mb-4 md:mb-3">
-              <div class="text-base md:text-xs text-green-400 mb-2">✅ 行動清單</div>
-              <ul class="text-base md:text-xs text-slate-300 space-y-2 md:space-y-1 ml-4">
+              <div class="text-xl text-green-400 mb-2">✅ 行動清單</div>
+              <ul class="text-xl text-slate-300 space-y-2 md:space-y-1 ml-4">
                 ${actions.map(a => `<li>• ${a}</li>`).join('')}
               </ul>
             </div>
@@ -407,8 +407,8 @@
           
           ${prohibitions.length > 0 ? `
             <div class="mb-4 md:mb-3">
-              <div class="text-base md:text-xs text-red-400 mb-2">❌ 禁忌清單</div>
-              <ul class="text-base md:text-xs text-slate-300 space-y-2 md:space-y-1 ml-4">
+              <div class="text-xl text-red-400 mb-2">❌ 禁忌清單</div>
+              <ul class="text-xl text-slate-300 space-y-2 md:space-y-1 ml-4">
                 ${prohibitions.map(p => `<li>• ${p}</li>`).join('')}
               </ul>
             </div>
