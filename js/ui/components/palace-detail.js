@@ -204,12 +204,12 @@
     const detailHtml = `
       ${strategyHtml}
       <div class="p-4 md:p-4 rounded-xl border border-amber-400/25 bg-amber-500/10">
-        <div class="text-lg md:text-sm text-emerald-400 font-black mb-2">資料庫宮位解釋</div>
+        <div class="text-xl text-emerald-400 font-black mb-2">資料庫宮位解釋</div>
         <div class="text-base md:text-sm text-slate-100 leading-relaxed">${palaceText}</div>
       </div>
 
       <div>
-        <div class="text-lg md:text-sm text-emerald-400 font-black mb-3">星曜解釋（資料庫）</div>
+        <div class="text-xl text-emerald-400 font-black mb-3">星曜解釋（資料庫）</div>
         <div class="space-y-3 md:space-y-3">${starCards}</div>
       </div>
     `;
