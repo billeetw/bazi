@@ -777,6 +777,25 @@
     .nav-chip[aria-current="page"] {
       background: rgba(255,191,0,0.15);
     }
+    /* 諮詢鏈接醒目樣式 */
+    .nav-chip-consult {
+      background: rgba(255,191,0,0.25) !important;
+      border-color: rgba(255,191,0,0.6) !important;
+      color: rgb(255,191,0) !important;
+      font-weight: 900 !important;
+      box-shadow: 0 0 16px rgba(255,191,0,0.3) !important;
+    }
+    .nav-chip-consult:hover {
+      background: rgba(255,191,0,0.35) !important;
+      border-color: rgba(255,191,0,0.8) !important;
+      box-shadow: 0 0 20px rgba(255,191,0,0.4) !important;
+      transform: translateY(-2px) scale(1.05);
+    }
+    .nav-chip-consult[aria-current="page"] {
+      background: rgba(255,191,0,0.4) !important;
+      border-color: rgba(255,191,0,0.9) !important;
+      box-shadow: 0 0 24px rgba(255,191,0,0.5) !important;
+    }
 
     /* 主儀表板：卡片依序登場（stagger），僅首次進入時播放 */
     @keyframes dashboard-card-enter {
@@ -1153,11 +1172,10 @@
       <a class="nav-chip" href="#ws-ziwei">紫微</a>
       <a class="nav-chip" href="#ws-bazi">八字</a>
       <a class="nav-chip" href="#ws-liuyue">流年</a>
-      <a class="nav-chip" href="#ws-consult">諮詢</a>
+      <a class="nav-chip nav-chip-consult" href="#ws-consult">諮詢</a>
     </div>
 
     <div class="flex items-center gap-2">
-      <a id="navCta" href="#ws-consult" class="hidden nav-chip bg-white/15">預約諮詢</a>
       <a href="https://www.youtube.com/@billeetw1" target="_blank" rel="noopener noreferrer"
          class="nav-chip bg-white text-red-600 border-white/0 font-black"
          aria-label="前往李伯彥 YouTube 頻道（一起出來玩）">
@@ -1265,7 +1283,7 @@
             <a href="#ws-ziwei" class="nav-chip">去紫微</a>
             <a href="#ws-bazi" class="nav-chip">去八字</a>
             <a href="#ws-liuyue" class="nav-chip">去流年</a>
-            <a href="#ws-consult" class="nav-chip bg-white/15">諮詢</a>
+            <a href="#ws-consult" class="nav-chip nav-chip-consult">諮詢</a>
           </div>
         </div>
       </section>
