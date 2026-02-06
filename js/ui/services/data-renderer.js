@@ -114,6 +114,8 @@
       computeAllPalaceScores,
       updateAnnualTactics,
       selectedPalace,
+      getCurrentAge, // 可選：用於獲取年齡
+      gender, // 可選：性別（用於大限旋轉方向計算）
     } = params;
 
     if (!ziwei) {
@@ -129,13 +131,29 @@
       return Promise.resolve();
     }
 
-    // 渲染紫微盘
+    // 渲染紫微盘（傳遞 bazi 和 gender 以正確計算大限旋轉方向）
     if (renderZiwei) {
-      renderZiwei(ziwei, horoscope);
+      renderZiwei(ziwei, horoscope, { bazi, gender });
     }
 
     // 计算并渲染紫微分数
-    return computeAllPalaceScores(ziwei, horoscope)
+    // 计算年龄（用于完整四化系统）
+    let age = null;
+    if (getCurrentAge && typeof getCurrentAge === 'function') {
+      // 优先使用传入的 getCurrentAge 函数
+      age = getCurrentAge();
+    } else if (bazi && bazi.display && bazi.display.yG) {
+      // 从八字数据推算年龄
+      const yearStem = bazi.display.yG.toString().trim();
+      // 尝试从年干中提取年份（如果格式是 "甲子2024" 这样的）
+      const yearMatch = yearStem.match(/\d{4}/);
+      if (yearMatch) {
+        const birthYear = parseInt(yearMatch[0]);
+        age = new Date().getFullYear() - birthYear;
+      }
+    }
+    
+    return computeAllPalaceScores(ziwei, horoscope, { bazi, age })
       .then(function (computedScores) {
         const scores = {
           palaceScores: computedScores,

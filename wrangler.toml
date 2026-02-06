@@ -11,4 +11,7 @@ database_name = "consult-db"
 database_id = "9bdd8684-9fbe-444d-b2bd-16225ff8da79"
 migrations_dir = "migrations"
 
-# 後台 /admin.html 帳密（本機：建立 .dev.vars 設 ADMIN_USER、ADMIN_PASSWORD；正式：Pages 專案 → Settings → Environment variables）
+# 後台認證配置
+# ⚠️ 安全提醒：敏感配置必須使用環境變數，不要硬編碼
+# 本機開發：建立 .dev.vars 設 ADMIN_USER、ADMIN_PASSWORD（.dev.vars 已加入 .gitignore）
+# 正式環境：Pages 專案 → Settings → Environment variables 中設置

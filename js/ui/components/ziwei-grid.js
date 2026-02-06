@@ -57,7 +57,7 @@
    * @param {Object} horoscope - 小限数据
    * @param {Function} onPalaceClick - 宫位点击回调函数（可选）
    */
-  function renderZiwei(ziwei, horoscope, onPalaceClick) {
+  function renderZiwei(ziwei, horoscope, onPalaceClick, options = {}) {
     const container = document.getElementById("ziweiGrid");
     const hint = document.getElementById("ziweiHint");
     if (!container) return;
@@ -75,7 +75,8 @@
     const { buildSlotsFromZiwei, gridAreas, getMutagenStars, toTraditionalStarName, STAR_WUXING_MAP } = getCalcHelpers();
     const { starWithBadgeHtml } = getRenderHelpers();
 
-    const slots = buildSlotsFromZiwei(ziwei, horoscope);
+    // 傳遞 bazi 和 gender 以正確計算大限旋轉方向
+    const slots = buildSlotsFromZiwei(ziwei, horoscope, options);
     const mutagenStars = horoscope?.mutagenStars || {};
 
     slots.forEach((slot) => {
@@ -139,20 +140,38 @@
     const contract = window.contract || null;
     const bazi = contract?.bazi || null;
     const yearStem = (bazi?.display?.yG || "").toString().trim();
+    const yearBranch = (bazi?.display?.yZ || "").toString().trim();
     const birthMutagen = yearStem ? (getMutagenStars(yearStem) || {}) : {};
     const stripStarLabel = (s) => String(s || "").replace(/^\d+\.?\s*/, "").trim();
-    const mingzhuRaw = basic.masterStar ?? core.mingzhu ?? core.命主 ?? core.minggong ?? "";
+    
+    // 優先使用後端提供的值，否則根據命宮地支和年支計算
+    const mingBranch = core.minggongBranch || "寅";
+    const mingzhuRaw = basic.masterStar ?? core.mingzhu ?? core.命主 ?? "";
     const shengongRaw = basic.bodyStar ?? core.shengong ?? core.身主 ?? "";
-    const mingzhu = toTraditionalStarName(stripStarLabel(mingzhuRaw));
-    const shengong = toTraditionalStarName(stripStarLabel(shengongRaw));
+    
+    // 如果後端沒有提供，嘗試計算
+    let mingzhu = "";
+    let shengong = "";
+    
+    if (mingzhuRaw) {
+      mingzhu = toTraditionalStarName(stripStarLabel(mingzhuRaw));
+    } else if (window.CalcHelpers?.calculateMingzhu) {
+      mingzhu = window.CalcHelpers.calculateMingzhu(mingBranch) || "";
+    }
+    
+    if (shengongRaw) {
+      shengong = toTraditionalStarName(stripStarLabel(shengongRaw));
+    } else if (yearBranch && window.CalcHelpers?.calculateShengong) {
+      shengong = window.CalcHelpers.calculateShengong(yearBranch) || "";
+    }
     const siHuaText =
       birthMutagen.祿 && birthMutagen.權 && birthMutagen.科 && birthMutagen.忌
         ? `${birthMutagen.祿}化祿 · ${birthMutagen.權}化權 · ${birthMutagen.科}化科 · ${birthMutagen.忌}化忌`
         : "—";
     center.innerHTML = `
       <div class="text-[10px] tracking-[0.18em] text-slate-500 font-black">DESTINY CORE</div>
-      <div class="text-amber-400 font-black text-xl tracking-wide mt-2">${mingzhu || "—"}</div>
-      <div class="text-slate-300 text-[11px] mt-1">身主：${shengong || "—"}</div>
+      <div class="text-slate-300 text-[11px] mt-2">命主：<span class="text-amber-400 font-bold">${mingzhu || "—"}</span></div>
+      <div class="text-slate-300 text-[11px] mt-1">身主：<span class="text-amber-400 font-bold">${shengong || "—"}</span></div>
       <div class="text-[10px] text-slate-500 mt-2 font-black">生年四化</div>
       <div class="text-slate-300 text-[10px] leading-tight mt-0.5">${siHuaText}</div>
       <div class="text-[11px] text-slate-400 mt-2">五行局：${core.wuxingju || "—"}</div>

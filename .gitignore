@@ -1,4 +1,36 @@
+# 環境變數文件（包含敏感配置）
 .dev.vars
+.env
+.env.local
+.env.production
+
+# 配置文件（如果包含敏感信息）
+config/secrets.json
+config/credentials.json
+
+# Cloudflare
 .wrangler/
+
+# 依賴和構建
 node_modules/
 dist/
+
+# 日誌文件（可能包含敏感信息）
+*.log
+logs/
+
+# 臨時文件
+tmp/
+temp/
+*.tmp
+
+# 系統文件
+.DS_Store
+Thumbs.db
+
+# IDE 配置（可能包含個人設置）
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

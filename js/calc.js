@@ -341,29 +341,149 @@
   // computeMonthlyStarRating, generateMonthlyCorrelationNote, finalizeStarRating, generateMonthStrategyTag
 
   /**
-   * 計算所有 12 宮位的基礎分數（L4 + L7 + L9 架構重構版）
+   * 計算所有 12 宮位的基礎分數（L4 + L7 + L9 架構重構版 + 完整四化系統）
    * 
    * 流程：
-   * 1. 計算所有宮位的基礎分（L1-L3 + L8，不包含三方四正）
-   * 2. 應用 L4 空間連動（三方四正聚合）
-   * 3. 應用 L7 主觀頻率修正（小限宮位增益）
-   * 4. 應用 L9 決策映射與語義輸出
-   * 5. 返回包含完整語義輸出的結果
+   * 1. 計算完整四化系統（本命、大限、流年、小限）
+   * 2. 計算所有宮位的基礎分（L1-L3 + L8，不包含三方四正）
+   * 3. 應用 L4 空間連動（三方四正聚合）
+   * 4. 應用 L7 主觀頻率修正（小限宮位增益）
+   * 5. 應用 L9 決策映射與語義輸出
+   * 6. 返回包含完整語義輸出的結果
    * 
    * @param {Object} ziwei 紫微命盤資料
    * @param {Object} horoscope 小限資料（可選）
+   * @param {Object} [options] 選項 { bazi, age, currentYear }
+   * @param {Object} [options.bazi] 八字資料（用於計算本命和大限四化）
+   * @param {number} [options.age] 當前年齡（用於計算大限四化）
+   * @param {number} [options.currentYear] 當前年份（預設為系統年份）
    * @returns {Promise<Object>} 宮位分數物件 { "命宮": 85.5, "兄弟": 72.3, ... }
    * 同時將完整的 L9 語義輸出存儲到 window.ziweiPalaceMetadata
    */
-  async function computeAllPalaceScores(ziwei, horoscope) {
+  async function computeAllPalaceScores(ziwei, horoscope, options = {}) {
     if (!ziwei) return {};
+    
+    // 處理參數（向後兼容：如果第三個參數是對象，則作為 options）
+    let bazi, age, currentYear;
+    if (options && typeof options === 'object' && !options.bazi) {
+      // 舊的調用方式：computeAllPalaceScores(ziwei, horoscope)
+      // options 實際上是空的或未定義
+      bazi = null;
+      age = null;
+      currentYear = new Date().getFullYear();
+    } else {
+      bazi = options?.bazi || null;
+      age = options?.age || null;
+      currentYear = options?.currentYear || new Date().getFullYear();
+    }
     
     // 預先載入權重資料（避免重複載入）
     const weightsData = await loadZiweiWeights();
     
-    // 獲取當前年份（用於 2026 預警機制）
-    const currentYear = new Date().getFullYear();
-    const options = { horoscope, year: currentYear };
+    // 計算完整四化系統（如果提供了必要的資料）
+    let fourTransformations = null;
+    let overlapAnalysis = null;
+    
+    if (window.FourTransformations && bazi && typeof age === 'number') {
+      try {
+        // 獲取性別（從 horoscope 或 options 中）
+        const gender = horoscope?.gender || options?.gender || null;
+        
+        fourTransformations = window.FourTransformations.computeFourTransformations({
+          bazi: bazi,
+          ziwei: ziwei,
+          horoscope: horoscope,
+          age: age,
+          currentYear: currentYear,
+          gender: gender
+        });
+        console.log('[calc.js] 完整四化系統計算成功:', fourTransformations.summary);
+        
+        // 計算疊宮與引爆分析
+        if (window.FourTransformations.calculateOverlapTransformations) {
+          try {
+            overlapAnalysis = window.FourTransformations.calculateOverlapTransformations(
+              fourTransformations,
+              ziwei
+            );
+            // 詳細的調試日誌
+            const palaceMapEntries = overlapAnalysis.palaceMap instanceof Map 
+              ? Array.from(overlapAnalysis.palaceMap.entries())
+              : Object.entries(overlapAnalysis.palaceMap || {});
+            
+            console.log('[calc.js] 疊宮分析完成:', {
+              criticalRisks: overlapAnalysis.criticalRisks?.length || 0,
+              maxOpportunities: overlapAnalysis.maxOpportunities?.length || 0,
+              volatileAmbivalences: overlapAnalysis.volatileAmbivalences?.length || 0,
+              palaceMapSize: palaceMapEntries.length,
+              summary: overlapAnalysis.summary
+            });
+            
+            // 顯示每個宮位的四化統計（調試用）
+            console.log('[calc.js] 各宮位四化統計:');
+            palaceMapEntries.forEach(([palaceName, palaceData]) => {
+              const total = (palaceData.luCount || 0) + (palaceData.quanCount || 0) + 
+                           (palaceData.keCount || 0) + (palaceData.jiCount || 0);
+              if (total > 0) {
+                console.log(`  ${palaceName}: 祿${palaceData.luCount || 0} 權${palaceData.quanCount || 0} 科${palaceData.keCount || 0} 忌${palaceData.jiCount || 0}`);
+              }
+            });
+            
+            // 將原始疊宮分析數據存儲到全局狀態（包含所有原始數據）
+            if (typeof window !== "undefined") {
+              if (window.BaziApp?.State) {
+                window.BaziApp.State.setState("overlapAnalysis", overlapAnalysis);
+              }
+              window.overlapAnalysis = overlapAnalysis;
+              
+              // 同時生成並存儲報告（包含評論）
+              if (window.OverlapAnalysis && window.OverlapAnalysis.generateOverlapReport) {
+                try {
+                  const overlapReport = window.OverlapAnalysis.generateOverlapReport(overlapAnalysis);
+                  console.log('[calc.js] 疊宮評論:', overlapReport.comments);
+                  window.overlapReport = overlapReport; // 存儲報告到單獨的變數
+                } catch (err) {
+                  console.warn('[calc.js] 生成疊宮報告失敗:', err);
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('[calc.js] 疊宮分析計算失敗:', err);
+          }
+        }
+      } catch (err) {
+        console.warn('[calc.js] 完整四化系統計算失敗，使用小限四化:', err);
+      }
+    }
+    
+    // 計算好命指數（Luck Index）
+    let luckIndexData = null;
+    if (window.LuckIndex && weightsData) {
+      try {
+        luckIndexData = window.LuckIndex.computeLuckIndex(ziwei, weightsData);
+        console.log('[calc.js] 好命指數計算成功:', luckIndexData);
+        
+        // 將好命指數存儲到全局狀態
+        if (typeof window !== "undefined") {
+          if (window.BaziApp?.State) {
+            window.BaziApp.State.setState("luckIndex", luckIndexData);
+          }
+          window.luckIndex = luckIndexData;
+        }
+      } catch (err) {
+        console.warn('[calc.js] 好命指數計算失敗:', err);
+      }
+    }
+    
+    // 構建 options 物件（傳遞給 Pipeline）
+    const pipelineOptions = { 
+      horoscope, 
+      year: currentYear,
+      bazi: bazi,
+      ziwei: ziwei,
+      age: age,
+      fourTransformations: fourTransformations
+    };
     
     // 步驟 1: 計算所有 12 宮位的基礎分數（L1-L3 + L8，不包含 L4 三方四正）
     const baseScores = {};
@@ -371,7 +491,7 @@
     
     // 並行計算所有宮位的基礎分數
     const promises = PALACE_DEFAULT.map(async (palace) => {
-      const result = computeSinglePalaceBaseScore(ziwei, palace, weightsData, options);
+      const result = computeSinglePalaceBaseScore(ziwei, palace, weightsData, pipelineOptions);
       baseScores[palace] = result;
       metadata[palace] = {
         strategicAdvice: result.strategicAdvice || [],
@@ -461,6 +581,73 @@
       }
     });
     
+    // 計算五行健康預警（Health Analysis）- 在宮位分數計算完成後
+    let healthWarningData = null;
+    if (window.HealthAnalysis && bazi && bazi.wuxing) {
+      try {
+        const wuxingData = {
+          raw: bazi.wuxing.strategic || bazi.wuxing.raw || {},
+          pct: null, // 會在函數內部計算
+          levels: null // 會在函數內部計算
+        };
+        
+        // 傳入完整選項（包含年份月份加權、年齡風險、流年大小限、疾厄宮四化）
+        healthWarningData = window.HealthAnalysis.generateHealthWarning(wuxingData, {
+          palaceScores: scores, // 宮位分數
+          palaceMetadata: finalMetadata, // 宮位元數據（包含星曜資訊）
+          overlapAnalysis: overlapAnalysis, // 疊宮分析（包含疾厄宮四化）
+          age: age, // 當前年齡
+          currentYear: currentYear, // 當前年份
+          currentMonth: new Date().getMonth() + 1, // 當前月份
+          fourTransformations: fourTransformations // 四化系統數據（用於獲取流年天干）
+        });
+        console.log('[calc.js] 五行健康預警計算成功（增強版）:', {
+          riskLevel: healthWarningData.riskLevel,
+          warningsCount: healthWarningData.warnings.length,
+          ageRiskMultiplier: healthWarningData.multipliers?.ageRisk,
+          jiePalaceRiskMultiplier: healthWarningData.multipliers?.jiePalaceRisk
+        });
+        
+        // 生成月度健康風險數據（生命健康心電圖）
+        let monthlyHealthRisk = null;
+        if (window.HealthAnalysis && window.HealthAnalysis.generateMonthlyHealthRisk) {
+          try {
+            monthlyHealthRisk = window.HealthAnalysis.generateMonthlyHealthRisk(wuxingData, {
+              palaceScores: scores,
+              palaceMetadata: finalMetadata,
+              overlapAnalysis: overlapAnalysis,
+              age: age,
+              currentYear: currentYear,
+              currentMonth: new Date().getMonth() + 1,
+              fourTransformations: fourTransformations
+            });
+            
+            console.log('[calc.js] 月度健康風險數據生成成功，共', monthlyHealthRisk.length, '個月');
+            
+            // 將月度健康風險存儲到全局狀態
+            if (typeof window !== "undefined") {
+              if (window.BaziApp?.State) {
+                window.BaziApp.State.setState("monthlyHealthRisk", monthlyHealthRisk);
+              }
+              window.monthlyHealthRisk = monthlyHealthRisk;
+            }
+          } catch (err) {
+            console.warn('[calc.js] 月度健康風險數據生成失敗:', err);
+          }
+        }
+
+        // 將健康預警存儲到全局狀態
+        if (typeof window !== "undefined") {
+          if (window.BaziApp?.State) {
+            window.BaziApp.State.setState("healthWarning", healthWarningData);
+          }
+          window.healthWarning = healthWarningData;
+        }
+      } catch (err) {
+        console.warn('[calc.js] 五行健康預警計算失敗:', err);
+      }
+    }
+    
     // 將元數據存儲到全局狀態管理器（優先），或直接存到 window（向後兼容）
     if (typeof window !== "undefined") {
       if (window.BaziApp?.State) {
@@ -468,6 +655,44 @@
       }
       // 向後兼容：也存到 window.ziweiPalaceMetadata
       window.ziweiPalaceMetadata = finalMetadata;
+    }
+    
+    // 生成 AI Prompt（供後台管理界面使用）
+    if (window.AIPromptGenerator) {
+      try {
+        const structuredData = window.AIPromptGenerator.collectStructuredData({
+          currentYear: currentYear,
+          age: age
+        });
+        
+        // 補充四化系統數據（如果可用）
+        if (fourTransformations) {
+          structuredData.fourTransformations = fourTransformations;
+          // 也存到全局狀態
+          if (typeof window !== "undefined") {
+            window.fourTransformations = fourTransformations;
+          }
+        }
+        
+        const aiPrompt = window.AIPromptGenerator.generateAIPrompt(structuredData, {
+          targetLength: 1500,
+          includeDetails: true
+        });
+        
+        console.log('[calc.js] AI Prompt 生成成功，長度:', aiPrompt.length, '字元');
+        
+        // 將 AI Prompt 存儲到全局狀態
+        if (typeof window !== "undefined") {
+          if (window.BaziApp?.State) {
+            window.BaziApp.State.setState("aiPrompt", aiPrompt);
+            window.BaziApp.State.setState("structuredData", structuredData);
+          }
+          window.aiPrompt = aiPrompt;
+          window.structuredData = structuredData;
+        }
+      } catch (err) {
+        console.warn('[calc.js] AI Prompt 生成失敗:', err);
+      }
     }
     
     return scores;
@@ -487,6 +712,7 @@
     getStartAgeFromWuxingju,
     getDecadalLimits,
     getHoroscopeFromAge,
+    getMajorLuckDirection,
   } = window.BaziCore;
 
   // ====== 以下函數已移至 calc/baziCore.js ======
@@ -512,9 +738,10 @@
    * 
    * @param {Object} ziwei 紫微命盤資料
    * @param {Object} horoscope 小限資料（可選）
+   * @param {Object} options 選項（可選，包含 bazi 和 gender 用於計算大限旋轉方向）
    * @returns {Array} 宮位槽位陣列
    */
-  function buildSlotsFromZiwei(ziwei, horoscope) {
+  function buildSlotsFromZiwei(ziwei, horoscope, options = {}) {
     if (!ziwei) return [];
 
     // 若後端沒給或給了非 12 地支的值，就 fallback 到「寅」
@@ -529,7 +756,42 @@
 
     const palaceOrder = PALACE_DEFAULT;
     const activeLimitPalace = horoscope?.activeLimitPalaceName ?? (horoscope != null && Number.isInteger(horoscope.yearlyIndex) ? palaceOrder[horoscope.yearlyIndex] : null);
-    const decadalLimits = getDecadalLimits(ziwei?.core?.wuxingju);
+    
+    // 獲取命宮地支和索引
+    const mingBranch = ziwei?.core?.minggongBranch || "寅";
+    const mingPalaceIndex = 0; // 命宮在 PALACE_DEFAULT 中的索引固定為 0
+    
+    // 計算大限年齡區間（基礎）
+    const wuxingju = ziwei?.core?.wuxingju || "金四局";
+    const baseStartAge = getStartAgeFromWuxingju(wuxingju);
+    const span = 10; // 每大限10年
+    
+    // 根據命宮陰陽和性別確定大限旋轉方向
+    const gender = options?.gender || null;
+    // 初始化為陣列，每個索引對應一個宮位的大限年齡區間
+    let decadalLimits = new Array(12).fill(null).map(() => ({ start: 0, end: 9 }));
+    
+    if (gender) {
+      // 獲取大限行進方向（+1 順行，-1 逆行）
+      const directionSign = getMajorLuckDirection(gender, mingBranch);
+      
+      // 為每個大限（k = 0..11）計算對應的宮位索引和年齡區間
+      for (let k = 0; k < 12; k++) {
+        const startAge = baseStartAge + k * span;
+        const endAge = startAge + span - 1;
+        
+        // 計算大限宮位索引：從命宮開始，根據方向循環
+        const N = 12;
+        const palaceIndex = (mingPalaceIndex + directionSign * k + N * 10) % N;
+        
+        // 將年齡區間分配到對應的宮位
+        decadalLimits[palaceIndex] = { start: startAge, end: endAge };
+      }
+    } else {
+      // 如果沒有性別，使用基礎順序（順行，從命宮開始）
+      const baseDecadalLimits = getDecadalLimits(wuxingju);
+      decadalLimits = baseDecadalLimits;
+    }
 
     return BRANCH_RING.map((branch, idx) => {
       const palaceIndex = (mingIdx - idx + 12) % 12;
@@ -544,6 +806,7 @@
       }
 
       const isActiveLimit = activeLimitPalace != null && palaceName === activeLimitPalace;
+      // 使用根據旋轉方向調整後的大限年齡區間
       const decadalLimit = decadalLimits[palaceIndex] || { start: 0, end: 9 };
 
       return {

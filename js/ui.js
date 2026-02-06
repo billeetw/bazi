@@ -158,9 +158,9 @@
 
   // 紫微盘组件
   const renderZiweiFromComponent = window.UiComponents?.ZiweiGrid?.renderZiwei;
-  function renderZiwei(ziwei, horoscope) {
+  function renderZiwei(ziwei, horoscope, options = {}) {
     if (renderZiweiFromComponent) {
-      // 传递宫位点击回调
+      // 传递宫位点击回调和选项（包含 bazi 和 gender 用于大限旋转方向计算）
       return renderZiweiFromComponent(ziwei, horoscope, (palaceName) => {
         selectPalace(palaceName);
         if (window.innerWidth < 1280) {
@@ -168,7 +168,7 @@
         } else {
           document.getElementById("detailPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
         }
-      });
+      }, options);
     } else {
       console.warn("[ui.js] renderZiwei not available from ZiweiGrid component");
     }
@@ -480,6 +480,8 @@
           computeAllPalaceScores,
           updateAnnualTactics,
           selectedPalace: "命宮",
+          getCurrentAge, // 传递 getCurrentAge 函数以获取年龄
+          gender: lastGender, // 传递性别以计算大限旋转方向
         }).then(() => {
           // 默认选择命宫
           if (ziwei) {
@@ -488,8 +490,9 @@
         });
       } else {
         // Fallback
-        renderZiwei(ziwei, horoscope);
-        computeAllPalaceScores(ziwei, horoscope).then(function (computedScores) {
+        renderZiwei(ziwei, horoscope, { bazi, gender: lastGender });
+        const age = getCurrentAge();
+        computeAllPalaceScores(ziwei, horoscope, { bazi, age }).then(function (computedScores) {
           const scores = {
             palaceScores: computedScores,
             elementRatios: ziweiScores?.elementRatios || {},
@@ -826,9 +829,10 @@
             syncAgeSliderDisplay(age);
             if (!contract?.ziwei) return;
             const bazi = contract.bazi;
-            const horoscope = contract.ziwei.horoscope || getHoroscopeFromAge(getCurrentAge(), lastGender, contract.ziwei, bazi);
-            renderZiwei(contract.ziwei, horoscope);
-            computeAllPalaceScores(contract.ziwei, horoscope).then(function (computedScores) {
+            const horoscope = contract.ziwei.horoscope || getHoroscopeFromAge(age, lastGender, contract.ziwei, bazi);
+            renderZiwei(contract.ziwei, horoscope, { bazi, gender: lastGender });
+            // 傳遞 bazi 和 age 以啟用完整四化系統
+            computeAllPalaceScores(contract.ziwei, horoscope, { bazi: contract.bazi, age }).then(function (computedScores) {
               const scores = {
                 palaceScores: computedScores,
                 elementRatios: window.ziweiScores?.elementRatios || {},

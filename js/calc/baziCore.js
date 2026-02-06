@@ -29,17 +29,85 @@
   } = window.CalcHelpers;
 
   /**
-   * 依年齡與性別計算年支索引（0-11，對應子到亥）
-   * 男性順時針，女性逆時針
+   * 判斷年干是否為陽干
+   * 陽干：甲、丙、戊、庚、壬
+   * 陰干：乙、丁、己、辛、癸
+   * @param {string} yearStem 年干（如 "甲"）
+   * @returns {boolean} true 為陽干，false 為陰干
+   */
+  function isYangStem(yearStem) {
+    const yangStems = ["甲", "丙", "戊", "庚", "壬"];
+    return yangStems.includes(yearStem);
+  }
+
+  /**
+   * 判斷地支是陰宮還是陽宮
+   * 陽宮：寅、午、戌、申、子、辰
+   * 陰宮：巳、酉、丑、亥、卯、未
+   * @param {string} branch 地支（如 "寅"）
+   * @returns {string} "yang" 為陽宮，"yin" 為陰宮
+   */
+  function getBranchYinYang(branch) {
+    const yangBranches = ["寅", "午", "戌", "申", "子", "辰"];
+    const yinBranches = ["巳", "酉", "丑", "亥", "卯", "未"];
+    
+    if (yangBranches.includes(branch)) return "yang";
+    if (yinBranches.includes(branch)) return "yin";
+    throw new Error("未知地支：" + branch);
+  }
+
+  /**
+   * 判斷旋轉方向（用於小限）
+   * 陽男陰女：順時針（順行）
+   * 陰男陽女：逆時針（逆行）
+   * @param {string} yearStem 年干（如 "甲"）
+   * @param {string} gender 性別（"M"/"男" 或 "F"/"女"）
+   * @returns {boolean} true 為順時針，false 為逆時針
+   */
+  function isClockwise(yearStem, gender) {
+    const isYang = isYangStem(yearStem);
+    const isMale = gender === "M" || gender === "男";
+    // 陽男陰女：順時針
+    // 陰男陽女：逆時針
+    return (isYang && isMale) || (!isYang && !isMale);
+  }
+
+  /**
+   * 決定大限行進方向（順行 = +1，逆行 = -1）
+   * 規則：陽男陰女順行，陰男陽女逆行
+   * @param {string} gender 性別（"M"/"男" 或 "F"/"女"）
+   * @param {string} mingBranch 命宮地支（如 "丑"）
+   * @returns {number} +1 為順行，-1 為逆行
+   */
+  function getMajorLuckDirection(gender, mingBranch) {
+    const branchYinYang = getBranchYinYang(mingBranch);
+    const isMale = gender === "M" || gender === "男";
+    const isFemale = gender === "F" || gender === "女";
+    
+    // 陽男陰女順行，陰男陽女逆行
+    if ((isMale && branchYinYang === "yang") ||
+        (isFemale && branchYinYang === "yin")) {
+      return +1; // 順行
+    } else {
+      return -1; // 逆行
+    }
+  }
+
+  /**
+   * 依年齡、性別與年干計算年支索引（0-11，對應子到亥）
+   * 根據陽男陰女（順行）和陰男陽女（逆行）的規則
    * @param {number} age 年齡
    * @param {string} gender 性別（"M"/"男" 或 "F"/"女"）
+   * @param {string} yearStem 年干（如 "甲"）
    * @returns {number} 年支索引（0-11）
    */
-  function getYearlyIndexFromAge(age, gender) {
+  function getYearlyIndexFromAge(age, gender, yearStem) {
     const a = Math.max(1, Number(age) || 1);
     const n = (a - 1) % 12;
-    if (gender === "F" || gender === "女") return (12 - n) % 12;
-    return n;
+    const clockwise = isClockwise(yearStem, gender);
+    // 順時針：直接使用 n
+    // 逆時針：使用 (12 - n) % 12
+    return clockwise ? n : (12 - n) % 12;
   }
 
   /**
@@ -107,7 +175,8 @@
     const yearStem = (bazi?.display?.yG || "").toString().trim();
     const mingBranch = ziwei?.core?.minggongBranch || "寅";
     const mingStem = getMinggongStem(mingBranch, yearStem);
-    const yearlyIndex = getYearlyIndexFromAge(age, gender);
+    // 修正：根據年干陰陽和性別計算旋轉方向
+    const yearlyIndex = getYearlyIndexFromAge(age, gender, yearStem);
     const yearlyStem = getPalaceStem(mingStem, yearlyIndex);
     const mutagenStars = getMutagenStars(yearlyStem);
     const activeLimitPalaceName = PALACE_DEFAULT[yearlyIndex];
@@ -119,12 +188,41 @@
   // 導出到 window.BaziCore（如果 window 存在）
   if (typeof window !== "undefined") {
     window.BaziCore = {
+      isYangStem,
+      getBranchYinYang,
+      isClockwise,
+      getMajorLuckDirection,
       getYearlyIndexFromAge,
       getMinggongStem,
       getPalaceStem,
       getStartAgeFromWuxingju,
       getDecadalLimits,
       getHoroscopeFromAge,
+    };
+  } else if (typeof globalThis !== "undefined") {
+    globalThis.BaziCore = {
+      isYangStem,
+      getBranchYinYang,
+      isClockwise,
+      getMajorLuckDirection,
+      getYearlyIndexFromAge,
+      getMinggongStem,
+      getPalaceStem,
+      getStartAgeFromWuxingju,
+      getDecadalLimits,
+      getHoroscopeFromAge,
+    };
+  }
+})(); (typeof window !== "undefined") {
+    window.BaziCore = {
+      getYearlyIndexFromAge,
+      getMinggongStem,
+      getPalaceStem,
+      getStartAgeFromWuxingju,
+      getDecadalLimits,
+      getHoroscopeFromAge,
+      isYangStem,
+      isClockwise,
     };
   } else if (typeof globalThis !== "undefined") {
     // 讓 Node / 測試環境也能引用
@@ -135,6 +233,8 @@
       getStartAgeFromWuxingju,
       getDecadalLimits,
       getHoroscopeFromAge,
+      isYangStem,
+      isClockwise,
     };
   }
 })();

@@ -91,10 +91,11 @@
         syncAgeSliderDisplay(age);
         if (!contract?.ziwei) return;
         const bazi = contract.bazi;
-        const horoscope = contract.ziwei.horoscope || getHoroscopeFromAge(getCurrentAge(), lastGender, contract.ziwei, bazi);
+        const horoscope = contract.ziwei.horoscope || getHoroscopeFromAge(age, lastGender, contract.ziwei, bazi);
         renderZiwei(contract.ziwei, horoscope);
         // 使用新算法重新計算宮位強度（年齡變化會影響小限四化）
-        computeAllPalaceScores(contract.ziwei, horoscope).then(function (computedScores) {
+        // 傳遞 bazi 和 age 以啟用完整四化系統
+        computeAllPalaceScores(contract.ziwei, horoscope, { bazi: contract.bazi, age }).then(function (computedScores) {
           const scores = {
             palaceScores: computedScores,
             elementRatios: window.ziweiScores?.elementRatios || {},

@@ -142,43 +142,99 @@
 
   /**
    * Stage 5: SiHua Transformation（四化增益與減損）
-   * 處理化祿、化權、化科、化忌的權重調整
+   * 處理化祿、化權、化科、化忌的權重調整（完整四化系統：本命、大限、流年、小限）
    * @param {Object} context 評分上下文
    * @param {Object} horoscope 小限資料
    * @param {string} palaceName 宮位名稱
+   * @param {Object} options 選項 { bazi, ziwei, age, currentYear, fourTransformations }
    * @returns {Object} 更新後的上下文
    */
-  function stageSiHua(context, horoscope, palaceName) {
+  function stageSiHua(context, horoscope, palaceName, options = {}) {
     const { stars } = context;
     
-    if (!horoscope || !horoscope.mutagenStars) {
+    // 如果提供了完整的四化資料，使用完整系統
+    let fourTransformations = options.fourTransformations;
+    
+    // 如果沒有提供，嘗試計算（需要 bazi, ziwei, age, currentYear）
+    if (!fourTransformations && options.bazi && options.ziwei && typeof options.age === 'number') {
+      if (window.FourTransformations) {
+        fourTransformations = window.FourTransformations.computeFourTransformations({
+          bazi: options.bazi,
+          ziwei: options.ziwei,
+          horoscope: horoscope,
+          age: options.age,
+          currentYear: options.currentYear || new Date().getFullYear()
+        });
+      }
+    }
+    
+    // 如果仍然沒有四化資料，回退到僅使用小限四化（向後兼容）
+    if (!fourTransformations) {
+      if (!horoscope || !horoscope.mutagenStars) {
+        return context;
+      }
+      // 使用舊的邏輯（僅小限四化）
+      const mutagenStars = horoscope.mutagenStars;
+      const sihuaWeights = { "祿": 3, "權": 2, "科": 1, "忌": -3 };
+      
+      const starsInPalace = stars.map(s => s.name);
+      let sihuaBoost = 0;
+      let luCount = 0;
+
+      ["祿", "權", "科", "忌"].forEach(hua => {
+        const starName = mutagenStars[hua];
+        if (starName && starsInPalace.includes(starName)) {
+          sihuaBoost += sihuaWeights[hua];
+          if (hua === "祿") luCount++;
+        }
+      });
+
+      if (starsInPalace.includes("祿存")) {
+        luCount++;
+      }
+
+      if (luCount >= 2) {
+        context.metadata = context.metadata || {};
+        context.metadata.doubleLuBoost = 2;
+        sihuaBoost += 2;
+      }
+
+      context.baseScore += sihuaBoost;
       return context;
     }
-
-    const mutagenStars = horoscope.mutagenStars;
-    const sihuaWeights = { "祿": 3, "權": 2, "科": 1, "忌": -3 };
     
-    // 檢查該宮位的四化星曜
+    // 使用完整的四化系統
     const starsInPalace = stars.map(s => s.name);
     let sihuaBoost = 0;
-    let luCount = 0; // 祿存或化祿的數量（用於雙祿交會）
-
-    ["祿", "權", "科", "忌"].forEach(hua => {
-      const starName = mutagenStars[hua];
-      if (starName && starsInPalace.includes(starName)) {
-        sihuaBoost += sihuaWeights[hua];
-        if (hua === "祿") luCount++;
+    let luCount = 0;
+    
+    // 合併所有四化的星曜（使用 combinedWeights）
+    const combinedWeights = fourTransformations.combinedWeights || {};
+    
+    // 檢查該宮位是否有四化星曜
+    Object.keys(combinedWeights).forEach(starName => {
+      if (starsInPalace.includes(starName)) {
+        const weight = combinedWeights[starName] || 0;
+        sihuaBoost += weight;
+        
+        // 檢查是否為化祿（需要檢查所有四化層級）
+        const isLu = fourTransformations.benming?.mutagenStars?.祿 === starName ||
+                     fourTransformations.dalimit?.mutagenStars?.祿 === starName ||
+                     fourTransformations.liunian?.mutagenStars?.祿 === starName ||
+                     fourTransformations.xiaoxian?.mutagenStars?.祿 === starName;
+        
+        if (isLu) {
+          luCount++;
+        }
       }
     });
-
+    
     // 檢查祿存（如果存在）
     if (starsInPalace.includes("祿存")) {
       luCount++;
     }
 
     // 雙祿交會：若本宮與三方四正同時出現多個祿存或化祿，額外 +2
-    // 注意：這個邏輯需要在 computePalaceBaseScore 層級處理（因為需要三方四正資訊）
-    // 這裡先記錄到 metadata，後續在 finalizeStarRating 中處理
     if (luCount >= 2) {
       context.metadata = context.metadata || {};
       context.metadata.doubleLuBoost = 2;
@@ -190,6 +246,16 @@
     context.baseScore += sihuaBoost;
     context.metadata = context.metadata || {};
     context.metadata.sihuaBoost = sihuaBoost;
+    
+    // 如果使用了完整四化系統，記錄四化詳情
+    if (fourTransformations) {
+      context.metadata.fourTransformations = {
+        benming: fourTransformations.benming,
+        dalimit: fourTransformations.dalimit,
+        liunian: fourTransformations.liunian,
+        xiaoxian: fourTransformations.xiaoxian,
+      };
+    }
 
     return context;
   }
@@ -388,7 +454,7 @@
     context = stageBrightness(context, ziwei, palaceName);
     context = stageResonance(context);
     context = stageElement(context, ziwei);
-    context = stageSiHua(context, horoscope, palaceName);
+    context = stageSiHua(context, horoscope, palaceName, options);
     context = stagePenalty(context, weightsData, { horoscope, year });
 
     return context;

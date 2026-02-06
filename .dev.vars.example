@@ -1,6 +1,14 @@
 # 本機開發時複製為 .dev.vars 並填入後台帳密（勿提交 .dev.vars）
+# 
+# ⚠️ 安全提醒：
+# 1. 此文件僅為範例，請勿在此文件中填入真實密碼
+# 2. 複製為 .dev.vars 後，在 .dev.vars 中填入真實值
+# 3. .dev.vars 已加入 .gitignore，不會被提交到 Git
+# 4. 生產環境請在 Cloudflare Pages → Settings → Environment variables 中設置
+#
 # ADMIN_USER=你的後台帳號
 # ADMIN_PASSWORD=你的後台密碼
-
-ADMIN_USER=admin
-ADMIN_PASSWORD=請改為你的密碼
+#
+# 範例（請勿使用，僅供參考格式）：
+# ADMIN_USER=admin
+# ADMIN_PASSWORD=your_secure_password_here

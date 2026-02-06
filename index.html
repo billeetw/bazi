@@ -41,6 +41,355 @@
       padding-bottom: env(safe-area-inset-bottom);
     }
 
+    /* 專家問卷樣式 */
+    .expert-questionnaire-container {
+      padding: 1.5rem;
+      background: var(--bg-mid);
+      border-radius: 0.75rem;
+      border: 1px solid var(--glass-border);
+    }
+
+    .expert-questionnaire-header h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--theme-amber);
+      margin-bottom: 0.5rem;
+    }
+
+    .questionnaire-description {
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 1rem;
+    }
+
+    .progress-container {
+      margin-bottom: 1.5rem;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 0.5rem;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 0.25rem;
+      overflow: hidden;
+      margin-bottom: 0.5rem;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--theme-amber);
+      transition: width 0.3s ease;
+    }
+
+    .progress-text {
+      font-size: 0.75rem;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    .expert-question {
+      margin-bottom: 2rem;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 0.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .question-header {
+      margin-bottom: 1rem;
+    }
+
+    .question-number {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      background: var(--theme-amber);
+      color: var(--bg-deep);
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-right: 0.5rem;
+    }
+
+    .question-category {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      background: rgba(255, 191, 0, 0.2);
+      color: var(--theme-amber);
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      margin-right: 0.5rem;
+    }
+
+    .question-text {
+      margin-top: 0.75rem;
+      font-size: 1rem;
+      line-height: 1.5;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .question-options {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .option-label {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .option-label:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 191, 0, 0.3);
+    }
+
+    .option-label input:checked + .option-text {
+      color: var(--theme-amber);
+      font-weight: 600;
+    }
+
+    .option-label input:checked ~ .option-label {
+      border-color: var(--theme-amber);
+      background: rgba(255, 191, 0, 0.1);
+    }
+
+    .option-input {
+      margin-right: 0.75rem;
+      width: 1.25rem;
+      height: 1.25rem;
+      accent-color: var(--theme-amber);
+    }
+
+    .option-text {
+      flex: 1;
+      font-size: 0.9375rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .expert-questionnaire-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: flex-end;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-clear,
+    .btn-submit {
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-clear {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .btn-clear:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn-submit {
+      background: var(--theme-amber);
+      border: 1px solid var(--theme-amber);
+      color: var(--bg-deep);
+    }
+
+    .btn-submit:hover {
+      background: #FFD700;
+      border-color: #FFD700;
+    }
+
+    /* 經緯度校準樣式 */
+    .geolocation-calibration-container {
+      padding: 1.5rem;
+      background: var(--bg-mid);
+      border-radius: 0.75rem;
+      border: 1px solid var(--glass-border);
+    }
+
+    .geolocation-header h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--theme-amber);
+      margin-bottom: 0.5rem;
+    }
+
+    .geolocation-description {
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.6);
+      margin-bottom: 1rem;
+    }
+
+    .geolocation-status {
+      margin-bottom: 1rem;
+      padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 0.5rem;
+    }
+
+    .status-success {
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.9375rem;
+    }
+
+    .status-source {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.75rem;
+      margin-left: 0.5rem;
+    }
+
+    .status-empty {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.875rem;
+      font-style: italic;
+    }
+
+    .geolocation-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-browser,
+    .btn-manual,
+    .btn-clear {
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.05);
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .btn-browser:hover,
+    .btn-manual:hover {
+      background: rgba(255, 191, 0, 0.1);
+      border-color: rgba(255, 191, 0, 0.3);
+      color: var(--theme-amber);
+    }
+
+    .btn-clear {
+      background: rgba(255, 0, 0, 0.1);
+      border-color: rgba(255, 0, 0, 0.3);
+      color: rgba(255, 150, 150, 0.9);
+    }
+
+    .btn-clear:hover {
+      background: rgba(255, 0, 0, 0.2);
+      border-color: rgba(255, 0, 0, 0.5);
+    }
+
+    .geolocation-manual-form {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 0.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .geolocation-manual-form.hidden {
+      display: none;
+    }
+
+    .form-row {
+      margin-bottom: 1rem;
+    }
+
+    .form-row label {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-row span {
+      display: block;
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 0.25rem;
+    }
+
+    .form-row input {
+      width: 100%;
+      padding: 0.75rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 0.5rem;
+      color: rgba(255, 255, 255, 0.9);
+      font-size: 0.9375rem;
+    }
+
+    .form-row input:focus {
+      outline: none;
+      border-color: var(--theme-amber);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+    }
+
+    .btn-submit,
+    .btn-cancel {
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-size: 0.9375rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-submit {
+      background: var(--theme-amber);
+      border: 1px solid var(--theme-amber);
+      color: var(--bg-deep);
+    }
+
+    .btn-submit:hover {
+      background: #FFD700;
+      border-color: #FFD700;
+    }
+
+    .btn-cancel {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: rgba(255, 255, 255, 0.8);
+    }
+
+    .btn-cancel:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .geolocation-error {
+      margin-top: 1rem;
+      padding: 0.75rem;
+      background: rgba(255, 0, 0, 0.1);
+      border: 1px solid rgba(255, 0, 0, 0.3);
+      border-radius: 0.5rem;
+      color: rgba(255, 150, 150, 0.9);
+      font-size: 0.875rem;
+    }
+
+    .geolocation-error.hidden {
+      display: none;
+    }
+
     /* 核心特效 1：活的星際背景 (The Living Cosmos) */
     body::before {
       content: '';
@@ -1201,6 +1550,12 @@
   <script src="js/calc/ziweiPipeline.js?v=1"></script>
   <script src="js/calc/ziweiOutput.js?v=1"></script>
   <script src="js/calc/baziCore.js?v=1"></script>
+  <script src="js/calc/fourTransformations.js?v=1"></script>
+  <script src="js/calc/overlapAnalysis.js?v=1"></script>
+  <script src="js/calc/luckIndex.js?v=1"></script>
+  <script src="js/calc/healthAnalysis.js?v=1"></script>
+  <script src="js/calc/monthlyDetailedAnalysis.js?v=1"></script>
+  <script src="js/calc/aiPromptGenerator.js?v=1"></script>
   <script src="js/calc/tactics.js?v=1"></script>
   <script src="js/strategyConfig.js?v=2"></script>
   <script src="js/calc.js?v=2"></script>
@@ -1234,6 +1589,8 @@
   <script src="js/ui/components/feedback-widget.js?v=1"></script>
   <script src="js/ui/components/feedback-history.js?v=1"></script>
   <script src="js/ui/components/feedback-integration.js?v=1"></script>
+  <script src="js/ui/components/expert-questionnaire.js?v=1"></script>
+  <script src="js/ui/components/geolocation-calibration.js?v=1"></script>
   <script src="js/ui.js?v=2"></script>
   <!-- 啟動序列掛載點與 bundle（可選：npm run build:startup 後載入，點擊「啟動人生戰略引擎」會先播 4.5s 啟動動畫） -->
   <div id="startup-root"></div>

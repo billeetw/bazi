@@ -588,6 +588,73 @@
     return (row && row.weights) ? row.weights : {};
   }
 
+  /**
+   * 計算命主（根據命宮地支）
+   * 命主對應關係：
+   * - 子：貪狼
+   * - 丑、亥：巨門
+   * - 寅、戌：祿存
+   * - 卯、酉：文曲
+   * - 巳、未：武曲
+   * - 辰、申：廉貞
+   * - 午：破軍
+   * @param {string} mingBranch 命宮地支（如 "寅"）
+   * @returns {string} 命主星曜名稱（繁體）
+   */
+  function calculateMingzhu(mingBranch) {
+    if (!mingBranch) return "";
+    
+    const MINGZHU_MAP = {
+      "子": "貪狼",
+      "丑": "巨門",
+      "寅": "祿存",
+      "卯": "文曲",
+      "辰": "廉貞",
+      "巳": "武曲",
+      "午": "破軍",
+      "未": "武曲",
+      "申": "廉貞",
+      "酉": "文曲",
+      "戌": "祿存",
+      "亥": "巨門"
+    };
+    
+    return MINGZHU_MAP[mingBranch] || "";
+  }
+
+  /**
+   * 計算身主（根據出生年地支）
+   * 身主對應關係：
+   * - 子、午：火星
+   * - 丑、未：天相
+   * - 寅、申：天梁
+   * - 卯、酉：天同
+   * - 巳、亥：天機
+   * - 辰、戌：文昌
+   * @param {string} yearBranch 出生年地支（如 "子"）
+   * @returns {string} 身主星曜名稱（繁體）
+   */
+  function calculateShengong(yearBranch) {
+    if (!yearBranch) return "";
+    
+    const SHENGONG_MAP = {
+      "子": "火星",
+      "丑": "天相",
+      "寅": "天梁",
+      "卯": "天同",
+      "辰": "文昌",
+      "巳": "天機",
+      "午": "火星",
+      "未": "天相",
+      "申": "天梁",
+      "酉": "天同",
+      "戌": "文昌",
+      "亥": "天機"
+    };
+    
+    return SHENGONG_MAP[yearBranch] || "";
+  }
+
   // ====== 導出 ======
 
   // 導出到 window.CalcHelpers（如果 window 存在）
@@ -629,6 +696,10 @@
       // 四化相關
       getMutagenStars,
       getSiHuaWeights,
+      
+      // 命主/身主計算
+      calculateMingzhu,
+      calculateShengong,
     };
   } else if (typeof globalThis !== "undefined") {
     // 讓 Node / 測試環境也能引用
@@ -656,6 +727,8 @@
       computeRelatedPalaces,
       getMutagenStars,
       getSiHuaWeights,
+      calculateMingzhu,
+      calculateShengong,
     };
   }
 })();

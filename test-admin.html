@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>測試頁面</title>
+  <style>
+    body {
+      background: #1e293b;
+      color: white;
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    .test-box {
+      background: rgba(255, 191, 0, 0.1);
+      border: 1px solid rgba(255, 191, 0, 0.3);
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>測試頁面</h1>
+  <div class="test-box">
+    <p>如果你能看到這個頁面，說明服務器正常運行。</p>
+    <p>現在請訪問：<a href="/expert-admin.html" style="color: #FFBF00;">專家後台管理界面</a></p>
+  </div>
+  
+  <div class="test-box">
+    <h2>檢查 JavaScript 文件</h2>
+    <div id="js-check"></div>
+  </div>
+
+  <script>
+    // 測試 JavaScript 是否正常運行
+    document.getElementById('js-check').innerHTML = '<p style="color: #4ade80;">✓ JavaScript 正常運行</p>';
+    
+    // 測試一些關鍵文件是否存在
+    const testFiles = [
+      'js/calc/constants.js',
+      'js/calc/helpers.js',
+      'js/calc/baziCore.js',
+      'js/calc.js'
+    ];
+    
+    async function checkFiles() {
+      const results = [];
+      for (const file of testFiles) {
+        try {
+          const response = await fetch(file);
+          if (response.ok) {
+            results.push(`✓ ${file} - 可訪問`);
+          } else {
+            results.push(`✗ ${file} - 無法訪問 (${response.status})`);
+          }
+        } catch (err) {
+          results.push(`✗ ${file} - 錯誤: ${err.message}`);
+        }
+      }
+      document.getElementById('js-check').innerHTML += '<ul>' + results.map(r => `<li>${r}</li>`).join('') + '</ul>';
+    }
+    
+    checkFiles();
+  </script>
+</body>
+</html>
