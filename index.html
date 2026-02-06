@@ -409,9 +409,41 @@
     }
     @keyframes cosmic-drift {
       0% { transform: scale(1) rotate(0deg) translateZ(0); }
-      50% { transform: scale(1.05) rotate(1deg) translateZ(0); }
+      50% { transform: scale(1.08) rotate(2deg) translateZ(0); }
       100% { transform: scale(1) rotate(0deg) translateZ(0); }
     }
+    /* 流星動畫 */
+    @keyframes meteor-shower {
+      0% {
+        opacity: 0;
+        transform: translateX(-100px) translateY(-100px);
+      }
+      10% {
+        opacity: 1;
+      }
+      90% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+        transform: translateX(200vw) translateY(200vh);
+      }
+    }
+    .meteor {
+      position: fixed;
+      width: 2px;
+      height: 100px;
+      background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.8), transparent);
+      box-shadow: 0 0 10px rgba(255, 191, 0, 0.6);
+      z-index: -1;
+      pointer-events: none;
+      animation: meteor-shower 3s linear infinite;
+    }
+    .meteor:nth-child(1) { top: 10%; left: 20%; animation-delay: 0s; animation-duration: 2.5s; }
+    .meteor:nth-child(2) { top: 30%; left: 60%; animation-delay: 4s; animation-duration: 3s; }
+    .meteor:nth-child(3) { top: 50%; left: 40%; animation-delay: 8s; animation-duration: 2.8s; }
+    .meteor:nth-child(4) { top: 70%; left: 80%; animation-delay: 12s; animation-duration: 3.2s; }
+    .meteor:nth-child(5) { top: 20%; left: 10%; animation-delay: 16s; animation-duration: 2.6s; }
     /* 星圖網格：opacity 調低至 0.1，避免太明顯 */
     body::after {
       content: '';
@@ -472,21 +504,23 @@
     /* 玻璃擬態：極透明深藍 + blur(12px) + 白邊 + 四角亮點 */
     /* 核心特效 2：頂級玻璃擬態 (Premium Glassmorphism) */
     .glass-container {
-      background: rgba(10, 10, 22, 0.4);
+      background: rgba(10, 10, 22, 0.3);
       backdrop-filter: blur(16px) saturate(110%);
       -webkit-backdrop-filter: blur(16px) saturate(110%);
-      border-top: 1px solid rgba(255, 255, 255, 0.15);
-      border-left: 1px solid rgba(255, 255, 255, 0.08);
-      border-right: 1px solid rgba(255, 255, 255, 0.08);
-      border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      border-left: 1px solid rgba(255, 255, 255, 0.12);
+      border-right: 1px solid rgba(255, 255, 255, 0.12);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.3);
       border-radius: 24px;
-      box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.02), 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+      box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.03), 0 10px 30px -5px rgba(0, 0, 0, 0.5);
       transition: all 0.4s ease;
+      animation: float-gentle 7s ease-in-out infinite;
     }
     .glass-container:hover {
       border-top: 1px solid var(--theme-amber-glow);
-      box-shadow: inset 0 0 25px rgba(255, 191, 0, 0.05), 0 15px 35px -5px rgba(0, 0, 0, 0.6);
-      transform: translateY(-2px);
+      box-shadow: inset 0 0 25px rgba(255, 191, 0, 0.08), 0 15px 35px -5px rgba(0, 0, 0, 0.6);
+      transform: translateY(-4px);
+      animation: float-gentle 5s ease-in-out infinite;
     }
 
     .glass-hero {
@@ -521,29 +555,31 @@
         0 24px 60px rgba(0, 0, 0, 0.4);
     }
     .glass-input {
-      background: rgba(15, 15, 30, 0.6);
+      background: rgba(15, 15, 30, 0.35);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border: 2px solid rgba(255, 191, 0, 0.2);
+      border: 2px solid rgba(255, 191, 0, 0.25);
       border-radius: 2rem;
       position: relative;
       box-shadow: 
-        0 0 40px rgba(255, 191, 0, 0.1),
-        inset 0 0 60px rgba(255, 191, 0, 0.05),
-        0 20px 60px rgba(0, 0, 0, 0.5);
+        0 0 40px rgba(255, 191, 0, 0.15),
+        inset 0 0 60px rgba(255, 191, 0, 0.08),
+        0 20px 60px rgba(0, 0, 0, 0.4);
       transition: all 0.5s ease;
-      box-shadow:
-        inset 0 0 0 1px rgba(255, 255, 255, 0.03),
-        0 24px 60px rgba(0, 0, 0, 0.4);
-      transition: border-color 0.4s ease, box-shadow 0.4s ease;
+      animation: float-gentle 6s ease-in-out infinite;
+    }
+    @keyframes float-gentle {
+      0%, 100% { transform: translateY(0px) translateX(0px); }
+      50% { transform: translateY(-8px) translateX(4px); }
     }
     .glass-input:hover {
-      border-color: rgba(255, 191, 0, 0.4);
+      border-color: rgba(255, 191, 0, 0.5);
       box-shadow: 
-        0 0 60px rgba(255, 191, 0, 0.2),
-        inset 0 0 80px rgba(255, 191, 0, 0.08),
+        0 0 60px rgba(255, 191, 0, 0.25),
+        inset 0 0 80px rgba(255, 191, 0, 0.12),
         0 25px 80px rgba(0, 0, 0, 0.6);
-      transform: translateY(-4px);
+      transform: translateY(-6px);
+      animation: float-gentle 4s ease-in-out infinite;
     }
     .glass-input::before {
       content: '';
@@ -668,14 +704,16 @@
       content: '';
       position: absolute;
       inset: -50%;
-      background: linear-gradient(105deg,
+      background: linear-gradient(90deg,
         transparent 0%,
-        rgba(255, 255, 255, 0.06) 25%,
-        transparent 50%,
-        rgba(255, 191, 0, 0.08) 75%,
+        transparent 30%,
+        rgba(255, 255, 255, 0.12) 45%,
+        rgba(255, 191, 0, 0.2) 50%,
+        rgba(255, 255, 255, 0.12) 55%,
+        transparent 70%,
         transparent 100%);
-      background-size: 200% 200%;
-      animation: shine-flow 5s linear infinite;
+      background-size: 300% 100%;
+      animation: shine-flow 3s linear infinite;
       pointer-events: none;
     }
     @keyframes metal-flow {
@@ -683,14 +721,14 @@
       50% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.2), 0 0 32px rgba(255,191,0,0.3), 0 0 16px rgba(0,210,255,0.08); }
     }
     @keyframes shine-flow {
-      0% { background-position: 200% 50%; }
-      100% { background-position: -200% 50%; }
+      0% { background-position: -100% 0; }
+      100% { background-position: 200% 0; }
     }
 
     /* 命運座標：水平條狀排列 + 頂級玻璃擬態條（無圓形） */
     .destiny-bar-row {
       display: grid;
-      gap: 0.75rem;
+      gap: 1rem;
       align-items: stretch;
     }
     .destiny-bar-wrap {
@@ -705,10 +743,10 @@
       width: 100%;
       min-width: 0;
       padding: 0.6rem 2rem 0.6rem 0.85rem;
-      background: rgba(0, 0, 0, 0.3);
+      background: rgba(0, 0, 0, 0.2);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 191, 0, 0.25);
+      border: 1px solid rgba(255, 191, 0, 0.3);
       border-radius: 10px;
       color: var(--amber-gold);
       font-size: 0.875rem;
@@ -741,6 +779,53 @@
     .destiny-select option {
       background: #0f0f18;
       color: var(--amber-gold);
+    }
+    /* 推算時辰按鈕：鮮明設計 */
+    .identify-time-btn {
+      padding: 0.75rem 1.5rem;
+      font-size: 0.9375rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #fff;
+      background: linear-gradient(135deg, rgba(255, 191, 0, 0.9) 0%, rgba(255, 140, 0, 0.85) 100%);
+      border: 2px solid rgba(255, 191, 0, 0.6);
+      border-radius: 0.75rem;
+      box-shadow: 
+        0 4px 15px rgba(255, 191, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 0 20px rgba(255, 191, 0, 0.2);
+      transition: all 0.3s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .identify-time-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: left 0.5s ease;
+    }
+    .identify-time-btn:hover {
+      transform: translateY(-2px) scale(1.05);
+      background: linear-gradient(135deg, rgba(255, 191, 0, 1) 0%, rgba(255, 140, 0, 0.95) 100%);
+      border-color: rgba(255, 191, 0, 0.8);
+      box-shadow: 
+        0 6px 20px rgba(255, 191, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        0 0 30px rgba(255, 191, 0, 0.3);
+    }
+    .identify-time-btn:hover::before {
+      left: 100%;
+    }
+    .identify-time-btn:active {
+      transform: translateY(0) scale(1);
+      box-shadow: 
+        0 2px 10px rgba(255, 191, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
     }
 
     .glass{
@@ -1233,6 +1318,12 @@
 <body class="pb-20">
   <div class="ambient-nebula" aria-hidden="true"></div>
   <div class="ambient-nebula-spot" aria-hidden="true"></div>
+  <!-- 流星效果 -->
+  <div class="meteor" aria-hidden="true"></div>
+  <div class="meteor" aria-hidden="true"></div>
+  <div class="meteor" aria-hidden="true"></div>
+  <div class="meteor" aria-hidden="true"></div>
+  <div class="meteor" aria-hidden="true"></div>
 
   <!-- TOP NAV -->
   <div class="nav-bar flex items-center justify-between gap-3">
@@ -1284,9 +1375,9 @@
         <div class="destiny-bar-wrap"><select id="timeMode" class="destiny-select" aria-label="時間模式"></select></div>
         <div class="destiny-bar-wrap"><select id="gender" class="destiny-select" aria-label="性別"></select></div>
       </div>
-      <div class="flex flex-wrap items-center gap-2 pt-1">
-        <span class="text-[11px] text-slate-500">不確定出生時間？</span>
-        <button type="button" id="btnIdentifyBirthTimeGlobal" class="identify-time-btn text-[11px] text-amber-400/90 hover:text-amber-300 font-medium border border-amber-400/30 hover:border-amber-400/50 rounded-lg px-3 py-1.5 transition">
+      <div class="flex flex-wrap items-center gap-3 pt-2">
+        <span class="text-base md:text-lg font-bold text-amber-300/90">不確定出生時間？</span>
+        <button type="button" id="btnIdentifyBirthTimeGlobal" class="identify-time-btn">
           點我推算時辰
         </button>
       </div>
@@ -1303,7 +1394,7 @@
           <div class="destiny-bar-wrap"><select id="birthShichenHalf" class="destiny-select" aria-label="上半/下半"></select></div>
         </div>
         <div class="flex justify-center">
-          <button id="btnIdentifyBirthTime" type="button" class="identify-time-btn text-[11px] text-amber-400/90 hover:text-amber-300 font-medium border border-amber-400/30 hover:border-amber-400/50 rounded-lg px-3 py-2 transition">
+          <button id="btnIdentifyBirthTime" type="button" class="identify-time-btn">
             不確定時辰？點我推算時辰
           </button>
         </div>
@@ -1684,6 +1775,7 @@
   <script src="js/ui/components/palace-scores.js?v=1"></script>
   <script src="js/ui/components/palace-detail.js?v=2"></script>
   <script src="js/ui/components/launch-effect.js?v=1"></script>
+  <script src="js/ui/components/ambient-sound.js?v=1"></script>
   <script src="js/ui/components/liuyue-month.js?v=1"></script>
   <script src="js/ui/components/feedback-widget.js?v=1"></script>
   <script src="js/ui/components/feedback-history.js?v=1"></script>
