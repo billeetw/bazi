@@ -313,22 +313,22 @@
     // Section B: 2026 能量天氣預報 (The Environment)
     if (wuxingData && wuxingData.length > 0) {
       html += '<div class="space-y-4 mt-6">';
-      html += '<div class="text-sm font-black text-amber-400 mb-3">Section B: 2026 能量天氣預報 (The Environment)</div>';
+      html += '<div class="text-base md:text-sm font-black text-amber-400 mb-3">Section B: 2026 能量天氣預報 (The Environment)</div>';
       
       // 五行進度條
       wuxingData.forEach(elem => {
         const isHigh = elem.percentage >= 30;
         const colorClass = isHigh ? "bg-red-500" : elem.percentage >= 20 ? "bg-yellow-500" : "bg-green-500";
         html += `
-          <div class="space-y-1">
-            <div class="flex justify-between text-xs">
+          <div class="space-y-2 md:space-y-1">
+            <div class="flex justify-between text-sm md:text-xs">
               <span class="text-slate-300">${elem.name}能量</span>
               <span class="text-slate-400">${elem.percentage}%</span>
             </div>
-            <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <div class="w-full h-3 md:h-2 bg-white/10 rounded-full overflow-hidden">
               <div class="h-full ${colorClass} transition-all duration-300" style="width: ${elem.percentage}%"></div>
             </div>
-            ${isHigh ? '<div class="text-xs text-red-400">⚠️ 系統超載預警</div>' : ''}
+            ${isHigh ? '<div class="text-sm md:text-xs text-red-400">⚠️ 系統超載預警</div>' : ''}
           </div>
         `;
       });
