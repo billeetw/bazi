@@ -19,7 +19,29 @@
     // 當前選中的宮位（用於移動端底部面板）
     currentSelectedPalace: null,
     
-    // 其他狀態...
+    // 疊宮分析數據
+    overlapAnalysis: null,
+    
+    // 好命指數
+    luckIndex: null,
+    
+    // 月度健康風險
+    monthlyHealthRisk: null,
+    
+    // 健康預警
+    healthWarning: null,
+    
+    // AI Prompt（供後台管理界面使用）
+    aiPrompt: null,
+    
+    // 結構化數據（供 AI Prompt 生成使用）
+    structuredData: null,
+    
+    // 地理位置數據
+    geolocation: null,
+    
+    // 專家問卷答案
+    expertQuestionnaire: null,
   };
 
   /**
@@ -83,9 +105,9 @@
     resetState(keys = null) {
       if (keys === null) {
         // 重置所有狀態
-        state.ziweiPalaceMetadata = null;
-        state.ziweiScores = null;
-        state.currentSelectedPalace = null;
+        Object.keys(state).forEach(key => {
+          state[key] = null;
+        });
       } else {
         // 重置指定狀態
         keys.forEach(key => {
