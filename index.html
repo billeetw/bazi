@@ -993,6 +993,9 @@
       transition: transform 0.25s ease-out, opacity 0.2s ease-out;
       padding: 12px 16px 24px;
       z-index: 50;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
     .palace-sheet.open {
       transform: translateY(0);
@@ -1510,7 +1513,7 @@
   <div id="palaceSheetBackdrop" class="fixed inset-0 bg-black/60 hidden z-40"></div>
   <div id="palaceSheet" class="palace-sheet z-50">
     <div class="palace-sheet-handle"></div>
-    <div class="palace-sheet-header">
+    <div class="palace-sheet-header flex-shrink-0">
       <div>
         <div id="mobilePalaceTitle" class="text-base font-black text-amber-300">請點宮位</div>
         <div id="mobilePalaceSub" class="text-xs text-slate-400 mt-1"></div>
@@ -1520,7 +1523,7 @@
         <span>收合</span>
       </button>
     </div>
-    <div id="mobilePalaceBody" class="mt-4 space-y-4 text-xs text-slate-100">
+    <div id="mobilePalaceBody" class="mt-4 space-y-4 text-xs text-slate-100 overflow-y-auto flex-1 min-h-0 pb-4" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
       <div class="text-slate-500 italic">點擊紫微方盤任一宮位，下方會顯示詳解與星曜解釋。</div>
     </div>
   </div>
