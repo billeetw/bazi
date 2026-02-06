@@ -13,109 +13,81 @@
 
   /**
    * 验证输入参数
-   * @param {Object} params - 输入参数
-   * @returns {Object} 验证后的参数和错误信息
    */
   function validateInputs(params) {
     const { vy, vm, vd, vh, vmin, timeMode, shichen, shichenHalf } = params;
-    const errors = [];
-
-    if (![vy, vm, vd].every((n) => Number.isFinite(n))) {
-      errors.push("請先選完整出生年／月／日。若不確定時辰，可點「不確定出生時間？點我推算時辰」。");
+    
+    // 基本验证逻辑
+    if (!vy || !vm || !vd) {
+      return { valid: false, error: "请填写完整的出生日期" };
     }
-
-    if (timeMode !== "exact" && timeMode !== "shichen") {
-      errors.push("時間模式錯誤，請重新選擇");
+    
+    if (timeMode === "exact" && (vh === null || vh === undefined)) {
+      return { valid: false, error: "请填写出生时间" };
     }
-
-    if (timeMode === "exact") {
-      if (![vh, vmin].every((n) => Number.isFinite(n))) {
-        errors.push("請先選完整出生時間（時、分）");
-      }
-    } else {
-      if (!shichen) {
-        errors.push("請先選時辰，或不確定時間可點「不確定出生時間？點我推算時辰」");
-      }
-      if (shichenHalf !== "upper" && shichenHalf !== "lower") {
-        errors.push("請先選上半/下半時辰");
-      }
+    
+    if (timeMode === "shichen" && !shichen) {
+      return { valid: false, error: "请选择时辰" };
     }
-
-    return { isValid: errors.length === 0, errors };
+    
+    return { valid: true };
   }
 
   /**
-   * 更新 UI 状态（显示/隐藏 dashboard）
+   * 更新仪表板 UI
    */
   function updateDashboardUI() {
-    const sysEl = document.getElementById("system");
-    const navEl = document.getElementById("workspaceNav");
-    const navCta = document.getElementById("navCta");
-    const inputEl = document.getElementById("inputCard");
-
-    if (sysEl) {
-      sysEl.classList.remove("hidden");
-      document.body.classList.add("dashboard-visible");
-      if (!sysEl.hasAttribute("data-dashboard-entered")) {
-        sysEl.setAttribute("data-dashboard-entered", "1");
-        sysEl.classList.add("dashboard-enter");
-        const delayStep = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 0.06;
-        sysEl.querySelectorAll(".dashboard-card").forEach((card, i) => {
-          card.style.animationDelay = `${i * delayStep}s`;
-        });
-      }
-    }
-    if (navEl) navEl.classList.remove("hidden");
-    if (navCta) navCta.classList.remove("hidden");
-    if (inputEl) inputEl.classList.add("hidden");
+    // 显示仪表板，隐藏启动页面
+    const dashboard = document.getElementById("dashboard");
+    const launchPage = document.getElementById("launchPage");
+    
+    if (dashboard) dashboard.classList.remove("hidden");
+    if (launchPage) launchPage.classList.add("hidden");
   }
 
   /**
    * 更新摘要信息
-   * @param {Object} params - 参数对象
    */
   function updateSummary(params) {
     const { vy, vm, vd, gender, timeMode, resolved, bazi, pad2 } = params;
-
-    const summaryBirthEl = document.getElementById("summaryBirth");
-    const summaryDMEl = document.getElementById("summaryDM");
-    const summaryDominantEl = document.getElementById("summaryDominant");
-    const summaryRedMonthsEl = document.getElementById("summaryRedMonths");
-
-    if (summaryBirthEl) {
-      const genderText = gender === "M" ? "男" : gender === "F" ? "女" : "";
-      const timeText =
-        timeMode === "shichen"
-          ? `時辰：${resolved.shichen}${resolved.shichenHalf === "lower" ? "下" : "上"}（約 ${pad2(resolved.hour)}:${pad2(resolved.minute)}）`
-          : `${pad2(resolved.hour)}:${pad2(resolved.minute)}`;
-
-      summaryBirthEl.textContent =
-        `${vy}/${pad2(vm)}/${pad2(vd)} · ${timeText}（公曆）` + (genderText ? ` · ${genderText}` : "");
-    }
-    if (summaryDMEl) summaryDMEl.textContent = bazi.dmElement || "—";
-    if (summaryDominantEl) summaryDominantEl.textContent = (bazi.tenGod?.dominant || "—").trim() || "—";
-    if (summaryRedMonthsEl) {
-      const reds = bazi.liuyue2026?.redMonths || [];
-      summaryRedMonthsEl.textContent = reds.length ? reds.join("、") : "偏少（可穩推）";
-    }
+    
+    // 更新摘要显示（如果需要）
+    // 这里可以添加具体的摘要更新逻辑
   }
 
   /**
    * 渲染战术建议
-   * @param {Object} params - 参数对象
+   * 使用 StrategicPanel 组件渲染
    */
   function renderTactics(params) {
     const { bazi, dbContent, ziweiPalaceMetadata, liuyueData } = params;
-    const dominant = (bazi?.tenGod?.dominant || "").trim();
-    const tenGodText = dominant && dbContent?.tenGods?.[dominant] ? dbContent.tenGods[dominant] : "";
-
-    if (!window.Calc?.computeDynamicTactics) return;
-
-    const tactics = window.Calc.computeDynamicTactics(bazi, tenGodText, ziweiPalaceMetadata, liuyueData);
-    const tacticalBox = document.getElementById("tacticalBox");
-    if (tacticalBox) {
-      tacticalBox.innerHTML = tactics.length
-        ? tactics.map((x) => {
+    
+    // 使用 StrategicPanel 组件
+    if (window.UiComponents?.StrategicPanel?.renderStrategicPanel) {
+      window.UiComponents.StrategicPanel.renderStrategicPanel({
+        bazi,
+        dbContent,
+        ziweiPalaceMetadata,
+        liuyueData,
+      });
+    } else {
+      // Fallback: 使用旧的简单渲染方式
+      const dominant = (bazi?.tenGod?.dominant || "").trim();
+      const tenGodText = dominant && dbContent?.tenGods?.[dominant] 
+        ? dbContent.tenGods[dominant] 
+        : "";
+      
+      if (window.Calc?.computeDynamicTactics) {
+        const tactics = window.Calc.computeDynamicTactics(
+          bazi, 
+          tenGodText, 
+          ziweiPalaceMetadata, 
+          liuyueData
+        );
+        
+        const tacticalBox = document.getElementById("tacticalBox");
+        if (tacticalBox && tactics.length > 0) {
+          tacticalBox.innerHTML = tactics.map((x) => {
             const borderClass = x.tone === "emerald" ? "border-emerald-400/40" :
                                x.tone === "green" ? "border-green-400/40" :
                                x.tone === "red" ? "border-red-400/40" :
@@ -124,20 +96,22 @@
                                x.tone === "orange" ? "border-orange-400/40" :
                                "border-amber-400/40";
             return `<div class="p-4 rounded-xl border ${borderClass} bg-white/5 text-sm leading-relaxed">${x.text}</div>`;
-          }).join("")
-        : `<div class="text-sm text-slate-400 italic">（戰術提示暫不可用）</div>`;
+          }).join("");
+        }
+      }
     }
   }
 
-  // 导出到 window.UiServices.CalculationFlow
-  if (!window.UiServices) {
-    window.UiServices = {};
+  // 導出
+  if (typeof window !== "undefined") {
+    if (!window.UiServices) {
+      window.UiServices = {};
+    }
+    window.UiServices.CalculationFlow = {
+      validateInputs,
+      updateDashboardUI,
+      updateSummary,
+      renderTactics,
+    };
   }
-
-  window.UiServices.CalculationFlow = {
-    validateInputs,
-    updateDashboardUI,
-    updateSummary,
-    renderTactics,
-  };
 })();
