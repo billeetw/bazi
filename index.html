@@ -1053,6 +1053,91 @@
     .wuxing-金{background:#e5e7eb}
     .wuxing-水{background:#3b82f6}
 
+    /* 五行標題卡片樣式 */
+    .wuxing-title-card {
+      padding: 0.75rem 1rem;
+      border-radius: 0.75rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+      backdrop-filter: blur(8px);
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .wuxing-title-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, currentColor, transparent);
+      opacity: 0.6;
+    }
+
+    .wuxing-title-card.surface-title {
+      border-color: rgba(251, 191, 36, 0.3);
+      box-shadow: 0 2px 8px rgba(251, 191, 36, 0.1);
+    }
+
+    .wuxing-title-card.surface-title::before {
+      background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.6), transparent);
+    }
+
+    .wuxing-title-card.surface-title:hover {
+      border-color: rgba(251, 191, 36, 0.5);
+      box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .wuxing-title-card.strategic-title {
+      border-color: rgba(16, 185, 129, 0.3);
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1);
+    }
+
+    .wuxing-title-card.strategic-title::before {
+      background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.6), transparent);
+    }
+
+    .wuxing-title-card.strategic-title:hover {
+      border-color: rgba(16, 185, 129, 0.5);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .wuxing-logo-icon {
+      font-size: 1.25rem;
+      line-height: 1;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+      animation: float-gentle 3s ease-in-out infinite;
+    }
+
+    .wuxing-logo-icon.surface-logo {
+      animation-delay: 0s;
+    }
+
+    .wuxing-logo-icon.surface-logo:last-child {
+      animation-delay: 1.5s;
+    }
+
+    .wuxing-logo-icon.strategic-logo {
+      animation-delay: 0.5s;
+    }
+
+    .wuxing-logo-icon.strategic-logo:last-child {
+      animation-delay: 2s;
+    }
+
+    @keyframes float-gentle {
+      0%, 100% {
+        transform: translateY(0) rotate(0deg);
+      }
+      50% {
+        transform: translateY(-4px) rotate(5deg);
+      }
+    }
+
     /* 五行 bar 動畫 */
     .wx-row{
       opacity: 0;
@@ -1578,10 +1663,22 @@
               <div>
                 <div class="text-xs text-slate-400 mb-2">表層結構（四柱天干）</div>
                 <div class="space-y-3">
-                  <div id="surfaceWxBars" class="space-y-2"></div>
-                  <div class="text-[11px] font-black tracking-widest text-slate-400">
-                    角色名望（八字表層）—— 看起來強嗎？
+                  <!-- 特色標題：角色名望 -->
+                  <div class="wuxing-title-card surface-title mb-3">
+                    <div class="flex items-center gap-2">
+                      <div class="wuxing-logo-icon surface-logo">👁️</div>
+                      <div class="flex-1">
+                        <div class="text-sm md:text-base font-black text-amber-300 tracking-tight">
+                          角色名望（八字表層）
+                        </div>
+                        <div class="text-xs text-slate-400 italic mt-0.5">
+                          看起來強嗎？
+                        </div>
+                      </div>
+                      <div class="wuxing-logo-icon surface-logo">✨</div>
+                    </div>
                   </div>
+                  <div id="surfaceWxBars" class="space-y-2"></div>
                   <div id="surfaceWxRadar" class="w-full max-w-[260px]"></div>
                   <div id="surfaceWxComment" class="text-[11px] text-slate-300 leading-relaxed"></div>
                 </div>
@@ -1589,10 +1686,22 @@
               <div>
                 <div class="text-xs text-slate-400 mb-2">實戰結構（天干＋藏干＋月令加權）</div>
                 <div class="space-y-3">
-                  <div id="strategicWxBars" class="space-y-2"></div>
-                  <div class="text-[11px] font-black tracking-widest text-slate-400">
-                    核心戰力（八字實戰）—— 真的能贏嗎？
+                  <!-- 特色標題：核心戰力 -->
+                  <div class="wuxing-title-card strategic-title mb-3">
+                    <div class="flex items-center gap-2">
+                      <div class="wuxing-logo-icon strategic-logo">⚔️</div>
+                      <div class="flex-1">
+                        <div class="text-sm md:text-base font-black text-emerald-300 tracking-tight">
+                          核心戰力（八字實戰）
+                        </div>
+                        <div class="text-xs text-slate-400 italic mt-0.5">
+                          真的能贏嗎？
+                        </div>
+                      </div>
+                      <div class="wuxing-logo-icon strategic-logo">🔥</div>
+                    </div>
                   </div>
+                  <div id="strategicWxBars" class="space-y-2"></div>
                   <div id="strategicWxRadar" class="w-full max-w-[260px]"></div>
                   <div id="strategicWxComment" class="text-[11px] text-slate-300 leading-relaxed"></div>
                 </div>

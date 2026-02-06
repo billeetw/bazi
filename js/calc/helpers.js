@@ -25,14 +25,26 @@
     KE_MAP,
     STRONG_COMMENTS,
     WEAK_COMMENTS,
+    STRONG_COMMENTS_SURFACE,
+    STRONG_COMMENTS_STRATEGIC,
+    WEAK_COMMENTS_SURFACE,
+    WEAK_COMMENTS_STRATEGIC,
     ENERGY_LABEL,
     ELEMENT_CORE_MEANING,
+    ELEMENT_CORE_MEANING_SURFACE,
+    ELEMENT_CORE_MEANING_STRATEGIC,
     GENERATION_POST_STYLE,
     OVERCOMING_POST_STYLE,
     ELEMENT_TYPE,
     BOYAN_CONVERSION_ONE,
+    BOYAN_CONVERSION_ONE_SURFACE,
+    BOYAN_CONVERSION_ONE_STRATEGIC,
     BOYAN_RISK_ONE,
+    BOYAN_RISK_ONE_SURFACE,
+    BOYAN_RISK_ONE_STRATEGIC,
     BOYAN_PUSH,
+    BOYAN_PUSH_SURFACE,
+    BOYAN_PUSH_STRATEGIC,
     SI_HUA_MAP,
   } = window.CalcConstants;
 
@@ -252,13 +264,18 @@
   /**
    * 生成五行強弱與生剋註解
    * @param {Object} wx 五行數值物件
+   * @param {string} kind 類型："surface"（表層）或 "strategic"（實戰），預設為 "strategic"
    * @returns {Object} { strongest, weakest, strongComment, weakComment, shengComment, keComment }
    */
-  function generateFiveElementComment(wx) {
+  function generateFiveElementComment(wx, kind = "strategic") {
     const { strongest, weakest } = getStrongestWeakest(wx);
 
-    const strongComment = STRONG_COMMENTS[strongest] || "";
-    const weakComment = WEAK_COMMENTS[weakest] || "";
+    const isSurface = kind === "surface";
+    const STRONG_CMTS = isSurface ? STRONG_COMMENTS_SURFACE : STRONG_COMMENTS_STRATEGIC;
+    const WEAK_CMTS = isSurface ? WEAK_COMMENTS_SURFACE : WEAK_COMMENTS_STRATEGIC;
+
+    const strongComment = STRONG_CMTS[strongest] || "";
+    const weakComment = WEAK_CMTS[weakest] || "";
 
     const shengTo = SHENG_MAP[strongest] || "";
     const keTo = KE_MAP[strongest] || "";
@@ -309,10 +326,13 @@
    * 獲取五行元素的意義文字
    * @param {string} el 五行元素（木、火、土、金、水）
    * @param {number} level 能量等級
+   * @param {string} kind 類型："surface"（表層）或 "strategic"（實戰），預設為 "strategic"
    * @returns {string} 意義文字
    */
-  function meaningText(el, level) {
-    const m = ELEMENT_CORE_MEANING[el];
+  function meaningText(el, level, kind = "strategic") {
+    const isSurface = kind === "surface";
+    const M = isSurface ? ELEMENT_CORE_MEANING_SURFACE : ELEMENT_CORE_MEANING_STRATEGIC;
+    const m = M[el];
     const lv = clampEnergyLevel(level);
     if (!m) return "";
     if (lv <= 1) return m.low01;
@@ -489,9 +509,10 @@
   /**
    * 生成伯彥戰略看板
    * @param {Object} wx 五行數值物件
+   * @param {string} kind 類型："surface"（表層）或 "strategic"（實戰），預設為 "strategic"
    * @returns {Object} { levels, strongest, weakest, wxRaw, 本局屬性, 戰略亮點, 系統風險, 伯彥助推 }
    */
-  function getBoyanBoard(wx) {
+  function getBoyanBoard(wx, kind = "strategic") {
     const EN_TO_ZH = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
     const keysZh = ["木", "火", "土", "金", "水"];
     const wxUse = {};
@@ -503,15 +524,20 @@
     const { levels } = toEnergyLevelsFromWx(wxUse);
     const strongLv = clampEnergyLevel(levels[strongest]);
     const weakLv = clampEnergyLevel(levels[weakest]);
-    const M = ELEMENT_CORE_MEANING;
+    
+    const isSurface = kind === "surface";
+    const M = isSurface ? ELEMENT_CORE_MEANING_SURFACE : ELEMENT_CORE_MEANING_STRATEGIC;
+    const CONVERSION = isSurface ? BOYAN_CONVERSION_ONE_SURFACE : BOYAN_CONVERSION_ONE_STRATEGIC;
+    const RISK = isSurface ? BOYAN_RISK_ONE_SURFACE : BOYAN_RISK_ONE_STRATEGIC;
+    const PUSH = isSurface ? BOYAN_PUSH_SURFACE : BOYAN_PUSH_STRATEGIC;
 
     const 本局屬性 =
-      `🔥 本局屬性：${strongest}系主導（${ELEMENT_TYPE[strongest] || "均衡型"}）。${meaningText(strongest, levels[strongest])}，但${M[weakest]?.core || ""}支撐不足。`;
+      `🔥 本局屬性：${strongest}系主導（${ELEMENT_TYPE[strongest] || "均衡型"}）。${meaningText(strongest, levels[strongest], kind)}，但${M[weakest]?.core || ""}支撐不足。`;
 
     const genPairs = [["木", "火"], ["火", "土"], ["土", "金"], ["金", "水"], ["水", "木"]];
     const genPair = genPairs.find(([m]) => m === strongest);
     const [m, c] = genPair || genPairs[0];
-    const onePath = BOYAN_CONVERSION_ONE[`${m}->${c}`];
+    const onePath = CONVERSION[`${m}->${c}`];
     const 戰略亮點 = onePath
       ? `🚀 最優路徑：${onePath}`
       : `🚀 最優路徑：將${M[m]?.core}（${m}）轉化為${M[c]?.core}（${c}），這才是你能拿走的資產。`;
@@ -520,7 +546,7 @@
     let 系統風險 = "";
     for (const [a, b] of kePairs) {
       if (relationBadge(levels[a], levels[b]) !== "強弱") continue;
-      const one = BOYAN_RISK_ONE[`${a}->${b}`];
+      const one = RISK[`${a}->${b}`];
       if (one) {
         系統風險 = `🚨 系統風險：${one}`;
         break;
@@ -530,7 +556,7 @@
       系統風險 = `🚨 系統風險：${weakest}（${M[weakest]?.core}）偏弱，易拖慢整體。`;
     }
 
-    const 伯彥助推 = BOYAN_PUSH[weakest] || `這一關，先把【${weakest}】補上再談放大。`;
+    const 伯彥助推 = PUSH[weakest] || `這一關，先把【${weakest}】補上再談放大。`;
 
     return { levels, strongest, weakest, wxRaw: wxUse, 本局屬性, 戰略亮點, 系統風險, 伯彥助推 };
   }

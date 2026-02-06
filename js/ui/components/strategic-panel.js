@@ -31,8 +31,10 @@
 
   /**
    * 獲取命主和身主星曜
+   * @param {Object} ziwei - 紫微數據
+   * @param {Object} bazi - 八字數據（可選，用於獲取年支）
    */
-  function getMasterStars(ziwei) {
+  function getMasterStars(ziwei, bazi = null) {
     if (!ziwei) return { mingzhu: null, shengong: null };
     
     const core = ziwei.core || {};
@@ -41,10 +43,22 @@
     // 獲取命宮地支（用於計算命主）
     const mingBranch = core.minggongBranch || "寅";
     
-    // 獲取年支（用於計算身主）
-    const contract = window.contract || null;
-    const bazi = contract?.bazi || null;
-    const yearBranch = (bazi?.display?.yZ || "").toString().trim();
+    // 獲取年支（用於計算身主）- 優先使用傳入的 bazi，否則嘗試從多個來源獲取
+    let yearBranch = "";
+    if (bazi) {
+      yearBranch = (bazi?.display?.yZ || bazi?.yearBranch || "").toString().trim();
+    } else {
+      // 嘗試從多個來源獲取
+      const contract = window.contract || null;
+      const contractBazi = contract?.bazi || null;
+      yearBranch = (contractBazi?.display?.yZ || contractBazi?.yearBranch || "").toString().trim();
+      
+      // 如果還是沒有，嘗試從全局狀態獲取
+      if (!yearBranch) {
+        const globalBazi = window.BaziApp?.State?.getState("bazi") || window.bazi || null;
+        yearBranch = (globalBazi?.display?.yZ || globalBazi?.yearBranch || "").toString().trim();
+      }
+    }
     
     // 標準化星名的輔助函數
     const stripStarLabel = (s) => String(s || "").replace(/^\d+\.?\s*/, "").trim();
@@ -56,7 +70,7 @@
     
     if (mingzhuRaw) {
       mingzhu = toTraditionalStarName(stripStarLabel(mingzhuRaw));
-    } else if (window.CalcHelpers?.calculateMingzhu) {
+    } else if (window.CalcHelpers?.calculateMingzhu && mingBranch) {
       // 如果後端沒有提供，嘗試計算
       const calculated = window.CalcHelpers.calculateMingzhu(mingBranch);
       if (calculated) {
@@ -76,6 +90,22 @@
       if (calculated) {
         shengong = toTraditionalStarName(calculated);
       }
+    }
+    
+    // 調試日誌
+    if (!mingzhu || !shengong) {
+      console.log("[strategic-panel.js] getMasterStars 調試:", {
+        hasZiwei: !!ziwei,
+        mingBranch,
+        yearBranch,
+        mingzhuRaw,
+        shengongRaw,
+        hasCalcHelpers: !!window.CalcHelpers,
+        hasCalculateMingzhu: !!window.CalcHelpers?.calculateMingzhu,
+        hasCalculateShengong: !!window.CalcHelpers?.calculateShengong,
+        calculatedMingzhu: mingzhu,
+        calculatedShengong: shengong,
+      });
     }
     
     return { mingzhu, shengong };
@@ -262,9 +292,16 @@
     }
     
     const ziwei = ziweiPalaceMetadata?.ziwei || null;
-    const { mingzhu, shengong } = getMasterStars(ziwei);
+    // 傳入 bazi 數據以便獲取年支計算身主
+    const { mingzhu, shengong } = getMasterStars(ziwei, bazi);
     
-    console.log("[strategic-panel.js] 命主/身主:", { mingzhu, shengong });
+    console.log("[strategic-panel.js] 命主/身主:", { 
+      mingzhu, 
+      shengong,
+      hasZiwei: !!ziwei,
+      hasBazi: !!bazi,
+      yearBranch: bazi?.display?.yZ || bazi?.yearBranch || "未找到",
+    });
     
     // 獲取十神主軸
     const dominant = (bazi?.tenGod?.dominant || "").trim();

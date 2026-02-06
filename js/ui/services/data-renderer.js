@@ -34,7 +34,7 @@
     const surfaceBoard = typeof window.Calc?.getBoyanBoard === "function" 
       ? (() => { 
           try { 
-            return window.Calc.getBoyanBoard(bazi.wuxing?.surface || {}); 
+            return window.Calc.getBoyanBoard(bazi.wuxing?.surface || {}, "surface"); 
           } catch (_) { 
             return null; 
           } 
@@ -44,7 +44,7 @@
     const strategicBoard = typeof window.Calc?.getBoyanBoard === "function" 
       ? (() => { 
           try { 
-            return window.Calc.getBoyanBoard(bazi.wuxing?.strategic || {}); 
+            return window.Calc.getBoyanBoard(bazi.wuxing?.strategic || {}, "strategic"); 
           } catch (_) { 
             return null; 
           } 

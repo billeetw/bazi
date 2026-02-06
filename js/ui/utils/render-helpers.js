@@ -197,24 +197,24 @@
   }
 
   /** 伯彥戰略看板：一橫條（標 [最強][最弱]）+ 本局屬性 / 戰略亮點 / 系統風險 / 伯彥助推，總字數 ≤150 */
-  function renderFiveElementComment(containerId, wx, kind) {
+  function renderFiveElementComment(containerId, wx, kind = "strategic") {
     const el = document.getElementById(containerId);
     if (!el) return;
 
     const { generateFiveElementComment } = getCalcHelpers();
 
     if (typeof window.Calc?.getBoyanBoard !== "function") {
-      const c = generateFiveElementComment(wx || {});
+      const c = generateFiveElementComment(wx || {}, kind);
       el.innerHTML = `<div class="text-slate-100">本局五行：最強【${c.strongest}】、最弱【${c.weakest}】。</div><div class="text-slate-300 mt-1">${c.strongComment} ${c.weakComment}</div>`;
       return;
     }
 
     let board;
     try {
-      board = window.Calc.getBoyanBoard(wx || {});
+      board = window.Calc.getBoyanBoard(wx || {}, kind);
     } catch (err) {
       console.warn("getBoyanBoard error:", err);
-      const c = generateFiveElementComment(wx || {});
+      const c = generateFiveElementComment(wx || {}, kind);
       el.innerHTML = `<div class="text-slate-100">本局五行：最強【${c.strongest}】、最弱【${c.weakest}】。</div><div class="text-slate-300 mt-1">${c.strongComment} ${c.weakComment}</div>`;
       return;
     }
