@@ -80,14 +80,9 @@
     // 更新其他 UI 元素
     document.body.classList.add("dashboard-visible");
     const navEl = document.getElementById("workspaceNav");
-    const navCta = document.getElementById("navCta");
     if (navEl) {
       navEl.classList.remove("hidden");
       console.log("[calculation-flow.js] workspaceNav 已顯示");
-    }
-    if (navCta) {
-      navCta.classList.remove("hidden");
-      console.log("[calculation-flow.js] navCta 已顯示");
     }
     
     console.log("[calculation-flow.js] updateDashboardUI 執行完成");
