@@ -267,9 +267,21 @@
 
   // ====== Calculate ======
   async function calculate(skipStartupSequence) {
+    console.log("[ui.js] calculate 函數開始執行, skipStartupSequence:", skipStartupSequence);
+    
     const btn = document.getElementById("btnLaunch");
     const hint = document.getElementById("hint");
+    
+    if (!btn) {
+      console.error("[ui.js] calculate: 找不到啟動按鈕 #btnLaunch");
+      return;
+    }
+    if (!hint) {
+      console.warn("[ui.js] calculate: 找不到提示元素 #hint");
+    }
+    
     const original = btn.textContent;
+    console.log("[ui.js] calculate: 按鈕原始文本:", original);
 
     const vy = Number(document.getElementById("birthYear").value);
     const vm = Number(document.getElementById("birthMonth").value);
@@ -280,8 +292,11 @@
     const vmin = Number(document.getElementById("birthMinute")?.value);
     const shichen = (document.getElementById("birthShichen")?.value || "").trim();
     const shichenHalf = (document.getElementById("birthShichenHalf")?.value || "").trim(); // "upper" | "lower"
+    
+    console.log("[ui.js] calculate: 輸入參數:", { vy, vm, vd, gender, timeMode, vh, vmin, shichen, shichenHalf });
 
     if (!skipStartupSequence && typeof window.showStartupSequence === "function" && timeMode === "shichen" && shichen) {
+      console.log("[ui.js] calculate: 顯示啟動動畫");
       window.showStartupSequence({
         branchLabel: shichen + "時",
         personaLine: CEREMONY_PERSONALITY_KEYS[shichen] || CEREMONY_PERSONALITY_KEYS["子"],
@@ -292,29 +307,49 @@
     }
 
     try {
+      console.log("[ui.js] calculate: 開始驗證輸入");
       // 使用计算流程服务模块验证输入
       const CalculationFlow = window.UiServices?.CalculationFlow || {};
+      console.log("[ui.js] calculate: CalculationFlow 可用:", !!CalculationFlow.validateInputs);
+      
       const validation = CalculationFlow.validateInputs 
         ? CalculationFlow.validateInputs({ vy, vm, vd, vh, vmin, timeMode, shichen, shichenHalf })
         : { isValid: true, errors: [] };
+      
+      console.log("[ui.js] calculate: 驗證結果:", validation);
       
       if (!validation.isValid) {
         const errorMsg = (validation.errors && Array.isArray(validation.errors) && validation.errors.length > 0) 
           ? validation.errors[0] 
           : (validation.error || "輸入驗證失敗");
+        console.error("[ui.js] calculate: 驗證失敗:", errorMsg);
+        if (hint) {
+          hint.textContent = errorMsg;
+          hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
+        }
         throw new Error(errorMsg);
       }
+      
+      console.log("[ui.js] calculate: 驗證通過，開始解析時間");
 
       const resolved = resolveBirthTime({ mode: timeMode, hour: vh, minute: vmin, shichen, shichenHalf });
+      console.log("[ui.js] calculate: 時間解析結果:", resolved);
 
       btn.disabled = true;
       btn.textContent = "計算中…";
-      hint.textContent = "正在連線後端計算（八字＋紫微＋流月＋十神）…";
+      if (hint) {
+        hint.textContent = "正在連線後端計算（八字＋紫微＋流月＋十神）…";
+      }
+      console.log("[ui.js] calculate: 按鈕狀態已更新為「計算中」");
 
       // 使用 API 服务模块
       const apiService = window.UiServices?.ApiService;
+      console.log("[ui.js] calculate: ApiService 可用:", !!apiService);
+      console.log("[ui.js] calculate: API_BASE:", API_BASE);
+      
       let payload;
       if (apiService) {
+        console.log("[ui.js] calculate: 使用 ApiService.computeAll");
         payload = await apiService.computeAll({
           year: vy,
           month: vm,
@@ -323,20 +358,31 @@
           minute: resolved.minute,
           gender: gender || undefined,
         });
+        console.log("[ui.js] calculate: ApiService.computeAll 完成");
       } else {
+        console.log("[ui.js] calculate: 使用 fallback fetch");
         // Fallback to direct fetch
         const baseBody = { year: vy, month: vm, day: vd, hour: resolved.hour, minute: resolved.minute };
         const bodyWithGender = gender ? { ...baseBody, gender } : baseBody;
-        const resp = await fetch(`${API_BASE}/compute/all`, {
+        const apiUrl = `${API_BASE}/compute/all`;
+        console.log("[ui.js] calculate: 發送 API 請求到:", apiUrl);
+        console.log("[ui.js] calculate: 請求體:", bodyWithGender);
+        
+        const resp = await fetch(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(bodyWithGender),
         });
+        
+        console.log("[ui.js] calculate: API 響應狀態:", resp.status, resp.statusText);
+        
         if (!resp.ok) {
           const t = await resp.text().catch(() => "");
+          console.error("[ui.js] calculate: API 錯誤響應:", t);
           throw new Error(`API HTTP ${resp.status} ${t}`.trim());
         }
         payload = await resp.json();
+        console.log("[ui.js] calculate: API 響應數據:", payload);
         if (!payload?.ok) throw new Error(payload?.error || "API error");
       }
 
@@ -810,14 +856,20 @@
             console.log("[ui.js] 啟動按鈕被點擊");
             try {
               calculate();
-            } catch (err) {
-              console.error("啟動引擎失敗:", err);
-              const hint = document.getElementById("hint");
-              if (hint) {
-                hint.textContent = "啟動失敗：" + (err.message || "未知錯誤");
-                hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
-              }
-            }
+      } catch (err) {
+        console.error("[ui.js] calculate: 啟動引擎失敗:", err);
+        console.error("[ui.js] calculate: 錯誤堆棧:", err.stack);
+        const btn = document.getElementById("btnLaunch");
+        const hint = document.getElementById("hint");
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "啟動 · 人生戰略引擎";
+        }
+        if (hint) {
+          hint.textContent = "啟動失敗：" + (err.message || "未知錯誤");
+          hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
+        }
+      }
           });
           console.log("[ui.js] 啟動按鈕事件已綁定（fallback）");
         }
