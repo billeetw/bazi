@@ -781,6 +781,9 @@
       color: var(--amber-gold);
     }
     /* 推算時辰按鈕：鮮明設計 */
+    .identify-time-btn-enhanced {
+      text-sm md:text-base font-bold text-amber-50 bg-gradient-to-r from-amber-600/80 to-amber-500/80 hover:from-amber-500 hover:to-amber-400 border-2 border-amber-400/50 hover:border-amber-300 rounded-xl px-5 py-2.5 transition-all shadow-lg hover:shadow-amber-500/30 hover:scale-105;
+    }
     .identify-time-btn {
       padding: 0.75rem 1.5rem;
       font-size: 0.9375rem;
@@ -1394,7 +1397,7 @@
           <div class="destiny-bar-wrap"><select id="birthShichenHalf" class="destiny-select" aria-label="上半/下半"></select></div>
         </div>
         <div class="flex justify-center">
-          <button id="btnIdentifyBirthTime" type="button" class="identify-time-btn">
+          <button id="btnIdentifyBirthTime" type="button" class="identify-time-btn-enhanced">
             不確定時辰？點我推算時辰
           </button>
         </div>
