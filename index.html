@@ -1549,16 +1549,17 @@
   <script src="js/calc/helpers.js?v=1"></script>
   <script src="js/calc/ziweiPipeline.js?v=1"></script>
   <script src="js/calc/ziweiOutput.js?v=1"></script>
-  <script src="js/calc/baziCore.js?v=1"></script>
-  <script src="js/calc/fourTransformations.js?v=1"></script>
-  <script src="js/calc/overlapAnalysis.js?v=1"></script>
+  <script src="js/calc/baziCore.js?v=3"></script>
+  <script src="js/calc/fourTransformations.js?v=3"></script>
+  <script src="js/calc/overlapAnalysis.js?v=3"></script>
   <script src="js/calc/luckIndex.js?v=1"></script>
   <script src="js/calc/healthAnalysis.js?v=1"></script>
   <script src="js/calc/monthlyDetailedAnalysis.js?v=1"></script>
   <script src="js/calc/aiPromptGenerator.js?v=1"></script>
   <script src="js/calc/tactics.js?v=1"></script>
+  <script src="js/ui/components/strategic-panel.js?v=1"></script>
   <script src="js/strategyConfig.js?v=2"></script>
-  <script src="js/calc.js?v=2"></script>
+  <script src="js/calc.js?v=3"></script>
   <script src="js/identifyBirthTime.js?v=1"></script>
   <!-- UI 常量模块（必须在 ui.js 之前加载） -->
   <script src="js/ui/constants/ceremony-constants.js?v=1"></script>
@@ -1591,7 +1592,7 @@
   <script src="js/ui/components/feedback-integration.js?v=1"></script>
   <script src="js/ui/components/expert-questionnaire.js?v=1"></script>
   <script src="js/ui/components/geolocation-calibration.js?v=1"></script>
-  <script src="js/ui.js?v=2"></script>
+  <script src="js/ui.js?v=3"></script>
   <!-- 啟動序列掛載點與 bundle（可選：npm run build:startup 後載入，點擊「啟動人生戰略引擎」會先播 4.5s 啟動動畫） -->
   <div id="startup-root"></div>
   <script>
@@ -1600,7 +1601,20 @@
       window.process = { env: { NODE_ENV: "production" } };
     }
   </script>
-  <script src="dist/startup-sequence.js" onerror="console.warn('startup-sequence.js 載入失敗，啟動動畫將不可用')"></script>
+  <!-- startup-sequence.js 是可选的，如果文件不存在会显示警告但不影响功能 -->
+  <script>
+    // 動態載入 startup-sequence.js，避免 MIME type 錯誤
+    (function() {
+      const script = document.createElement('script');
+      script.src = 'dist/startup-sequence.js';
+      script.type = 'text/javascript';
+      script.defer = true;
+      script.onerror = function() {
+        console.warn('startup-sequence.js 載入失敗，啟動動畫將不可用（這是正常的，如果沒有構建此文件）');
+      };
+      document.head.appendChild(script);
+    })();
+  </script>
 
 </body>
 </html>

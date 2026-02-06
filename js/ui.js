@@ -12,9 +12,12 @@
     throw new Error("window object not available");
   }
   
+  // 延遲解構 window.Calc，避免在模組載入前報錯
   // 如果 calc.js 未載入，在 DOMContentLoaded 時再檢查
   if (!window.Calc) {
-    console.warn("[ui.js] window.Calc not found yet, will check again in DOMContentLoaded");
+    console.error("[ui.js] window.Calc not found! Make sure calc.js is loaded before ui.js");
+    // 提供臨時的空對象以避免立即報錯，實際檢查會在 DOMContentLoaded 時進行
+    window.Calc = window.Calc || {};
   }
 
   const {

@@ -7,11 +7,14 @@
   "use strict";
 
   // 檢查依賴
-  if (typeof window === "undefined" || !window.FourTransformations) {
-    throw new Error("calc/overlapAnalysis.js requires calc/fourTransformations.js to be loaded first");
+  if (typeof window === "undefined") {
+    throw new Error("calc/overlapAnalysis.js requires browser environment (window object)");
   }
-  if (typeof window === "undefined" || !window.CalcConstants) {
-    throw new Error("calc/overlapAnalysis.js requires calc/constants.js to be loaded first");
+  if (!window.FourTransformations) {
+    throw new Error("calc/overlapAnalysis.js requires calc/fourTransformations.js to be loaded first. Please ensure fourTransformations.js is loaded before overlapAnalysis.js.");
+  }
+  if (!window.CalcConstants) {
+    throw new Error("calc/overlapAnalysis.js requires calc/constants.js to be loaded first. Please ensure constants.js is loaded before overlapAnalysis.js.");
   }
 
   const { calculateOverlapTransformations } = window.FourTransformations;

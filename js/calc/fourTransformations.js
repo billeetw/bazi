@@ -8,14 +8,17 @@
   "use strict";
 
   // 檢查依賴
-  if (typeof window === "undefined" || !window.CalcConstants) {
-    throw new Error("calc/fourTransformations.js requires calc/constants.js to be loaded first");
+  if (typeof window === "undefined") {
+    throw new Error("calc/fourTransformations.js requires browser environment (window object)");
   }
-  if (typeof window === "undefined" || !window.CalcHelpers) {
-    throw new Error("calc/fourTransformations.js requires calc/helpers.js to be loaded first");
+  if (!window.CalcConstants) {
+    throw new Error("calc/fourTransformations.js requires calc/constants.js to be loaded first. Please ensure constants.js is loaded before fourTransformations.js.");
   }
-  if (typeof window === "undefined" || !window.BaziCore) {
-    throw new Error("calc/fourTransformations.js requires calc/baziCore.js to be loaded first");
+  if (!window.CalcHelpers) {
+    throw new Error("calc/fourTransformations.js requires calc/helpers.js to be loaded first. Please ensure helpers.js is loaded before fourTransformations.js.");
+  }
+  if (!window.BaziCore) {
+    throw new Error("calc/fourTransformations.js requires calc/baziCore.js to be loaded first. Please ensure baziCore.js is loaded before fourTransformations.js.");
   }
 
   // 從 constants.js 解構需要的常數

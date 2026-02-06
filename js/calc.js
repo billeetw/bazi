@@ -757,8 +757,7 @@
     const palaceOrder = PALACE_DEFAULT;
     const activeLimitPalace = horoscope?.activeLimitPalaceName ?? (horoscope != null && Number.isInteger(horoscope.yearlyIndex) ? palaceOrder[horoscope.yearlyIndex] : null);
     
-    // 獲取命宮地支和索引
-    const mingBranch = ziwei?.core?.minggongBranch || "寅";
+    // 獲取命宮索引（mingBranch 已在上面声明）
     const mingPalaceIndex = 0; // 命宮在 PALACE_DEFAULT 中的索引固定為 0
     
     // 計算大限年齡區間（基礎）
