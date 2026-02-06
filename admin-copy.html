@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>文案管理後台</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%); color: #e2e8f0; font-family: system-ui, sans-serif; }
+    .glass { background: rgba(15,23,42,0.88); backdrop-filter: blur(18px); border: 1px solid rgba(148,163,184,0.35); border-radius: 1.25rem; }
+    .table-wrap { overflow-x: auto; }
+    .modal-backdrop { background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); }
+    .modal-content { max-height: 90vh; overflow-y: auto; }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+  <div class="max-w-7xl mx-auto">
+    <div class="flex items-center justify-between mb-4">
+      <h1 class="text-2xl font-black text-amber-400">文案管理後台</h1>
+      <div class="flex items-center gap-2">
+        <a href="/admin.html" class="px-4 py-2 rounded-lg bg-slate-700 text-slate-200 text-sm hover:bg-slate-600">返回報名紀錄</a>
+        <button type="button" id="logoutBtn" class="px-4 py-2 rounded-lg bg-slate-700 text-slate-200 text-sm hover:bg-slate-600">登出</button>
+      </div>
+    </div>
+
+    <!-- 登入表單 -->
+    <div id="loginWrap" class="glass p-6 max-w-sm">
+      <p class="text-sm text-slate-400 mb-4">請輸入後台帳號與密碼</p>
+      <form id="loginForm" class="space-y-4">
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">帳號</label>
+          <input type="text" id="loginUser" autocomplete="username" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="帳號" required />
+        </div>
+        <div>
+          <label class="block text-xs text-slate-500 mb-1">密碼</label>
+          <input type="password" id="loginPass" autocomplete="current-password" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="密碼" required />
+        </div>
+        <p id="loginError" class="text-sm text-amber-400 hidden"></p>
+        <button type="submit" id="loginBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-slate-950 font-bold">登入</button>
+      </form>
+    </div>
+
+    <!-- 主內容區 -->
+    <div id="dashboardWrap" class="hidden">
+      <!-- 搜尋與篩選 -->
+      <div class="glass p-4 md:p-6 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">關鍵字搜尋</label>
+            <input type="text" id="searchKeyword" placeholder="搜尋 copy_key 或 content" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">分類</label>
+            <select id="filterCategory" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm">
+              <option value="">全部</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">語系</label>
+            <select id="filterLocale" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm">
+              <option value="">全部</option>
+              <option value="zh-TW">zh-TW</option>
+              <option value="zh-CN">zh-CN</option>
+              <option value="en">en</option>
+            </select>
+          </div>
+          <div class="flex items-end gap-2">
+            <button type="button" id="searchBtn" class="flex-1 px-4 py-2 rounded-lg bg-amber-600/80 text-slate-900 text-sm font-medium hover:bg-amber-500">搜尋</button>
+            <button type="button" id="addBtn" class="flex-1 px-4 py-2 rounded-lg bg-green-600/80 text-slate-100 text-sm font-medium hover:bg-green-500">新增</button>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-sm text-slate-400">
+          <span id="listCount"></span>
+          <div class="flex items-center gap-2">
+            <button type="button" id="prevPage" class="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed">上一頁</button>
+            <span id="pageInfo"></span>
+            <button type="button" id="nextPage" class="px-3 py-1 rounded bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed">下一頁</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 表格 -->
+      <div class="glass p-4 md:p-6">
+        <div id="listError" class="text-sm text-amber-400 hidden mb-2"></div>
+        <div id="listLoading" class="text-sm text-slate-500 py-4">載入中…</div>
+        <div id="listContent" class="table-wrap hidden">
+          <table class="w-full text-sm text-left">
+            <thead>
+              <tr class="border-b border-white/10 text-slate-400">
+                <th class="py-2 pr-2">copy_key</th>
+                <th class="py-2 pr-2">locale</th>
+                <th class="py-2 pr-2">category</th>
+                <th class="py-2 pr-2">content（前50字）</th>
+                <th class="py-2 pr-2">updated_by</th>
+                <th class="py-2 pr-2">updated_at</th>
+                <th class="py-2 pr-2">操作</th>
+              </tr>
+            </thead>
+            <tbody id="listBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 編輯 Modal -->
+    <div id="editModal" class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4">
+      <div class="glass modal-content p-6 max-w-2xl w-full rounded-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-bold text-amber-400" id="modalTitle">編輯文案</h2>
+          <button type="button" id="closeModal" class="text-slate-400 hover:text-slate-200">✕</button>
+        </div>
+        <form id="editForm" class="space-y-4">
+          <input type="hidden" id="editId" />
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">copy_key <span class="text-red-400">*</span></label>
+            <input type="text" id="editCopyKey" required class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm" placeholder="例如: destiny.core.title" />
+            <p class="text-xs text-slate-500 mt-1" id="editCopyKeyHint">新增時可編輯，編輯時不可修改</p>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">locale <span class="text-red-400">*</span></label>
+            <select id="editLocale" required class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm">
+              <option value="zh-TW">zh-TW</option>
+              <option value="zh-CN">zh-CN</option>
+              <option value="en">en</option>
+            </select>
+            <p class="text-xs text-slate-500 mt-1" id="editLocaleHint">新增時可編輯，編輯時不可修改</p>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">category <span class="text-red-400">*</span></label>
+            <input type="text" id="editCategory" required class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm" placeholder="例如: 紫微方盤、年度戰略" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">content <span class="text-red-400">*</span></label>
+            <textarea id="editContent" required rows="4" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm" placeholder="實際顯示在前台的字"></textarea>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">description</label>
+            <textarea id="editDescription" rows="3" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm" placeholder="備註說明，不會顯示在前台"></textarea>
+          </div>
+          <div id="editFormError" class="text-sm text-amber-400 hidden"></div>
+          <div class="flex gap-2 justify-end">
+            <button type="button" id="cancelEdit" class="px-4 py-2 rounded-lg bg-slate-700 text-slate-200 text-sm hover:bg-slate-600">取消</button>
+            <button type="submit" id="saveEdit" class="px-4 py-2 rounded-lg bg-amber-600/80 text-slate-900 text-sm font-medium hover:bg-amber-500">儲存</button>
+            <button type="button" id="deleteBtn" class="px-4 py-2 rounded-lg bg-red-600/80 text-slate-100 text-sm font-medium hover:bg-red-500 hidden">刪除</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    var AUTH_KEY = 'adminAuth';
+    var currentPage = 1;
+    var currentFilters = { keyword: '', category: '', locale: '' };
+    var categories = [];
+
+    function getStoredAuth() {
+      try { return sessionStorage.getItem(AUTH_KEY); } catch { return null; }
+    }
+    function setStoredAuth(value) {
+      try { if (value) sessionStorage.setItem(AUTH_KEY, value); else sessionStorage.removeItem(AUTH_KEY); } catch (_) {}
+    }
+
+    function showLogin() {
+      document.getElementById('loginWrap').classList.remove('hidden');
+      document.getElementById('dashboardWrap').classList.add('hidden');
+      setStoredAuth('');
+    }
+
+    function showDashboard() {
+      document.getElementById('loginWrap').classList.add('hidden');
+      document.getElementById('dashboardWrap').classList.remove('hidden');
+    }
+
+    function authHeader() {
+      var auth = getStoredAuth();
+      return auth ? { Authorization: 'Basic ' + auth, 'Content-Type': 'application/json' } : {};
+    }
+
+    function escapeHtml(s) {
+      if (s == null) return '';
+      var div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function truncateText(text, maxLength) {
+      if (!text) return '';
+      return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      try {
+        return new Date(dateStr).toLocaleString('zh-TW');
+      } catch {
+        return dateStr;
+      }
+    }
+
+    function loadList() {
+      var wrap = document.getElementById('listContent');
+      var loading = document.getElementById('listLoading');
+      var errEl = document.getElementById('listError');
+      var body = document.getElementById('listBody');
+      var countEl = document.getElementById('listCount');
+      var pageInfo = document.getElementById('pageInfo');
+
+      loading.classList.remove('hidden');
+      wrap.classList.add('hidden');
+      errEl.classList.add('hidden');
+
+      var params = new URLSearchParams({
+        page: currentPage,
+        pageSize: 20,
+      });
+
+      if (currentFilters.keyword) params.set('keyword', currentFilters.keyword);
+      if (currentFilters.category) params.set('category', currentFilters.category);
+      if (currentFilters.locale) params.set('locale', currentFilters.locale);
+
+      fetch('/api/admin/copy?' + params.toString(), { headers: authHeader() })
+        .then(function (res) {
+          if (res.status === 401) {
+            showLogin();
+            return Promise.reject(new Error('請重新登入'));
+          }
+          return res.json();
+        })
+        .then(function (data) {
+          loading.classList.add('hidden');
+          if (data.error) {
+            errEl.textContent = data.error;
+            errEl.classList.remove('hidden');
+            return;
+          }
+
+          var list = data.list || [];
+          var pagination = data.pagination || {};
+
+          // 更新分類選單
+          var uniqueCategories = [...new Set(list.map(function(item) { return item.category; }).filter(Boolean))];
+          uniqueCategories.forEach(function(cat) {
+            if (!categories.includes(cat)) categories.push(cat);
+          });
+          updateCategoryFilter();
+
+          countEl.textContent = '共 ' + pagination.total + ' 筆';
+          pageInfo.textContent = '第 ' + pagination.page + ' / ' + pagination.totalPages + ' 頁';
+
+          // 更新分頁按鈕
+          document.getElementById('prevPage').disabled = pagination.page <= 1;
+          document.getElementById('nextPage').disabled = pagination.page >= pagination.totalPages;
+
+          body.innerHTML = list.map(function (row) {
+            return '<tr class="border-b border-white/5 hover:bg-white/5 cursor-pointer" data-id="' + row.id + '">' +
+              '<td class="py-2 pr-2 font-mono text-xs">' + escapeHtml(row.copy_key || '') + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.locale || '') + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.category || '') + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(truncateText(row.content, 50)) + '</td>' +
+              '<td class="py-2 pr-2 text-xs">' + escapeHtml(row.updated_by || '') + '</td>' +
+              '<td class="py-2 pr-2 text-xs whitespace-nowrap">' + formatDate(row.updated_at) + '</td>' +
+              '<td class="py-2 pr-2"><button class="edit-btn px-2 py-1 rounded bg-amber-600/60 text-xs hover:bg-amber-500" data-id="' + row.id + '">編輯</button></td>' +
+              '</tr>';
+          }).join('');
+
+          // 綁定點擊事件
+          body.querySelectorAll('tr[data-id]').forEach(function(tr) {
+            tr.addEventListener('click', function(e) {
+              if (e.target.classList.contains('edit-btn')) return;
+              var id = this.getAttribute('data-id');
+              openEditModal(id);
+            });
+          });
+
+          body.querySelectorAll('.edit-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              var id = this.getAttribute('data-id');
+              openEditModal(id);
+            });
+          });
+
+          wrap.classList.remove('hidden');
+        })
+        .catch(function (err) {
+          loading.classList.add('hidden');
+          errEl.textContent = err.message || '載入失敗';
+          errEl.classList.remove('hidden');
+        });
+    }
+
+    function updateCategoryFilter() {
+      var select = document.getElementById('filterCategory');
+      var currentValue = select.value;
+      select.innerHTML = '<option value="">全部</option>' +
+        categories.map(function(cat) {
+          return '<option value="' + escapeHtml(cat) + '">' + escapeHtml(cat) + '</option>';
+        }).join('');
+      if (currentValue) select.value = currentValue;
+    }
+
+    function openEditModal(id) {
+      var modal = document.getElementById('editModal');
+      var form = document.getElementById('editForm');
+      var deleteBtn = document.getElementById('deleteBtn');
+      var isNew = !id;
+
+      if (isNew) {
+        document.getElementById('modalTitle').textContent = '新增文案';
+        form.reset();
+        document.getElementById('editId').value = '';
+        document.getElementById('editCopyKey').disabled = false;
+        document.getElementById('editLocale').disabled = false;
+        document.getElementById('editCopyKeyHint').classList.remove('hidden');
+        document.getElementById('editLocaleHint').classList.remove('hidden');
+        deleteBtn.classList.add('hidden');
+      } else {
+        document.getElementById('modalTitle').textContent = '編輯文案';
+        document.getElementById('editCopyKey').disabled = true;
+        document.getElementById('editLocale').disabled = true;
+        document.getElementById('editCopyKeyHint').classList.add('hidden');
+        document.getElementById('editLocaleHint').classList.add('hidden');
+        deleteBtn.classList.remove('hidden');
+        deleteBtn.setAttribute('data-id', id);
+
+        // 載入資料
+        fetch('/api/admin/copy?' + new URLSearchParams({ id: id }), { headers: authHeader() })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data.error) throw new Error(data.error);
+            var item = data.list && data.list[0];
+            if (!item) throw new Error('找不到記錄');
+            document.getElementById('editId').value = item.id;
+            document.getElementById('editCopyKey').value = item.copy_key || '';
+            document.getElementById('editLocale').value = item.locale || 'zh-TW';
+            document.getElementById('editCategory').value = item.category || '';
+            document.getElementById('editContent').value = item.content || '';
+            document.getElementById('editDescription').value = item.description || '';
+          })
+          .catch(function(err) {
+            alert('載入失敗: ' + err.message);
+          });
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeEditModal() {
+      document.getElementById('editModal').classList.add('hidden');
+      document.getElementById('editFormError').classList.add('hidden');
+    }
+
+    // 登入
+    document.getElementById('loginForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var user = (document.getElementById('loginUser').value || '').trim();
+      var pass = document.getElementById('loginPass').value || '';
+      var btn = document.getElementById('loginBtn');
+      var errEl = document.getElementById('loginError');
+
+      errEl.classList.add('hidden');
+      btn.disabled = true;
+
+      var auth = btoa(unescape(encodeURIComponent(user + ':' + pass)));
+      setStoredAuth(auth);
+
+      fetch('/api/admin/copy?page=1&pageSize=20', { headers: { Authorization: 'Basic ' + auth } })
+        .then(function (res) {
+          if (res.status === 401) {
+            setStoredAuth('');
+            errEl.textContent = '帳號或密碼錯誤';
+            errEl.classList.remove('hidden');
+            btn.disabled = false;
+            return;
+          }
+          if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || '失敗'); });
+          showDashboard();
+          loadList();
+          btn.disabled = false;
+        })
+        .catch(function (err) {
+          setStoredAuth('');
+          errEl.textContent = err.message || '登入失敗';
+          errEl.classList.remove('hidden');
+          btn.disabled = false;
+        });
+    });
+
+    // 登出
+    document.getElementById('logoutBtn').addEventListener('click', function () {
+      showLogin();
+      document.getElementById('loginPass').value = '';
+    });
+
+    // 搜尋
+    document.getElementById('searchBtn').addEventListener('click', function() {
+      currentFilters.keyword = document.getElementById('searchKeyword').value.trim();
+      currentFilters.category = document.getElementById('filterCategory').value;
+      currentFilters.locale = document.getElementById('filterLocale').value;
+      currentPage = 1;
+      loadList();
+    });
+
+    // 新增
+    document.getElementById('addBtn').addEventListener('click', function() {
+      openEditModal(null);
+    });
+
+    // 分頁
+    document.getElementById('prevPage').addEventListener('click', function() {
+      if (currentPage > 1) {
+        currentPage--;
+        loadList();
+      }
+    });
+
+    document.getElementById('nextPage').addEventListener('click', function() {
+      currentPage++;
+      loadList();
+    });
+
+    // 儲存編輯
+    document.getElementById('editForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      var id = document.getElementById('editId').value;
+      var isNew = !id;
+      var errEl = document.getElementById('editFormError');
+      var saveBtn = document.getElementById('saveEdit');
+
+      errEl.classList.add('hidden');
+      saveBtn.disabled = true;
+
+      var data = {
+        copy_key: document.getElementById('editCopyKey').value.trim(),
+        locale: document.getElementById('editLocale').value,
+        category: document.getElementById('editCategory').value.trim(),
+        content: document.getElementById('editContent').value.trim(),
+        description: document.getElementById('editDescription').value.trim(),
+      };
+
+      if (isNew) {
+        // POST
+        fetch('/api/admin/copy', {
+          method: 'POST',
+          headers: authHeader(),
+          body: JSON.stringify(data),
+        })
+          .then(function(res) { return res.json(); })
+          .then(function(result) {
+            if (result.error) throw new Error(result.error);
+            closeEditModal();
+            loadList();
+            saveBtn.disabled = false;
+          })
+          .catch(function(err) {
+            errEl.textContent = err.message || '新增失敗';
+            errEl.classList.remove('hidden');
+            saveBtn.disabled = false;
+          });
+      } else {
+        // PUT
+        data.id = parseInt(id, 10);
+        fetch('/api/admin/copy', {
+          method: 'PUT',
+          headers: authHeader(),
+          body: JSON.stringify(data),
+        })
+          .then(function(res) { return res.json(); })
+          .then(function(result) {
+            if (result.error) throw new Error(result.error);
+            closeEditModal();
+            loadList();
+            saveBtn.disabled = false;
+          })
+          .catch(function(err) {
+            errEl.textContent = err.message || '更新失敗';
+            errEl.classList.remove('hidden');
+            saveBtn.disabled = false;
+          });
+      }
+    });
+
+    // 刪除
+    document.getElementById('deleteBtn').addEventListener('click', function() {
+      if (!confirm('確定要刪除這筆文案嗎？')) return;
+      var id = this.getAttribute('data-id');
+      fetch('/api/admin/copy?id=' + id, {
+        method: 'DELETE',
+        headers: authHeader(),
+      })
+        .then(function(res) { return res.json(); })
+        .then(function(result) {
+          if (result.error) throw new Error(result.error);
+          closeEditModal();
+          loadList();
+        })
+        .catch(function(err) {
+          alert('刪除失敗: ' + err.message);
+        });
+    });
+
+    // 關閉 Modal
+    document.getElementById('closeModal').addEventListener('click', closeEditModal);
+    document.getElementById('cancelEdit').addEventListener('click', closeEditModal);
+    document.getElementById('editModal').addEventListener('click', function(e) {
+      if (e.target === this) closeEditModal();
+    });
+
+    // Enter 鍵搜尋
+    document.getElementById('searchKeyword').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') document.getElementById('searchBtn').click();
+    });
+
+    // 初始化
+    if (getStoredAuth()) {
+      showDashboard();
+      loadList();
+    }
+  </script>
+</body>
+</html>
