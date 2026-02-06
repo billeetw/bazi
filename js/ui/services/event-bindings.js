@@ -45,7 +45,7 @@
               const btn = document.getElementById("btnLaunch");
               if (btn) {
                 btn.disabled = false;
-                btn.textContent = "啟動 · 人生戰略引擎";
+                btn.textContent = "開啟 人生使用說明書";
               }
               if (hint) {
                 hint.textContent = "啟動失敗：" + (err.message || "未知錯誤");
@@ -67,7 +67,7 @@
             const btn = document.getElementById("btnLaunch");
             if (btn) {
               btn.disabled = false;
-              btn.textContent = "啟動 · 人生戰略引擎";
+              btn.textContent = "開啟 人生使用說明書";
             }
             if (hint) {
               hint.textContent = "啟動失敗：" + (err.message || "未知錯誤");

@@ -521,16 +521,29 @@
         0 24px 60px rgba(0, 0, 0, 0.4);
     }
     .glass-input {
-      background: rgba(26, 26, 46, 0.4);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 1.5rem;
+      background: rgba(15, 15, 30, 0.6);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 2px solid rgba(255, 191, 0, 0.2);
+      border-radius: 2rem;
       position: relative;
+      box-shadow: 
+        0 0 40px rgba(255, 191, 0, 0.1),
+        inset 0 0 60px rgba(255, 191, 0, 0.05),
+        0 20px 60px rgba(0, 0, 0, 0.5);
+      transition: all 0.5s ease;
       box-shadow:
         inset 0 0 0 1px rgba(255, 255, 255, 0.03),
         0 24px 60px rgba(0, 0, 0, 0.4);
       transition: border-color 0.4s ease, box-shadow 0.4s ease;
+    }
+    .glass-input:hover {
+      border-color: rgba(255, 191, 0, 0.4);
+      box-shadow: 
+        0 0 60px rgba(255, 191, 0, 0.2),
+        inset 0 0 80px rgba(255, 191, 0, 0.08),
+        0 25px 80px rgba(0, 0, 0, 0.6);
+      transform: translateY(-4px);
     }
     .glass-input::before {
       content: '';
@@ -708,14 +721,22 @@
       transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
     }
     .destiny-select:hover {
-      border-color: rgba(255, 191, 0, 0.45);
-      background: rgba(0, 0, 0, 0.38);
-      box-shadow: inset 0 0 12px rgba(255, 191, 0, 0.14), 0 0 8px rgba(255, 191, 0, 0.08);
+      border-color: rgba(255, 191, 0, 0.5);
+      background: rgba(0, 0, 0, 0.5);
+      box-shadow: 
+        inset 0 0 20px rgba(255, 191, 0, 0.15),
+        0 0 20px rgba(255, 191, 0, 0.2),
+        0 6px 16px rgba(0, 0, 0, 0.4);
+      transform: translateY(-2px);
     }
     .destiny-select:focus {
       outline: none;
-      border-color: rgba(255, 191, 0, 0.5);
-      box-shadow: inset 0 0 10px rgba(255, 191, 0, 0.12), 0 0 0 1px rgba(255, 191, 0, 0.2);
+      border-color: rgba(255, 191, 0, 0.6);
+      box-shadow: 
+        inset 0 0 20px rgba(255, 191, 0, 0.18),
+        0 0 30px rgba(255, 191, 0, 0.3),
+        0 0 0 2px rgba(255, 191, 0, 0.2);
+      transform: translateY(-2px);
     }
     .destiny-select option {
       background: #0f0f18;
@@ -1246,8 +1267,11 @@
   <main class="max-w-7xl mx-auto px-4 pt-6 space-y-8">
 
     <!-- 命運座標輸入（條狀排列 + 頂級玻璃擬態，保留原有 id 與邏輯） -->
-    <section id="inputCard" class="glass-container glass-input p-6 md:p-8 max-w-2xl mx-auto space-y-6">
-      <h2 class="text-center hero-subtitle tracking-[0.2em] mb-2">命運座標輸入</h2>
+    <section id="inputCard" class="glass-container glass-input p-8 md:p-12 max-w-3xl mx-auto space-y-8">
+      <div class="text-center mb-6">
+        <h2 class="text-2xl md:text-3xl font-black text-amber-300 mb-2 tracking-wider">命運座標輸入</h2>
+        <p class="text-sm md:text-base text-slate-400 italic">輸入你的出生資訊，開啟專屬的人生使用說明書</p>
+      </div>
 
       <!-- 第一行：年、月、日 -->
       <div class="destiny-bar-row grid-cols-3">
@@ -1286,10 +1310,10 @@
         <p class="text-[11px] text-slate-500 text-center">註：選「時辰」會換算成代表時刻（上半/下半時辰各取代表時間）送入系統計算。</p>
       </div>
 
-      <div class="pt-2">
+      <div class="pt-4">
         <button id="btnLaunch" type="button"
-          class="engine-button w-full py-4 rounded-2xl text-sm uppercase disabled:opacity-60 disabled:cursor-not-allowed">
-          啟動 · 人生戰略引擎
+          class="engine-button w-full py-5 rounded-2xl text-base md:text-lg font-black tracking-wider disabled:opacity-60 disabled:cursor-not-allowed">
+          開啟 人生使用說明書
         </button>
       </div>
 
