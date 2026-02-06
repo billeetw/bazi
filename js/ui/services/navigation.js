@@ -23,6 +23,64 @@
   }
 
   /**
+   * 重置到首頁：隱藏系統區域，顯示輸入表單，滾動到頂部
+   */
+  function resetToHome() {
+    console.log("[navigation.js] 重置到首頁");
+    
+    // 隱藏系統區域
+    const systemEl = document.getElementById("system");
+    if (systemEl) {
+      systemEl.classList.add("hidden");
+    }
+    
+    // 顯示輸入表單
+    const inputCardEl = document.getElementById("inputCard");
+    if (inputCardEl) {
+      inputCardEl.classList.remove("hidden");
+    }
+    
+    // 隱藏活動報名區域（如果存在）
+    const activity213El = document.getElementById("activity-213");
+    if (activity213El) {
+      activity213El.classList.remove("hidden");
+    }
+    
+    // 隱藏工作區導航
+    const workspaceNavEl = document.getElementById("workspaceNav");
+    if (workspaceNavEl) {
+      workspaceNavEl.classList.add("hidden");
+    }
+    
+    // 移除 dashboard-visible 類
+    document.body.classList.remove("dashboard-visible");
+    
+    // 清除 URL hash
+    if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+    
+    // 滾動到頁面頂部
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    
+    console.log("[navigation.js] 首頁重置完成");
+  }
+
+  /**
+   * 綁定首頁按鈕事件
+   */
+  function bindHomeButton() {
+    const homeButton = document.getElementById("homeButton");
+    if (homeButton) {
+      homeButton.addEventListener("click", function(e) {
+        e.preventDefault();
+        resetToHome();
+      });
+      console.log("[navigation.js] 首頁按鈕已綁定");
+    }
+  }
+
+  /**
    * 戰略維度切換：點擊 nav-chip 時先淡出再滾動，再淡入（150–250ms）
    */
   function initDashboardContentTransition() {
@@ -62,5 +120,7 @@
   window.UiServices.Navigation = {
     syncNavChipActive,
     initDashboardContentTransition,
+    resetToHome,
+    bindHomeButton,
   };
 })();

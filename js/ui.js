@@ -451,15 +451,10 @@
         }
         document.body.classList.add("dashboard-visible");
         const navEl = document.getElementById("workspaceNav");
-        const navCta = document.getElementById("navCta");
         const inputEl = document.getElementById("inputCard");
         if (navEl) {
           navEl.classList.remove("hidden");
           console.log("[ui.js] calculate: workspaceNav 已顯示");
-        }
-        if (navCta) {
-          navCta.classList.remove("hidden");
-          console.log("[ui.js] calculate: navCta 已顯示");
         }
         if (inputEl) {
           inputEl.classList.add("hidden");
@@ -470,6 +465,11 @@
 
       syncNavChipActive();
       initDashboardContentTransition();
+      
+      // 綁定首頁按鈕
+      if (Navigation.bindHomeButton) {
+        Navigation.bindHomeButton();
+      }
 
       // 更新摘要信息
       if (CalculationFlow.updateSummary) {
@@ -978,6 +978,11 @@
         } catch (err) {
           console.warn("[ui.js] Mobile optimizations failed:", err);
         }
+      }
+
+      // 綁定首頁按鈕
+      if (Navigation.bindHomeButton) {
+        Navigation.bindHomeButton();
       }
 
       console.log("[ui.js] DOMContentLoaded 初始化完成");
