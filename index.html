@@ -1557,7 +1557,6 @@
   <script src="js/calc/monthlyDetailedAnalysis.js?v=1"></script>
   <script src="js/calc/aiPromptGenerator.js?v=1"></script>
   <script src="js/calc/tactics.js?v=1"></script>
-  <script src="js/ui/components/strategic-panel.js?v=1"></script>
   <script src="js/strategyConfig.js?v=2"></script>
   <script src="js/calc.js?v=3"></script>
   <script src="js/identifyBirthTime.js?v=1"></script>
@@ -1602,17 +1601,34 @@
     }
   </script>
   <!-- startup-sequence.js 是可选的，如果文件不存在会显示警告但不影响功能 -->
+  <!-- startup-sequence.js 是可选的，如果文件不存在会显示警告但不影响功能 -->
   <script>
     // 動態載入 startup-sequence.js，避免 MIME type 錯誤
     (function() {
-      const script = document.createElement('script');
-      script.src = 'dist/startup-sequence.js';
-      script.type = 'text/javascript';
-      script.defer = true;
-      script.onerror = function() {
-        console.warn('startup-sequence.js 載入失敗，啟動動畫將不可用（這是正常的，如果沒有構建此文件）');
-      };
-      document.head.appendChild(script);
+      // 使用 fetch 檢查文件是否存在且是 JavaScript 類型
+      fetch('dist/startup-sequence.js', { method: 'HEAD' })
+        .then(function(response) {
+          // 檢查響應狀態和 Content-Type
+          if (response.ok) {
+            const contentType = response.headers.get('content-type') || '';
+            // 確認是 JavaScript 文件（不是 HTML 404 頁面）
+            if (contentType.includes('javascript') || contentType.includes('application/javascript') || contentType.includes('text/javascript')) {
+              const script = document.createElement('script');
+              script.src = 'dist/startup-sequence.js';
+              script.type = 'text/javascript';
+              script.defer = true;
+              script.onerror = function() {
+                console.warn('startup-sequence.js 載入失敗，啟動動畫將不可用（這是正常的，如果沒有構建此文件）');
+              };
+              document.head.appendChild(script);
+            } else {
+              // Content-Type 不是 JavaScript，可能是 404 HTML 頁面，靜默忽略
+            }
+          }
+        })
+        .catch(function() {
+          // 文件不存在或網絡錯誤，靜默忽略（這是正常的）
+        });
     })();
   </script>
 
