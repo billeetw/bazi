@@ -1,6 +1,6 @@
 /* launch-effect.js
  * 啟動人生戰略引擎特效模組
- * 提供神秘感的光暈、粒子效果和輕微音效
+ * 提供神秘感的光暈、粒子效果
  * 導出到 window.UiComponents.LaunchEffect
  */
 
@@ -42,9 +42,6 @@
       overflow: hidden;
     `;
     document.body.appendChild(effectContainer);
-
-    // 播放音效（輕微的神秘音效）
-    playMysteriousSound();
 
     // 階段1：光暈擴散（0-0.8s）
     const glowRing = document.createElement("div");
@@ -176,54 +173,6 @@
     }, 1500);
   }
 
-  /**
-   * 播放神秘音效（使用 Web Audio API 生成輕微的合成音）
-   */
-  function playMysteriousSound() {
-    try {
-      // 檢查瀏覽器是否支持 Web Audio API
-      if (typeof AudioContext === "undefined" && typeof webkitAudioContext === "undefined") {
-        console.log("[launch-effect] 瀏覽器不支持 Web Audio API，跳過音效");
-        return;
-      }
-
-      const AudioCtx = AudioContext || webkitAudioContext;
-      const audioContext = new AudioCtx();
-      
-      // 創建一個輕微的神秘音效：低頻嗡鳴 + 高頻閃爍
-      const duration = 0.8;
-      const sampleRate = audioContext.sampleRate;
-      const frameCount = duration * sampleRate;
-      const buffer = audioContext.createBuffer(1, frameCount, sampleRate);
-      const data = buffer.getChannelData(0);
-
-      // 生成神秘音效：低頻基音 + 高頻諧波
-      for (let i = 0; i < frameCount; i++) {
-        const t = i / sampleRate;
-        // 低頻嗡鳴（約 80Hz）
-        const lowFreq = Math.sin(2 * Math.PI * 80 * t);
-        // 高頻閃爍（約 400Hz，快速衰減）
-        const highFreq = Math.sin(2 * Math.PI * 400 * t) * Math.exp(-t * 3);
-        // 包絡線（淡入淡出）
-        const envelope = Math.sin(Math.PI * t / duration);
-        // 混合並降低音量（避免太響）
-        data[i] = (lowFreq * 0.3 + highFreq * 0.2) * envelope * 0.15;
-      }
-
-      const source = audioContext.createBufferSource();
-      source.buffer = buffer;
-      source.connect(audioContext.destination);
-      source.start(0);
-
-      // 清理音頻上下文（延遲以確保播放完成）
-      setTimeout(() => {
-        audioContext.close().catch(() => {});
-      }, duration * 1000 + 100);
-    } catch (err) {
-      console.warn("[launch-effect] 音效播放失敗:", err);
-      // 靜默失敗，不影響主要功能
-    }
-  }
 
   // 導出到 window.UiComponents.LaunchEffect
   if (!window.UiComponents) {

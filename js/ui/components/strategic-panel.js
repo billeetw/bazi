@@ -33,11 +33,50 @@
    * 獲取命主和身主星曜
    */
   function getMasterStars(ziwei) {
-    if (!ziwei || !ziwei.core) return { mingzhu: null, shengong: null };
+    if (!ziwei) return { mingzhu: null, shengong: null };
     
-    // 從紫微數據中獲取命主和身主
-    const mingzhu = ziwei.core.mingzhu || null;
-    const shengong = ziwei.core.shengong || null;
+    const core = ziwei.core || {};
+    const basic = ziwei.basic || {};
+    
+    // 獲取命宮地支（用於計算命主）
+    const mingBranch = core.minggongBranch || "寅";
+    
+    // 獲取年支（用於計算身主）
+    const contract = window.contract || null;
+    const bazi = contract?.bazi || null;
+    const yearBranch = (bazi?.display?.yZ || "").toString().trim();
+    
+    // 標準化星名的輔助函數
+    const stripStarLabel = (s) => String(s || "").replace(/^\d+\.?\s*/, "").trim();
+    const toTraditionalStarName = window.CalcHelpers?.toTraditionalStarName || ((s) => s);
+    
+    // 嘗試從多個位置獲取命主
+    let mingzhuRaw = basic.masterStar ?? core.mingzhu ?? core.命主 ?? "";
+    let mingzhu = null;
+    
+    if (mingzhuRaw) {
+      mingzhu = toTraditionalStarName(stripStarLabel(mingzhuRaw));
+    } else if (window.CalcHelpers?.calculateMingzhu) {
+      // 如果後端沒有提供，嘗試計算
+      const calculated = window.CalcHelpers.calculateMingzhu(mingBranch);
+      if (calculated) {
+        mingzhu = toTraditionalStarName(calculated);
+      }
+    }
+    
+    // 嘗試從多個位置獲取身主
+    let shengongRaw = basic.bodyStar ?? core.shengong ?? core.身主 ?? "";
+    let shengong = null;
+    
+    if (shengongRaw) {
+      shengong = toTraditionalStarName(stripStarLabel(shengongRaw));
+    } else if (yearBranch && window.CalcHelpers?.calculateShengong) {
+      // 如果後端沒有提供，嘗試計算
+      const calculated = window.CalcHelpers.calculateShengong(yearBranch);
+      if (calculated) {
+        shengong = toTraditionalStarName(calculated);
+      }
+    }
     
     return { mingzhu, shengong };
   }
@@ -313,7 +352,7 @@
     // Section B: 2026 能量天氣預報 (The Environment)
     if (wuxingData && wuxingData.length > 0) {
       html += '<div class="space-y-4 mt-6">';
-      html += '<div class="text-lg md:text-sm font-black text-amber-400 mb-3">Section B: 2026 能量天氣預報 (The Environment)</div>';
+      html += '<div class="text-lg md:text-sm font-black text-emerald-400 mb-3">Section B: 2026 能量天氣預報 (The Environment)</div>';
       
       // 五行進度條
       wuxingData.forEach(elem => {
@@ -339,7 +378,7 @@
       console.warn("[strategic-panel.js] Section B - 五行數據缺失");
       html += `
         <div class="space-y-4 mt-6">
-          <div class="text-sm font-black text-amber-400 mb-3">Section B: 2026 能量天氣預報 (The Environment)</div>
+          <div class="text-lg md:text-sm font-black text-emerald-400 mb-3">Section B: 2026 能量天氣預報 (The Environment)</div>
           <div class="p-4 rounded-xl border border-slate-400/20 bg-white/5 text-xs text-slate-500">
             （五行數據暫不可用）
           </div>
@@ -350,7 +389,7 @@
     // Section C: 十神戰略 (The Strategy)
     if (dominant && tenGodText) {
       html += '<div class="space-y-4 mt-6">';
-      html += `<div class="text-lg md:text-sm font-black text-amber-400 mb-3">Section C: 十神戰略：${dominant}模式 (The Strategy)</div>`;
+      html += `<div class="text-lg md:text-sm font-black text-emerald-400 mb-3">Section C: 十神戰略：${dominant}模式 (The Strategy)</div>`;
       
       html += `
         <div class="p-4 md:p-4 rounded-xl border border-emerald-400/40 bg-white/5">
@@ -429,7 +468,7 @@
     if (!dominant || !tenGodText) {
       html += `
         <div class="space-y-4 mt-6">
-          <div class="text-sm font-black text-amber-400 mb-3">Section C: 十神戰略 (The Strategy)</div>
+          <div class="text-lg md:text-sm font-black text-emerald-400 mb-3">Section C: 十神戰略 (The Strategy)</div>
           <div class="p-4 rounded-xl border border-slate-400/20 bg-white/5 text-xs text-slate-500">
             ${!dominant ? "（十神主軸數據暫不可用）" : `（資料庫尚未填入「${dominant}」的十神指令）`}
           </div>
