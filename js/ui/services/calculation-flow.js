@@ -13,24 +13,31 @@
 
   /**
    * 验证输入参数
+   * @returns {Object} { isValid: boolean, errors: string[] }
    */
   function validateInputs(params) {
     const { vy, vm, vd, vh, vmin, timeMode, shichen, shichenHalf } = params;
+    const errors = [];
     
     // 基本验证逻辑
     if (!vy || !vm || !vd) {
-      return { valid: false, error: "请填写完整的出生日期" };
+      errors.push("请填写完整的出生日期");
     }
     
     if (timeMode === "exact" && (vh === null || vh === undefined)) {
-      return { valid: false, error: "请填写出生时间" };
+      errors.push("请填写出生时间");
     }
     
     if (timeMode === "shichen" && !shichen) {
-      return { valid: false, error: "请选择时辰" };
+      errors.push("请选择时辰");
     }
     
-    return { valid: true };
+    return {
+      isValid: errors.length === 0,
+      errors: errors,
+      // 向后兼容：也提供 error 属性
+      error: errors.length > 0 ? errors[0] : null
+    };
   }
 
   /**

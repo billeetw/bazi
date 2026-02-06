@@ -299,7 +299,10 @@
         : { isValid: true, errors: [] };
       
       if (!validation.isValid) {
-        throw new Error(validation.errors[0] || "輸入驗證失敗");
+        const errorMsg = (validation.errors && Array.isArray(validation.errors) && validation.errors.length > 0) 
+          ? validation.errors[0] 
+          : (validation.error || "輸入驗證失敗");
+        throw new Error(errorMsg);
       }
 
       const resolved = resolveBirthTime({ mode: timeMode, hour: vh, minute: vmin, shichen, shichenHalf });
