@@ -782,20 +782,18 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       padding: 0;
       background: transparent;
-      border: 1px solid rgba(255,191,0,0.2);
+      border: none;
       border-radius: 50%;
-      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+      transition: transform 0.25s ease;
       user-select: none;
       overflow: hidden;
     }
     .nav-chip-logo:hover {
       transform: translateY(-1px) scale(1.05);
-      border-color: rgba(255,191,0,0.5);
-      box-shadow: 0 0 12px rgba(255,191,0,0.3);
     }
     .nav-chip-logo:active {
       transform: translateY(0) scale(0.98);
@@ -1211,12 +1209,6 @@
     </div>
 
     <div class="flex items-center gap-2">
-      <a href="https://www.youtube.com/@billeetw1" target="_blank" rel="noopener noreferrer"
-         class="nav-chip-logo"
-         aria-label="前往李伯彥 YouTube 頻道（一起出來玩）"
-         title="YouTube">
-        <img src="assets/logo-circle.png" alt="一起出來玩" class="logo-img">
-      </a>
       <a href="https://www.facebook.com/bill17gonplay/" target="_blank" rel="noopener noreferrer"
          class="nav-chip-logo"
          aria-label="前往李伯彥 Facebook（一起出來玩）"
