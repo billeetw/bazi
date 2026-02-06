@@ -756,10 +756,31 @@
     // 檢查必要依賴
     if (!window.Calc) {
       console.error("[ui.js] window.Calc not found! Make sure calc.js is loaded before ui.js");
+      console.error("[ui.js] 檢查依賴狀態:", {
+        Calc: !!window.Calc,
+        CalcConstants: !!window.CalcConstants,
+        CalcHelpers: !!window.CalcHelpers,
+        UiServices: !!window.UiServices,
+        EventBindings: !!window.UiServices?.EventBindings
+      });
       const hint = document.getElementById("hint");
       if (hint) {
-        hint.textContent = "系統載入失敗，請刷新頁面重試";
+        hint.textContent = "系統載入失敗，請刷新頁面重試（錯誤：calc.js 未載入）";
         hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
+      }
+      // 即使 Calc 未載入，也嘗試綁定按鈕事件（使用 fallback）
+      const btnLaunch = document.getElementById("btnLaunch");
+      if (btnLaunch) {
+        btnLaunch.addEventListener("click", function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const hint = document.getElementById("hint");
+          if (hint) {
+            hint.textContent = "系統載入失敗，請刷新頁面重試";
+            hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
+          }
+          console.error("無法啟動：calc.js 未載入");
+        });
       }
       return;
     }
@@ -773,15 +794,20 @@
       const EventBindings = window.UiServices?.EventBindings || {};
       
       // 綁定啟動按鈕事件
-      if (EventBindings.bindLaunchButton) {
-        EventBindings.bindLaunchButton(calculate);
+      const btnLaunch = document.getElementById("btnLaunch");
+      if (!btnLaunch) {
+        console.error("[ui.js] 找不到啟動按鈕 #btnLaunch");
       } else {
-        // Fallback
-        const btnLaunch = document.getElementById("btnLaunch");
-        if (btnLaunch) {
+        if (EventBindings.bindLaunchButton) {
+          console.log("[ui.js] 使用 EventBindings 綁定啟動按鈕");
+          EventBindings.bindLaunchButton(calculate);
+        } else {
+          // Fallback
+          console.log("[ui.js] 使用 fallback 方式綁定啟動按鈕");
           btnLaunch.addEventListener("click", function(e) {
             e.preventDefault();
             e.stopPropagation();
+            console.log("[ui.js] 啟動按鈕被點擊");
             try {
               calculate();
             } catch (err) {
@@ -793,6 +819,7 @@
               }
             }
           });
+          console.log("[ui.js] 啟動按鈕事件已綁定（fallback）");
         }
       }
       
