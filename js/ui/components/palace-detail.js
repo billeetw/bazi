@@ -117,7 +117,7 @@
     const palaceText = (dbContent?.palaces && dbContent.palaces[name]) ? dbContent.palaces[name] : "（資料庫尚未填入此宮位解釋）";
 
     const Strategy = typeof window.StrategyConfig !== "undefined" ? window.StrategyConfig : null;
-    let strategyHtml = '<div id="palaceStrategyBlock" class="mb-4 text-xs text-slate-500">載入戰略金句…</div>';
+    let strategyHtml = '<div id="palaceStrategyBlock" class="mb-4 text-sm md:text-xs text-slate-500">載入戰略金句…</div>';
     if (Strategy && window.ziweiScores?.palaceScores) {
       const baseScore = Number(window.ziweiScores.palaceScores[name]) || 0;
       const yearlyStem = horoscope?.yearlyStem ?? null;
@@ -140,7 +140,7 @@
               if (s == null) return "";
               return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
             });
-            block.outerHTML = "<div class=\"p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">戰略金句</div><div class=\"text-sm text-amber-100/95 leading-relaxed\">" + escLocal(advice) + "</div></div>";
+            block.outerHTML = "<div class=\"p-4 md:p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-xs md:text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">戰略金句</div><div class=\"text-base md:text-sm text-amber-100/95 leading-relaxed\">" + escLocal(advice) + "</div></div>";
           } else {
             block.textContent = "";
           }
@@ -161,7 +161,7 @@
             if (s == null) return "";
             return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
           });
-          block.outerHTML = "<div class=\"p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">戰略金句</div><div class=\"text-sm text-amber-100/95 leading-relaxed\">" + esc(advice) + "</div></div>";
+          block.outerHTML = "<div class=\"p-4 md:p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-xs md:text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">戰略金句</div><div class=\"text-base md:text-sm text-amber-100/95 leading-relaxed\">" + esc(advice) + "</div></div>";
         } else {
           block.textContent = "";
         }
@@ -182,35 +182,35 @@
           const badgeHtml = getMutagenBadgeHtml(s, mutagenStars);
           const titleDisplay = badgeHtml ? `【${s}】 ${badgeHtml}` : `【${s}】`;
           return `
-            <div class="p-4 rounded-xl border border-white/10 bg-white/5">
+            <div class="p-4 md:p-4 rounded-xl border border-white/10 bg-white/5">
               <div class="flex items-center justify-between gap-3">
-                <div class="font-black text-base ${wx ? "star-wx-" + wx : "text-slate-200"}">${titleDisplay}</div>
-                <div class="text-[10px] text-slate-500">${wx ? "五行：" + wx : ""}</div>
+                <div class="font-black text-lg md:text-base ${wx ? "star-wx-" + wx : "text-slate-200"}">${titleDisplay}</div>
+                <div class="text-xs md:text-[10px] text-slate-500">${wx ? "五行：" + wx : ""}</div>
               </div>
-              <div class="text-xs text-slate-300 mt-2 leading-relaxed">${explain}</div>
+              <div class="text-sm md:text-xs text-slate-300 mt-2 leading-relaxed">${explain}</div>
             </div>
           `;
         })
         .join("");
     } else {
       starCards = `
-        <div class="p-4 rounded-xl border border-white/10 bg-white/5">
-          <div class="text-sm text-slate-300 font-black">空宮</div>
-          <div class="text-xs text-slate-400 mt-2">空宮不等於沒有事件，重點是看三方四正與流月節奏如何引動。</div>
+        <div class="p-4 md:p-4 rounded-xl border border-white/10 bg-white/5">
+          <div class="text-base md:text-sm text-slate-300 font-black">空宮</div>
+          <div class="text-sm md:text-xs text-slate-400 mt-2">空宮不等於沒有事件，重點是看三方四正與流月節奏如何引動。</div>
         </div>
       `;
     }
 
     const detailHtml = `
       ${strategyHtml}
-      <div class="p-4 rounded-xl border border-amber-400/25 bg-amber-500/10">
-        <div class="text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2">資料庫宮位解釋</div>
-        <div class="text-sm text-slate-100 leading-relaxed">${palaceText}</div>
+      <div class="p-4 md:p-4 rounded-xl border border-amber-400/25 bg-amber-500/10">
+        <div class="text-xs md:text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2">資料庫宮位解釋</div>
+        <div class="text-base md:text-sm text-slate-100 leading-relaxed">${palaceText}</div>
       </div>
 
       <div>
-        <div class="text-[10px] text-slate-500 font-black tracking-widest uppercase mb-3">星曜解釋（資料庫）</div>
-        <div class="space-y-3">${starCards}</div>
+        <div class="text-xs md:text-[10px] text-slate-500 font-black tracking-widest uppercase mb-3">星曜解釋（資料庫）</div>
+        <div class="space-y-3 md:space-y-3">${starCards}</div>
       </div>
     `;
 
