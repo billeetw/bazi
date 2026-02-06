@@ -24,22 +24,55 @@
         e.preventDefault();
         e.stopPropagation();
         console.log("[event-bindings.js] 按鈕點擊事件觸發");
-        try {
-          console.log("[event-bindings.js] 調用 calculateFn");
-          await calculateFn(); // 使用 await 確保異步錯誤被捕獲
-          console.log("[event-bindings.js] calculateFn 執行完成");
-        } catch (err) {
-          console.error("[event-bindings.js] 啟動引擎失敗:", err);
-          console.error("[event-bindings.js] 錯誤堆棧:", err.stack);
-          const hint = document.getElementById("hint");
-          const btn = document.getElementById("btnLaunch");
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = "啟動 · 人生戰略引擎";
-          }
-          if (hint) {
-            hint.textContent = "啟動失敗：" + (err.message || "未知錯誤");
-            hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
+        
+        // 禁用按鈕防止重複點擊
+        btnLaunch.disabled = true;
+        
+        // 播放啟動特效
+        const LaunchEffect = window.UiComponents?.LaunchEffect;
+        if (LaunchEffect && typeof LaunchEffect.playLaunchEffect === "function") {
+          console.log("[event-bindings.js] 播放啟動特效");
+          LaunchEffect.playLaunchEffect(btnLaunch, async function() {
+            // 特效完成後執行計算
+            try {
+              console.log("[event-bindings.js] 調用 calculateFn");
+              await calculateFn(); // 使用 await 確保異步錯誤被捕獲
+              console.log("[event-bindings.js] calculateFn 執行完成");
+            } catch (err) {
+              console.error("[event-bindings.js] 啟動引擎失敗:", err);
+              console.error("[event-bindings.js] 錯誤堆棧:", err.stack);
+              const hint = document.getElementById("hint");
+              const btn = document.getElementById("btnLaunch");
+              if (btn) {
+                btn.disabled = false;
+                btn.textContent = "啟動 · 人生戰略引擎";
+              }
+              if (hint) {
+                hint.textContent = "啟動失敗：" + (err.message || "未知錯誤");
+                hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
+              }
+            }
+          });
+        } else {
+          // 如果特效模組不可用，直接執行計算
+          console.warn("[event-bindings.js] LaunchEffect 模組不可用，跳過特效");
+          try {
+            console.log("[event-bindings.js] 調用 calculateFn");
+            await calculateFn();
+            console.log("[event-bindings.js] calculateFn 執行完成");
+          } catch (err) {
+            console.error("[event-bindings.js] 啟動引擎失敗:", err);
+            console.error("[event-bindings.js] 錯誤堆棧:", err.stack);
+            const hint = document.getElementById("hint");
+            const btn = document.getElementById("btnLaunch");
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = "啟動 · 人生戰略引擎";
+            }
+            if (hint) {
+              hint.textContent = "啟動失敗：" + (err.message || "未知錯誤");
+              hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
+            }
           }
         }
       });
