@@ -436,21 +436,37 @@
       PALACE_RING = PALACE_DEFAULT.slice();
 
       // ===== 進入系統 UI =====
+      console.log("[ui.js] calculate: 準備更新 UI，進入系統");
       // 使用计算流程服务模块更新 UI
       if (CalculationFlow.updateDashboardUI) {
+        console.log("[ui.js] calculate: 使用 CalculationFlow.updateDashboardUI");
         CalculationFlow.updateDashboardUI();
       } else {
+        console.log("[ui.js] calculate: 使用 fallback UI 更新");
         // Fallback
         const sysEl = document.getElementById("system");
-        if (sysEl) sysEl.classList.remove("hidden");
+        if (sysEl) {
+          sysEl.classList.remove("hidden");
+          console.log("[ui.js] calculate: system 元素已顯示");
+        }
         document.body.classList.add("dashboard-visible");
         const navEl = document.getElementById("workspaceNav");
         const navCta = document.getElementById("navCta");
         const inputEl = document.getElementById("inputCard");
-        if (navEl) navEl.classList.remove("hidden");
-        if (navCta) navCta.classList.remove("hidden");
-        if (inputEl) inputEl.classList.add("hidden");
+        if (navEl) {
+          navEl.classList.remove("hidden");
+          console.log("[ui.js] calculate: workspaceNav 已顯示");
+        }
+        if (navCta) {
+          navCta.classList.remove("hidden");
+          console.log("[ui.js] calculate: navCta 已顯示");
+        }
+        if (inputEl) {
+          inputEl.classList.add("hidden");
+          console.log("[ui.js] calculate: inputCard 已隱藏");
+        }
       }
+      console.log("[ui.js] calculate: UI 更新完成");
 
       syncNavChipActive();
       initDashboardContentTransition();

@@ -44,12 +44,47 @@
    * 更新仪表板 UI
    */
   function updateDashboardUI() {
+    console.log("[calculation-flow.js] updateDashboardUI 開始執行");
     // 显示仪表板，隐藏启动页面
     const dashboard = document.getElementById("dashboard");
     const launchPage = document.getElementById("launchPage");
     
-    if (dashboard) dashboard.classList.remove("hidden");
-    if (launchPage) launchPage.classList.add("hidden");
+    console.log("[calculation-flow.js] dashboard 元素:", !!dashboard);
+    console.log("[calculation-flow.js] launchPage 元素:", !!launchPage);
+    
+    if (dashboard) {
+      dashboard.classList.remove("hidden");
+      console.log("[calculation-flow.js] dashboard hidden 類已移除");
+    } else {
+      console.error("[calculation-flow.js] 找不到 dashboard 元素");
+    }
+    
+    if (launchPage) {
+      launchPage.classList.add("hidden");
+      console.log("[calculation-flow.js] launchPage hidden 類已添加");
+    } else {
+      console.warn("[calculation-flow.js] 找不到 launchPage 元素");
+    }
+    
+    // 也更新其他 UI 元素（fallback 逻辑）
+    document.body.classList.add("dashboard-visible");
+    const navEl = document.getElementById("workspaceNav");
+    const navCta = document.getElementById("navCta");
+    const inputEl = document.getElementById("inputCard");
+    if (navEl) {
+      navEl.classList.remove("hidden");
+      console.log("[calculation-flow.js] workspaceNav 已顯示");
+    }
+    if (navCta) {
+      navCta.classList.remove("hidden");
+      console.log("[calculation-flow.js] navCta 已顯示");
+    }
+    if (inputEl) {
+      inputEl.classList.add("hidden");
+      console.log("[calculation-flow.js] inputCard 已隱藏");
+    }
+    
+    console.log("[calculation-flow.js] updateDashboardUI 執行完成");
   }
 
   /**
