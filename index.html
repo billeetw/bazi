@@ -9,7 +9,7 @@
   <!-- 思源宋體（主標題） -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;600;700;900&display=swap" rel="stylesheet" />
 
   <!-- Tailwind CDN（開發用） -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -522,6 +522,34 @@
       transform: translateY(-4px);
       animation: float-gentle 5s ease-in-out infinite;
     }
+    /* 首頁命運座標輸入區：不晃動，固定位置（!important 確保覆蓋） */
+    #inputCard,
+    #inputCard.glass-container,
+    #inputCard.glass-input,
+    section#inputCard {
+      animation: none !important;
+      transform: none !important;
+    }
+    #inputCard:hover,
+    #inputCard.glass-container:hover,
+    #inputCard.glass-input:hover {
+      animation: none !important;
+      transform: none !important;
+    }
+    /* 首頁下方活動報名區：不晃動，固定位置 */
+    #activity-213,
+    section#activity-213,
+    #activity-213.glass-container,
+    #activity-213.glass-hero {
+      animation: none !important;
+      transform: none !important;
+    }
+    #activity-213:hover,
+    #activity-213.glass-container:hover,
+    #activity-213.glass-hero:hover {
+      animation: none !important;
+      transform: none !important;
+    }
 
     .glass-hero {
       background: rgba(26, 26, 46, 0.4);
@@ -565,12 +593,7 @@
         0 0 40px rgba(255, 191, 0, 0.15),
         inset 0 0 60px rgba(255, 191, 0, 0.08),
         0 20px 60px rgba(0, 0, 0, 0.4);
-      transition: all 0.5s ease;
-      animation: float-gentle 6s ease-in-out infinite;
-    }
-    @keyframes float-gentle {
-      0%, 100% { transform: translateY(0px) translateX(0px); }
-      50% { transform: translateY(-8px) translateX(4px); }
+      transition: border-color 0.4s ease, box-shadow 0.4s ease;
     }
     .glass-input:hover {
       border-color: rgba(255, 191, 0, 0.5);
@@ -578,8 +601,6 @@
         0 0 60px rgba(255, 191, 0, 0.25),
         inset 0 0 80px rgba(255, 191, 0, 0.12),
         0 25px 80px rgba(0, 0, 0, 0.6);
-      transform: translateY(-6px);
-      animation: float-gentle 4s ease-in-out infinite;
     }
     .glass-input::before {
       content: '';
@@ -901,6 +922,20 @@
       box-shadow: 0 4px 24px rgba(0,0,0,0.4);
       transition: border-color 0.3s ease, box-shadow 0.3s ease;
     }
+    /* 左上角品牌 Logo：一起出來玩｜人生說明書（字級沿用原本 text-sm md:text-base） */
+    .nav-brand {
+      font-family: "Noto Serif TC", "PingFang TC", "Heiti TC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+      margin-left: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35em;
+    }
+    .nav-brand-gold { color: #D7C8A0; }
+    .nav-brand-sep { color: rgba(231, 231, 231, 0.5); font-weight: 400; user-select: none; }
+    .nav-brand-main { color: #E7E7E7; }
     .nav-chip {
       background: rgba(0,0,0,0.35);
       border: 1px solid rgba(255,191,0,0.2);
@@ -1445,6 +1480,13 @@
     body.line-browser .glass-container,
     body.line-browser .glass-hero,
     body.line-browser .glass-input { backdrop-filter: none; -webkit-backdrop-filter: none; }
+
+    /* 統一字體系統（僅新增，不覆蓋既有樣式） */
+    .page-hero-title { font-size: clamp(24px, 5vw, 28px); }
+    .section-title-main { font-size: clamp(20px, 4vw, 22px); }
+    .section-caption { font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; }
+    .body-text { font-size: clamp(14px, 2vw, 15px); }
+    .body-caption { font-size: 12px; }
   </style>
 </head>
 
@@ -1461,13 +1503,16 @@
   <!-- TOP NAV -->
   <div class="nav-bar flex items-center justify-between gap-3">
     <div class="flex items-center gap-2">
-      <div class="text-sm md:text-base font-bold text-amber-300">人生說明書</div>
+      <div class="nav-brand text-sm md:text-base" aria-label="一起出來玩 人生說明書">
+        <span class="nav-brand-gold">一起出來玩</span><span class="nav-brand-sep">｜</span><span class="nav-brand-main">人生說明書</span>
+      </div>
       <a href="#" id="homeButton" class="nav-chip-icon" aria-label="回到首頁" title="回到首頁">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
       </a>
       <a href="activity-213.html" class="nav-chip bg-amber-500/20 border-amber-300/40 text-amber-100" aria-label="2/13 活動報名">2/13 活動</a>
+      <a href="consultation.html" class="nav-chip nav-chip-consult" aria-label="1:1 諮詢">1:1 諮詢</a>
     </div>
 
     <!-- workspace nav (only after system entered) -->
@@ -1475,7 +1520,6 @@
       <a class="nav-chip" href="#ws-ziwei">紫微</a>
       <a class="nav-chip" href="#ws-bazi">八字</a>
       <a class="nav-chip" href="#ws-liuyue">流年</a>
-      <a class="nav-chip nav-chip-consult" href="#ws-consult">諮詢</a>
     </div>
 
     <div class="flex items-center gap-2">
@@ -1493,8 +1537,8 @@
     <!-- 命運座標輸入（條狀排列 + 頂級玻璃擬態，保留原有 id 與邏輯） -->
     <section id="inputCard" class="glass-container glass-input p-8 md:p-12 max-w-3xl mx-auto space-y-8">
       <div class="text-center mb-6">
-        <h2 class="text-2xl md:text-3xl font-black text-amber-300 mb-2 tracking-wider">命運座標輸入</h2>
-        <p class="text-sm md:text-base text-slate-400 italic">輸入你的出生資訊，開啟專屬的人生使用說明書</p>
+        <h2 class="page-hero-title text-amber-300 mb-2 tracking-wider">命運座標輸入</h2>
+        <p class="body-text text-slate-400 italic">輸入你的出生資訊，開啟專屬的人生使用說明書</p>
       </div>
 
       <!-- 第一行：年、月、日 -->
@@ -1531,7 +1575,7 @@
             不確定時辰？點我推算時辰
           </button>
         </div>
-        <p class="text-[11px] text-slate-500 text-center">註：選「時辰」會換算成代表時刻（上半/下半時辰各取代表時間）送入系統計算。</p>
+        <p class="body-caption text-slate-500 text-center">註：選「時辰」會換算成代表時刻（上半/下半時辰各取代表時間）送入系統計算。</p>
       </div>
 
       <div class="pt-4">
@@ -1547,11 +1591,11 @@
     <!-- 一起出來玩夥伴聚會（2/13 活動預告，報名請至獨立活動頁） -->
     <section id="activity-213" class="glass-container glass-hero p-6 md:p-8 max-w-2xl mx-auto space-y-4 scroll-mt-24">
       <div class="text-center">
-        <p class="text-amber-400 font-black text-sm tracking-widest">一起出來玩夥伴聚會</p>
-        <h2 class="text-xl md:text-2xl font-black text-amber-300 mt-1">如何玩好人生遊戲</h2>
-        <p class="text-slate-400 text-sm mt-2">2/13 週五晚上 18:30–21:30（18:00 可進場）</p>
+        <p class="section-caption text-amber-400 font-black">一起出來玩夥伴聚會</p>
+        <h2 class="section-title-main text-amber-300 mt-1">如何玩好人生遊戲</h2>
+        <p class="body-caption text-slate-400 mt-2">2/13 週五晚上 18:30–21:30（18:00 可進場）</p>
       </div>
-      <div class="text-slate-200 text-sm leading-relaxed space-y-3">
+      <div class="body-text text-slate-200 space-y-3">
         <p>為您揭開人生這場遊戲的真實面貌，讓您知道這個遊戲的前因後果、破關關鍵，還有專屬於您的通關密碼。</p>
         <p>在這場說明會之後，你會對自己人生的過去、現在、未來，有更充足的理解，都能在未來的人生路上，提升自我，與我們一起實現自己的志願。</p>
         <p class="text-amber-300 font-bold">一起出來玩吧！祝福你。</p>
@@ -1593,9 +1637,9 @@
           <section id="ws-ziwei" class="glass dashboard-card p-6 md:p-7 space-y-4">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <div class="section-subtitle mb-1">ZiWei DouShu</div>
-                <h2 class="text-xl font-black tracking-tight">紫微 12 宮 · 作戰版方盤</h2>
-                <p class="text-xs text-slate-400 mt-1" id="ziweiMeta">
+                <div class="section-caption mb-1">ZiWei DouShu</div>
+                <h2 class="section-title-main font-black tracking-tight">紫微 12 宮 · 作戰版方盤</h2>
+                <p class="body-caption text-slate-400 mt-1" id="ziweiMeta">
                   命宮與身主會顯示在中央；外圈 12 宮固定佈局，與主流排盤方向一致。
                 </p>
               </div>
@@ -1625,11 +1669,11 @@
                   <div class="space-y-3">
                     <div id="ziweiWxBars"></div>
 
-                    <div class="text-[11px] font-black tracking-widest text-slate-400">
+                    <div class="body-caption font-black tracking-widest text-slate-400">
                       紫微 —— 這關好過嗎？
                     </div>
                     <div id="ziweiWxRadar" class="w-full max-w-[260px]"></div>
-                    <div id="ziweiWxComment" class="text-[11px] text-slate-300 leading-relaxed"></div>
+                    <div id="ziweiWxComment" class="body-caption text-slate-300 leading-relaxed"></div>
                   </div>
                 </div>
               </div>
@@ -1639,9 +1683,9 @@
           <!-- 八字五行 -->
           <section id="ws-bazi" class="glass dashboard-card p-6 md:p-7 space-y-6">
             <div>
-              <div class="section-subtitle mb-1">BaZi + Elements</div>
-              <h2 class="text-xl font-black tracking-tight">八字 · 四柱＋五行戰力</h2>
-              <p class="text-xs text-slate-400 mt-1">
+              <div class="section-caption mb-1">BaZi + Elements</div>
+              <h2 class="section-title-main font-black tracking-tight">八字 · 四柱＋五行戰力</h2>
+              <p class="body-text text-slate-400 mt-1">
                 上方顯示「四柱」，下方顯示「表層（天干）」與「實戰（天干＋藏干＋月令加權）」。
                 右側會附上五行意義（資料庫：wuxing_meanings）。
               </p>
@@ -1652,7 +1696,7 @@
 
             <!-- 藏干 -->
             <div class="space-y-3">
-              <div class="text-xs text-slate-400">
+              <div class="body-caption text-slate-400">
                 地支藏干（權重顯示）：<span class="text-slate-500">（用來理解你「實戰五行」的來源）</span>
               </div>
               <div id="cangganGrid" class="grid md:grid-cols-2 gap-2"></div>
@@ -1661,17 +1705,17 @@
             <!-- 五行 bar -->
             <div class="grid md:grid-cols-2 gap-6">
               <div>
-                <div class="text-xs text-slate-400 mb-2">表層結構（四柱天干）</div>
+                <div class="body-caption text-slate-400 mb-2">表層結構（四柱天干）</div>
                 <div class="space-y-3">
                   <!-- 特色標題：角色名望 -->
                   <div class="wuxing-title-card surface-title mb-3">
                     <div class="flex items-center gap-2">
                       <div class="wuxing-logo-icon surface-logo">👁️</div>
                       <div class="flex-1">
-                        <div class="text-sm md:text-base font-black text-amber-300 tracking-tight">
+                        <div class="body-text font-black text-amber-300 tracking-tight">
                           角色名望（八字表層）
                         </div>
-                        <div class="text-xs text-slate-400 italic mt-0.5">
+                        <div class="body-caption text-slate-400 italic mt-0.5">
                           看起來強嗎？
                         </div>
                       </div>
@@ -1680,21 +1724,21 @@
                   </div>
                   <div id="surfaceWxBars" class="space-y-2"></div>
                   <div id="surfaceWxRadar" class="w-full max-w-[260px]"></div>
-                  <div id="surfaceWxComment" class="text-[11px] text-slate-300 leading-relaxed"></div>
+                  <div id="surfaceWxComment" class="body-caption text-slate-300 leading-relaxed"></div>
                 </div>
               </div>
               <div>
-                <div class="text-xs text-slate-400 mb-2">實戰結構（天干＋藏干＋月令加權）</div>
+                <div class="body-caption text-slate-400 mb-2">實戰結構（天干＋藏干＋月令加權）</div>
                 <div class="space-y-3">
                   <!-- 特色標題：核心戰力 -->
                   <div class="wuxing-title-card strategic-title mb-3">
                     <div class="flex items-center gap-2">
                       <div class="wuxing-logo-icon strategic-logo">⚔️</div>
                       <div class="flex-1">
-                        <div class="text-sm md:text-base font-black text-emerald-300 tracking-tight">
+                        <div class="body-text font-black text-emerald-300 tracking-tight">
                           核心戰力（八字實戰）
                         </div>
-                        <div class="text-xs text-slate-400 italic mt-0.5">
+                        <div class="body-caption text-slate-400 italic mt-0.5">
                           真的能贏嗎？
                         </div>
                       </div>
@@ -1703,7 +1747,7 @@
                   </div>
                   <div id="strategicWxBars" class="space-y-2"></div>
                   <div id="strategicWxRadar" class="w-full max-w-[260px]"></div>
-                  <div id="strategicWxComment" class="text-[11px] text-slate-300 leading-relaxed"></div>
+                  <div id="strategicWxComment" class="body-caption text-slate-300 leading-relaxed"></div>
                 </div>
               </div>
             </div>
@@ -1727,16 +1771,15 @@
 
           <section id="ws-strategy" class="glass dashboard-card p-6 md:p-7 space-y-4">
             <div>
-              <div class="section-subtitle mb-1">Strategic Panel</div>
-              <h2 class="text-xl font-black tracking-tight">2026 戰術建議（動態決策）</h2>
-              <p class="text-xs text-slate-400 mt-1">
+              <div class="text-xs font-semibold text-slate-200 mb-2">2026 戰術建議（動態決策）</div>
+              <p class="body-caption text-slate-400 leading-relaxed mt-1">
                 依「五行佔比」＋「十神主軸」給你今年的戰術提示（前端即時計算；解釋文字優先吃資料庫）。
               </p>
             </div>
 
             <div id="tacticalBox" class="space-y-2"></div>
 
-            <div class="text-[11px] text-slate-500">
+            <div class="body-caption text-slate-500">
               註：這段是「指揮中心的戰術提示」，宮位詳解請點紫微方盤。
             </div>
           </section>
@@ -1766,12 +1809,12 @@
         <!-- RIGHT DETAIL PANEL（桌機用；md 以下隱藏，改由 BottomNav + 宮位 Bottom Sheet） -->
         <aside class="space-y-6 dashboard-right-sidebar" id="detailPanel">
           <div class="glass dashboard-card p-6 md:p-7 sticky top-24 border border-amber-500/30 overflow-y-auto max-h-[85vh]">
-            <div class="section-subtitle mb-2">Palace Detail</div>
-            <div id="palaceTitle" class="text-3xl font-black text-amber-400">請點宮位</div>
-            <div id="palaceSub" class="text-xs text-slate-400 mt-2 leading-relaxed"></div>
+            <div class="section-caption mb-2">Palace Detail</div>
+            <div id="palaceTitle" class="section-title-main font-black text-amber-400">請點宮位</div>
+            <div id="palaceSub" class="body-caption text-slate-400 mt-2 leading-relaxed"></div>
 
             <div class="mt-6 space-y-6" id="palaceDetailBody">
-              <div class="text-center py-10 text-slate-500 italic text-sm">點擊紫微方盤的任一宮位，這裡會顯示詳解。</div>
+              <div class="text-center py-10 text-slate-500 italic body-caption">點擊紫微方盤的任一宮位，這裡會顯示詳解。</div>
             </div>
 
             <!-- 流月改為左側單一導航，右側不再重複 -->
@@ -1800,7 +1843,7 @@
     <a href="#ws-ziwei">紫微</a>
     <a href="#ws-bazi">八字</a>
     <a href="#ws-liuyue">流年</a>
-    <a href="#ws-consult">諮詢</a>
+    <a href="#ws-consult">1:1 諮詢</a>
   </nav>
 
   <!-- 不確定時辰？問卷 Modal（一題一題顯示 + 進度條） -->
@@ -1808,9 +1851,9 @@
   <div id="identifyBirthTimeModal" class="identify-time-modal fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md max-h-[85vh] overflow-y-auto rounded-2xl border border-amber-400/30 bg-[var(--bg-mid)] shadow-2xl hidden z-50" role="dialog" aria-labelledby="identifyBirthTimeTitle" aria-modal="true">
     <div class="p-5 md:p-6">
       <h2 id="identifyBirthTimeTitle" class="text-lg font-black text-amber-400 mb-1">不確定時辰？</h2>
-      <p class="text-[11px] text-slate-400 mb-3">依行為特徵推算候選時辰，答完將自動填入排盤表單。</p>
+      <p class="body-caption text-slate-400 mb-3">依行為特徵推算候選時辰，答完將自動填入排盤表單。</p>
       <div id="identifyBirthTimeProgressWrap" class="mb-4">
-        <div class="flex justify-between text-[11px] text-slate-500 mb-1">
+        <div class="flex justify-between body-caption text-slate-500 mb-1">
           <span id="identifyBirthTimeProgressText">第 1 / 19 題</span>
         </div>
         <div class="h-1.5 bg-white/10 rounded-full overflow-hidden">
