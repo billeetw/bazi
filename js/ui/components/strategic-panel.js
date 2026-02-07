@@ -334,18 +334,18 @@
     // 構建 HTML
     let html = '<div class="space-y-6">';
     
-    // Section A: 原廠設定與當前武裝 (The DNA) — 字級與流月、五行、宮位一致
+    // Section A: 原廠設定與當前武裝 (The DNA)
     html += '<div class="space-y-4">';
-      html += '<div class="text-base font-black text-amber-400 mb-3">Section A: 原廠設定與當前武裝 (The DNA)</div>';
+      html += '<div class="text-xl font-black text-amber-400 mb-3">Section A: 原廠設定與當前武裝 (The DNA)</div>';
     
     // 命主
     if (mingzhu) {
       const coreValue = getStarCoreValue(mingzhu);
       html += `
         <div class="p-4 md:p-4 rounded-xl border border-amber-400/40 bg-white/5">
-          <div class="text-xs text-slate-400 mb-2">本命基因（命主）</div>
-          <div class="text-base font-black text-amber-400 mb-2">${mingzhu}</div>
-          <div class="text-sm text-slate-300 leading-relaxed">
+          <div class="text-base md:text-xs text-slate-400 mb-2">本命基因（命主）</div>
+          <div class="text-2xl md:text-xl font-black text-amber-400 mb-2">${mingzhu}</div>
+          <div class="text-xl text-slate-300 leading-relaxed">
             🎯 直擊 (50%)<br>
             「你骨子裡是個 ${mingzhu} 的人，追求的是 ${coreValue}。」
           </div>
@@ -366,9 +366,9 @@
       const mingzhuCoreValue = mingzhu ? getStarCoreValue(mingzhu) : "核心價值";
       html += `
         <div class="p-4 md:p-4 rounded-xl border border-blue-400/40 bg-white/5 mt-3">
-          <div class="text-xs text-slate-400 mb-2">後天工具（身主）</div>
-          <div class="text-base font-black text-blue-400 mb-2">${shengong}</div>
-          <div class="text-sm text-slate-300 leading-relaxed">
+          <div class="text-base md:text-xs text-slate-400 mb-2">後天工具（身主）</div>
+          <div class="text-2xl md:text-xl font-black text-blue-400 mb-2">${shengong}</div>
+          <div class="text-xl text-slate-300 leading-relaxed">
             💭 啟發 (30%)<br>
             「雖然你靈魂追求 ${mingzhuCoreValue}，但你這幾年越來越習慣用 ${shengong} 的方式來應對世界，這讓你感到更安全還是更疲累？」
           </div>
@@ -386,10 +386,10 @@
     
     html += '</div>';
     
-    // Section B: 2026 能量天氣預報 (The Environment) — 字級與流月、五行一致
+    // Section B: 2026 能量天氣預報 (The Environment)
     if (wuxingData && wuxingData.length > 0) {
       html += '<div class="space-y-4 mt-6">';
-      html += '<div class="text-base font-black text-emerald-400 mb-3">Section B: 2026 能量天氣預報 (The Environment)</div>';
+      html += '<div class="text-xl font-black text-emerald-400 mb-3">Section B: 2026 能量天氣預報 (The Environment)</div>';
       
       // 五行進度條
       wuxingData.forEach(elem => {
@@ -397,14 +397,14 @@
         const colorClass = isHigh ? "bg-red-500" : elem.percentage >= 20 ? "bg-yellow-500" : "bg-green-500";
         html += `
           <div class="space-y-2 md:space-y-1">
-            <div class="flex justify-between text-sm">
+            <div class="flex justify-between text-xl">
               <span class="text-slate-300">${elem.name}能量</span>
               <span class="text-slate-400">${elem.percentage}%</span>
             </div>
             <div class="w-full h-3 md:h-2 bg-white/10 rounded-full overflow-hidden">
               <div class="h-full ${colorClass} transition-all duration-300" style="width: ${elem.percentage}%"></div>
             </div>
-              ${isHigh ? '<div class="text-sm text-red-400">⚠️ 系統超載預警</div>' : ''}
+              ${isHigh ? '<div class="text-xl text-red-400">⚠️ 系統超載預警</div>' : ''}
           </div>
         `;
       });
@@ -415,7 +415,7 @@
       console.warn("[strategic-panel.js] Section B - 五行數據缺失");
       html += `
         <div class="space-y-4 mt-6">
-          <div class="text-base font-black text-emerald-400 mb-3">Section B: 2026 能量天氣預報 (The Environment)</div>
+          <div class="text-lg md:text-sm font-black text-emerald-400 mb-3">Section B: 2026 能量天氣預報 (The Environment)</div>
           <div class="p-4 rounded-xl border border-slate-400/20 bg-white/5 text-xs text-slate-500">
             （五行數據暫不可用）
           </div>
@@ -423,20 +423,20 @@
       `;
     }
     
-    // Section C: 十神戰略 (The Strategy) — 字級與流月、五行、宮位一致
+    // Section C: 十神戰略 (The Strategy)
     if (dominant && tenGodText) {
       html += '<div class="space-y-4 mt-6">';
-      html += `<div class="text-base font-black text-emerald-400 mb-3">Section C: 十神戰略：${dominant}模式 (The Strategy)</div>`;
+      html += `<div class="text-xl font-black text-emerald-400 mb-3">Section C: 十神戰略：${dominant}模式 (The Strategy)</div>`;
       
       html += `
         <div class="p-4 md:p-4 rounded-xl border border-emerald-400/40 bg-white/5">
-          <div class="text-xs text-slate-400 mb-2">年度主旋律</div>
-          <div class="text-base font-black text-emerald-400 mb-4">${mainTheme}</div>
+          <div class="text-base md:text-xs text-slate-400 mb-2">年度主旋律</div>
+          <div class="text-xl font-black text-emerald-400 mb-4">${mainTheme}</div>
           
           ${actions.length > 0 ? `
             <div class="mb-4 md:mb-3">
-              <div class="text-sm text-green-400 mb-2">✅ 行動清單</div>
-              <ul class="text-sm text-slate-300 space-y-2 md:space-y-1 ml-4">
+              <div class="text-xl text-green-400 mb-2">✅ 行動清單</div>
+              <ul class="text-xl text-slate-300 space-y-2 md:space-y-1 ml-4">
                 ${actions.map(a => `<li>• ${a}</li>`).join('')}
               </ul>
             </div>
@@ -444,22 +444,22 @@
           
           ${prohibitions.length > 0 ? `
             <div class="mb-4 md:mb-3">
-              <div class="text-sm text-red-400 mb-2">❌ 禁忌清單</div>
-              <ul class="text-sm text-slate-300 space-y-2 md:space-y-1 ml-4">
+              <div class="text-xl text-red-400 mb-2">❌ 禁忌清單</div>
+              <ul class="text-xl text-slate-300 space-y-2 md:space-y-1 ml-4">
                 ${prohibitions.map(p => `<li>• ${p}</li>`).join('')}
               </ul>
             </div>
           ` : ''}
           
           <div class="mt-4 pt-4 border-t border-white/10">
-            <div class="text-xs text-slate-400 mb-2">📝 採集 (20%)</div>
+            <div class="text-base md:text-xs text-slate-400 mb-2">📝 採集 (20%)</div>
             <textarea 
               id="tenGodCapture20" 
-              class="w-full p-3 md:p-3 rounded-lg bg-white/5 border border-white/10 text-sm text-slate-300 placeholder-slate-500 focus:outline-none focus:border-amber-400/50"
+              class="w-full p-3 md:p-3 rounded-lg bg-white/5 border border-white/10 text-lg md:text-sm text-slate-300 placeholder-slate-500 focus:outline-none focus:border-amber-400/50"
               rows="4"
               placeholder="你對今年的「${dominant}模式」有什麼想法？有什麼具體的計劃或擔憂？"
             ></textarea>
-            <div class="text-xs text-slate-500 mt-1" id="tenGodCaptureStatus"></div>
+            <div class="text-base md:text-xs text-slate-500 mt-1" id="tenGodCaptureStatus"></div>
           </div>
         </div>
       `;
@@ -505,7 +505,7 @@
     if (!dominant || !tenGodText) {
       html += `
         <div class="space-y-4 mt-6">
-          <div class="text-base font-black text-emerald-400 mb-3">Section C: 十神戰略 (The Strategy)</div>
+          <div class="text-lg md:text-sm font-black text-emerald-400 mb-3">Section C: 十神戰略 (The Strategy)</div>
           <div class="p-4 rounded-xl border border-slate-400/20 bg-white/5 text-xs text-slate-500">
             ${!dominant ? "（十神主軸數據暫不可用）" : `（資料庫尚未填入「${dominant}」的十神指令）`}
           </div>

@@ -514,10 +514,13 @@
       border-radius: 24px;
       box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.03), 0 10px 30px -5px rgba(0, 0, 0, 0.5);
       transition: all 0.4s ease;
+      animation: float-gentle 7s ease-in-out infinite;
     }
     .glass-container:hover {
       border-top: 1px solid var(--theme-amber-glow);
       box-shadow: inset 0 0 25px rgba(255, 191, 0, 0.08), 0 15px 35px -5px rgba(0, 0, 0, 0.6);
+      transform: translateY(-4px);
+      animation: float-gentle 5s ease-in-out infinite;
     }
 
     .glass-hero {
@@ -563,6 +566,11 @@
         inset 0 0 60px rgba(255, 191, 0, 0.08),
         0 20px 60px rgba(0, 0, 0, 0.4);
       transition: all 0.5s ease;
+      animation: float-gentle 6s ease-in-out infinite;
+    }
+    @keyframes float-gentle {
+      0%, 100% { transform: translateY(0px) translateX(0px); }
+      50% { transform: translateY(-8px) translateX(4px); }
     }
     .glass-input:hover {
       border-color: rgba(255, 191, 0, 0.5);
@@ -570,6 +578,8 @@
         0 0 60px rgba(255, 191, 0, 0.25),
         inset 0 0 80px rgba(255, 191, 0, 0.12),
         0 25px 80px rgba(0, 0, 0, 0.6);
+      transform: translateY(-6px);
+      animation: float-gentle 4s ease-in-out infinite;
     }
     .glass-input::before {
       content: '';
@@ -582,6 +592,13 @@
         inset -2px -2px 0 0 rgba(255, 255, 255, 0.06),
         inset 2px -2px 0 0 rgba(255, 255, 255, 0.06),
         inset -2px 2px 0 0 rgba(255, 255, 255, 0.06);
+    }
+    .glass-input:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+      box-shadow:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.04),
+        0 0 36px rgba(0, 210, 255, 0.05),
+        0 24px 60px rgba(0, 0, 0, 0.4);
     }
 
     /* 主標題：linear-gradient 琥珀金→淺金 + drop-shadow 光暈 + 思源宋體 + letter-spacing 0.2em */
@@ -643,7 +660,7 @@
     }
     .btn-strategy:disabled::before { animation: none; }
 
-    /* 核心特效 3：戰略引擎按鈕 (The Engine Button) — 無搖動動畫 */
+    /* 核心特效 3：戰略引擎按鈕 (The Engine Button) */
     .engine-button {
       background: radial-gradient(circle at center, #FFBF00 0%, #D48800 70%, #A66200 100%);
       color: #fff;
@@ -664,16 +681,24 @@
       height: 200%;
       background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 60%);
       opacity: 0;
+      animation: pulse-light 3s infinite ease-in-out;
       pointer-events: none;
+    }
+    @keyframes pulse-light {
+      0%, 100% { opacity: 0; transform: scale(0.8); }
+      50% { opacity: 0.6; transform: scale(1); }
     }
     .engine-button:hover:not(:disabled) {
       box-shadow: 0 0 30px var(--theme-amber-glow), 0 0 60px rgba(255, 191, 0, 0.3);
+      transform: scale(1.02);
       filter: brightness(1.1);
     }
     .engine-button:disabled {
+      animation: none;
       opacity: 0.6;
       cursor: not-allowed;
     }
+    .engine-button:disabled::after { animation: none; }
     .btn-strategy::before,
     .btn-metal::before {
       content: '';

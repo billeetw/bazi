@@ -3,21 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>後台管理｜登入</title>
+  <title>報名紀錄後台</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%); color: #e2e8f0; font-family: system-ui, sans-serif; }
     .glass { background: rgba(15,23,42,0.88); backdrop-filter: blur(18px); border: 1px solid rgba(148,163,184,0.35); border-radius: 1.25rem; }
     .table-wrap { overflow-x: auto; }
-    .menu-card { transition: transform 0.2s, box-shadow 0.2s; }
-    .menu-card:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0,0,0,0.3); }
   </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
   <div class="max-w-5xl mx-auto">
-    <h1 class="text-2xl font-black text-amber-400 mb-2">後台管理</h1>
+    <h1 class="text-2xl font-black text-amber-400 mb-2">報名紀錄後台</h1>
+    <p class="text-sm text-slate-500 mb-4">深度諮詢與活動報名共用同一後台，活動以「活動 ID」區分。</p>
 
-    <!-- 登入區 -->
     <div id="loginWrap" class="glass p-6 max-w-sm">
       <p class="text-sm text-slate-400 mb-4">請輸入後台帳號與密碼</p>
       <form id="loginForm" class="space-y-4">
@@ -34,40 +32,15 @@
       </form>
     </div>
 
-    <!-- 主選單：登入後選擇「報名紀錄」或「專家管理後台」 -->
-    <div id="menuWrap" class="hidden">
-      <div class="flex flex-wrap items-center gap-2 mb-6">
-        <button type="button" id="backToMenuBtn" class="hidden px-4 py-2 rounded-lg bg-slate-600 text-slate-200 text-sm hover:bg-slate-500">← 返回主選單</button>
-        <button type="button" id="logoutBtn" class="px-4 py-2 rounded-lg bg-slate-700 text-slate-200 text-sm hover:bg-slate-600">登出</button>
-      </div>
-      <div id="menuCards" class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <a href="#" id="cardRegistrations" class="menu-card glass p-6 md:p-8 block rounded-2xl border border-amber-400/30 hover:border-amber-400/50">
-          <div class="text-amber-400 mb-2 text-sm font-black tracking-wider">報名管理</div>
-          <h2 class="text-xl font-black text-slate-100 mb-2">所有活動報名</h2>
-          <p class="text-sm text-slate-400">諮詢報名、聚會活動等，依活動 ID 篩選</p>
-        </a>
-        <a href="expert-admin.html" id="cardExpertAdmin" class="menu-card glass p-6 md:p-8 block rounded-2xl border border-emerald-400/30 hover:border-emerald-400/50">
-          <div class="text-emerald-400 mb-2 text-sm font-black tracking-wider">專家管理後台</div>
-          <h2 class="text-xl font-black text-slate-100 mb-2">計算結果與命書</h2>
-          <p class="text-sm text-slate-400">戰略標籤、健康預警、AI Prompt、一鍵生成命書</p>
-        </a>
-      </div>
-    </div>
-
-    <!-- 報名管理列表：所有活動（諮詢報名、聚會活動等） -->
     <div id="dashboardWrap" class="hidden">
       <div class="flex flex-wrap items-center gap-2 mb-4">
-        <button type="button" id="backToMenuFromList" class="px-4 py-2 rounded-lg bg-slate-600 text-slate-200 text-sm hover:bg-slate-500">← 返回主選單</button>
+        <button type="button" id="logoutBtn" class="px-4 py-2 rounded-lg bg-slate-700 text-slate-200 text-sm hover:bg-slate-600">登出</button>
         <button type="button" id="refreshBtn" class="px-4 py-2 rounded-lg bg-amber-600/80 text-slate-900 text-sm font-medium hover:bg-amber-500">重新整理</button>
-        <label class="text-sm text-slate-400">活動：</label>
-        <select id="activityFilter" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm">
-          <option value="">全部</option>
-          <option value="consultation">諮詢報名</option>
-          <option value="activity-213">聚會活動（2/13）</option>
-        </select>
-        <span id="listCount" class="text-sm text-slate-500"></span>
       </div>
-      <div class="glass p-4 md:p-6">
+
+      <section class="glass p-4 md:p-6 mb-6">
+        <h2 class="text-lg font-black text-amber-300 mb-3">深度諮詢</h2>
+        <span id="listCount" class="text-sm text-slate-500"></span>
         <div id="listError" class="text-sm text-amber-400 hidden mb-2"></div>
         <div id="listLoading" class="text-sm text-slate-500 py-4">載入中…</div>
         <div id="listContent" class="table-wrap hidden">
@@ -75,7 +48,6 @@
             <thead>
               <tr class="border-b border-white/10 text-slate-400">
                 <th class="py-2 pr-2 whitespace-nowrap">報名時間</th>
-                <th class="py-2 pr-2">活動</th>
                 <th class="py-2 pr-2">姓名</th>
                 <th class="py-2 pr-2">Email</th>
                 <th class="py-2 pr-2">電話</th>
@@ -88,7 +60,38 @@
             <tbody id="listBody"></tbody>
           </table>
         </div>
-      </div>
+      </section>
+
+      <section class="glass p-4 md:p-6">
+        <h2 class="text-lg font-black text-amber-300 mb-3">活動報名</h2>
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          <label class="text-sm text-slate-400">活動 ID</label>
+          <select id="eventSlugFilter" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-100">
+            <option value="">全部</option>
+            <option value="213">213（2/13 如何玩好人生遊戲）</option>
+          </select>
+          <button type="button" id="refreshEventBtn" class="px-3 py-2 rounded-lg bg-amber-600/80 text-slate-900 text-sm font-medium hover:bg-amber-500">篩選</button>
+          <span id="eventListCount" class="text-sm text-slate-500"></span>
+        </div>
+        <div id="eventListError" class="text-sm text-amber-400 hidden mb-2"></div>
+        <div id="eventListLoading" class="text-sm text-slate-500 py-4">載入中…</div>
+        <div id="eventListContent" class="table-wrap hidden">
+          <table class="w-full text-sm text-left">
+            <thead>
+              <tr class="border-b border-white/10 text-slate-400">
+                <th class="py-2 pr-2">活動 ID</th>
+                <th class="py-2 pr-2 whitespace-nowrap">報名時間</th>
+                <th class="py-2 pr-2">姓名</th>
+                <th class="py-2 pr-2">Email</th>
+                <th class="py-2 pr-2">電話</th>
+                <th class="py-2 pr-2">轉帳後五碼</th>
+                <th class="py-2 pr-2">統編</th>
+              </tr>
+            </thead>
+            <tbody id="eventListBody"></tbody>
+          </table>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -104,38 +107,18 @@
 
     function showLogin() {
       document.getElementById('loginWrap').classList.remove('hidden');
-      document.getElementById('menuWrap').classList.add('hidden');
       document.getElementById('dashboardWrap').classList.add('hidden');
       setStoredAuth('');
     }
 
-    function showMenu() {
-      document.getElementById('loginWrap').classList.add('hidden');
-      document.getElementById('menuWrap').classList.remove('hidden');
-      document.getElementById('dashboardWrap').classList.add('hidden');
-      document.getElementById('menuCards').classList.remove('hidden');
-      document.getElementById('backToMenuBtn').classList.add('hidden');
-    }
-
     function showDashboard() {
       document.getElementById('loginWrap').classList.add('hidden');
-      document.getElementById('menuWrap').classList.remove('hidden');
       document.getElementById('dashboardWrap').classList.remove('hidden');
-      document.getElementById('menuCards').classList.add('hidden');
-      document.getElementById('backToMenuBtn').classList.remove('hidden');
-      loadList();
     }
 
     function authHeader() {
       var auth = getStoredAuth();
       return auth ? { Authorization: 'Basic ' + auth } : {};
-    }
-
-    function activityLabel(activityId, source) {
-      if (activityId === 'activity-213') return '聚會活動（2/13）';
-      if (activityId && activityId !== 'consultation') return activityId;
-      if (source && (source === 'activity-213-page' || String(source).indexOf('213') >= 0)) return '聚會活動（2/13）';
-      return '諮詢報名';
     }
 
     function loadList() {
@@ -144,17 +127,12 @@
       var errEl = document.getElementById('listError');
       var body = document.getElementById('listBody');
       var countEl = document.getElementById('listCount');
-      var filterEl = document.getElementById('activityFilter');
-      var activityId = filterEl ? filterEl.value : '';
 
       loading.classList.remove('hidden');
       wrap.classList.add('hidden');
       errEl.classList.add('hidden');
 
-      var url = '/api/admin/consultations';
-      if (activityId) url += '?activity_id=' + encodeURIComponent(activityId);
-
-      fetch(url, { headers: authHeader() })
+      fetch('/api/admin/consultations', { headers: authHeader() })
         .then(function (res) {
           if (res.status === 401) {
             showLogin();
@@ -173,10 +151,8 @@
           countEl.textContent = '共 ' + list.length + ' 筆';
           body.innerHTML = list.map(function (row) {
             var created = row.created_at ? new Date(row.created_at).toLocaleString('zh-TW') : '';
-            var actLabel = activityLabel(row.activity_id, row.source);
             return '<tr class="border-b border-white/5 hover:bg-white/5">' +
               '<td class="py-2 pr-2 whitespace-nowrap">' + escapeHtml(created) + '</td>' +
-              '<td class="py-2 pr-2">' + escapeHtml(actLabel) + '</td>' +
               '<td class="py-2 pr-2">' + escapeHtml(row.name || '') + '</td>' +
               '<td class="py-2 pr-2">' + escapeHtml(row.email || '') + '</td>' +
               '<td class="py-2 pr-2">' + escapeHtml(row.phone || '') + '</td>' +
@@ -225,7 +201,9 @@
             return;
           }
           if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || '失敗'); });
-          showMenu();
+          showDashboard();
+          loadList();
+          loadEventList();
           btn.disabled = false;
         })
         .catch(function (err) {
@@ -236,25 +214,77 @@
         });
     });
 
-    document.getElementById('cardRegistrations').addEventListener('click', function (e) {
-      e.preventDefault();
-      showDashboard();
-    });
-
-    document.getElementById('backToMenuBtn').addEventListener('click', showMenu);
-    document.getElementById('backToMenuFromList').addEventListener('click', showMenu);
-
     document.getElementById('logoutBtn').addEventListener('click', function () {
       showLogin();
       document.getElementById('loginPass').value = '';
     });
 
-    document.getElementById('refreshBtn').addEventListener('click', loadList);
-    var activityFilterEl = document.getElementById('activityFilter');
-    if (activityFilterEl) activityFilterEl.addEventListener('change', loadList);
+    document.getElementById('refreshBtn').addEventListener('click', function () {
+      loadList();
+      loadEventList();
+    });
+
+    function loadEventList() {
+      var wrap = document.getElementById('eventListContent');
+      var loading = document.getElementById('eventListLoading');
+      var errEl = document.getElementById('eventListError');
+      var body = document.getElementById('eventListBody');
+      var countEl = document.getElementById('eventListCount');
+      var slugFilter = document.getElementById('eventSlugFilter');
+      var slug = (slugFilter && slugFilter.value) ? slugFilter.value.trim() : '';
+
+      loading.classList.remove('hidden');
+      wrap.classList.add('hidden');
+      errEl.classList.add('hidden');
+
+      var url = '/api/admin/event-registrations';
+      if (slug) url += '?event_slug=' + encodeURIComponent(slug);
+
+      fetch(url, { headers: authHeader() })
+        .then(function (res) {
+          if (res.status === 401) {
+            showLogin();
+            return Promise.reject(new Error('請重新登入'));
+          }
+          return res.json();
+        })
+        .then(function (data) {
+          loading.classList.add('hidden');
+          if (data.error) {
+            errEl.textContent = data.error;
+            errEl.classList.remove('hidden');
+            return;
+          }
+          var list = data.list || [];
+          countEl.textContent = '共 ' + list.length + ' 筆' + (slug ? '（活動 ID: ' + slug + '）' : '');
+          body.innerHTML = list.map(function (row) {
+            var created = row.created_at ? new Date(row.created_at).toLocaleString('zh-TW') : '';
+            return '<tr class="border-b border-white/5 hover:bg-white/5">' +
+              '<td class="py-2 pr-2"><span class="font-mono text-amber-300">' + escapeHtml(row.event_slug || '') + '</span></td>' +
+              '<td class="py-2 pr-2 whitespace-nowrap">' + escapeHtml(created) + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.name || '') + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.email || '') + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.phone || '') + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.bank_last5 || '') + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.tax_id || '—') + '</td>' +
+              '</tr>';
+          }).join('');
+          wrap.classList.remove('hidden');
+        })
+        .catch(function (err) {
+          loading.classList.add('hidden');
+          errEl.textContent = err.message || '載入失敗';
+          errEl.classList.remove('hidden');
+        });
+    }
+
+    document.getElementById('refreshEventBtn').addEventListener('click', loadEventList);
+    document.getElementById('eventSlugFilter').addEventListener('change', loadEventList);
 
     if (getStoredAuth()) {
-      showMenu();
+      showDashboard();
+      loadList();
+      loadEventList();
     }
   </script>
 </body>
