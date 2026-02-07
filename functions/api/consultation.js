@@ -22,6 +22,7 @@ export async function onRequestPost(context) {
       bankLast5,
       paymentMethod,
       source,
+      activityId,
     } = data || {};
 
     if (
@@ -54,33 +55,66 @@ export async function onRequestPost(context) {
 
     const db = env.CONSULT_DB;
 
-    await db
-      .prepare(`
-        INSERT INTO consultations (
-          id, created_at, updated_at,
-          name, email, phone, tax_id,
-          birth_info, topics, topic_extra, bank_last5,
-          payment_method, payment_status, source
+    const activityIdVal = activityId && String(activityId).trim() ? String(activityId).trim() : null;
+
+    try {
+      await db
+        .prepare(`
+          INSERT INTO consultations (
+            id, created_at, updated_at,
+            name, email, phone, tax_id,
+            birth_info, topics, topic_extra, bank_last5,
+            payment_method, payment_status, source, activity_id
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .bind(
+          id,
+          now,
+          now,
+          name,
+          email,
+          phone,
+          taxId || null,
+          birth,
+          topicsString,
+          topicExtra || null,
+          bankLast5,
+          method,
+          status,
+          source || null,
+          activityIdVal
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `)
-      .bind(
-        id,
-        now,
-        now,
-        name,
-        email,
-        phone,
-        taxId || null,
-        birth,
-        topicsString,
-        topicExtra || null,
-        bankLast5,
-        method,
-        status,
-        source || null
-      )
-      .run();
+        .run();
+    } catch (insertErr) {
+      await db
+        .prepare(`
+          INSERT INTO consultations (
+            id, created_at, updated_at,
+            name, email, phone, tax_id,
+            birth_info, topics, topic_extra, bank_last5,
+            payment_method, payment_status, source
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .bind(
+          id,
+          now,
+          now,
+          name,
+          email,
+          phone,
+          taxId || null,
+          birth,
+          topicsString,
+          topicExtra || null,
+          bankLast5,
+          method,
+          status,
+          source || null
+        )
+        .run();
+    }
 
     return new Response(JSON.stringify({ ok: true, id }), {
       status: 200,

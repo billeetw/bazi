@@ -40,13 +40,59 @@ export async function onRequestGet(context) {
 
   try {
     const db = env.CONSULT_DB;
-    const { results } = await db
-      .prepare(
-        `SELECT id, created_at, name, email, phone, tax_id, birth_info, topics, topic_extra, bank_last5, payment_method, payment_status, source
-         FROM consultations
-         ORDER BY created_at DESC`
-      )
-      .all();
+    const url = new URL(request.url);
+    const activityIdFilter = url.searchParams.get('activity_id') || '';
+
+    const baseCols = 'id, created_at, name, email, phone, tax_id, birth_info, topics, topic_extra, bank_last5, payment_method, payment_status, source';
+    let results;
+    try {
+      let stmt;
+      if (!activityIdFilter) {
+        stmt = db.prepare(
+          `SELECT ${baseCols}, activity_id FROM consultations ORDER BY created_at DESC`
+        );
+      } else if (activityIdFilter === 'consultation') {
+        stmt = db.prepare(
+          `SELECT ${baseCols}, activity_id FROM consultations
+           WHERE (activity_id IS NULL OR activity_id = '' OR activity_id = 'consultation')
+           ORDER BY created_at DESC`
+        );
+      } else if (activityIdFilter === 'activity-213') {
+        stmt = db.prepare(
+          `SELECT ${baseCols}, activity_id FROM consultations
+           WHERE activity_id = 'activity-213'
+              OR (activity_id IS NULL AND (
+                source = 'activity-213-page' OR source LIKE '%213%' OR source LIKE '%activity-213%'
+                OR topics LIKE '%2/13%' OR topics LIKE '%聚會%'
+              ))
+           ORDER BY created_at DESC`
+        );
+      } else {
+        stmt = db.prepare(
+          `SELECT ${baseCols}, activity_id FROM consultations WHERE activity_id = ? ORDER BY created_at DESC`
+        ).bind(activityIdFilter);
+      }
+      const out = await stmt.all();
+      results = out.results || [];
+    } catch (colErr) {
+      const stmtFallback = db.prepare(
+        `SELECT ${baseCols} FROM consultations ORDER BY created_at DESC`
+      );
+      const out = await stmtFallback.all();
+      results = (out.results || []).map((r) => {
+        const src = r.source || '';
+        const top = r.topics || '';
+        const is213 = src === 'activity-213-page' || src.indexOf('213') >= 0 || top.indexOf('2/13') >= 0 || top.indexOf('聚會') >= 0;
+        return { ...r, activity_id: is213 ? 'activity-213' : null };
+      });
+      if (activityIdFilter === 'consultation') {
+        results = results.filter((r) => !r.activity_id || r.activity_id === 'consultation');
+      } else if (activityIdFilter === 'activity-213') {
+        results = results.filter((r) => r.activity_id === 'activity-213');
+      } else if (activityIdFilter) {
+        results = [];
+      }
+    }
 
     return new Response(JSON.stringify({ list: results || [] }), {
       status: 200,

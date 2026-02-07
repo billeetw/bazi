@@ -3,268 +3,170 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>專家後台管理界面 - 人生戰略引擎 (獨立計算版)</title>
+  <title>專家管理後台</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    body { 
-      background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%); 
-      color: #e2e8f0; 
-      font-family: system-ui, sans-serif; 
-    }
-    .glass { 
-      background: rgba(15,23,42,0.88); 
-      backdrop-filter: blur(18px); 
-      border: 1px solid rgba(148,163,184,0.35); 
-      border-radius: 1.25rem; 
-    }
-    .tag { 
-      display: inline-block; 
-      padding: 0.25rem 0.75rem; 
-      background: rgba(255, 191, 0, 0.1); 
-      border: 1px solid rgba(255, 191, 0, 0.3); 
-      border-radius: 0.5rem; 
-      font-size: 0.875rem; 
-      color: #FFBF00; 
-      margin: 0.25rem; 
-    }
-    .tag.critical { 
-      background: rgba(255, 0, 0, 0.1); 
-      border-color: rgba(255, 0, 0, 0.3); 
-      color: #ff6b6b; 
-    }
-    .tag.high { 
-      background: rgba(255, 191, 0, 0.15); 
-      border-color: rgba(255, 191, 0, 0.4); 
-      color: #FFD700; 
-    }
-    .tag.medium { 
-      background: rgba(255, 191, 0, 0.1); 
-      border-color: rgba(255, 191, 0, 0.3); 
-      color: #FFBF00; 
-    }
-    .tag.low { 
-      background: rgba(148, 163, 184, 0.1); 
-      border-color: rgba(148, 163, 184, 0.3); 
-      color: #94a3b8; 
-    }
-    .chart-container {
-      position: relative;
-      height: 200px;
-      margin-top: 1rem;
-    }
-    .chart-bar {
-      position: absolute;
-      bottom: 0;
-      width: calc(100% / 12 - 0.5rem);
-      background: linear-gradient(to top, rgba(255, 191, 0, 0.3), rgba(255, 191, 0, 0.6));
-      border: 1px solid rgba(255, 191, 0, 0.4);
-      border-radius: 0.25rem 0.25rem 0 0;
-      transition: all 0.3s ease;
-    }
-    .chart-bar:hover {
-      background: linear-gradient(to top, rgba(255, 191, 0, 0.5), rgba(255, 191, 0, 0.8));
-      transform: translateY(-2px);
-    }
-    .chart-bar.critical {
-      background: linear-gradient(to top, rgba(255, 0, 0, 0.3), rgba(255, 0, 0, 0.6));
-      border-color: rgba(255, 0, 0, 0.4);
-    }
-    .chart-bar.warning {
-      background: linear-gradient(to top, rgba(255, 165, 0, 0.3), rgba(255, 165, 0, 0.6));
-      border-color: rgba(255, 165, 0, 0.4);
-    }
-    .chart-bar.normal {
-      background: linear-gradient(to top, rgba(34, 197, 94, 0.3), rgba(34, 197, 94, 0.6));
-      border-color: rgba(34, 197, 94, 0.4);
-    }
-    .chart-label {
-      position: absolute;
-      bottom: -1.5rem;
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.6);
-      text-align: center;
-      width: 100%;
-    }
-    .chart-line {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: rgba(255, 191, 0, 0.5);
-      border-top: 1px dashed rgba(255, 191, 0, 0.3);
-    }
-    .chart-line.warning-line {
-      top: 30%;
-      background: rgba(255, 165, 0, 0.5);
-      border-top-color: rgba(255, 165, 0, 0.3);
-    }
-    .chart-line.critical-line {
-      top: 60%;
-      background: rgba(255, 0, 0, 0.5);
-      border-top-color: rgba(255, 0, 0, 0.3);
-    }
+    body { background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%); color: #e2e8f0; font-family: system-ui, sans-serif; }
+    .glass { background: rgba(15,23,42,0.88); backdrop-filter: blur(18px); border: 1px solid rgba(148,163,184,0.35); border-radius: 1.25rem; }
+    .expert-question { margin-bottom: 1rem; }
+    .expert-question .question-text { font-size: 0.875rem; margin-bottom: 0.25rem; }
+    .expert-question select { background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; padding: 0.25rem 0.5rem; color: #e2e8f0; width: 100%; max-width: 20rem; }
   </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
-  <div class="max-w-7xl mx-auto">
-    <h1 class="text-3xl font-black text-amber-400 mb-2">專家後台管理界面</h1>
-    <p class="text-sm text-slate-500 mb-6">獨立計算版本 - 登入後可直接在此界面完成所有進階功能計算，無需依賴前端頁面</p>
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl font-black text-emerald-400 mb-2">專家管理後台</h1>
 
-    <!-- 登入區域 -->
-    <div id="loginWrap" class="glass p-6 max-w-sm">
-      <p class="text-sm text-slate-400 mb-4">請輸入後台帳號與密碼</p>
-      <form id="loginForm" class="space-y-4">
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">帳號</label>
-          <input type="text" id="loginUser" autocomplete="username" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="帳號" required />
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">密碼</label>
-          <input type="password" id="loginPass" autocomplete="current-password" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="密碼" required />
-        </div>
-        <p id="loginError" class="text-sm text-amber-400 hidden"></p>
-        <button type="submit" id="loginBtn" class="w-full py-3 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-slate-950 font-bold">登入</button>
-      </form>
+    <div id="authWrap" class="hidden">
+      <p class="text-sm text-amber-400">未登入或登入已過期，正在導回主選單…</p>
     </div>
 
-    <!-- 主控制台 -->
     <div id="dashboardWrap" class="hidden">
-      <div class="flex flex-wrap items-center gap-2 mb-4">
+      <div class="flex flex-wrap items-center gap-2 mb-6">
+        <a href="admin.html" class="px-4 py-2 rounded-lg bg-slate-600 text-slate-200 text-sm hover:bg-slate-500 no-underline">← 返回主選單</a>
         <button type="button" id="logoutBtn" class="px-4 py-2 rounded-lg bg-slate-700 text-slate-200 text-sm hover:bg-slate-600">登出</button>
-        <button type="button" id="refreshBtn" class="px-4 py-2 rounded-lg bg-amber-600/80 text-slate-900 text-sm font-medium hover:bg-amber-500">重新整理顯示</button>
-        <button type="button" id="generateLifeBookBtn" class="px-4 py-2 rounded-lg bg-green-600/80 text-slate-100 text-sm font-medium hover:bg-green-500">一鍵生成命書</button>
       </div>
 
-      <!-- 數據輸入區域 -->
-      <section class="glass p-4 md:p-6 mb-6">
-        <h2 class="text-lg font-black text-amber-300 mb-3">數據輸入</h2>
-        <div id="calculationStatus" class="mb-3 p-2 bg-blue-600/20 border border-blue-400/30 rounded-lg text-sm text-blue-300 hidden"></div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs text-slate-500 mb-1">出生資訊（必填）</label>
-            <div class="grid grid-cols-3 gap-2">
-              <input type="number" id="birthYear" placeholder="年" min="1900" max="2100" value="1972" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm" />
-              <input type="number" id="birthMonth" placeholder="月" min="1" max="12" value="8" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm" />
-              <input type="number" id="birthDay" placeholder="日" min="1" max="31" value="2" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm" />
+      <div class="space-y-6">
+        <!-- 獨立數據輸入：出生、問卷、經緯度 -->
+        <div class="glass p-4 md:p-6">
+          <h2 class="text-lg font-bold text-slate-200 mb-3">獨立數據輸入</h2>
+          <p class="text-sm text-slate-400 mb-4">輸入出生資料、專家問卷與經緯度（選填），按下「執行」後取得命盤並產生戰略標籤、健康預警與 AI Prompt。</p>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">出生年</label>
+              <input type="number" id="birthYear" min="1900" max="2100" value="1990" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm" />
             </div>
-            <div class="grid grid-cols-2 gap-2 mt-2">
-              <input type="number" id="birthHour" placeholder="時 (0-23)" min="0" max="23" value="15" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm" />
-              <input type="number" id="birthMinute" placeholder="分 (0-59)" min="0" max="59" value="30" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm" />
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">月</label>
+              <input type="number" id="birthMonth" min="1" max="12" value="6" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm" />
             </div>
-            <select id="gender" class="w-full mt-2 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm" required>
-              <option value="">選擇性別（必填）</option>
-              <option value="M" selected>男</option>
-              <option value="F">女</option>
-            </select>
-            <button type="button" id="calculateBtn" class="w-full mt-2 py-2 rounded-lg bg-amber-600/80 text-slate-900 text-sm font-medium hover:bg-amber-500">計算所有進階功能</button>
-            <p class="text-xs text-slate-500 mt-2">點擊「計算」將自動計算：四化系統、疊宮分析、好命指數、健康預警、戰略標籤、AI Prompt</p>
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">日</label>
+              <input type="number" id="birthDay" min="1" max="31" value="15" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">時（0–23）</label>
+              <input type="number" id="birthHour" min="0" max="23" value="12" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">分</label>
+              <input type="number" id="birthMinute" min="0" max="59" value="0" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm" />
+            </div>
+            <div>
+              <label class="block text-xs text-slate-500 mb-1">性別</label>
+              <select id="birthGender" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm">
+                <option value="">—</option>
+                <option value="M">男</option>
+                <option value="F">女</option>
+              </select>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs text-slate-500 mb-1 mt-4">經緯度校準（可選）</label>
-            <div id="geolocationContainer"></div>
+
+          <div class="mb-4">
+            <label class="block text-xs text-slate-500 mb-2">經緯度（選填）</label>
+            <div class="flex gap-2 flex-wrap">
+              <input type="text" id="geoLat" placeholder="緯度" class="flex-1 min-w-[8rem] bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm" />
+              <input type="text" id="geoLng" placeholder="經度" class="flex-1 min-w-[8rem] bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-100 text-sm" />
+            </div>
+          </div>
+
+          <details class="mb-4">
+            <summary class="text-sm text-slate-400 cursor-pointer hover:text-slate-300">專家問卷（15 題，可選填）</summary>
+            <div id="expertQuestionnaireWrap" class="mt-3 space-y-2 pl-2 border-l-2 border-slate-600"></div>
+          </details>
+
+          <button type="button" id="computeFromBirth" class="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 text-white font-black tracking-wide hover:brightness-110 transition" onclick="if(typeof runComputeFromBirth==='function')runComputeFromBirth();else{var s=document.getElementById('loadStatus');if(s){s.textContent='請重新整理頁面後再試（若仍無反應請開開發者工具 F12 看 Console 錯誤）';s.classList.remove('hidden');}}">
+            執行
+          </button>
+          <p id="loadStatus" class="text-xs text-slate-500 mt-2 hidden"></p>
+        </div>
+
+        <div class="glass p-4 md:p-6">
+          <h2 class="text-lg font-bold text-slate-200 mb-2">戰略標籤</h2>
+          <p id="strategyPlaceholder" class="text-sm text-slate-500">載入數據後將顯示戰略標籤（critical / high / medium / low）。</p>
+          <div id="strategyTags" class="hidden mt-2 flex flex-wrap gap-2"></div>
+        </div>
+
+        <div class="glass p-4 md:p-6">
+          <h2 class="text-lg font-bold text-slate-200 mb-2">健康預警</h2>
+          <p id="healthPlaceholder" class="text-sm text-slate-500">載入數據後將顯示健康預警與建議。</p>
+          <div id="healthContent" class="hidden text-sm text-slate-300"></div>
+        </div>
+
+        <div class="glass p-4 md:p-6">
+          <h2 class="text-lg font-bold text-slate-200 mb-2">月度健康風險</h2>
+          <p id="monthlyPlaceholder" class="text-sm text-slate-500">載入數據後將顯示 1–12 月健康風險心電圖。</p>
+          <div id="monthlyChart" class="hidden mt-2"></div>
+        </div>
+
+        <div class="glass p-4 md:p-6">
+          <h2 class="text-lg font-bold text-slate-200 mb-2">AI Prompt / 命書</h2>
+          <p class="text-sm text-slate-400 mb-2">生成完整 AI Prompt 供一鍵生成命書使用。</p>
+          <textarea id="aiPromptArea" class="w-full h-32 bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100 text-sm font-mono" placeholder="載入數據後可生成並複製 Prompt" readonly></textarea>
+          <div class="flex flex-wrap gap-2 mt-2">
+            <button type="button" id="copyPrompt" class="px-4 py-2 rounded-lg bg-amber-600/80 text-slate-900 text-sm font-medium hover:bg-amber-500">複製 Prompt</button>
+            <button type="button" id="downloadPrompt" class="px-4 py-2 rounded-lg bg-slate-600 text-slate-200 text-sm hover:bg-slate-500">下載為文字檔</button>
           </div>
         </div>
-      </section>
 
-      <!-- 戰略標籤 -->
-      <section class="glass p-4 md:p-6 mb-6">
-        <h2 class="text-lg font-black text-amber-300 mb-3">戰略標籤</h2>
-        <div id="strategicTagsContainer" class="text-sm text-slate-400">
-          <p>尚未計算，請先輸入出生資訊並計算</p>
+        <div class="glass p-4 md:p-6">
+          <h2 class="text-lg font-bold text-slate-200 mb-2">導出</h2>
+          <p class="text-sm text-slate-400 mb-2">導出完整 JSON 或提交至後台 API。</p>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="exportJson" class="px-4 py-2 rounded-lg bg-slate-600 text-slate-200 text-sm hover:bg-slate-500">導出 JSON</button>
+            <button type="button" id="submitApi" class="px-4 py-2 rounded-lg bg-emerald-600/80 text-white text-sm font-medium hover:bg-emerald-500">提交到後台 API</button>
+          </div>
+          <p id="exportStatus" class="text-xs text-slate-500 mt-2 hidden"></p>
         </div>
-      </section>
-
-      <!-- 核心數據摘要 -->
-      <section class="glass p-4 md:p-6 mb-6">
-        <h2 class="text-lg font-black text-amber-300 mb-3">核心數據摘要</h2>
-        <div id="coreDataContainer" class="text-sm text-slate-400">
-          <p>尚未計算，請先輸入出生資訊並計算</p>
-        </div>
-      </section>
-
-      <!-- 15宮位戰略導引腳本 -->
-      <section class="glass p-4 md:p-6 mb-6">
-        <h2 class="text-lg font-black text-amber-300 mb-3">🛠️ 15宮位戰略導引腳本</h2>
-        <div class="mb-3 text-xs text-slate-500">系統自動生成15個戰略攻勢問題，每個問題對應一個命盤關鍵宮位或時空座標</div>
-        <div class="mb-3 flex items-center gap-2">
-          <button type="button" id="generateSummaryBtn" class="px-4 py-2 rounded-lg bg-green-600/80 text-slate-100 text-sm font-medium hover:bg-green-500">📋 生成諮詢精華摘要</button>
-          <button type="button" id="exportSummaryBtn" class="px-4 py-2 rounded-lg bg-blue-600/80 text-slate-100 text-sm font-medium hover:bg-blue-500">💾 導出諮詢精華 JSON</button>
-        </div>
-        <div id="consultationScriptContainer" class="text-sm text-slate-400">
-          <p>尚未計算，請先輸入出生資訊並計算</p>
-        </div>
-      </section>
-
-      <!-- 疊宮與引爆分析 -->
-      <section class="glass p-4 md:p-6 mb-6">
-        <h2 class="text-lg font-black text-amber-300 mb-3">疊宮與引爆分析</h2>
-        <div id="overlapAnalysisContainer" class="text-sm text-slate-400">
-          <p>尚未計算，請先輸入出生資訊並計算</p>
-        </div>
-        <details class="mt-4">
-          <summary class="cursor-pointer text-xs text-slate-500 hover:text-slate-300">🔧 工程化調試數據（點擊展開）</summary>
-          <pre id="overlapDebugContainer" class="mt-2 p-3 bg-black/40 border border-white/10 rounded text-xs font-mono text-slate-400 overflow-auto max-h-96"></pre>
-        </details>
-      </section>
-
-      <!-- 健康預警 -->
-      <section class="glass p-4 md:p-6 mb-6">
-        <h2 class="text-lg font-black text-amber-300 mb-3">健康預警</h2>
-        <div id="healthWarningContainer" class="text-sm text-slate-400">
-          <p>尚未計算，請先輸入出生資訊並計算</p>
-        </div>
-      </section>
-
-      <!-- 月度健康風險心電圖 -->
-      <section class="glass p-4 md:p-6 mb-6">
-        <h2 class="text-lg font-black text-amber-300 mb-3">生命健康心電圖（1-12月）</h2>
-        <div id="monthlyHealthChartContainer" class="text-sm text-slate-400">
-          <p>尚未計算，請先輸入出生資訊並計算</p>
-        </div>
-      </section>
-
-      <!-- AI Prompt -->
-      <section class="glass p-4 md:p-6 mb-6">
-        <h2 class="text-lg font-black text-amber-300 mb-3">AI Prompt（命書生成）</h2>
-        <div class="flex items-center gap-2 mb-3">
-          <button type="button" id="copyPromptBtn" class="px-4 py-2 rounded-lg bg-blue-600/80 text-slate-100 text-sm font-medium hover:bg-blue-500">複製 Prompt</button>
-          <button type="button" id="downloadPromptBtn" class="px-4 py-2 rounded-lg bg-blue-600/80 text-slate-100 text-sm font-medium hover:bg-blue-500">下載 Prompt</button>
-        </div>
-        <textarea id="aiPromptTextarea" readonly class="w-full h-96 bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm font-mono text-slate-300" placeholder="AI Prompt 將在這裡顯示..."></textarea>
-      </section>
-
-      <!-- 完整數據導出 -->
-      <section class="glass p-4 md:p-6">
-        <h2 class="text-lg font-black text-amber-300 mb-3">完整數據導出</h2>
-        <div class="flex items-center gap-2 mb-3">
-          <button type="button" id="exportJsonBtn" class="px-4 py-2 rounded-lg bg-green-600/80 text-slate-100 text-sm font-medium hover:bg-green-500">導出 JSON</button>
-          <button type="button" id="exportToApiBtn" class="px-4 py-2 rounded-lg bg-purple-600/80 text-slate-100 text-sm font-medium hover:bg-purple-500">提交到後台 API</button>
-        </div>
-        <pre id="exportDataContainer" class="w-full h-64 bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-xs font-mono text-slate-300 overflow-auto" style="white-space: pre-wrap; word-wrap: break-word;">尚未計算，請先輸入出生資訊並計算</pre>
-      </section>
+      </div>
     </div>
   </div>
 
-  <!-- 載入必要的腳本 -->
-  <script src="js/calc/constants.js?v=1"></script>
-  <script src="js/calc/helpers.js?v=1"></script>
-  <script src="js/calc/baziCore.js?v=1"></script>
-  <script src="js/calc/ziweiPipeline.js?v=1"></script>
-  <script src="js/calc/ziweiOutput.js?v=1"></script>
-  <script src="js/calc/tactics.js?v=1"></script>
-  <script src="js/calc/fourTransformations.js?v=1"></script>
-  <script src="js/calc/overlapAnalysis.js?v=1"></script>
-  <script src="js/calc/luckIndex.js?v=1"></script>
-  <script src="js/calc/healthAnalysis.js?v=1"></script>
-  <script src="js/calc/aiPromptGenerator.js?v=1"></script>
-  <script src="js/calc/adminExport.js?v=1"></script>
-  <script src="js/calc/consultationScriptEngine.js?v=1"></script>
-  <script src="js/calc.js?v=1"></script>
-  <script src="js/ui/services/api-service.js?v=1"></script>
-  <script src="js/ui/components/geolocation-calibration.js?v=1"></script>
+  <script>
+    (function showDashboardIfAuth() {
+      function run() {
+        var auth = null;
+        try { auth = sessionStorage.getItem('adminAuth'); } catch (e) {}
+        var d = document.getElementById('dashboardWrap');
+        var a = document.getElementById('authWrap');
+        if (auth && d && a) {
+          d.classList.remove('hidden');
+          a.classList.add('hidden');
+        } else if (!auth && a) {
+          a.classList.remove('hidden');
+        }
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', run);
+      } else {
+        run();
+      }
+    })();
+  </script>
+  <!-- 計算用腳本（依出生資料計算時需要） -->
+  <script src="js/utils.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/calc/constants.js"></script>
+  <script src="js/calc/helpers.js"></script>
+  <script src="js/calc/ziweiPipeline.js"></script>
+  <script src="js/calc/ziweiOutput.js"></script>
+  <script src="js/calc/baziCore.js"></script>
+  <script src="js/calc/fourTransformations.js"></script>
+  <script src="js/calc/overlapAnalysis.js"></script>
+  <script src="js/calc/luckIndex.js"></script>
+  <script src="js/calc/healthAnalysis.js"></script>
+  <script src="js/calc/monthlyDetailedAnalysis.js"></script>
+  <script src="js/calc/aiPromptGenerator.js"></script>
+  <script src="js/calc/tactics.js"></script>
+  <script src="js/calc.js"></script>
+  <script src="js/calc/adminExport.js"></script>
 
   <script>
-    var AUTH_KEY = 'expertAdminAuth';
+    var AUTH_KEY = 'adminAuth';
+    var API_BASE = 'https://17gonplay-api.billeetw.workers.dev';
 
     function getStoredAuth() {
       try { return sessionStorage.getItem(AUTH_KEY); } catch { return null; }
@@ -273,1137 +175,343 @@
       try { if (value) sessionStorage.setItem(AUTH_KEY, value); else sessionStorage.removeItem(AUTH_KEY); } catch (_) {}
     }
 
-    function showLogin() {
-      document.getElementById('loginWrap').classList.remove('hidden');
-      document.getElementById('dashboardWrap').classList.add('hidden');
-      setStoredAuth('');
-    }
-
-    function showDashboard() {
-      document.getElementById('loginWrap').classList.add('hidden');
-      document.getElementById('dashboardWrap').classList.remove('hidden');
-    }
-
-    /**
-     * 獲取認證請求頭
-     * 注意：認證信息僅用於 API 請求，不會記錄到日誌
-     */
     function authHeader() {
       var auth = getStoredAuth();
       return auth ? { Authorization: 'Basic ' + auth } : {};
     }
 
-    // 初始化經緯度組件
-    function initComponents() {
-      // 初始化經緯度校準
-      if (window.GeolocationCalibration) {
-        const container = document.getElementById('geolocationContainer');
-        if (container) {
-          window.GeolocationCalibration.init(container, {
-            onSuccess: function(data) {
-              console.log('經緯度設置:', data);
-              updateDisplay();
-            }
-          });
-        }
-      }
+    function redirectToAdmin() {
+      setStoredAuth('');
+      window.location.href = 'admin.html';
     }
 
-    // 更新顯示（從全局狀態獲取數據）
-    function refreshDisplay() {
-      updateDisplay();
+    function showAuthRequired() {
+      document.getElementById('authWrap').classList.remove('hidden');
+      document.getElementById('dashboardWrap').classList.add('hidden');
+      setTimeout(redirectToAdmin, 1500);
     }
 
-    // 計算數據（獨立計算，不依賴前端頁面）
-    async function calculateData() {
-      const year = parseInt(document.getElementById('birthYear').value);
-      const month = parseInt(document.getElementById('birthMonth').value);
-      const day = parseInt(document.getElementById('birthDay').value);
-      const hour = parseInt(document.getElementById('birthHour').value) || 0;
-      const minute = parseInt(document.getElementById('birthMinute').value) || 0;
-      const gender = document.getElementById('gender').value;
-
-      if (!year || !month || !day) {
-        alert('請輸入完整的出生日期');
-        return;
-      }
-
-      if (!gender) {
-        alert('請選擇性別');
-        return;
-      }
-
-      try {
-        const btn = document.getElementById('calculateBtn');
-        btn.disabled = true;
-        btn.textContent = '計算中...';
-
-        // 顯示計算狀態
-        const statusEl = document.getElementById('calculationStatus');
-        if (statusEl) {
-          statusEl.textContent = '正在連線後端計算（八字＋紫微＋流月＋十神）…';
-          statusEl.classList.remove('hidden');
-        }
-
-        // 1. 調用後端 API 獲取基礎數據（八字、紫微、流月）
-        const apiService = window.UiServices?.ApiService;
-        if (!apiService) {
-          throw new Error('API 服務未載入');
-        }
-
-        const payload = await apiService.computeAll({
-          year: year,
-          month: month,
-          day: day,
-          hour: hour,
-          minute: minute,
-          gender: gender
-        });
-
-        if (!payload?.ok || !payload?.features) {
-          throw new Error(payload?.error || '計算失敗');
-        }
-
-        const contract = payload.features;
-        if (contract.version !== 'strategic_features_v1') {
-          throw new Error('features 格式錯誤（不是 strategic_features_v1）');
-        }
-
-        // 2. 存儲基礎數據到全局狀態
-        window.contract = contract;
-        window.chartId = payload.chartId;
-
-        // 3. 計算年齡
-        const birthDate = new Date(year, month - 1, day, hour, minute);
-        const today = new Date();
-        let age = today.getFullYear() - year;
-        if (today.getMonth() < month - 1 || (today.getMonth() === month - 1 && today.getDate() < day)) {
-          age--;
-        }
-        const currentYear = today.getFullYear();
-
-        // 4. 計算小限
-        const bazi = contract.bazi;
-        const ziwei = contract.ziwei;
-        const horoscope = window.BaziCore?.getHoroscopeFromAge(age, gender, ziwei, bazi) || null;
-
-        // 5. 計算所有宮位分數（這會觸發所有高級計算）
-        if (!window.Calc || !window.Calc.computeAllPalaceScores) {
-          throw new Error('計算模組未載入');
-        }
-
-        if (statusEl) {
-          statusEl.textContent = '正在計算宮位分數和進階分析…';
-        }
-
-        // 載入權重數據
-        let weightsData;
-        if (window.Calc && window.Calc.loadZiweiWeights) {
-          weightsData = await window.Calc.loadZiweiWeights();
-        } else {
-          // Fallback: 嘗試直接載入
-          const weightsResp = await fetch('data/ziweiWeights.json');
-          if (weightsResp.ok) {
-            weightsData = await weightsResp.json();
-          } else {
-            throw new Error('無法載入權重數據');
-          }
-        }
-
-        // 計算所有宮位分數（這會自動觸發四化、疊宮、好命指數、健康預警等計算）
-        if (!window.Calc || !window.Calc.computeAllPalaceScores) {
-          throw new Error('計算模組未正確載入');
-        }
-
-        const scores = await window.Calc.computeAllPalaceScores(
-          ziwei,
-          horoscope,
-          {
-            bazi: bazi,
-            age: age,
-            weightsData: weightsData,
-            gender: gender
-          }
-        );
-
-        // 6. 確保所有數據都已計算完成
-        // computeAllPalaceScores 內部已經會調用所有高級計算模組
-        // 數據已經存儲在 window.* 中
-
-        // 7. 更新顯示
-        updateDisplay();
-
-        if (statusEl) {
-          statusEl.textContent = '計算完成！';
-          statusEl.classList.add('hidden');
-        }
-
-        alert('計算完成！所有進階功能數據已生成。');
-
-        btn.disabled = false;
-        btn.textContent = '計算';
-      } catch (err) {
-        console.error('計算失敗:', err);
-        alert('計算失敗：' + err.message);
-        const statusEl = document.getElementById('calculationStatus');
-        if (statusEl) {
-          statusEl.textContent = '計算失敗：' + err.message;
-          statusEl.classList.remove('hidden');
-        }
-        document.getElementById('calculateBtn').disabled = false;
-        document.getElementById('calculateBtn').textContent = '計算';
-      }
+    function showDashboard() {
+      document.getElementById('authWrap').classList.add('hidden');
+      document.getElementById('dashboardWrap').classList.remove('hidden');
     }
 
-    // 更新顯示
-    function updateDisplay() {
-      if (!window.AdminExport) return;
+    var currentData = null;
 
-      try {
-        const exportData = window.AdminExport.exportCalculationResults();
-        updateDisplayFromData(exportData);
-      } catch (err) {
-        console.error('更新顯示失敗:', err);
-      }
+    // 專家問卷 15 題題目（與 expert-questionnaire.js 一致）
+    var EXPERT_QUESTIONS = [
+      { id: 'eq1', categoryName: '心理原型', text: '在面對重大決策時，你的核心驅動力來自？', options: [{ key: 'A', text: '邏輯分析與數據支撐' }, { key: 'B', text: '直覺感受與內在聲音' }, { key: 'C', text: '他人意見與社會共識' }, { key: 'D', text: '過往經驗與成功模式' }] },
+      { id: 'eq2', categoryName: '心理原型', text: '你認為自己最核心的人格特質是？', options: [{ key: 'A', text: '執行力強，說到做到' }, { key: 'B', text: '觀察力敏銳，善於分析' }, { key: 'C', text: '創造力豐富，敢於突破' }, { key: 'D', text: '穩定可靠，承載力強' }] },
+      { id: 'eq3', categoryName: '心理原型', text: '當你感到壓力時，內心的第一反應是？', options: [{ key: 'A', text: '立刻整理資訊，制定計劃' }, { key: 'B', text: '先退後觀察，等待時機' }, { key: 'C', text: '直接行動，邊做邊調整' }, { key: 'D', text: '尋求支持，與他人討論' }] },
+      { id: 'eq4', categoryName: '心理原型', text: '你認為自己最擅長的領域是？', options: [{ key: 'A', text: '策略規劃與系統思考' }, { key: 'B', text: '人際連結與情感支持' }, { key: 'C', text: '創新突破與開拓新局' }, { key: 'D', text: '穩定執行與持續優化' }] },
+      { id: 'eq5', categoryName: '心理原型', text: '你的人生目標更傾向於？', options: [{ key: 'A', text: '建立影響力與聲望' }, { key: 'B', text: '獲得內在平靜與智慧' }, { key: 'C', text: '創造價值與改變世界' }, { key: 'D', text: '建立穩定與安全感' }] },
+      { id: 'eq6', categoryName: '行為偏好', text: '在團隊合作中，你更傾向於？', options: [{ key: 'A', text: '主導方向，制定規則' }, { key: 'B', text: '協調溝通，促進共識' }, { key: 'C', text: '執行任務，專注細節' }, { key: 'D', text: '提供創意，突破框架' }] },
+      { id: 'eq7', categoryName: '行為偏好', text: '面對衝突時，你的處理方式是？', options: [{ key: 'A', text: '直接溝通，講道理訂規則' }, { key: 'B', text: '先避開，找適當時機再處理' }, { key: 'C', text: '快速解決，速戰速決' }, { key: 'D', text: '尋求第三方協助或調解' }] },
+      { id: 'eq8', categoryName: '行為偏好', text: '學習新事物時，你更偏好？', options: [{ key: 'A', text: '系統性學習，建立完整架構' }, { key: 'B', text: '實作中學習，邊做邊學' }, { key: 'C', text: '與他人討論，從交流中學習' }, { key: 'D', text: '觀察模仿，從案例中學習' }] },
+      { id: 'eq9', categoryName: '行為偏好', text: '完成一件大事後，你傾向於？', options: [{ key: 'A', text: '立即規劃下一步，持續推進' }, { key: 'B', text: '休息沉澱，整理經驗' }, { key: 'C', text: '分享成果，獲得認可' }, { key: 'D', text: '尋找新挑戰，開拓新領域' }] },
+      { id: 'eq10', categoryName: '行為偏好', text: '面對不確定性時，你的第一反應是？', options: [{ key: 'A', text: '蒐集更多資訊，降低不確定性' }, { key: 'B', text: '先試一點，邊做邊調整' }, { key: 'C', text: '觀望等待，等局勢明朗' }, { key: 'D', text: '尋求他人建議，參考經驗' }] },
+      { id: 'eq11', categoryName: '抗壓機制', text: '當你感到疲憊或壓力過大時，最有效的恢復方式是？', options: [{ key: 'A', text: '獨處靜心，整理思緒' }, { key: 'B', text: '運動或身體活動' }, { key: 'C', text: '與親友交流，獲得支持' }, { key: 'D', text: '轉換環境，暫時離開壓力源' }] },
+      { id: 'eq12', categoryName: '抗壓機制', text: '面對失敗或挫折時，你的內在對話是？', options: [{ key: 'A', text: '分析原因，找出改進方法' }, { key: 'B', text: '接受現實，調整期待' }, { key: 'C', text: '重新出發，尋找新機會' }, { key: 'D', text: '尋求支持，與他人討論' }] },
+      { id: 'eq13', categoryName: '抗壓機制', text: '當你感到能量耗盡時，你會優先？', options: [{ key: 'A', text: '減少工作量，保護核心任務' }, { key: 'B', text: '尋求協助，分擔責任' }, { key: 'C', text: '改變方法，提高效率' }, { key: 'D', text: '暫時休息，恢復後再戰' }] },
+      { id: 'eq14', categoryName: '抗壓機制', text: '面對長期壓力時，你的應對策略是？', options: [{ key: 'A', text: '建立規律，維持穩定節奏' }, { key: 'B', text: '尋找意義，連結長期目標' }, { key: 'C', text: '適度調整，保持彈性' }, { key: 'D', text: '尋求專業協助或指導' }] },
+      { id: 'eq15', categoryName: '抗壓機制', text: '你認為自己最需要加強的抗壓能力是？', options: [{ key: 'A', text: '情緒管理與內在穩定' }, { key: 'B', text: '時間管理與效率提升' }, { key: 'C', text: '人際支持與資源整合' }, { key: 'D', text: '目標設定與執行力' }] }
+    ];
+
+    function renderExpertQuestionnaire() {
+      var wrap = document.getElementById('expertQuestionnaireWrap');
+      if (!wrap) return;
+      wrap.innerHTML = EXPERT_QUESTIONS.map(function (q) {
+        var opts = q.options.map(function (o) { return '<option value="' + o.key + '">' + o.key + '. ' + o.text + '</option>'; }).join('');
+        return '<div class="expert-question"><span class="text-xs text-slate-500">' + q.categoryName + '</span><p class="question-text">' + q.text + '</p><select data-qid="' + q.id + '"><option value="">—</option>' + opts + '</select></div>';
+      }).join('');
     }
 
-    // 從數據更新顯示
-    function updateDisplayFromData(data) {
-      // 更新戰略標籤
-      updateStrategicTags(data);
-      
-      // 更新核心數據摘要
-      updateCoreData(data);
-      
-      // 更新諮詢劇本（需要在疊宮分析之後，因為依賴疊宮數據）
-      updateConsultationScript(data);
-      
-      // 更新疊宮分析
-      updateOverlapAnalysis(data);
-      
-      // 更新健康預警
-      updateHealthWarning(data);
-      
-      // 更新月度健康風險心電圖
-      updateMonthlyHealthChart(data);
-      
-      // 更新 AI Prompt
-      updateAIPrompt(data);
-      
-      // 更新導出數據
-      updateExportData(data);
+    function getQuestionnaireAnswers() {
+      var out = {};
+      EXPERT_QUESTIONS.forEach(function (q) {
+        var sel = document.querySelector('select[data-qid="' + q.id + '"]');
+        if (!sel || !sel.value) return;
+        var opt = q.options.filter(function (o) { return o.key === sel.value; })[0];
+        out[q.id] = { answer: sel.value, category: q.categoryName, questionText: q.text, optionText: opt ? opt.text : '' };
+      });
+      return out;
     }
 
-    // 更新戰略標籤顯示
-    function updateStrategicTags(data) {
-      const container = document.getElementById('strategicTagsContainer');
-      if (!container) return;
-
-      if (data.strategicTags && data.strategicTags.tags) {
-        const tags = data.strategicTags.tags;
-        const details = data.strategicTags.details || [];
-        
-        let html = '<div class="flex flex-wrap gap-2">';
-        details.forEach(detail => {
-          const priorityClass = detail.priority || 'medium';
-          html += `<span class="tag ${priorityClass}" title="${detail.description || ''}">${detail.tag}</span>`;
-        });
-        html += '</div>';
-        
-        if (data.strategicTags.summary) {
-          html += `<div class="mt-3 text-xs text-slate-500">總標籤數：${data.strategicTags.summary.totalTags}</div>`;
-        }
-        
-        container.innerHTML = html;
-      } else if (data.structuredData && window.AIPromptGenerator) {
-        const tags = window.AIPromptGenerator.generateStrategicTags(data.structuredData);
-        if (tags.length > 0) {
-          container.innerHTML = '<div class="flex flex-wrap gap-2">' +
-            tags.map(tag => `<span class="tag">${tag}</span>`).join('') +
-            '</div>';
-        } else {
-          container.innerHTML = '<p class="text-slate-500">暫無戰略標籤</p>';
-        }
-      } else {
-        container.innerHTML = '<p class="text-slate-500">尚未計算，請先輸入出生資訊並計算</p>';
-      }
-    }
-
-    // 更新核心數據摘要
-    function updateCoreData(data) {
-      const container = document.getElementById('coreDataContainer');
-      if (!container) return;
-
-      if (data.structuredData && window.AIPromptGenerator) {
-        const summary = window.AIPromptGenerator.generateCoreDataSummary(data.structuredData);
-        container.innerHTML = '<pre class="whitespace-pre-wrap text-sm">' + summary + '</pre>';
-      } else {
-        container.innerHTML = '<p class="text-slate-500">尚未計算，請先輸入出生資訊並計算</p>';
-      }
-    }
-
-    // 更新15宮位戰略導引腳本
-    function updateConsultationScript(data) {
-      const container = document.getElementById('consultationScriptContainer');
-      
-      if (!container) return;
-
-      // 檢查必要數據
-      if (!window.ConsultationScriptEngine) {
-        container.innerHTML = '<p class="text-slate-500">諮詢腳本引擎未載入</p>';
-        return;
-      }
-
-      if (!data.ziwei || !data.fourTransformations || !data.overlapAnalysis) {
-        container.innerHTML = '<p class="text-slate-500">請先完成計算以生成諮詢腳本</p>';
-        return;
-      }
-
-      try {
-        // 生成15個戰略導引腳本
-        const script = window.ConsultationScriptEngine.generateConsultationScript({
-          ziweiData: data.ziwei,
-          overlapAnalysis: data.overlapAnalysis,
-          fourTransformations: data.fourTransformations,
-          currentYear: new Date().getFullYear()
-        });
-
-        if (script.error) {
-          container.innerHTML = '<p class="text-red-400">生成失敗：' + script.error + '</p>';
-          return;
-        }
-
-        // 從localStorage載入已記錄的回答
-        const savedAnswers = JSON.parse(localStorage.getItem('consultationAnswers') || '{}');
-
-        // 顯示15個問題（可展開/收合）
-        let html = '';
-
-        // 按維度分組顯示
-        const dimensions = {
-          '核心本質': script.questions.filter(q => q.dimension === '核心本質'),
-          '空間配置': script.questions.filter(q => q.dimension === '空間配置'),
-          '時間座標': script.questions.filter(q => q.dimension === '時間座標')
-        };
-
-        Object.keys(dimensions).forEach(dimensionName => {
-          const dimensionQuestions = dimensions[dimensionName];
-          
-          html += `<div class="mb-6">
-            <h3 class="text-md font-bold text-amber-400 mb-3">${dimensionName}（${dimensionQuestions.length}題）</h3>`;
-
-          dimensionQuestions.forEach((q, index) => {
-            const savedAnswer = savedAnswers[q.id] || '';
-            
-            html += `<details class="mb-3 bg-black/20 rounded-lg border border-white/10">
-              <summary class="cursor-pointer p-3 hover:bg-black/30 flex items-center justify-between">
-                <span class="font-bold text-slate-200">${q.id}: ${q.title}</span>
-                <span class="text-xs text-slate-400">${q.palace}</span>
-              </summary>
-              <div class="p-4 space-y-4">
-                <!-- 50% 直擊 -->
-                <div class="p-3 bg-red-900/20 border border-red-500/30 rounded">
-                  <div class="text-xs font-bold text-red-300 mb-1">🎯 直擊 (50%)</div>
-                  <div class="text-sm text-slate-200">「${q.hook50}」</div>
-                </div>
-                
-                <!-- 30% 啟發 -->
-                <div class="p-3 bg-blue-900/20 border border-blue-500/30 rounded">
-                  <div class="text-xs font-bold text-blue-300 mb-1">💭 啟發 (30%)</div>
-                  <div class="text-sm text-slate-200">「${q.reflection30}」</div>
-                </div>
-                
-                <!-- 20% 採集 -->
-                <div class="p-3 bg-green-900/20 border border-green-500/30 rounded">
-                  <div class="text-xs font-bold text-green-300 mb-1">📝 採集 (20%)</div>
-                  <div class="text-sm text-slate-200 mb-2">「${q.capture20}」</div>
-                  <textarea 
-                    id="answer_${q.id}" 
-                    class="w-full h-20 bg-black/40 border border-white/10 rounded px-3 py-2 text-sm text-slate-300" 
-                    placeholder="記錄用戶回答的20%關鍵數據..."
-                  >${savedAnswer}</textarea>
-                </div>
-              </div>
-            </details>`;
-          });
-
-          html += `</div>`;
-        });
-
-        container.innerHTML = html;
-
-        // 綁定textarea自動保存
-        script.questions.forEach(q => {
-          const textarea = document.getElementById(`answer_${q.id}`);
-          if (textarea) {
-            textarea.addEventListener('blur', function() {
-              const answers = JSON.parse(localStorage.getItem('consultationAnswers') || '{}');
-              answers[q.id] = this.value;
-              localStorage.setItem('consultationAnswers', JSON.stringify(answers));
-            });
-          }
-        });
-
-        // 存儲到全局狀態
-        window.consultationScript = script;
-        window.consultationAnswers = savedAnswers;
-
-      } catch (err) {
-        console.error('生成諮詢腳本失敗:', err);
-        container.innerHTML = '<p class="text-red-400">生成諮詢腳本失敗：' + err.message + '</p>';
-      }
-    }
-
-    // 生成諮詢精華摘要
-    function generateConsultationSummary() {
-      if (!window.consultationScript || !window.ConsultationScriptEngine) {
-        alert('請先完成計算以生成諮詢腳本');
-        return;
-      }
-
-      const answers = JSON.parse(localStorage.getItem('consultationAnswers') || '{}');
-      const summary = window.ConsultationScriptEngine.generateConsultationSummary(
-        window.consultationScript,
-        answers
-      );
-
-      // 顯示摘要
-      const summaryText = JSON.stringify({
-        consultationScript: window.consultationScript,
-        answers: answers,
-        summary: summary,
-        birthInfo: {
-          year: document.getElementById('birthYear')?.value,
-          month: document.getElementById('birthMonth')?.value,
-          day: document.getElementById('birthDay')?.value,
-          hour: document.getElementById('birthHour')?.value,
-          minute: document.getElementById('birthMinute')?.value,
-          gender: document.getElementById('gender')?.value
-        },
-        timestamp: new Date().toISOString()
-      }, null, 2);
-
-      // 顯示在導出數據區域
-      const exportContainer = document.getElementById('exportDataContainer');
-      if (exportContainer) {
-        exportContainer.textContent = summaryText;
-        exportContainer.scrollIntoView({ behavior: 'smooth' });
-      }
-
-      // 存儲到全局狀態
-      window.consultationSummary = summary;
-      
-      alert(`諮詢精華摘要已生成！\n已回答：${summary.totalAnswered}/15\n關鍵洞察：${summary.keyInsights.length}個\n行動項目：${summary.actionItems.length}個`);
-    }
-
-    // 導出諮詢精華JSON
-    function exportConsultationSummary() {
-      if (!window.consultationScript) {
-        alert('請先完成計算以生成諮詢腳本');
-        return;
-      }
-
-      const answers = JSON.parse(localStorage.getItem('consultationAnswers') || '{}');
-      const summary = window.ConsultationScriptEngine.generateConsultationSummary(
-        window.consultationScript,
-        answers
-      );
-
-      const exportData = {
-        consultationScript: window.consultationScript,
-        answers: answers,
-        summary: summary,
-        birthInfo: {
-          year: document.getElementById('birthYear')?.value,
-          month: document.getElementById('birthMonth')?.value,
-          day: document.getElementById('birthDay')?.value,
-          hour: document.getElementById('birthHour')?.value,
-          minute: document.getElementById('birthMinute')?.value,
-          gender: document.getElementById('gender')?.value
-        },
-        timestamp: new Date().toISOString()
+    function getBirthFromForm() {
+      return {
+        year: parseInt(document.getElementById('birthYear').value, 10) || 1990,
+        month: parseInt(document.getElementById('birthMonth').value, 10) || 6,
+        day: parseInt(document.getElementById('birthDay').value, 10) || 15,
+        hour: parseInt(document.getElementById('birthHour').value, 10) || 12,
+        minute: parseInt(document.getElementById('birthMinute').value, 10) || 0,
+        gender: (document.getElementById('birthGender').value || '').trim() || undefined
       };
-
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `consultation_summary_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      alert('諮詢精華 JSON 已下載！');
     }
 
-    // 更新疊宮分析
-    function updateOverlapAnalysis(data) {
-      const container = document.getElementById('overlapAnalysisContainer');
-      const debugContainer = document.getElementById('overlapDebugContainer');
-      
-      if (!container) return;
+    function getGeoFromForm() {
+      var lat = parseFloat(document.getElementById('geoLat').value);
+      var lng = parseFloat(document.getElementById('geoLng').value);
+      if (isNaN(lat) || isNaN(lng)) return null;
+      return { longitude: lng, latitude: lat, accuracy: null, source: 'expert-admin', timestamp: new Date().toISOString() };
+    }
 
-      // 工程化調試數據
-      if (debugContainer) {
-        try {
-          // 收集所有宮位的詳細數據
-          const palaceDetails = {};
-          if (data.overlapAnalysis?.palaceMap) {
-            const palaceMap = data.overlapAnalysis.palaceMap;
-            const mapEntries = palaceMap instanceof Map ? Array.from(palaceMap.entries()) : Object.entries(palaceMap);
-            
-            mapEntries.forEach(([palaceName, palaceData]) => {
-              palaceDetails[palaceName] = {
-                luCount: palaceData.luCount || 0,
-                quanCount: palaceData.quanCount || 0,
-                keCount: palaceData.keCount || 0,
-                jiCount: palaceData.jiCount || 0,
-                riskLevel: palaceData.riskLevel || 'normal',
-                opportunityLevel: palaceData.opportunityLevel || 'normal',
-                transformations: {
-                  benming: palaceData.transformations?.benming || null,
-                  dalimit: palaceData.transformations?.dalimit || null,
-                  liunian: palaceData.transformations?.liunian || null,
-                  xiaoxian: palaceData.transformations?.xiaoxian || null
-                }
-              };
-            });
-          }
-
-          const debugData = {
-            // 基本狀態
-            hasOverlapAnalysis: !!data.overlapAnalysis,
-            overlapAnalysisExists: data.overlapAnalysis !== null && data.overlapAnalysis !== undefined,
-            
-            // 四化系統數據檢查
-            fourTransformations: {
-              exists: !!data.fourTransformations,
-              benming: data.fourTransformations?.benming || null,
-              dalimit: data.fourTransformations?.dalimit || null,
-              liunian: data.fourTransformations?.liunian || null,
-              xiaoxian: data.fourTransformations?.xiaoxian || null
-            },
-            
-            // 疊宮分析統計
-            summary: data.overlapAnalysis?.summary || {},
-            criticalRisks: data.overlapAnalysis?.criticalRisks || [],
-            maxOpportunities: data.overlapAnalysis?.maxOpportunities || [],
-            volatileAmbivalences: data.overlapAnalysis?.volatileAmbivalences || [],
-            
-            // 宮位映射大小
-            palaceMapSize: data.overlapAnalysis?.palaceMap ? (data.overlapAnalysis.palaceMap instanceof Map ? data.overlapAnalysis.palaceMap.size : Object.keys(data.overlapAnalysis.palaceMap).length) : 0,
-            
-            // 所有宮位的詳細數據（關鍵！）
-            palaceDetails: palaceDetails,
-            
-            // 全局狀態檢查
-            windowOverlapAnalysis: typeof window !== 'undefined' ? !!window.overlapAnalysis : 'N/A',
-            windowFourTransformations: typeof window !== 'undefined' ? !!window.fourTransformations : 'N/A'
-          };
-          
-          debugContainer.textContent = JSON.stringify(debugData, (key, value) => {
-            // 處理 Map 對象
-            if (value instanceof Map) {
-              return Object.fromEntries(value);
-            }
-            return value;
-          }, 2);
-        } catch (err) {
-          debugContainer.textContent = '調試數據格式化錯誤：' + err.message + '\n' + err.stack;
-        }
+    function mergeFormIntoCurrentData() {
+      if (!currentData) return;
+      var q = getQuestionnaireAnswers();
+      if (Object.keys(q).length) {
+        currentData.expertQuestionnaire = { answers: q, summary: { totalAnswered: Object.keys(q).length, totalQuestions: 15, completionRate: (Object.keys(q).length / 15) * 100 } };
+        if (currentData.structuredData) currentData.structuredData.expertQuestionnaire = currentData.expertQuestionnaire;
       }
-
-      // 顯示疊宮分析結果
-      if (data.overlapAnalysis) {
-        const { criticalRisks, maxOpportunities, volatileAmbivalences, summary } = data.overlapAnalysis;
-        let html = '';
-
-        // 統計摘要
-        if (summary) {
-          html += `<div class="mb-4 p-3 bg-black/20 rounded">
-            <div class="text-xs font-bold mb-2">📊 統計摘要：</div>
-            <div class="text-xs space-y-1">
-              <div>劇烈震盪/吉凶並見：${summary.totalVolatileAmbivalences || 0} 個宮位</div>
-              <div>超級地雷區：${summary.totalCriticalRisks || 0} 個宮位</div>
-              <div>大發財機會：${summary.totalMaxOpportunities || 0} 個宮位</div>
-            </div>
-          </div>`;
-        }
-
-        // 劇烈震盪/吉凶並見（最高優先級）
-        if (volatileAmbivalences && volatileAmbivalences.length > 0) {
-          html += '<div class="mb-4">';
-          html += '<div class="text-sm font-bold text-yellow-400 mb-2">⚡ 劇烈震盪/吉凶並見（成敗一線間）</div>';
-          volatileAmbivalences.forEach(volatile => {
-            html += `<div class="mb-3 p-3 bg-yellow-900/20 border border-yellow-500/30 rounded">
-              <div class="font-bold text-yellow-300">${volatile.palace}宮</div>
-              <div class="text-xs mt-1">${volatile.description}</div>
-              <div class="text-xs mt-2 text-amber-200">📌 ${volatile.note}</div>
-              <div class="text-xs mt-1 text-slate-400">化忌：${volatile.jiCount}重 | 化祿：${volatile.luCount}重</div>
-            </div>`;
-          });
-          html += '</div>';
-        }
-
-        // 超級地雷區
-        if (criticalRisks && criticalRisks.length > 0) {
-          html += '<div class="mb-4">';
-          html += '<div class="text-sm font-bold text-red-400 mb-2">⚠️ 超級地雷區（必須絕對避開）</div>';
-          criticalRisks.forEach(risk => {
-            html += `<div class="mb-2 p-2 bg-red-900/20 border border-red-500/30 rounded">
-              <div class="font-bold text-red-300">${risk.palace}宮</div>
-              <div class="text-xs mt-1">${risk.description}</div>
-              <div class="text-xs mt-1 text-slate-400">化忌：${risk.jiCount}重</div>
-            </div>`;
-          });
-          html += '</div>';
-        }
-
-        // 大發財機會
-        if (maxOpportunities && maxOpportunities.length > 0) {
-          html += '<div class="mb-4">';
-          html += '<div class="text-sm font-bold text-green-400 mb-2">✨ 大發財機會（建議積極把握）</div>';
-          maxOpportunities.forEach(opp => {
-            html += `<div class="mb-2 p-2 bg-green-900/20 border border-green-500/30 rounded">
-              <div class="font-bold text-green-300">${opp.palace}宮</div>
-              <div class="text-xs mt-1">${opp.description}</div>
-              <div class="text-xs mt-1 text-slate-400">化祿：${opp.luCount}重</div>
-            </div>`;
-          });
-          html += '</div>';
-        }
-
-        // 疊宮評論
-        if (window.OverlapAnalysis && data.overlapAnalysis) {
-          try {
-            const report = window.OverlapAnalysis.generateOverlapReport(data.overlapAnalysis);
-            if (report.comments && report.comments.length > 0) {
-              html += '<div class="mt-4">';
-              html += '<div class="text-sm font-bold mb-2">📊 疊宮評論</div>';
-              report.comments.forEach(comment => {
-                html += `<div class="mb-1 text-xs">${comment}</div>`;
-              });
-              html += '</div>';
-            }
-          } catch (err) {
-            console.warn('生成疊宮評論失敗:', err);
-          }
-        }
-
-        // 詳細宮位數據（如果沒有其他數據，顯示詳細信息）
-        if (!volatileAmbivalences?.length && !criticalRisks?.length && !maxOpportunities?.length) {
-          html += '<div class="text-xs text-slate-500 mb-4">';
-          html += '<p>未檢測到疊宮情況（2重以上化忌或化祿）。</p>';
-          html += '<p class="mt-2">提示：展開下方「工程化調試數據」查看所有宮位的四化分布。</p>';
-          html += '</div>';
-          
-          // 顯示所有宮位的四化統計（即使沒有疊宮）
-          // 改進：標注生年、大限、小限，計算權重，標出強弱和注意事項
-          if (data.overlapAnalysis?.palaceMap && data.fourTransformations) {
-            html += '<div class="mt-4 p-3 bg-black/20 rounded">';
-            html += '<div class="text-xs font-bold mb-2">📋 所有宮位四化統計（含生年、大限、小限）：</div>';
-            html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">';
-            
-            const palaceMap = data.overlapAnalysis.palaceMap;
-            const mapEntries = palaceMap instanceof Map ? Array.from(palaceMap.entries()) : Object.entries(palaceMap);
-            
-            // 權重配置（用於計算宮位強弱）
-            const WEIGHTS = {
-              benming: 1.0,   // 本命四化
-              dalimit: 1.5,   // 大限四化（這十年最有感）
-              liunian: 2.0,   // 流年四化（當下反應最直接）
-              xiaoxian: 1.0   // 小限四化（個人化年度影響）
-            };
-            
-            // 四化類型權重（用於計算強弱）
-            const TRANSFORMATION_WEIGHTS = {
-              '祿': 1.0,  // 正面
-              '權': 0.8,  // 正面但帶壓力
-              '科': 0.6,  // 中性偏正面
-              '忌': -1.5  // 負面（權重更高）
-            };
-            
-            mapEntries.forEach(([palaceName, palaceData]) => {
-              const hasAny = (palaceData.luCount || 0) + (palaceData.quanCount || 0) + 
-                            (palaceData.keCount || 0) + (palaceData.jiCount || 0) > 0;
-              if (hasAny) {
-                const transformations = palaceData.transformations || {};
-                
-                // 計算加權分數
-                let weightedScore = 0;
-                let detailParts = [];
-                
-                // 統計各層級的四化
-                const sihuaBreakdown = {
-                  benming: { 祿: [], 權: [], 科: [], 忌: [] },
-                  dalimit: { 祿: [], 權: [], 科: [], 忌: [] },
-                  liunian: { 祿: [], 權: [], 科: [], 忌: [] },
-                  xiaoxian: { 祿: [], 權: [], 科: [], 忌: [] }
-                };
-                
-                // 收集各層級的四化信息
-                ['benming', 'dalimit', 'liunian', 'xiaoxian'].forEach(layer => {
-                  const layerData = transformations[layer];
-                  if (layerData && layerData.star) {
-                    const type = layerData.type;
-                    const star = layerData.star;
-                    if (sihuaBreakdown[layer] && sihuaBreakdown[layer][type]) {
-                      sihuaBreakdown[layer][type].push(star);
-                      // 計算加權分數
-                      weightedScore += WEIGHTS[layer] * TRANSFORMATION_WEIGHTS[type];
-                    }
-                  }
-                });
-                
-                // 生成詳細標注
-                const sihuaLabels = [];
-                if (sihuaBreakdown.benming.祿.length > 0) {
-                  sihuaLabels.push(`生年${sihuaBreakdown.benming.祿.join('、')}化祿`);
-                }
-                if (sihuaBreakdown.benming.權.length > 0) {
-                  sihuaLabels.push(`生年${sihuaBreakdown.benming.權.join('、')}化權`);
-                }
-                if (sihuaBreakdown.benming.科.length > 0) {
-                  sihuaLabels.push(`生年${sihuaBreakdown.benming.科.join('、')}化科`);
-                }
-                if (sihuaBreakdown.benming.忌.length > 0) {
-                  sihuaLabels.push(`生年${sihuaBreakdown.benming.忌.join('、')}化忌`);
-                }
-                if (sihuaBreakdown.dalimit.祿.length > 0) {
-                  sihuaLabels.push(`大限${sihuaBreakdown.dalimit.祿.join('、')}化祿`);
-                }
-                if (sihuaBreakdown.dalimit.權.length > 0) {
-                  sihuaLabels.push(`大限${sihuaBreakdown.dalimit.權.join('、')}化權`);
-                }
-                if (sihuaBreakdown.dalimit.科.length > 0) {
-                  sihuaLabels.push(`大限${sihuaBreakdown.dalimit.科.join('、')}化科`);
-                }
-                if (sihuaBreakdown.dalimit.忌.length > 0) {
-                  sihuaLabels.push(`大限${sihuaBreakdown.dalimit.忌.join('、')}化忌`);
-                }
-                if (sihuaBreakdown.liunian.祿.length > 0) {
-                  sihuaLabels.push(`流年${sihuaBreakdown.liunian.祿.join('、')}化祿`);
-                }
-                if (sihuaBreakdown.liunian.權.length > 0) {
-                  sihuaLabels.push(`流年${sihuaBreakdown.liunian.權.join('、')}化權`);
-                }
-                if (sihuaBreakdown.liunian.科.length > 0) {
-                  sihuaLabels.push(`流年${sihuaBreakdown.liunian.科.join('、')}化科`);
-                }
-                if (sihuaBreakdown.liunian.忌.length > 0) {
-                  sihuaLabels.push(`流年${sihuaBreakdown.liunian.忌.join('、')}化忌`);
-                }
-                if (sihuaBreakdown.xiaoxian.祿.length > 0) {
-                  sihuaLabels.push(`小限${sihuaBreakdown.xiaoxian.祿.join('、')}化祿`);
-                }
-                if (sihuaBreakdown.xiaoxian.權.length > 0) {
-                  sihuaLabels.push(`小限${sihuaBreakdown.xiaoxian.權.join('、')}化權`);
-                }
-                if (sihuaBreakdown.xiaoxian.科.length > 0) {
-                  sihuaLabels.push(`小限${sihuaBreakdown.xiaoxian.科.join('、')}化科`);
-                }
-                if (sihuaBreakdown.xiaoxian.忌.length > 0) {
-                  sihuaLabels.push(`小限${sihuaBreakdown.xiaoxian.忌.join('、')}化忌`);
-                }
-                
-                // 判斷宮位強弱
-                let strengthLevel = 'normal';
-                let strengthText = '一般';
-                let strengthColor = 'text-slate-400';
-                
-                if (weightedScore >= 3.0) {
-                  strengthLevel = 'very-strong';
-                  strengthText = '極強';
-                  strengthColor = 'text-green-300 font-bold';
-                } else if (weightedScore >= 1.5) {
-                  strengthLevel = 'strong';
-                  strengthText = '強';
-                  strengthColor = 'text-green-400';
-                } else if (weightedScore >= 0.5) {
-                  strengthLevel = 'moderate';
-                  strengthText = '中等';
-                  strengthColor = 'text-yellow-400';
-                } else if (weightedScore >= -1.0) {
-                  strengthLevel = 'weak';
-                  strengthText = '弱';
-                  strengthColor = 'text-orange-400';
-                } else {
-                  strengthLevel = 'very-weak';
-                  strengthText = '極弱';
-                  strengthColor = 'text-red-400 font-bold';
-                }
-                
-                // 生成注意事項
-                const warnings = [];
-                const opportunities = [];
-                
-                if (palaceData.jiCount >= 2) {
-                  warnings.push(`⚠️ ${palaceData.jiCount}重化忌疊加，需特別注意`);
-                } else if (palaceData.jiCount === 1) {
-                  warnings.push(`⚠️ 有化忌，需謹慎`);
-                }
-                
-                if (palaceData.luCount >= 2) {
-                  opportunities.push(`💰 ${palaceData.luCount}重化祿疊加，機會大`);
-                } else if (palaceData.luCount === 1) {
-                  opportunities.push(`💰 有化祿，有機會`);
-                }
-                
-                if (palaceData.quanCount >= 2) {
-                  warnings.push(`⚡ ${palaceData.quanCount}重化權疊加，壓力大`);
-                }
-                
-                if (palaceData.keCount >= 1) {
-                  opportunities.push(`✨ 有化科，有貴人`);
-                }
-                
-                // 根據加權分數生成綜合建議
-                let advice = '';
-                if (weightedScore >= 2.0) {
-                  advice = '💡 今年此宮位能量極強，適合積極行動';
-                } else if (weightedScore >= 0.5) {
-                  advice = '💡 今年此宮位能量正面，可把握機會';
-                } else if (weightedScore >= -0.5) {
-                  advice = '💡 今年此宮位能量平穩，保持現狀';
-                } else if (weightedScore >= -2.0) {
-                  advice = '💡 今年此宮位能量偏弱，需謹慎應對';
-                } else {
-                  advice = '💡 今年此宮位能量極弱，建議防守為主';
-                }
-                
-                html += `<div class="p-3 bg-black/10 rounded border border-white/5">
-                  <div class="font-bold text-sm mb-2">${palaceName}</div>
-                  
-                  <!-- 四化統計 -->
-                  <div class="mb-2 space-y-1">
-                    <div class="text-green-400">祿:${palaceData.luCount || 0}</div>
-                    <div class="text-blue-400">權:${palaceData.quanCount || 0}</div>
-                    <div class="text-purple-400">科:${palaceData.keCount || 0}</div>
-                    <div class="text-red-400">忌:${palaceData.jiCount || 0}</div>
-                  </div>
-                  
-                  <!-- 來源標注 -->
-                  ${sihuaLabels.length > 0 ? `
-                  <div class="mb-2 text-xs text-slate-300 border-t border-white/10 pt-2">
-                    <div class="font-semibold mb-1">來源：</div>
-                    <div class="space-y-0.5">${sihuaLabels.map(label => `<div>• ${label}</div>`).join('')}</div>
-                  </div>
-                  ` : ''}
-                  
-                  <!-- 強弱標示 -->
-                  <div class="mb-2 text-xs">
-                    <div class="font-semibold mb-1">強弱：</div>
-                    <div class="${strengthColor}">${strengthText}（加權分數: ${weightedScore.toFixed(2)}）</div>
-                  </div>
-                  
-                  <!-- 注意事項 -->
-                  ${warnings.length > 0 || opportunities.length > 0 ? `
-                  <div class="mb-2 text-xs border-t border-white/10 pt-2">
-                    <div class="font-semibold mb-1">注意事項：</div>
-                    ${warnings.map(w => `<div class="text-red-300">${w}</div>`).join('')}
-                    ${opportunities.map(o => `<div class="text-green-300">${o}</div>`).join('')}
-                  </div>
-                  ` : ''}
-                  
-                  <!-- 綜合建議 -->
-                  <div class="text-xs border-t border-white/10 pt-2">
-                    <div class="text-slate-300">${advice}</div>
-                  </div>
-                </div>`;
-              }
-            });
-            
-            html += '</div>';
-            html += '</div>';
-          }
-        }
-
-        container.innerHTML = html || '<p class="text-slate-500">疊宮分析數據為空</p>';
-      } else {
-        container.innerHTML = '<p class="text-slate-500">尚未計算，請先輸入出生資訊並計算</p>';
-        if (debugContainer) {
-          debugContainer.textContent = 'overlapAnalysis: null 或 undefined';
-        }
+      var geo = getGeoFromForm();
+      if (geo) {
+        currentData.geolocation = geo;
+        if (currentData.structuredData) currentData.structuredData.geolocation = geo;
       }
     }
 
-    // 更新健康預警
-    function updateHealthWarning(data) {
-      const container = document.getElementById('healthWarningContainer');
-      if (!container) return;
+    function runComputeFromBirth() {
+      var statusEl = document.getElementById('loadStatus');
+      var btn = document.getElementById('computeFromBirth');
+      if (btn) { btn.textContent = '執行中…'; btn.disabled = true; }
+      statusEl.classList.remove('hidden');
+      statusEl.textContent = '正在呼叫後端取得命盤…';
+      var birth = getBirthFromForm();
+      var body = { year: birth.year, month: birth.month, day: birth.day, hour: birth.hour, minute: birth.minute };
+      if (birth.gender) body.gender = birth.gender;
 
-      if (data.healthWarning) {
-        const warning = data.healthWarning;
-        let html = '';
+      var apiUrl = API_BASE + '/compute/all';
 
-        if (warning.semanticInterpretation) {
-          const sem = warning.semanticInterpretation;
-          html += `<div class="mb-3">
-            <div class="text-lg font-bold ${sem.semanticLevel === 'critical' ? 'text-red-400' : sem.semanticLevel === 'warning' ? 'text-amber-400' : 'text-green-400'}">
-              ${sem.semanticLabel}
-            </div>
-            <div class="text-sm text-slate-300 mt-1">${sem.semanticDescription}</div>
-            <div class="text-sm text-slate-400 mt-2">${sem.strategicAdvice}</div>
-          </div>`;
-        }
-
-        if (warning.warnings && warning.warnings.length > 0) {
-          html += '<div class="mt-4"><div class="text-sm font-bold mb-2">詳細警告：</div>';
-          warning.warnings.forEach(w => {
-            html += `<div class="mb-2 p-2 bg-black/20 rounded">
-              <div class="font-bold ${w.severity === 'critical' ? 'text-red-400' : 'text-amber-400'}">${w.element}氣${w.type === 'weak' ? '偏弱' : '過旺'}</div>
-              <div class="text-sm text-slate-300">${w.risk}</div>
-            </div>`;
-          });
-          html += '</div>';
-        }
-
-        container.innerHTML = html || '<p class="text-slate-500">健康狀態正常</p>';
-      } else {
-        container.innerHTML = '<p class="text-slate-500">尚未計算，請先輸入出生資訊並計算</p>';
-      }
-    }
-
-    // 更新月度健康風險心電圖
-    function updateMonthlyHealthChart(data) {
-      const container = document.getElementById('monthlyHealthChartContainer');
-      if (!container) return;
-
-      if (data.monthlyHealthRisk && Array.isArray(data.monthlyHealthRisk) && data.monthlyHealthRisk.length > 0) {
-        const maxRisk = Math.max(...data.monthlyHealthRisk.map(m => m.riskScore || 0), 100);
-        
-        let html = '<div class="chart-container">';
-        
-        // 添加警戒線
-        html += '<div class="chart-line warning-line" style="top: 30%;" title="黃色預警線（30分）"></div>';
-        html += '<div class="chart-line critical-line" style="top: 60%;" title="紅色警戒線（60分）"></div>';
-        
-        // 添加月份柱狀圖
-        data.monthlyHealthRisk.forEach((month, index) => {
-          const height = maxRisk > 0 ? (month.riskScore / maxRisk * 100) : 0;
-          const left = (index * 100 / 12) + '%';
-          const width = (100 / 12 - 1) + '%';
-          const riskClass = month.riskLevel === 'critical' ? 'critical' : 
-                          month.riskLevel === 'warning' ? 'warning' : 'normal';
-          
-          html += `<div class="chart-bar ${riskClass}" style="left: ${left}; width: ${width}; height: ${height}%;" 
-                          title="${month.monthName}: ${month.riskScore.toFixed(1)}分 (${month.riskLevel})">
-                    <div class="chart-label">${month.month}</div>
-                  </div>`;
-        });
-        
-        html += '</div>';
-        html += '<div class="mt-8 text-xs text-slate-500">';
-        html += '<div>綠色：正常（0-30分）</div>';
-        html += '<div>橙色：警告（30-60分）</div>';
-        html += '<div>紅色：嚴重（60-100分）</div>';
-        html += '</div>';
-        
-        container.innerHTML = html;
-      } else {
-        container.innerHTML = '<p class="text-slate-500">尚未計算，請先輸入出生資訊並計算</p>';
-      }
-    }
-
-    // 更新 AI Prompt
-    function updateAIPrompt(data) {
-      const textarea = document.getElementById('aiPromptTextarea');
-      if (!textarea) return;
-
-      if (data.aiPrompt) {
-        textarea.value = data.aiPrompt;
-      } else if (data.structuredData && window.AIPromptGenerator) {
-        const prompt = window.AIPromptGenerator.generateAIPrompt(data.structuredData, {
-          targetLength: 1500,
-          includeDetails: true
-        });
-        textarea.value = prompt;
-      } else {
-        textarea.value = '尚未計算，請先輸入出生資訊並計算';
-      }
-    }
-
-    // 更新導出數據
-    function updateExportData(data) {
-      const container = document.getElementById('exportDataContainer');
-      if (!container) return;
-
-      try {
-        container.textContent = JSON.stringify(data, null, 2);
-      } catch (err) {
-        container.textContent = '導出數據格式錯誤：' + err.message;
-      }
-    }
-
-    // 複製 Prompt
-    function copyPrompt() {
-      const textarea = document.getElementById('aiPromptTextarea');
-      if (textarea && textarea.value) {
-        textarea.select();
-        document.execCommand('copy');
-        alert('Prompt 已複製到剪貼板');
-      }
-    }
-
-    // 下載 Prompt
-    function downloadPrompt() {
-      const textarea = document.getElementById('aiPromptTextarea');
-      if (textarea && textarea.value) {
-        const blob = new Blob([textarea.value], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'ai-prompt-' + new Date().toISOString().split('T')[0] + '.txt';
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-    }
-
-    // 導出 JSON
-    function exportJson() {
-      if (!window.AdminExport) {
-        alert('尚未計算，請先輸入出生資訊並計算');
-        return;
-      }
-
-      try {
-        const data = window.AdminExport.exportCalculationResults();
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'calculation-results-' + new Date().toISOString().split('T')[0] + '.json';
-        a.click();
-        URL.revokeObjectURL(url);
-      } catch (err) {
-        alert('導出失敗：' + err.message);
-      }
-    }
-
-    // 提交到後台 API
-    async function submitToApi() {
-      if (!window.AdminExport) {
-        alert('尚未計算，請先輸入出生資訊並計算');
-        return;
-      }
-
-      const auth = getStoredAuth();
-      if (!auth) {
-        alert('請先登入');
-        return;
-      }
-
-      try {
-        const data = window.AdminExport.exportCalculationResults();
-        const response = await fetch('/api/admin/calculation-results', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...authHeader()
-          },
-          body: JSON.stringify(data)
-        });
-
-        if (response.status === 401) {
-          showLogin();
-          alert('請重新登入');
-          return;
-        }
-
-        const result = await response.json();
-        if (result.ok) {
-          alert('數據已成功提交到後台');
-        } else {
-          alert('提交失敗：' + (result.error || '未知錯誤'));
-        }
-      } catch (err) {
-        alert('提交失敗：' + err.message);
-      }
-    }
-
-    // 一鍵生成命書
-    function generateLifeBook() {
-      if (!window.AdminExport) {
-        alert('尚未計算，請先輸入出生資訊並計算');
-        return;
-      }
-
-      const textarea = document.getElementById('aiPromptTextarea');
-      if (!textarea || !textarea.value || textarea.value.includes('尚未計算')) {
-        alert('請先完成計算並生成 AI Prompt');
-        return;
-      }
-
-      // 這裡可以整合到實際的 AI 服務（例如 OpenAI API）
-      alert('一鍵生成命書功能：\n\n1. 已生成 AI Prompt\n2. 請將 Prompt 複製到 AI 服務（如 ChatGPT）\n3. 或整合到後續的 AI API 調用流程\n\n提示：Prompt 已準備好，可以直接使用');
-    }
-
-    // 事件綁定
-    document.getElementById('loginForm').addEventListener('submit', function (e) {
-      e.preventDefault();
-      var user = (document.getElementById('loginUser').value || '').trim();
-      var pass = document.getElementById('loginPass').value || '';
-      var btn = document.getElementById('loginBtn');
-      var errEl = document.getElementById('loginError');
-
-      errEl.classList.add('hidden');
-      btn.disabled = true;
-
-      // 注意：認證信息僅存儲在 sessionStorage，不會記錄到日誌
-      var auth = btoa(unescape(encodeURIComponent(user + ':' + pass)));
-      setStoredAuth(auth);
-
-      fetch('/api/admin/calculation-results', { headers: { Authorization: 'Basic ' + auth } })
+      fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      })
         .then(function (res) {
-          if (res.status === 401) {
-            setStoredAuth('');
-            errEl.textContent = '帳號或密碼錯誤';
-            errEl.classList.remove('hidden');
-            btn.disabled = false;
+          return res.json().then(function (data) { return { ok: res.ok, status: res.status, data: data }; }).catch(function () {
+          return { ok: false, status: res.status, data: { error: '後端回傳非 JSON（' + res.status + '）' } };
+        });
+        })
+        .then(function (r) {
+          if (!r.ok || !r.data || !r.data.features) {
+            statusEl.textContent = r.data && r.data.error ? r.data.error : '後端未回傳命盤（HTTP ' + r.status + '）。請確認後端 API（' + apiUrl + '）可用。';
+            if (btn) { btn.textContent = '執行'; btn.disabled = false; }
             return;
           }
-          if (!res.ok) return res.json().then(function (d) { throw new Error(d.error || '失敗'); });
-          showDashboard();
-          initComponents();
-          btn.disabled = false;
+          var contract = r.data.features;
+          var bazi = contract.bazi;
+          var ziwei = contract.ziwei;
+          if (!bazi || !ziwei) {
+            statusEl.textContent = '後端未回傳 bazi 或 ziwei。';
+            if (btn) { btn.textContent = '執行'; btn.disabled = false; }
+            return;
+          }
+          if (!window.Calc || typeof window.Calc.computeAllPalaceScores !== 'function') {
+            statusEl.textContent = '計算模組未載入，請重新整理頁面後再試。';
+            if (btn) { btn.textContent = '執行'; btn.disabled = false; }
+            return;
+          }
+          window.contract = contract;
+          var currentYear = new Date().getFullYear();
+          var age = currentYear - birth.year;
+          var horoscope = window.BaziCore && window.BaziCore.getHoroscopeFromAge ? window.BaziCore.getHoroscopeFromAge(age, ziwei, bazi, birth.gender) : { age: age, yearlyIndex: 0, activeLimitPalaceName: null };
+          var qAnswers = getQuestionnaireAnswers();
+          if (Object.keys(qAnswers).length) window.expertQuestionnaire = qAnswers;
+          var geo = getGeoFromForm();
+          if (geo) window.geolocationData = geo;
+          statusEl.textContent = '命盤已取得，正在計算宮位、戰略標籤與健康…';
+          return window.Calc.computeAllPalaceScores(ziwei, horoscope, { bazi: bazi, age: age, currentYear: currentYear, gender: birth.gender }).then(function () {
+            if (window.AdminExport && window.AdminExport.exportCalculationResults) {
+              currentData = window.AdminExport.exportCalculationResults({ birthInfo: birth });
+            } else {
+              currentData = {
+                birthInfo: birth,
+                strategicTags: window.AIPromptGenerator && window.structuredData ? (window.AIPromptGenerator.generateStrategicTags(window.structuredData, { includeDetails: true }) : null,
+                healthWarning: window.healthWarning,
+                monthlyHealthRisk: window.monthlyHealthRisk,
+                monthlyRisks: window.monthlyHealthRisk,
+                aiPrompt: window.aiPrompt,
+                structuredData: window.structuredData
+              };
+            }
+            mergeFormIntoCurrentData();
+            renderLoadedData();
+            statusEl.textContent = '執行完成。';
+            if (btn) { btn.textContent = '執行'; btn.disabled = false; }
+          });
         })
         .catch(function (err) {
-          setStoredAuth('');
-          errEl.textContent = err.message || '登入失敗';
-          errEl.classList.remove('hidden');
-          btn.disabled = false;
+          statusEl.textContent = '執行失敗：' + (err.message || String(err));
+          if (btn) { btn.textContent = '執行'; btn.disabled = false; }
         });
-    });
-
-    document.getElementById('logoutBtn').addEventListener('click', function () {
-      showLogin();
-      document.getElementById('loginPass').value = '';
-    });
-
-    document.getElementById('refreshBtn').addEventListener('click', refreshDisplay);
-    document.getElementById('calculateBtn').addEventListener('click', calculateData);
-    document.getElementById('copyPromptBtn').addEventListener('click', copyPrompt);
-    document.getElementById('downloadPromptBtn').addEventListener('click', downloadPrompt);
-    document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
-    document.getElementById('exportToApiBtn').addEventListener('click', submitToApi);
-    document.getElementById('generateLifeBookBtn').addEventListener('click', generateLifeBook);
-    
-    // 綁定諮詢精華摘要按鈕
-    const generateSummaryBtn = document.getElementById('generateSummaryBtn');
-    const exportSummaryBtn = document.getElementById('exportSummaryBtn');
-    if (generateSummaryBtn) {
-      generateSummaryBtn.addEventListener('click', generateConsultationSummary);
-    }
-    if (exportSummaryBtn) {
-      exportSummaryBtn.addEventListener('click', exportConsultationSummary);
     }
 
-    // 初始化
-    if (getStoredAuth()) {
+    function normalizeStrategicTags(data) {
+      if (!data) return [];
+      if (Array.isArray(data)) return data;
+      if (data.details && Array.isArray(data.details)) return data.details;
+      if (data.tags && Array.isArray(data.tags)) return data.tags.map(function (t) { return typeof t === 'string' ? { tag: t, priority: 'medium' } : t; });
+      return [];
+    }
+
+    function normalizeMonthlyRisks(data) {
+      if (Array.isArray(data)) return data;
+      if (data && data.monthlyHealthRisk) return data.monthlyHealthRisk;
+      return [];
+    }
+
+    function renderLoadedData() {
+      if (!currentData) return;
+      var tagsEl = document.getElementById('strategyTags');
+      var tagsPh = document.getElementById('strategyPlaceholder');
+      var healthEl = document.getElementById('healthContent');
+      var healthPh = document.getElementById('healthPlaceholder');
+      var monthlyEl = document.getElementById('monthlyChart');
+      var monthlyPh = document.getElementById('monthlyPlaceholder');
+      var promptArea = document.getElementById('aiPromptArea');
+
+      var tagList = normalizeStrategicTags(currentData.strategicTags);
+      if (tagList.length) {
+        tagsPh.classList.add('hidden');
+        tagsEl.classList.remove('hidden');
+        tagsEl.innerHTML = tagList.map(function (t) {
+          var cls = 'px-2 py-1 rounded text-xs ';
+          var p = (t.priority || '').toLowerCase();
+          if (p === 'critical') cls += 'bg-red-500/30 text-red-200';
+          else if (p === 'high') cls += 'bg-amber-500/30 text-amber-200';
+          else if (p === 'medium') cls += 'bg-yellow-500/20 text-yellow-200';
+          else cls += 'bg-slate-500/30 text-slate-300';
+          return '<span class="' + cls + '">' + (t.tag || t.label || t.description || '') + '</span>';
+        }).join('');
+      }
+
+      if (currentData.healthWarning) {
+        healthPh.classList.add('hidden');
+        healthEl.classList.remove('hidden');
+        healthEl.textContent = typeof currentData.healthWarning === 'string' ? currentData.healthWarning : JSON.stringify(currentData.healthWarning, null, 2);
+      }
+
+      var monthlyRisks = normalizeMonthlyRisks(currentData);
+      if (monthlyRisks.length) {
+        monthlyPh.classList.add('hidden');
+        monthlyEl.classList.remove('hidden');
+        var maxVal = Math.max.apply(null, monthlyRisks.slice(0, 12).map(function (r) { return r.score != null ? r.score : 0; })) || 1;
+        monthlyEl.innerHTML = '<div class="flex items-end gap-1 h-24">' + monthlyRisks.slice(0, 12).map(function (r, i) {
+          var score = r.score != null ? r.score : 0;
+          var pct = maxVal > 0 ? (score / maxVal) * 100 : 0;
+          var color = score >= 60 ? 'bg-red-500' : score >= 30 ? 'bg-amber-500' : 'bg-emerald-500';
+          return '<div class="flex-1 flex flex-col items-center"><div class="w-full ' + color + ' rounded-t min-h-[4px]" style="height:' + Math.max(4, pct) + '%"></div><span class="text-xs text-slate-500 mt-1">' + (i + 1) + '月</span></div>';
+        }).join('') + '</div>';
+      }
+
+      if (currentData.aiPrompt) {
+        promptArea.value = currentData.aiPrompt;
+      } else if (currentData.structuredData && window.AIPromptGenerator && window.AIPromptGenerator.generateAIPrompt) {
+        try {
+          promptArea.value = window.AIPromptGenerator.generateAIPrompt(currentData.structuredData, { targetLength: 1500, includeDetails: true });
+        } catch (e) {
+          promptArea.value = '【命盤數據】\n' + JSON.stringify(currentData.structuredData, null, 2);
+        }
+      } else if (currentData.overlapAnalysis || currentData.fourTransformations) {
+        promptArea.value = '【命盤數據】\n' + JSON.stringify({ overlapAnalysis: currentData.overlapAnalysis, fourTransformations: currentData.fourTransformations }, null, 2);
+      }
+    }
+
+    function copyPrompt() {
+      var area = document.getElementById('aiPromptArea');
+      if (!area.value) return;
+      area.select();
+      try {
+        document.execCommand('copy');
+        document.getElementById('exportStatus').textContent = '已複製到剪貼簿';
+        document.getElementById('exportStatus').classList.remove('hidden');
+        setTimeout(function () { document.getElementById('exportStatus').classList.add('hidden'); }, 2000);
+      } catch (e) {
+        document.getElementById('exportStatus').textContent = '複製失敗';
+        document.getElementById('exportStatus').classList.remove('hidden');
+      }
+    }
+
+    function downloadPrompt() {
+      var area = document.getElementById('aiPromptArea');
+      if (!area.value) return;
+      var blob = new Blob([area.value], { type: 'text/plain;charset=utf-8' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'ai-prompt-' + new Date().toISOString().slice(0, 10) + '.txt';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function exportJson() {
+      var statusEl = document.getElementById('exportStatus');
+      if (!currentData) {
+        statusEl.textContent = '請先載入數據（從前端 / 貼上 JSON / 依出生計算）。';
+        statusEl.classList.remove('hidden');
+        return;
+      }
+      var blob = new Blob([JSON.stringify(currentData, null, 2)], { type: 'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'calculation-results-' + new Date().toISOString().slice(0, 10) + '.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+      statusEl.textContent = '已下載 JSON';
+      statusEl.classList.remove('hidden');
+      setTimeout(function () { statusEl.classList.add('hidden'); }, 2000);
+    }
+
+    function submitApi() {
+      var statusEl = document.getElementById('exportStatus');
+      if (!currentData) {
+        statusEl.textContent = '請先載入數據。';
+        statusEl.classList.remove('hidden');
+        return;
+      }
+      statusEl.textContent = '提交中…';
+      statusEl.classList.remove('hidden');
+      fetch('/api/admin/calculation-results', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeader()),
+        body: JSON.stringify(currentData)
+      })
+        .then(function (res) {
+          if (res.status === 401) {
+            redirectToAdmin();
+            return;
+          }
+          return res.json().then(function (data) {
+            statusEl.textContent = data.error ? data.error : '已提交成功';
+          });
+        })
+        .catch(function (err) {
+          statusEl.textContent = err.message || '提交失敗';
+        });
+    }
+
+    document.getElementById('computeFromBirth').addEventListener('click', runComputeFromBirth);
+    document.getElementById('copyPrompt').addEventListener('click', copyPrompt);
+    document.getElementById('downloadPrompt').addEventListener('click', downloadPrompt);
+    document.getElementById('exportJson').addEventListener('click', exportJson);
+    document.getElementById('submitApi').addEventListener('click', submitApi);
+    document.getElementById('logoutBtn').addEventListener('click', redirectToAdmin);
+
+    renderExpertQuestionnaire();
+
+    (function init() {
+      var auth = getStoredAuth();
+      if (!auth) {
+        showAuthRequired();
+        return;
+      }
       showDashboard();
-      initComponents();
-    }
+      fetch('/api/admin/consultations', { headers: authHeader() })
+        .then(function (res) {
+          if (res.status === 401) {
+            showAuthRequired();
+          }
+        })
+        .catch(function () {});
+    })();
   </script>
 </body>
 </html>

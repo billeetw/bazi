@@ -3,139 +3,87 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>2/13 一起出來玩：如何玩好人生遊戲｜報名</title>
+  <title>2/13 一起出來玩夥伴聚會｜報名</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%); color: #e2e8f0; font-family: system-ui, sans-serif; }
     .glass { background: rgba(15,23,42,0.88); backdrop-filter: blur(18px); border: 1px solid rgba(148,163,184,0.35); border-radius: 1.25rem; }
-    .nav-bar { background: linear-gradient(90deg, #ef4444, #f97316, #ef4444); color: #fff; padding: 10px 16px; position: sticky; top: 0; z-index: 60; }
-    .nav-chip { background: rgba(0,0,0,0.28); border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; padding: 6px 10px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
   </style>
 </head>
-<body class="min-h-screen pb-20">
-
-  <div class="nav-bar flex items-center justify-between gap-3">
-    <div class="flex items-center gap-2">
-      <div class="font-black tracking-[0.22em] text-[10px] uppercase">一起出來玩</div>
-      <div class="text-[10px] opacity-85">人生遊戲0.23</div>
-      <a href="index.html" class="nav-chip bg-white/10 text-slate-100">回首頁</a>
+<body class="min-h-screen p-4 md:p-8">
+  <div class="max-w-xl mx-auto">
+    <div class="text-center mb-6">
+      <p class="text-amber-400 font-black text-sm tracking-widest">一起出來玩夥伴聚會</p>
+      <h1 class="text-2xl font-black text-amber-300 mt-1">2/13 活動報名</h1>
+      <p class="text-slate-400 text-sm mt-2">週五晚上 18:30–21:30（18:00 可進場）</p>
     </div>
-    <a href="https://www.facebook.com/bill17gonplay/" target="_blank" rel="noopener noreferrer" class="nav-chip bg-white/10 border-white/10 text-slate-100 font-black">FB</a>
+
+    <form id="activityForm" class="glass p-6 space-y-4" novalidate>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">姓名 *</label>
+        <input type="text" name="name" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="您的姓名" />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">Email *</label>
+        <input type="email" name="email" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="email@example.com" />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">電話 *</label>
+        <input type="tel" name="phone" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="09xxxxxxxx" />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">備註（選填）</label>
+        <textarea name="topicExtra" rows="2" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="想說的話或飲食需求等"></textarea>
+      </div>
+      <button type="submit" id="submitBtn" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-slate-950 font-black tracking-wide hover:brightness-110 transition">
+        送出報名
+      </button>
+    </form>
+    <p id="message" class="mt-4 text-sm text-center hidden"></p>
+
+    <p class="mt-6 text-center">
+      <a href="index.html" class="text-slate-400 hover:text-slate-300 text-sm">← 返回首頁</a>
+    </p>
   </div>
 
-  <main class="max-w-2xl mx-auto px-4 py-8 space-y-8">
-    <header class="text-center space-y-4">
-      <p class="text-amber-400 font-black text-sm tracking-widest">一起出來玩夥伴聚會</p>
-      <h1 class="text-2xl md:text-3xl font-black text-amber-300">
-        如何玩好人生遊戲
-      </h1>
-      <p class="text-slate-400 text-sm">2/13 週五晚上 18:30–21:30（18:00 可進場）</p>
-    </header>
-
-    <div class="glass p-6 md:p-8 space-y-5 text-slate-200 text-sm leading-relaxed">
-      <p>為您揭開人生這場遊戲的真實面貌，讓您知道這個遊戲的前因後果、破關關鍵，還有專屬於您的通關密碼。</p>
-      <p>在這場說明會之後，你會對自己人生的過去、現在、未來，有更充足的理解，都能在未來的人生路上，提升自我，與我們一起實現自己的志願。</p>
-      <p class="text-amber-300 font-bold">一起出來玩吧！祝福你。</p>
-    </div>
-
-    <div class="glass p-6 md:p-8 space-y-4">
-      <h2 class="text-amber-400 font-black text-base border-b border-white/10 pb-2">活動資訊</h2>
-      <ul class="space-y-2 text-sm text-slate-300">
-        <li><strong class="text-slate-100">時間</strong>：2/13（五）晚上 18:30–21:30（18:00 可進場）</li>
-        <li><strong class="text-slate-100">地點</strong>：信義路二段207號三樓</li>
-        <li><strong class="text-slate-100">費用</strong>：1,800 元</li>
-        <li><strong class="text-slate-100">轉帳</strong>：國泰世華（013）帳號 011-5777-63650</li>
-      </ul>
-      <p class="text-slate-400 text-xs">完成轉帳後，請在下方報名表單填入帳號後五碼。報名成功後直接前來即可。</p>
-    </div>
-
-    <div class="glass p-6 md:p-8">
-      <h2 class="text-amber-400 font-black text-base mb-4">活動報名 <span class="text-slate-500 font-normal text-xs">* 表示必填</span></h2>
-
-      <form id="eventForm" class="space-y-4" novalidate>
-        <input type="hidden" name="eventSlug" value="213" />
-
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">電子郵件 *</label>
-          <input type="email" name="email" required
-                 class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100"
-                 placeholder="email@example.com" />
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">姓名（如何稱呼）*</label>
-          <input type="text" name="name" required
-                 class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100"
-                 placeholder="您的姓名" />
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">轉帳帳號後五碼 *</label>
-          <input type="text" name="bankLast5" required maxlength="5" pattern="[0-9]{5}"
-                 class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100"
-                 placeholder="五位數字" />
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">電話（方便聯繫）*</label>
-          <input type="tel" name="phone" required
-                 class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100"
-                 placeholder="09xxxxxxxx" />
-        </div>
-        <div>
-          <label class="block text-xs text-slate-500 mb-1">統一編號（如有請提供）</label>
-          <input type="text" name="taxId"
-                 class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100"
-                 placeholder="選填" />
-        </div>
-
-        <button type="submit" id="submitBtn"
-                class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-slate-950 font-black tracking-wide hover:brightness-110 transition">
-          送出報名
-        </button>
-      </form>
-
-      <p id="message" class="mt-4 text-sm text-center hidden"></p>
-    </div>
-
-    <p class="text-center text-slate-500 text-xs">
-      若有疑問請來信 <a href="mailto:billeetw@gmail.com" class="text-amber-400 underline">billeetw@gmail.com</a>
-    </p>
-  </main>
-
   <script>
-    function showMsg(el, text, isError) {
-      el.textContent = text;
-      el.className = 'mt-4 text-sm text-center ' + (isError ? 'text-amber-400' : 'text-emerald-400');
+    function showMsg(el, html, isError) {
+      if (!el) return;
+      el.innerHTML = html;
+      el.className = 'mt-4 text-sm text-center ' + (isError ? 'text-red-400' : 'text-green-400');
       el.classList.remove('hidden');
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    document.getElementById('eventForm').addEventListener('submit', async function (e) {
+    document.getElementById('activityForm').addEventListener('submit', async function (e) {
       e.preventDefault();
       var form = e.target;
       var btn = document.getElementById('submitBtn');
       var msgEl = document.getElementById('message');
-      if (!msgEl) return;
 
       var name = (form.name && form.name.value || '').trim();
       var email = (form.email && form.email.value || '').trim();
       var phone = (form.phone && form.phone.value || '').trim();
-      var bankLast5 = (form.bankLast5 && form.bankLast5.value || '').trim();
-
-      if (!email) { showMsg(msgEl, '請填寫電子郵件', true); return; }
-      if (!email.includes('@')) { showMsg(msgEl, '請填寫正確的 Email 格式', true); return; }
-      if (!name) { showMsg(msgEl, '請填寫姓名', true); return; }
-      if (!bankLast5 || bankLast5.length !== 5 || !/^\d{5}$/.test(bankLast5)) {
-        showMsg(msgEl, '請填寫轉帳帳號後五碼（五位數字）', true);
+      if (!name || !email || !phone) {
+        showMsg(msgEl, '請填寫姓名、Email、電話', true);
         return;
       }
-      if (!phone) { showMsg(msgEl, '請填寫電話', true); return; }
+      if (!email.includes('@')) {
+        showMsg(msgEl, '請填寫正確的 Email', true);
+        return;
+      }
 
       var payload = {
-        eventSlug: (form.eventSlug && form.eventSlug.value) || '213',
         name: name,
         email: email,
         phone: phone,
-        bankLast5: bankLast5,
-        taxId: (form.taxId && form.taxId.value || '').trim() || null,
+        birth: '聚會報名',
+        topics: ['2/13聚會'],
+        topicExtra: (form.topicExtra && form.topicExtra.value || '').trim() || null,
+        bankLast5: '00000',
+        taxId: null,
+        paymentMethod: 'BANK_TRANSFER',
+        source: 'activity-213-page',
+        activityId: 'activity-213',
       };
 
       btn.disabled = true;
@@ -143,7 +91,7 @@
       msgEl.classList.add('hidden');
 
       try {
-        var res = await fetch('/api/event-registration', {
+        var res = await fetch('/api/consultation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -151,18 +99,14 @@
         var data = await res.json().catch(function () { return {}; });
 
         if (!res.ok) {
-          var errText = (data && data.error) ? String(data.error) : ('送出失敗（HTTP ' + res.status + '）');
+          var errText = (data && data.error) ? String(data.error) : '送出失敗，請稍後再試';
           showMsg(msgEl, errText, true);
           btn.disabled = false;
           btn.textContent = '送出報名';
           return;
         }
 
-        msgEl.innerHTML =
-          '<span class="font-black text-emerald-300">報名成功！</span><br>' +
-          '我們已收到您的資料，請依上述時間前來參加，地址是台北市信義路二段207號，期待您的光臨。';
-        msgEl.className = 'mt-6 text-base text-center text-emerald-300';
-        msgEl.classList.remove('hidden');
+        showMsg(msgEl, '報名成功！我們已收到您的資料，當天見。', false);
         form.reset();
       } catch (err) {
         showMsg(msgEl, '網路錯誤，請檢查連線後再試。', true);
