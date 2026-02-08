@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="description" content="人生說明書：結合八字五行、紫微斗數與 2026 流月紅綠燈的個人戰略指揮中心，協助你規劃節奏與決策。" />
   <title>人生說明書｜一起出來玩</title>
 
@@ -915,12 +915,51 @@
       backdrop-filter: blur(12px);
       color: #fff;
       padding: 10px 16px;
+      padding-top: max(10px, env(safe-area-inset-top));
       position: sticky;
       top: 0;
       z-index: 60;
       border-bottom: 1px solid rgba(255,191,0,0.12);
       box-shadow: 0 4px 24px rgba(0,0,0,0.4);
       transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+    /* 手機版：隱藏「一起出來玩」與「｜」，只顯示「人生說明書」 */
+    @media (max-width: 767px) {
+      .nav-brand-gold,
+      .nav-brand-sep { display: none; }
+    }
+    /* 手機版選單（漢堡展開） */
+    .mobile-nav-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: rgba(10, 10, 22, 0.98);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,191,0,0.12);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      z-index: 59;
+      padding: 12px 16px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      flex-direction: column;
+      gap: 4px;
+    }
+    .mobile-nav-menu.mobile-nav-menu-open { display: flex; }
+    .mobile-nav-menu a {
+      display: block;
+      padding: 12px 16px;
+      color: rgba(226, 232, 240, 0.95);
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 12px;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .mobile-nav-menu a:hover { background: rgba(255, 191, 0, 0.12); color: #FFBF00; }
+    @media (min-width: 768px) {
+      .mobile-nav-toggle,
+      .mobile-nav-menu { display: none !important; }
     }
     /* 左上角品牌 Logo：一起出來玩｜人生說明書（字級沿用原本 text-sm md:text-base） */
     .nav-brand {
@@ -1500,35 +1539,50 @@
   <div class="meteor" aria-hidden="true"></div>
   <div class="meteor" aria-hidden="true"></div>
 
-  <!-- TOP NAV -->
-  <div class="nav-bar flex items-center justify-between gap-3">
-    <div class="flex items-center gap-2">
+  <!-- TOP NAV（桌機：完整品牌＋導覽；手機：人生說明書＋漢堡選單） -->
+  <div class="nav-bar relative flex items-center justify-between gap-3">
+    <div class="flex items-center gap-2 min-w-0">
       <div class="nav-brand text-sm md:text-base" aria-label="一起出來玩 人生說明書">
         <span class="nav-brand-gold">一起出來玩</span><span class="nav-brand-sep">｜</span><span class="nav-brand-main">人生說明書</span>
       </div>
-      <a href="#" id="homeButton" class="nav-chip-icon" aria-label="回到首頁" title="回到首頁">
+      <a href="#" id="homeButton" class="hidden md:inline-flex nav-chip-icon" aria-label="回到首頁" title="回到首頁">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
       </a>
-      <a href="activity-213.html" class="nav-chip bg-amber-500/20 border-amber-300/40 text-amber-100" aria-label="2/13 活動報名">2/13 活動</a>
-      <a href="consultation.html" class="nav-chip nav-chip-consult" aria-label="1:1 諮詢">1:1 諮詢</a>
+      <a href="activity-213.html" class="hidden md:inline-flex nav-chip bg-amber-500/20 border-amber-300/40 text-amber-100" aria-label="2/13 活動報名">2/13 活動</a>
+      <a href="consultation.html" class="hidden md:inline-flex nav-chip nav-chip-consult" aria-label="1:1 諮詢">1:1 諮詢</a>
     </div>
 
-    <!-- workspace nav (only after system entered) -->
+    <!-- workspace nav（桌機，進入儀表板後顯示） -->
     <div id="workspaceNav" class="hidden md:flex items-center gap-2">
       <a class="nav-chip" href="#ws-ziwei">紫微</a>
       <a class="nav-chip" href="#ws-bazi">八字</a>
       <a class="nav-chip" href="#ws-liuyue">流年</a>
     </div>
 
-    <div class="flex items-center gap-2">
+    <!-- 桌機：FB logo；手機：漢堡按鈕 -->
+    <div class="hidden md:flex items-center gap-2">
       <a href="https://www.facebook.com/bill17gonplay/" target="_blank" rel="noopener noreferrer"
          class="nav-chip-logo"
          aria-label="前往李伯彥 Facebook（一起出來玩）"
          title="Facebook">
         <img src="assets/logo-circle.png" alt="一起出來玩" class="logo-img">
       </a>
+    </div>
+    <button type="button" id="mobileNavToggle" class="md:hidden flex items-center justify-center w-10 h-10 rounded-lg border border-amber-400/30 bg-white/5 text-amber-300 hover:bg-amber-500/20 transition" aria-label="開啟選單" aria-expanded="false">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 22px; height: 22px;">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+    </button>
+    <div id="mobileNavMenu" class="mobile-nav-menu" aria-hidden="true">
+      <a href="#" id="mobileHomeLink" class="mobile-nav-link">回到首頁</a>
+      <a href="activity-213.html" class="mobile-nav-link">2/13 活動</a>
+      <a href="consultation.html" class="mobile-nav-link">1:1 諮詢</a>
+      <a href="#ws-ziwei" class="mobile-nav-link">紫微</a>
+      <a href="#ws-bazi" class="mobile-nav-link">八字</a>
+      <a href="#ws-liuyue" class="mobile-nav-link">流年</a>
+      <a href="https://www.facebook.com/bill17gonplay/" target="_blank" rel="noopener noreferrer" class="mobile-nav-link">Facebook</a>
     </div>
   </div>
 
@@ -1983,6 +2037,36 @@
   <script src="js/ui/components/expert-questionnaire.js?v=1"></script>
   <script src="js/ui/components/geolocation-calibration.js?v=1"></script>
   <script src="js/ui.js?v=7"></script>
+  <!-- 手機版漢堡選單：開關與關閉邏輯 -->
+  <script>
+    (function() {
+      var toggle = document.getElementById("mobileNavToggle");
+      var menu = document.getElementById("mobileNavMenu");
+      function openMenu() {
+        if (menu) {
+          menu.classList.add("mobile-nav-menu-open");
+          menu.setAttribute("aria-hidden", "false");
+        }
+        if (toggle) toggle.setAttribute("aria-expanded", "true");
+      }
+      function closeMenu() {
+        if (menu) {
+          menu.classList.remove("mobile-nav-menu-open");
+          menu.setAttribute("aria-hidden", "true");
+        }
+        if (toggle) toggle.setAttribute("aria-expanded", "false");
+      }
+      if (toggle && menu) {
+        toggle.addEventListener("click", function() {
+          if (menu.classList.contains("mobile-nav-menu-open")) closeMenu();
+          else openMenu();
+        });
+      }
+      document.querySelectorAll("#mobileNavMenu .mobile-nav-link").forEach(function(a) {
+        a.addEventListener("click", function() { closeMenu(); });
+      });
+    })();
+  </script>
   <!-- 啟動序列掛載點與 bundle（可選：npm run build:startup 後載入，點擊「啟動人生戰略引擎」會先播 4.5s 啟動動畫） -->
   <div id="startup-root"></div>
   <script>

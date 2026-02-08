@@ -71,11 +71,17 @@
    */
   function bindHomeButton() {
     const homeButton = document.getElementById("homeButton");
-    if (homeButton) {
-      homeButton.addEventListener("click", function(e) {
+    const mobileHomeLink = document.getElementById("mobileHomeLink");
+    function bindReset(el) {
+      if (!el) return;
+      el.addEventListener("click", function(e) {
         e.preventDefault();
         resetToHome();
       });
+    }
+    bindReset(homeButton);
+    bindReset(mobileHomeLink);
+    if (homeButton || mobileHomeLink) {
       console.log("[navigation.js] 首頁按鈕已綁定");
     }
   }
