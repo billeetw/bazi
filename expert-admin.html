@@ -166,6 +166,62 @@
         </div>
       </section>
 
+      <!-- 推算時辰結果 -->
+      <section class="glass p-4 md:p-6 mb-6">
+        <h2 class="text-lg font-black text-amber-300 mb-3">推算時辰結果</h2>
+        <p class="text-xs text-slate-500 mb-3">時辰推算紀錄與回饋分析，供模型優化與準確率檢視。</p>
+        <div class="flex flex-wrap items-end gap-3 mb-4">
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">日期起</label>
+            <input type="date" id="estimateLogsFrom" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">日期迄</label>
+            <input type="date" id="estimateLogsTo" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200" />
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">回饋</label>
+            <select id="estimateLogsFeedback" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200">
+              <option value="all">全部</option>
+              <option value="yes">已回饋</option>
+              <option value="no">未回饋</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs text-slate-500 mb-1">正確與否</label>
+            <select id="estimateLogsCorrect" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200">
+              <option value="all">全部</option>
+              <option value="1">正確</option>
+              <option value="0">不正確</option>
+            </select>
+          </div>
+          <button type="button" id="loadEstimateLogsBtn" class="px-4 py-2 rounded-lg bg-amber-600/80 text-slate-900 text-sm font-medium hover:bg-amber-500">載入推算紀錄</button>
+          <button type="button" id="exportEstimateLogsCsvBtn" class="px-4 py-2 rounded-lg bg-blue-600/80 text-slate-100 text-sm font-medium hover:bg-blue-500 hidden">匯出 CSV</button>
+          <button type="button" id="exportEstimateLogsJsonBtn" class="px-4 py-2 rounded-lg bg-slate-600/80 text-slate-100 text-sm font-medium hover:bg-slate-500 hidden">匯出 JSON</button>
+        </div>
+        <div id="estimateLogsSummary" class="mb-4 p-3 bg-black/30 rounded-lg text-sm text-slate-300 hidden"></div>
+        <div id="estimateLogsHeatmapWrap" class="mb-4 overflow-x-auto hidden">
+          <p class="text-xs text-slate-500 mb-2">回饋矩陣（橫軸＝系統推算時辰，縱軸＝用戶回饋真實時辰；僅統計「不正確」筆數）</p>
+          <div id="estimateLogsHeatmap" class="inline-block min-w-0"></div>
+        </div>
+        <div id="estimateLogsTableWrap" class="overflow-x-auto hidden">
+          <table class="w-full text-sm border border-white/10 rounded-lg overflow-hidden">
+            <thead>
+              <tr class="bg-white/5 text-left">
+                <th class="p-2 border-b border-white/10">時間</th>
+                <th class="p-2 border-b border-white/10">用戶</th>
+                <th class="p-2 border-b border-white/10">推算結果</th>
+                <th class="p-2 border-b border-white/10">回饋</th>
+                <th class="p-2 border-b border-white/10">真實時辰</th>
+                <th class="p-2 border-b border-white/10">答案</th>
+              </tr>
+            </thead>
+            <tbody id="estimateLogsTableBody"></tbody>
+          </table>
+        </div>
+        <div id="estimateLogsEmpty" class="text-sm text-slate-500 hidden">尚無資料，請按「載入推算紀錄」。</div>
+      </section>
+
       <!-- 戰略標籤 -->
       <section class="glass p-4 md:p-6 mb-6">
         <h2 class="text-lg font-black text-amber-300 mb-3">戰略標籤</h2>
@@ -1339,6 +1395,163 @@
       alert('一鍵生成命書功能：\n\n1. 已生成 AI Prompt\n2. 請將 Prompt 複製到 AI 服務（如 ChatGPT）\n3. 或整合到後續的 AI API 調用流程\n\n提示：Prompt 已準備好，可以直接使用');
     }
 
+    // 推算時辰結果：載入、摘要、熱圖、表格、匯出
+    var lastEstimateLogs = [];
+
+    function buildEstimateLogsParams() {
+      var from = document.getElementById('estimateLogsFrom').value || '';
+      var to = document.getElementById('estimateLogsTo').value || '';
+      var feedback = document.getElementById('estimateLogsFeedback').value || 'all';
+      var correct = document.getElementById('estimateLogsCorrect').value || 'all';
+      var params = new URLSearchParams();
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      params.set('feedback', feedback);
+      params.set('correct', correct);
+      params.set('page', '1');
+      params.set('pageSize', '200');
+      return params.toString();
+    }
+
+    function renderEstimateLogsSummary(logs) {
+      var el = document.getElementById('estimateLogsSummary');
+      if (!el) return;
+      var total = logs.length;
+      var withFeedback = logs.filter(function (l) { return l.feedback_correct !== null && l.feedback_correct !== undefined; }).length;
+      var correctCount = logs.filter(function (l) { return l.feedback_correct === 1; }).length;
+      var incorrectCount = logs.filter(function (l) { return l.feedback_correct === 0; }).length;
+      var accuracy = withFeedback > 0 ? (correctCount / withFeedback * 100).toFixed(1) : '-';
+      el.innerHTML = '總筆數：' + total + '　已回饋：' + withFeedback + '　正確：' + correctCount + '　不正確：' + incorrectCount + '　準確率（正確/已回饋）：' + accuracy + '%';
+      el.classList.remove('hidden');
+    }
+
+    function renderEstimateLogsHeatmap(logs) {
+      var wrap = document.getElementById('estimateLogsHeatmapWrap');
+      var container = document.getElementById('estimateLogsHeatmap');
+      if (!wrap || !container) return;
+      var BRANCHES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
+      var incorrect = logs.filter(function (l) { return l.feedback_correct === 0 && l.feedback_actual_branch; });
+      var grid = {};
+      BRANCHES.forEach(function (est) {
+        grid[est] = {};
+        BRANCHES.forEach(function (act) { grid[est][act] = 0; });
+      });
+      incorrect.forEach(function (l) {
+        var est = l.estimated_branch || '';
+        var act = l.feedback_actual_branch || '';
+        if (grid[est] && grid[est][act] !== undefined) grid[est][act]++;
+      });
+      var maxVal = 0;
+      BRANCHES.forEach(function (est) {
+        BRANCHES.forEach(function (act) { if (grid[est][act] > maxVal) maxVal = grid[est][act]; });
+      });
+      var table = '<table class="border border-white/20 text-xs"><thead><tr><th class="p-1 border border-white/10 bg-white/5"></th>';
+      BRANCHES.forEach(function (b) { table += '<th class="p-1 border border-white/10 bg-white/5 w-8 text-center">' + b + '</th>'; });
+      table += '</tr></thead><tbody>';
+      BRANCHES.forEach(function (act) {
+        table += '<tr><th class="p-1 border border-white/10 bg-white/5">' + act + '</th>';
+        BRANCHES.forEach(function (est) {
+          var n = grid[est][act] || 0;
+          var intensity = maxVal > 0 ? (n / maxVal) : 0;
+          var bg = n === 0 ? 'bg-white/5' : 'background: rgba(255, 191, 0, ' + (0.2 + intensity * 0.6) + ');';
+          table += '<td class="p-1 border border-white/10 text-center" style="' + (n ? bg : '') + '">' + (n || '') + '</td>';
+        });
+        table += '</tr>';
+      });
+      table += '</tbody></table>';
+      container.innerHTML = table;
+      wrap.classList.remove('hidden');
+    }
+
+    function renderEstimateLogsTable(logs) {
+      var wrap = document.getElementById('estimateLogsTableWrap');
+      var tbody = document.getElementById('estimateLogsTableBody');
+      var emptyEl = document.getElementById('estimateLogsEmpty');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      if (logs.length === 0) {
+        if (wrap) wrap.classList.add('hidden');
+        if (emptyEl) { emptyEl.classList.remove('hidden'); emptyEl.textContent = '尚無資料，請按「載入推算紀錄」。'; }
+        return;
+      }
+      if (wrap) wrap.classList.remove('hidden');
+      if (emptyEl) emptyEl.classList.add('hidden');
+      logs.forEach(function (l) {
+        var feedbackText = l.feedback_correct === null || l.feedback_correct === undefined ? '未回饋' : (l.feedback_correct === 1 ? '正確' : '不正確');
+        var actualText = (l.feedback_actual_branch || '') + (l.feedback_actual_half === 'lower' ? '下' : l.feedback_actual_half === 'upper' ? '上' : '');
+        var userText = (l.user_email || l.user_name || l.user_id || '').toString().trim() || '-';
+        var answersShort = '';
+        try {
+          var a = JSON.parse(l.answers_json || '{}');
+          answersShort = Object.keys(a).slice(0, 5).map(function (k) { return k + ':' + (Array.isArray(a[k]) ? a[k].join(',') : a[k]); }).join('; ') || '-';
+        } catch (_) { answersShort = '-'; }
+        var tr = document.createElement('tr');
+        tr.className = 'border-b border-white/10 hover:bg-white/5';
+        tr.innerHTML = '<td class="p-2">' + (l.created_at || '-') + '</td><td class="p-2">' + userText + '</td><td class="p-2">' + (l.estimated_branch || '') + (l.estimated_half === 'lower' ? '下' : '上') + '</td><td class="p-2">' + feedbackText + '</td><td class="p-2">' + actualText + '</td><td class="p-2 max-w-[200px] truncate" title="' + (l.answers_json || '').replace(/"/g, '&quot;') + '">' + answersShort + '</td>';
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function loadEstimateHourLogs() {
+      var btn = document.getElementById('loadEstimateLogsBtn');
+      if (btn) btn.disabled = true;
+      try {
+        var qs = buildEstimateLogsParams();
+        var res = await fetch('/api/admin/estimate-hour-logs?' + qs, { headers: authHeader() });
+        if (res.status === 401) {
+          showLogin();
+          alert('請重新登入');
+          return;
+        }
+        if (!res.ok) throw new Error('載入失敗');
+        var data = await res.json();
+        if (!data.ok || !Array.isArray(data.logs)) throw new Error('資料格式錯誤');
+        lastEstimateLogs = data.logs;
+        renderEstimateLogsSummary(data.logs);
+        renderEstimateLogsHeatmap(data.logs);
+        renderEstimateLogsTable(data.logs);
+        document.getElementById('exportEstimateLogsCsvBtn').classList.remove('hidden');
+        document.getElementById('exportEstimateLogsJsonBtn').classList.remove('hidden');
+      } catch (err) {
+        alert('載入推算紀錄失敗：' + (err.message || err));
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    function exportEstimateLogsCsv() {
+      if (lastEstimateLogs.length === 0) { alert('請先載入推算紀錄'); return; }
+      var headers = ['id', 'created_at', 'user_id', 'user_email', 'user_name', 'estimated_branch', 'estimated_half', 'feedback_correct', 'feedback_actual_branch', 'feedback_actual_half', 'feedback_at'];
+      for (var i = 1; i <= 19; i++) headers.push('q' + i);
+      var rows = [headers.join(',')];
+      lastEstimateLogs.forEach(function (l) {
+        var a = {};
+        try { a = JSON.parse(l.answers_json || '{}'); } catch (_) {}
+        var cells = [l.id, l.created_at, l.user_id, (l.user_email || '').replace(/,/g, ' '), (l.user_name || '').replace(/,/g, ' '), l.estimated_branch, l.estimated_half, l.feedback_correct === null ? '' : l.feedback_correct, l.feedback_actual_branch || '', l.feedback_actual_half || '', l.feedback_at || ''];
+        for (var i = 1; i <= 19; i++) {
+          var v = a['q' + i];
+          cells.push(v === undefined ? '' : (Array.isArray(v) ? v.join(';') : String(v)).replace(/,/g, ' ').replace(/"/g, '""'));
+        }
+        rows.push(cells.map(function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; }).join(','));
+      });
+      var blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'estimate-hour-logs-' + new Date().toISOString().slice(0, 10) + '.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
+    function exportEstimateLogsJson() {
+      if (lastEstimateLogs.length === 0) { alert('請先載入推算紀錄'); return; }
+      var blob = new Blob([JSON.stringify({ ok: true, logs: lastEstimateLogs, total: lastEstimateLogs.length }, null, 2)], { type: 'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'estimate-hour-logs-' + new Date().toISOString().slice(0, 10) + '.json';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+
     // 事件綁定
     document.getElementById('loginForm').addEventListener('submit', function (e) {
       e.preventDefault();
@@ -1388,6 +1601,9 @@
     document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
     document.getElementById('exportToApiBtn').addEventListener('click', submitToApi);
     document.getElementById('generateLifeBookBtn').addEventListener('click', generateLifeBook);
+    document.getElementById('loadEstimateLogsBtn').addEventListener('click', loadEstimateHourLogs);
+    document.getElementById('exportEstimateLogsCsvBtn').addEventListener('click', exportEstimateLogsCsv);
+    document.getElementById('exportEstimateLogsJsonBtn').addEventListener('click', exportEstimateLogsJson);
     
     // 綁定諮詢精華摘要按鈕
     const generateSummaryBtn = document.getElementById('generateSummaryBtn');

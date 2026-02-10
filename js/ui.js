@@ -985,6 +985,12 @@
         Navigation.bindHomeButton();
       }
 
+      // 供「我的命盤」等外部呼叫：填入表單後觸發計算（等同點擊開啟按鈕）
+      window.runCalculation = function () {
+        var btn = document.getElementById("btnLaunch");
+        if (btn) btn.click();
+      };
+
       console.log("[ui.js] DOMContentLoaded 初始化完成");
     } catch (err) {
       console.error("[ui.js] DOMContentLoaded 初始化失敗:", err);

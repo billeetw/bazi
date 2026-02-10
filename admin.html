@@ -93,6 +93,27 @@
           </table>
         </div>
       </section>
+
+      <section class="glass p-4 md:p-6 mt-6">
+        <h2 class="text-lg font-black text-amber-300 mb-3">登入用戶</h2>
+        <p class="text-sm text-slate-500 mb-3">Google 登入後寫入的用戶（email、姓名、來源、首次登入時間）</p>
+        <span id="usersListCount" class="text-sm text-slate-500"></span>
+        <div id="usersListError" class="text-sm text-amber-400 hidden mb-2"></div>
+        <div id="usersListLoading" class="text-sm text-slate-500 py-4">載入中…</div>
+        <div id="usersListContent" class="table-wrap hidden">
+          <table class="w-full text-sm text-left">
+            <thead>
+              <tr class="border-b border-white/10 text-slate-400">
+                <th class="py-2 pr-2 whitespace-nowrap">登入時間</th>
+                <th class="py-2 pr-2">來源</th>
+                <th class="py-2 pr-2">Email</th>
+                <th class="py-2 pr-2">姓名</th>
+              </tr>
+            </thead>
+            <tbody id="usersListBody"></tbody>
+          </table>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -205,6 +226,7 @@
           showDashboard();
           loadList();
           loadEventList();
+          loadUsersList();
           btn.disabled = false;
         })
         .catch(function (err) {
@@ -223,7 +245,55 @@
     document.getElementById('refreshBtn').addEventListener('click', function () {
       loadList();
       loadEventList();
+      loadUsersList();
     });
+
+    function loadUsersList() {
+      var wrap = document.getElementById('usersListContent');
+      var loading = document.getElementById('usersListLoading');
+      var errEl = document.getElementById('usersListError');
+      var body = document.getElementById('usersListBody');
+      var countEl = document.getElementById('usersListCount');
+
+      loading.classList.remove('hidden');
+      wrap.classList.add('hidden');
+      errEl.classList.add('hidden');
+
+      fetch('/api/admin/users', { headers: authHeader() })
+        .then(function (res) {
+          if (res.status === 401) {
+            showLogin();
+            return Promise.reject(new Error('請重新登入'));
+          }
+          return res.json();
+        })
+        .then(function (data) {
+          loading.classList.add('hidden');
+          if (data.error) {
+            errEl.textContent = data.error;
+            errEl.classList.remove('hidden');
+            return;
+          }
+          var list = data.users || [];
+          countEl.textContent = '共 ' + list.length + ' 人';
+          body.innerHTML = list.map(function (row) {
+            var created = row.created_at ? new Date(row.created_at).toLocaleString('zh-TW') : '';
+            var provider = row.provider === 'google' ? 'Google' : row.provider || '—';
+            return '<tr class="border-b border-white/5 hover:bg-white/5">' +
+              '<td class="py-2 pr-2 whitespace-nowrap">' + escapeHtml(created) + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(provider) + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.email || '—') + '</td>' +
+              '<td class="py-2 pr-2">' + escapeHtml(row.name || '—') + '</td>' +
+              '</tr>';
+          }).join('');
+          wrap.classList.remove('hidden');
+        })
+        .catch(function (err) {
+          loading.classList.add('hidden');
+          errEl.textContent = err.message || '載入失敗';
+          errEl.classList.remove('hidden');
+        });
+    }
 
     function loadEventList() {
       var wrap = document.getElementById('eventListContent');
@@ -286,6 +356,7 @@
       showDashboard();
       loadList();
       loadEventList();
+      loadUsersList();
     }
   </script>
 </body>

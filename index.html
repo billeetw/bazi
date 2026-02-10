@@ -13,6 +13,8 @@
 
   <!-- Tailwind CDN（開發用） -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Identity Services（登入用） -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <style>
     :root {
@@ -550,6 +552,20 @@
       animation: none !important;
       transform: none !important;
     }
+    /* 已儲存的命盤區：不晃動、不傾斜 */
+    #myChartsSection,
+    section#myChartsSection,
+    #myChartsSection.glass-container,
+    #myChartsSection.glass-input {
+      animation: none !important;
+      transform: none !important;
+    }
+    #myChartsSection:hover,
+    #myChartsSection.glass-container:hover,
+    #myChartsSection.glass-input:hover {
+      animation: none !important;
+      transform: none !important;
+    }
 
     .glass-hero {
       background: rgba(26, 26, 46, 0.4);
@@ -1057,6 +1073,47 @@
       height: 100%;
       object-fit: cover;
       display: block;
+    }
+    /* 登入/登出按鈕（與 nav-chip 風格一致） */
+    .auth-btn-login,
+    .auth-btn-logout {
+      background: rgba(0,0,0,0.35);
+      border: 1px solid rgba(255,191,0,0.2);
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      color: rgba(226,232,240,0.95);
+      cursor: pointer;
+      transition: background 0.25s, border-color 0.25s, color 0.25s;
+    }
+    .auth-btn-login:hover,
+    .auth-btn-logout:hover {
+      background: rgba(255,191,0,0.15);
+      border-color: rgba(255,191,0,0.4);
+      color: #FFBF00;
+    }
+    .auth-user {
+      font-size: 11px;
+      color: rgba(226,232,240,0.8);
+      margin-right: 4px;
+    }
+    /* 導覽列登入區：固定最小寬度，避免登入前後切換時晃動 */
+    #authNav {
+      min-width: 120px;
+    }
+    /* 我的命盤區塊：固定高度，避免登入後版面晃動（內容多時區塊內捲動） */
+    #myChartsSection {
+      height: 280px;
+      min-height: 280px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      contain: layout;
+      transform: translateZ(0);
+    }
+    #myChartsList {
+      min-height: 64px;
     }
     /* 諮詢鏈接醒目樣式 */
     .nav-chip-consult {
@@ -1573,8 +1630,9 @@
       <a class="nav-chip" href="#ws-liuyue">流年</a>
     </div>
 
-    <!-- 桌機：FB logo；手機：漢堡按鈕 -->
+    <!-- 桌機：登入/登出 ＋ FB logo；手機：漢堡按鈕 -->
     <div class="hidden md:flex items-center gap-2">
+      <div id="authNav" class="flex items-center gap-2"></div>
       <a href="https://www.facebook.com/bill17gonplay/" target="_blank" rel="noopener noreferrer"
          class="nav-chip-logo"
          aria-label="前往李伯彥 Facebook（一起出來玩）"
@@ -1594,11 +1652,20 @@
       <a href="#ws-ziwei" class="mobile-nav-link">紫微</a>
       <a href="#ws-bazi" class="mobile-nav-link">八字</a>
       <a href="#ws-liuyue" class="mobile-nav-link">流年</a>
+      <div id="authNavMobile" class="border-t border-amber-400/20 mt-2 pt-2"></div>
       <a href="https://www.facebook.com/bill17gonplay/" target="_blank" rel="noopener noreferrer" class="mobile-nav-link">Facebook</a>
     </div>
   </div>
 
   <main class="max-w-7xl mx-auto px-4 pt-6 space-y-8">
+
+    <!-- 我的命盤（僅登入時顯示） -->
+    <section id="myChartsSection" class="hidden glass-container glass-input p-6 max-w-3xl mx-auto space-y-4 scroll-mt-24">
+      <h2 class="page-hero-title text-amber-300 text-lg tracking-wider">已儲存的命盤</h2>
+      <p class="body-caption text-slate-400">點選下方命盤名稱可帶入表單並重新計算；最多 5 筆。</p>
+      <div id="myChartsList" class="space-y-2"></div>
+      <p id="myChartsEmpty" class="body-caption text-slate-500 hidden">尚無命盤。請在下方輸入出生資料後，點「儲存到我的命盤」；儲存後會出現在此處，點選即可載入。</p>
+    </section>
 
     <!-- 命運座標輸入（條狀排列 + 頂級玻璃擬態，保留原有 id 與邏輯） -->
     <section id="inputCard" class="glass-container glass-input p-8 md:p-12 max-w-3xl mx-auto space-y-8">
@@ -1652,6 +1719,13 @@
       </div>
 
       <div id="hint" class="text-center text-sm md:text-base text-slate-400 italic min-h-[1.2em]"></div>
+
+      <!-- 儲存到我的命盤（僅登入時顯示） -->
+      <div id="saveChartWrap" class="hidden pt-4 border-t border-amber-400/20">
+        <button type="button" id="btnSaveChart" class="auth-btn-login w-full py-3 rounded-xl">
+          儲存到我的命盤
+        </button>
+      </div>
     </section>
 
     <!-- 一起出來玩夥伴聚會（2/13 活動預告，報名請至獨立活動頁） -->
@@ -1936,6 +2010,26 @@
       <div id="ceremonyLine0" class="text-amber-300/90 font-bold text-sm tracking-wide mb-2 min-h-[1.25em]"></div>
       <div id="ceremonyLine1" class="text-amber-400/95 font-black text-sm tracking-[0.2em] mb-4 min-h-[1.5em]"></div>
       <div id="ceremonyLine2" class="text-slate-200 text-sm md:text-base leading-relaxed text-center min-h-[4em]"></div>
+      <div id="ceremonyFeedbackWrap" class="mt-6 w-full max-w-sm hidden">
+        <p class="text-slate-400 text-sm mb-3 text-center">這個推算對你來說正確嗎？</p>
+        <div class="flex gap-3 justify-center flex-wrap">
+          <button type="button" id="ceremonyFeedbackCorrect" class="px-6 py-3 rounded-xl bg-green-500/20 border border-green-400/50 text-green-300 font-bold text-sm hover:bg-green-500/30 transition">✅ 準確</button>
+          <button type="button" id="ceremonyFeedbackIncorrect" class="px-6 py-3 rounded-xl bg-red-500/20 border border-red-400/50 text-red-300 font-bold text-sm hover:bg-red-500/30 transition">❌ 不準</button>
+        </div>
+        <div id="ceremonyFeedbackActualWrap" class="mt-4 hidden">
+          <p class="text-slate-400 text-xs mb-2 text-center">請選擇您的真實時辰</p>
+          <div class="flex gap-2 items-center justify-center flex-wrap">
+            <select id="ceremonyFeedbackActualBranch" class="bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-slate-200" aria-label="真實時辰">
+              <option value="子">子</option><option value="丑">丑</option><option value="寅">寅</option><option value="卯">卯</option><option value="辰">辰</option><option value="巳">巳</option><option value="午">午</option><option value="未">未</option><option value="申">申</option><option value="酉">酉</option><option value="戌">戌</option><option value="亥">亥</option>
+            </select>
+            <select id="ceremonyFeedbackActualHalf" class="bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-slate-200" aria-label="上半或下半">
+              <option value="upper">上半時辰</option>
+              <option value="lower">下半時辰</option>
+            </select>
+            <button type="button" id="ceremonyFeedbackSubmitActual" class="px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-400/50 text-amber-300 text-sm font-bold hover:bg-amber-500/30 transition">送出回饋</button>
+          </div>
+        </div>
+      </div>
       <button type="button" id="ceremonyConfirm" disabled class="mt-8 px-8 py-3 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-300 font-bold text-sm tracking-wider hover:bg-amber-500/30 transition opacity-0">
         確認同步
       </button>
@@ -2009,6 +2103,8 @@
   <script src="js/ui/services/navigation.js?v=2"></script>
   <script src="js/ui/services/form-init.js?v=1"></script>
   <script src="js/ui/services/sound-service.js?v=1"></script>
+  <script src="js/ui/services/auth-service.js?v=1"></script>
+  <script src="js/ui/services/my-charts-service.js?v=1"></script>
   <script src="js/ui/services/calculation-flow.js?v=5"></script>
   <script src="js/ui/services/event-bindings.js?v=3"></script>
   <script src="js/ui/services/data-renderer.js?v=1"></script>
@@ -2031,6 +2127,12 @@
   <script src="js/ui/components/expert-questionnaire.js?v=1"></script>
   <script src="js/ui/components/geolocation-calibration.js?v=1"></script>
   <script src="js/ui.js?v=7"></script>
+  <!-- 登入服務：渲染導覽列登入/登出、綁定 Google 登入 -->
+  <script>
+    if (window.AuthService && typeof window.AuthService.init === "function") {
+      window.AuthService.init();
+    }
+  </script>
   <!-- 手機版漢堡選單：開關與關閉邏輯 -->
   <script>
     (function() {

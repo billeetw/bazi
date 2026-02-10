@@ -9,6 +9,12 @@
 # ADMIN_USER=你的後台帳號
 # ADMIN_PASSWORD=你的後台密碼
 #
+# OAuth / 登入（我的命盤用）
+# GOOGLE_CLIENT_ID=xxx
+# GOOGLE_CLIENT_SECRET=xxx
+# JWT_SECRET=至少 32 字元的隨機字串
+#
 # 範例（請勿使用，僅供參考格式）：
 # ADMIN_USER=admin
 # ADMIN_PASSWORD=your_secure_password_here
+# JWT_SECRET=your_min_32_char_random_string_here

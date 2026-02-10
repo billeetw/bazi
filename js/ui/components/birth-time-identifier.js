@@ -80,6 +80,12 @@
     }
 
     function openModal() {
+      var auth = window.AuthService;
+      if (!auth || !auth.isLoggedIn || !auth.isLoggedIn()) {
+        try { sessionStorage.setItem("openEstimateHourAfterLogin", "1"); } catch (_) {}
+        if (auth && auth.triggerLogin) auth.triggerLogin();
+        return;
+      }
       currentIndex = 0;
       answers = {};
       if (timeMode && timeMode.value !== "shichen") {
@@ -115,7 +121,18 @@
       var branch = result && result.branch ? result.branch : "子";
       var half = result && result.half === "lower" ? "lower" : "upper";
       var text = CEREMONY_PERSONALITY_KEYS[branch] || CEREMONY_PERSONALITY_KEYS["子"];
-      pendingCeremonyResult = { branch: branch, half: half, hour_label: result && result.hour_label, hour_range: result && result.hour_range };
+      pendingCeremonyResult = {
+        branch: branch,
+        half: half,
+        hour_label: result && result.hour_label,
+        hour_range: result && result.hour_range,
+        log_id: result && result.log_id,
+      };
+
+      var feedbackWrap = document.getElementById("ceremonyFeedbackWrap");
+      var feedbackActualWrap = document.getElementById("ceremonyFeedbackActualWrap");
+      if (feedbackWrap) feedbackWrap.classList.add("hidden");
+      if (feedbackActualWrap) feedbackActualWrap.classList.add("hidden");
 
       closeModal();
       var hourLabel = (result && result.hour_label) ? result.hour_label : branch + "時";
@@ -140,6 +157,9 @@
             if (ceremonyConfirm) {
               ceremonyConfirm.style.opacity = "1";
               ceremonyConfirm.disabled = false;
+            }
+            if (pendingCeremonyResult && pendingCeremonyResult.log_id && feedbackWrap) {
+              feedbackWrap.classList.remove("hidden");
             }
             return;
           }
@@ -261,6 +281,17 @@
     if (closeBtn) closeBtn.addEventListener("click", closeModal);
     backdrop.addEventListener("click", closeModal);
 
+    window.addEventListener("auth-state-changed", function (e) {
+      if (e.detail && e.detail.loggedIn) {
+        try {
+          if (sessionStorage.getItem("openEstimateHourAfterLogin")) {
+            sessionStorage.removeItem("openEstimateHourAfterLogin");
+            setTimeout(openModal, 100);
+          }
+        } catch (_) {}
+      }
+    });
+
     if (ceremonyConfirm) {
       ceremonyConfirm.addEventListener("click", function () {
         playSyncSound();
@@ -279,11 +310,39 @@
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       saveCurrentAnswer();
+      var auth = window.AuthService;
+      var headers = auth && auth.getAuthHeaders ? auth.getAuthHeaders() : {};
+      if (!headers.Authorization) {
+        window.alert("請先登入以使用推算時辰功能。");
+        return;
+      }
       var submitBtnEl = document.getElementById("identifyBirthTimeSubmit");
       if (submitBtnEl) submitBtnEl.disabled = true;
-      window.IdentifyBirthTime.identifyBirthTimeFromAPI(answers)
-        .then(function (result) {
-          openCeremony(result);
+      var origin = (typeof window !== "undefined" && window.location && window.location.origin) ? window.location.origin : "";
+      fetch(origin + "/api/me/estimate-hour", {
+        method: "POST",
+        headers: Object.assign({ "Content-Type": "application/json" }, headers),
+        body: JSON.stringify({ answers: answers }),
+      })
+        .then(function (res) {
+          return res.text().then(function (text) {
+            var data = null;
+            if (text && text.trim()) {
+              try { data = JSON.parse(text); } catch (_) {}
+            }
+            if (!res.ok) throw new Error(data && data.error ? data.error : "推算失敗（" + res.status + (text ? ": " + text.slice(0, 80) : "") + "）");
+            if (!data) throw new Error("伺服器未回傳有效資料（" + res.status + "）");
+            return data;
+          });
+        })
+        .then(function (data) {
+          openCeremony({
+            branch: data.branch,
+            hour_label: data.hour_label,
+            hour_range: data.hour_range,
+            half: data.half,
+            log_id: data.log_id,
+          });
         })
         .catch(function (err) {
           var hint = document.getElementById("hint");
@@ -293,6 +352,51 @@
           if (submitBtnEl) submitBtnEl.disabled = false;
         });
     });
+
+    function sendFeedback(correct, actualBranch, actualHalf) {
+      if (!pendingCeremonyResult || !pendingCeremonyResult.log_id) return;
+      var auth = window.AuthService;
+      var headers = auth && auth.getAuthHeaders ? auth.getAuthHeaders() : {};
+      if (!headers.Authorization) return;
+      var origin = (typeof window !== "undefined" && window.location && window.location.origin) ? window.location.origin : "";
+      var body = { correct: correct };
+      if (correct === false && actualBranch) body.actual_branch = actualBranch;
+      if (correct === false && actualHalf) body.actual_half = actualHalf;
+      fetch(origin + "/api/me/estimate-hour/logs/" + encodeURIComponent(pendingCeremonyResult.log_id), {
+        method: "PATCH",
+        headers: Object.assign({ "Content-Type": "application/json" }, headers),
+        body: JSON.stringify(body),
+      }).then(function () {
+        var feedbackWrap = document.getElementById("ceremonyFeedbackWrap");
+        var feedbackActualWrap = document.getElementById("ceremonyFeedbackActualWrap");
+        if (feedbackActualWrap) feedbackActualWrap.classList.add("hidden");
+        if (feedbackWrap) feedbackWrap.classList.add("hidden");
+      }).catch(function () {});
+    }
+
+    var ceremonyFeedbackCorrect = document.getElementById("ceremonyFeedbackCorrect");
+    var ceremonyFeedbackIncorrect = document.getElementById("ceremonyFeedbackIncorrect");
+    var ceremonyFeedbackActualWrap = document.getElementById("ceremonyFeedbackActualWrap");
+    var ceremonyFeedbackSubmitActual = document.getElementById("ceremonyFeedbackSubmitActual");
+    if (ceremonyFeedbackCorrect) {
+      ceremonyFeedbackCorrect.addEventListener("click", function () {
+        sendFeedback(true);
+      });
+    }
+    if (ceremonyFeedbackIncorrect) {
+      ceremonyFeedbackIncorrect.addEventListener("click", function () {
+        if (ceremonyFeedbackActualWrap) ceremonyFeedbackActualWrap.classList.remove("hidden");
+      });
+    }
+    if (ceremonyFeedbackSubmitActual) {
+      ceremonyFeedbackSubmitActual.addEventListener("click", function () {
+        var branchEl = document.getElementById("ceremonyFeedbackActualBranch");
+        var halfEl = document.getElementById("ceremonyFeedbackActualHalf");
+        var actualBranch = branchEl ? branchEl.value : "";
+        var actualHalf = halfEl ? halfEl.value : "upper";
+        sendFeedback(false, actualBranch, actualHalf);
+      });
+    }
   }
 
   // 导出到 window.UiComponents.BirthTimeIdentifier
