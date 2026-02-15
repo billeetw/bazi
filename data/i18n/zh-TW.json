@@ -1,14 +1,14 @@
 {
   "meta": {
     "title": "人生說明書｜一起出來玩",
-    "description": "人生說明書：結合八字五行、紫微斗數與 2026 流月紅綠燈的個人戰略指揮中心，協助你規劃節奏與決策。"
+    "description": "人生說明書是一套融合易經、紫微斗數與八字的古老智慧系統。\n它幫助你理解自身結構、人生課題與時運節奏，\n看見命運的脈絡，\n並在關鍵時刻做出清醒而有力量的選擇。"
   },
   "brand": {
     "navFull": "一起出來玩｜人生說明書",
     "navShort": "人生說明書",
     "footerBrand": "一起出來玩",
     "footerHandle": "17gonplay",
-    "tagline": ""
+    "tagline": "古老智慧，\n為現代人生而設計。"
   },
   "home": {
     "heroHeadline": "命運座標輸入",
@@ -241,7 +241,7 @@
     "placeholder": "計算完成後，這裡會顯示五行生剋診斷報告。",
     "noReport": "尚未取得生剋報告，請先完成計算；若問題持續，請檢查 WuxingFlowPipeline 設定。",
     "sectionTitle": "金木水火土・基本意義",
-    "sheetSub": "點五行雷達圖展開（內容優先來自資料庫：wuxing_meanings）",
+    "sheetSub": "點五行雷達圖展開",
     "wood": "木",
     "fire": "火",
     "earth": "土",

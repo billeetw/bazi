@@ -1,14 +1,14 @@
 {
   "meta": {
-    "title": "Life Manual | 17 Gon Play",
-    "description": "Life Manual is your personal strategy command center—combining Bazi Five Elements, Ziwei Dou Shu, and 2026 monthly flow signals to help you plan your rhythm and make clearer decisions."
+    "title": "Life Blueprint | 17 Gon Play",
+    "description": "Life Blueprint is a modern navigation system rooted in ancient intelligence — the I Ching, Ziwei, and Bazi.\n\nIt helps you understand your inner structure, life themes, and timing cycles,\nso you can see the architecture of your destiny\nand move forward with clarity and strength."
   },
   "brand": {
-    "navFull": "17 Gon Play | Life Manual",
-    "navShort": "Life Manual",
+    "navFull": "17 Gon Play | Life Blueprint",
+    "navShort": "Life Blueprint",
     "footerBrand": "17 Gon Play",
     "footerHandle": "17gonplay",
-    "tagline": "Ancient Structure. Modern Strategy."
+    "tagline": "Ancient Intelligence.\nEngineered for Modern Life."
   },
   "home": {
     "heroHeadline": "A Strategic Map for Real Life.",
@@ -241,7 +241,7 @@
     "placeholder": "After calculation, your five-phase report will appear here.",
     "noReport": "No report yet. Complete a calculation first; if the issue persists, check WuxingFlowPipeline.",
     "sectionTitle": "Five Elements · Core Meaning",
-    "sheetSub": "Tap the wuxing radar to expand (content from database: wuxing_meanings)",
+    "sheetSub": "Tap the wuxing radar to expand",
     "wood": "Wood",
     "fire": "Fire",
     "earth": "Earth",
