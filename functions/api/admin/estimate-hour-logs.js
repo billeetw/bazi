@@ -97,6 +97,7 @@ export async function onRequestGet(context) {
     const selectStmt = db.prepare(
       `SELECT l.id, l.user_id, l.answers_json, l.estimated_branch, l.estimated_half, l.created_at,
               l.feedback_correct, l.feedback_actual_branch, l.feedback_actual_half, l.feedback_at,
+              l.user_ip,
               u.email as user_email, u.name as user_name
        FROM estimate_hour_logs l
        LEFT JOIN users u ON l.user_id = u.id
@@ -110,6 +111,7 @@ export async function onRequestGet(context) {
       user_id: row.user_id,
       user_email: row.user_email || null,
       user_name: row.user_name || null,
+      user_ip: row.user_ip || null,
       answers_json: row.answers_json,
       estimated_branch: row.estimated_branch,
       estimated_half: row.estimated_half,

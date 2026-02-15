@@ -1,0 +1,14 @@
+{
+  "stems": [
+    { "zh": "甲", "elem": "wood" },
+    { "zh": "乙", "elem": "wood" },
+    { "zh": "丙", "elem": "fire" },
+    { "zh": "丁", "elem": "fire" },
+    { "zh": "戊", "elem": "earth" },
+    { "zh": "己", "elem": "earth" },
+    { "zh": "庚", "elem": "metal" },
+    { "zh": "辛", "elem": "metal" },
+    { "zh": "壬", "elem": "water" },
+    { "zh": "癸", "elem": "water" }
+  ]
+}

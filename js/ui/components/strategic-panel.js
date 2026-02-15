@@ -274,13 +274,15 @@
    */
   function renderStrategicPanel(params) {
     console.log("[strategic-panel.js] renderStrategicPanel 開始執行");
-    const { bazi, dbContent, ziweiPalaceMetadata, liuyueData } = params;
+    const t = (k, o) => (typeof window !== "undefined" && window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(k, o) : k;
+    const { bazi, dbContent, ziweiPalaceMetadata, liuyueData, ziwei: ziweiParam } = params;
     
     console.log("[strategic-panel.js] 參數檢查:", {
       hasBazi: !!bazi,
       hasDbContent: !!dbContent,
       hasZiweiPalaceMetadata: !!ziweiPalaceMetadata,
       hasLiuyueData: !!liuyueData,
+      hasZiwei: !!ziweiParam,
     });
     
     const deps = getDependencies();
@@ -291,7 +293,8 @@
       return;
     }
     
-    const ziwei = ziweiPalaceMetadata?.ziwei || null;
+    /** 命主/身主來源：優先 params.ziwei（contract.ziwei），其次 ziweiPalaceMetadata.ziwei */
+    const ziwei = ziweiParam || ziweiPalaceMetadata?.ziwei || null;
     // 傳入 bazi 數據以便獲取年支計算身主
     const { mingzhu, shengong } = getMasterStars(ziwei, bazi);
     
@@ -305,9 +308,12 @@
     
     // 獲取十神主軸
     const dominant = (bazi?.tenGod?.dominant || "").trim();
-    const tenGodText = dominant && dbContent?.tenGods?.[dominant] 
-      ? dbContent.tenGods[dominant] 
-      : "";
+    var ContentUtils = window.UiUtils?.ContentUtils;
+    var tenGodRaw = ContentUtils && typeof ContentUtils.getContentValue === "function"
+      ? ContentUtils.getContentValue(dbContent, "tenGods", dominant, null)
+      : (dominant && dbContent?.tenGods?.[dominant] ? dbContent.tenGods[dominant] : null);
+    if (tenGodRaw && tenGodRaw.startsWith("(missing:")) tenGodRaw = null;
+    const tenGodText = tenGodRaw || "";
     
     console.log("[strategic-panel.js] 十神數據:", {
       dominant,
@@ -343,20 +349,20 @@
       const coreValue = getStarCoreValue(mingzhu);
       html += `
         <div class="p-4 md:p-4 rounded-xl border border-amber-400/40 bg-white/5">
-          <div class="text-xs font-semibold text-slate-200 mb-2">本命基因（命主）</div>
+          <div class="text-xs font-semibold text-slate-200 mb-2">${t("strategic.lifeGeneSection")}</div>
           <div class="text-xs font-bold text-amber-400 mb-2">${mingzhu}</div>
           <div class="text-[11px] text-slate-400 leading-relaxed">
-            🎯 直擊 (50%)<br>
+            🎯 ${t("strategic.direct50")}<br>
             「你骨子裡是個 ${mingzhu} 的人，追求的是 ${coreValue}。」
           </div>
         </div>
       `;
       // 命主已渲染（除錯可開 console.log）
     } else {
-      // 命主數據暫不可用時不刷 console
+      const t = (k, o) => (typeof window !== "undefined" && window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(k, o) : k;
       html += `
         <div class="p-4 rounded-xl border border-slate-400/20 bg-white/5 text-xs text-slate-500">
-          （命主數據暫不可用）
+          ${t("strategic.lifeMasterUnavailable")}
         </div>
       `;
     }
@@ -366,20 +372,20 @@
       const mingzhuCoreValue = mingzhu ? getStarCoreValue(mingzhu) : "核心價值";
       html += `
         <div class="p-4 md:p-4 rounded-xl border border-blue-400/40 bg-white/5 mt-3">
-          <div class="text-xs font-semibold text-slate-200 mb-2">後天工具（身主）</div>
+          <div class="text-xs font-semibold text-slate-200 mb-2">${t("strategic.acquiredToolSection")}</div>
           <div class="text-xs font-bold text-blue-400 mb-2">${shengong}</div>
           <div class="text-[11px] text-slate-400 leading-relaxed">
-            💭 啟發 (30%)<br>
+            💭 ${t("strategic.inspire30")}<br>
             「雖然你靈魂追求 ${mingzhuCoreValue}，但你這幾年越來越習慣用 ${shengong} 的方式來應對世界，這讓你感到更安全還是更疲累？」
           </div>
         </div>
       `;
       // 身主已渲染（除錯可開 console.log）
     } else {
-      // 身主數據暫不可用時不刷 console
+      const t = (k, o) => (typeof window !== "undefined" && window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(k, o) : k;
       html += `
         <div class="p-4 rounded-xl border border-slate-400/20 bg-white/5 mt-3 text-xs text-slate-500">
-          （身主數據暫不可用）
+          ${t("strategic.bodyMasterUnavailable")}
         </div>
       `;
     }
@@ -389,7 +395,7 @@
     // Section B: 2026 能量天氣預報 (The Environment)
     if (wuxingData && wuxingData.length > 0) {
       html += '<div class="space-y-4 mt-6">';
-      html += '<div class="text-xs font-semibold text-slate-200 mb-3">Section B: 2026 能量天氣預報 (The Environment)</div>';
+      html += `<div class="text-xs font-semibold text-slate-200 mb-3">${t("strategic.sectionBTitle")}</div>`;
       
       // 五行進度條
       wuxingData.forEach(elem => {
@@ -404,7 +410,7 @@
             <div class="w-full h-3 md:h-2 bg-white/10 rounded-full overflow-hidden">
               <div class="h-full ${colorClass} transition-all duration-300" style="width: ${elem.percentage}%"></div>
             </div>
-              ${isHigh ? '<div class="text-[11px] text-red-400">⚠️ 系統超載預警</div>' : ''}
+              ${isHigh ? `<div class="text-[11px] text-red-400">⚠️ ${t("strategic.systemOverloadWarning")}</div>` : ''}
           </div>
         `;
       });
@@ -413,11 +419,12 @@
       console.log("[strategic-panel.js] Section B - 五行數據已渲染，共", wuxingData.length, "個元素");
     } else {
       console.warn("[strategic-panel.js] Section B - 五行數據缺失");
+      const tB = (k) => (typeof window !== "undefined" && window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(k) : k;
       html += `
         <div class="space-y-4 mt-6">
-          <div class="text-xs font-semibold text-slate-200 mb-3">Section B: 2026 能量天氣預報 (The Environment)</div>
+          <div class="text-xs font-semibold text-slate-200 mb-3">${t("strategic.sectionBTitle")}</div>
           <div class="p-4 rounded-xl border border-slate-400/20 bg-white/5 text-[11px] text-slate-500">
-            （五行數據暫不可用）
+            ${tB("strategic.wuxingUnavailable")}
           </div>
         </div>
       `;
@@ -426,16 +433,16 @@
     // Section C: 十神戰略 (The Strategy)
     if (dominant && tenGodText) {
       html += '<div class="space-y-4 mt-6">';
-      html += `<div class="text-xs font-semibold text-slate-200 mb-3">Section C: 十神戰略：${dominant}模式 (The Strategy)</div>`;
+      html += `<div class="text-xs font-semibold text-slate-200 mb-3">${t("strategic.tenGodModeTitle", { name: dominant })}</div>`;
       
       html += `
         <div class="p-4 md:p-4 rounded-xl border border-emerald-400/40 bg-white/5">
-          <div class="text-xs font-semibold text-slate-200 mb-2">年度主旋律</div>
+          <div class="text-xs font-semibold text-slate-200 mb-2">${t("strategic.annualTheme")}</div>
           <div class="text-xs font-bold text-emerald-400 mb-4">${mainTheme}</div>
           
           ${actions.length > 0 ? `
             <div class="mb-4 md:mb-3">
-              <div class="text-xs font-semibold text-green-400 mb-2">✅ 行動清單</div>
+              <div class="text-xs font-semibold text-green-400 mb-2">✅ ${t("strategic.actionChecklist")}</div>
               <ul class="text-[11px] text-slate-400 space-y-2 md:space-y-1 ml-4 leading-relaxed">
                 ${actions.map(a => `<li>• ${a}</li>`).join('')}
               </ul>
@@ -444,7 +451,7 @@
           
           ${prohibitions.length > 0 ? `
             <div class="mb-4 md:mb-3">
-              <div class="text-xs font-semibold text-red-400 mb-2">❌ 禁忌清單</div>
+              <div class="text-xs font-semibold text-red-400 mb-2">❌ ${t("strategic.tabooChecklist")}</div>
               <ul class="text-[11px] text-slate-400 space-y-2 md:space-y-1 ml-4 leading-relaxed">
                 ${prohibitions.map(p => `<li>• ${p}</li>`).join('')}
               </ul>
@@ -452,12 +459,12 @@
           ` : ''}
           
           <div class="mt-4 pt-4 border-t border-white/10">
-            <div class="text-xs font-semibold text-slate-200 mb-2">📝 採集 (20%)</div>
+            <div class="text-xs font-semibold text-slate-200 mb-2">📝 ${t("strategic.capture20")}</div>
             <textarea 
               id="tenGodCapture20" 
               class="w-full p-3 md:p-3 rounded-lg bg-white/5 border border-white/10 text-xs text-slate-300 placeholder-slate-500 focus:outline-none focus:border-amber-400/50"
               rows="4"
-              placeholder="你對今年的「${dominant}模式」有什麼想法？有什麼具體的計劃或擔憂？"
+              placeholder="${t("strategic.capturePlaceholder", { name: dominant })}"
             ></textarea>
             <div class="text-[11px] text-slate-500 mt-1" id="tenGodCaptureStatus"></div>
           </div>
@@ -485,7 +492,7 @@
               };
               try {
                 localStorage.setItem(`tenGodCapture_${chartId}`, JSON.stringify(data));
-                statusDiv.textContent = "✓ 已保存";
+                statusDiv.textContent = t("strategic.savedStatus");
                 statusDiv.className = "text-[11px] text-green-400 mt-1";
                 setTimeout(() => {
                   statusDiv.textContent = "";
@@ -503,11 +510,12 @@
     
     // 如果沒有十神數據，顯示提示
     if (!dominant || !tenGodText) {
+      const t = (k, o) => (typeof window !== "undefined" && window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(k, o) : k;
       html += `
         <div class="space-y-4 mt-6">
-          <div class="text-xs font-semibold text-slate-200 mb-3">Section C: 十神戰略 (The Strategy)</div>
+          <div class="text-xs font-semibold text-slate-200 mb-3">${t("strategic.sectionCTitle")}</div>
           <div class="p-4 rounded-xl border border-slate-400/20 bg-white/5 text-[11px] text-slate-500">
-            ${!dominant ? "（十神主軸數據暫不可用）" : `（資料庫尚未填入「${dominant}」的十神指令）`}
+            ${!dominant ? t("strategic.tenGodUnavailable") : t("strategic.tenGodDbMissing", { name: dominant })}
           </div>
         </div>
       `;

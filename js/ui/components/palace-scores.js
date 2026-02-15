@@ -67,6 +67,7 @@
   async function renderZiweiScores(scores, horoscope, ziwei, onPalaceClick) {
     const palaceBox = document.getElementById("ziweiPalaceScores");
     const wuxingBox = document.getElementById("ziweiWuxingScores");
+    const t = (key, opts) => (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(key, opts) : key;
 
     if (!palaceBox || !wuxingBox) {
       console.warn("ziwei score boxes not found in DOM");
@@ -79,7 +80,7 @@
 
     const baseEntries = Object.entries(scores?.palaceScores || {});
     if (!baseEntries.length) {
-      palaceBox.innerHTML = `<div class="text-xs text-slate-400">（尚未計算宮位權重）</div>`;
+      palaceBox.innerHTML = `<div class="text-xs text-slate-400">${t("ziwei.palaceScoresNotReady")}</div>`;
     } else {
       const activeLimitPalaceName = horoscope?.activeLimitPalaceName ?? null;
       const yearlyStem = horoscope?.yearlyStem ?? null;
@@ -145,7 +146,11 @@
             // 使用 L9 完整語義輸出
             const starCount = l9Output.stars; // 已經是 2.5-4.5 格式
             const starsHtml = renderStars(starCount);
-            const oneLiner = l9Output.oneLiner;
+            const palaceDescMap = (window.I18n && typeof window.I18n.tObject === "function") ? window.I18n.tObject("ziwei.palaceStrengthDesc") : null;
+            const oneLiner = (palaceDescMap && palaceDescMap[r.name]) || l9Output.oneLiner;
+            const palaceDisplayMapL9 = (window.I18n && typeof window.I18n.tObject === "function") ? window.I18n.tObject("ziwei.palaceDisplay") : null;
+            const displayNameL9 = (palaceDisplayMapL9 && palaceDisplayMapL9[r.name]) || r.name;
+            const labelSuffixL9 = r.isActiveLimit ? " · " + t("ziwei.minorLimitPalace") : "";
             const strategicAdvice = l9Output.strategicAdvice;
             const statusLabel = l9Output.statusLabel;
             const colorCode = l9Output.colorCode;
@@ -157,7 +162,6 @@
             
             // 文字顏色：小限命宮使用琥珀色，否則根據 colorCode 使用對應顏色
             const labelClass = r.isActiveLimit ? "text-amber-200" : getTextColorClassLocal(colorCode);
-            const labelSuffix = r.isActiveLimit ? " · 小限命宮" : "";
             
             // 能量條顏色：使用統一的 RGB 顏色映射
             const barColor = getRgbColorLocal(colorCode);
@@ -169,9 +173,9 @@
               <div class="py-3 border-b border-white/5 cursor-pointer hover:bg-white/5 rounded-lg px-2 -mx-2 transition-colors palace-score-row" data-palace-name="${esc(r.name)}" role="button" tabindex="0">
                 <div class="flex items-center justify-between gap-2 text-xs mb-1">
                   <div class="flex items-center gap-1.5">
-                    <span class="${labelClass} font-bold">${r.name}${labelSuffix}</span>
+                    <span class="${labelClass} font-bold">${displayNameL9}${labelSuffixL9}</span>
                     <span class="text-[10px] leading-none">${starsHtml}</span>
-                    ${l9Output.maxStarRating != null && Math.abs(starCount - (2.0 + l9Output.maxStarRating * 0.5)) < 0.1 ? `<span class="text-[9px] text-slate-500 italic">（上限${starCount}星）</span>` : ""}
+                    ${l9Output.maxStarRating != null && Math.abs(starCount - (2.0 + l9Output.maxStarRating * 0.5)) < 0.1 ? `<span class="text-[9px] text-slate-500 italic">${t("ziwei.maxStarsTemplate", { count: starCount })}</span>` : ""}
                     <span class="text-[9px] text-slate-500">${esc(statusLabel)}</span>
                   </div>
                 </div>
@@ -193,24 +197,32 @@
             }
             
             const starsHtml = renderStars(starCount);
-            const advice = notes[i] && notes[i] !== "（暫無戰略提示）" ? esc(notes[i]) : "";
+            const advice = notes[i] && notes[i] !== t("ziwei.noStrategyHint") && notes[i] !== "（暫無戰略提示）" ? esc(notes[i]) : "";
             const labelClass = r.isActiveLimit ? "text-amber-200" : "text-slate-300";
-            const labelSuffix = r.isActiveLimit ? " · 小限命宮" : "";
+            const labelSuffix = r.isActiveLimit ? " · " + t("ziwei.minorLimitPalace") : "";
             const barClass = r.isActiveLimit ? "bg-amber-400" : "bg-amber-500/70";
             
             // 根據強度等級（1-4）選擇對應的說明文字
             const strength = Strategy ? Strategy.scoreToStrength(r.displayScore, maxScore) : (pct >= 85 ? 4 : pct >= 55 ? 3 : pct >= 25 ? 2 : 1);
-            // PALACE_DESCRIPTIONS 在 ui.js 中定义，通过 window 访问
-            const PALACE_DESCRIPTIONS = window.PALACE_DESCRIPTIONS || {};
-            const descriptionMap = PALACE_DESCRIPTIONS[r.name];
-            const description = descriptionMap && descriptionMap[strength] ? descriptionMap[strength] : (descriptionMap ? descriptionMap[3] : "");
+            const locale = (window.I18n && typeof window.I18n.getLocale === "function") ? window.I18n.getLocale() : "zh-TW";
+            const palaceDisplayMap = (window.I18n && typeof window.I18n.tObject === "function") ? window.I18n.tObject("ziwei.palaceDisplay") : null;
+            const displayName = (palaceDisplayMap && palaceDisplayMap[r.name]) || r.name;
+            const palaceDescMap = (window.I18n && typeof window.I18n.tObject === "function") ? window.I18n.tObject("ziwei.palaceStrengthDesc") : null;
+            let description = "";
+            if (locale === "en" && palaceDescMap && palaceDescMap[r.name]) {
+              description = palaceDescMap[r.name];
+            } else {
+              const PALACE_DESCRIPTIONS = window.PALACE_DESCRIPTIONS || {};
+              const descriptionMap = PALACE_DESCRIPTIONS[r.name];
+              description = descriptionMap && descriptionMap[strength] ? descriptionMap[strength] : (descriptionMap ? descriptionMap[3] : "");
+            }
             
             // 合併戰略建議（來自神煞的 strategicAdvice）
             const allStrategicAdvice = [...r.strategicAdvice];
             
             // L7 主觀頻率修正：若觸發了 L7 增益，在建議文字前加入提示
             if (r.isSubjectiveFocus) {
-              allStrategicAdvice.unshift("此領域為你本年度的生命重心，波動感將會特別強烈。");
+              allStrategicAdvice.unshift(t("ziwei.subjectiveFocusHint"));
             }
             
             if (advice) allStrategicAdvice.push(advice);
@@ -223,9 +235,9 @@
               <div class="py-3 border-b border-white/5 cursor-pointer hover:bg-white/5 rounded-lg px-2 -mx-2 transition-colors palace-score-row" data-palace-name="${esc(r.name)}" role="button" tabindex="0">
                 <div class="flex items-center justify-between gap-2 text-xs mb-1">
                   <div class="flex items-center gap-1.5">
-                    <span class="${labelClass} font-bold">${r.name}${labelSuffix}</span>
+                    <span class="${labelClass} font-bold">${displayName}${labelSuffix}</span>
                     <span class="text-[10px] leading-none">${starsHtml}</span>
-                    ${r.maxStarRating != null && Math.abs(starCount - (2.0 + r.maxStarRating * 0.5)) < 0.1 ? `<span class="text-[9px] text-slate-500 italic">（上限${starCount}星）</span>` : ""}
+                    ${r.maxStarRating != null && Math.abs(starCount - (2.0 + r.maxStarRating * 0.5)) < 0.1 ? `<span class="text-[9px] text-slate-500 italic">${t("ziwei.maxStarsTemplate", { count: starCount })}</span>` : ""}
                   </div>
                 </div>
                 ${description ? `<div class="text-[11px] text-slate-400 leading-relaxed mb-2">${esc(description)}</div>` : ""}

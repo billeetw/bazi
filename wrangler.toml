@@ -11,6 +11,13 @@ database_name = "consult-db"
 database_id = "9bdd8684-9fbe-444d-b2bd-16225ff8da79"
 migrations_dir = "migrations"
 
+# KV 綁定（階段二 2.3：異常監控統計快取，TTL 1 小時）
+# id 必須是「Namespace ID」（32 字元 hex），不是名稱。Dashboard → Workers & Pages → KV → 點進 namespace 複製 ID
+# 取得 ID 後取消下面三行註解並填入實際 ID；未綁定時 stats API 仍可用，僅不快取
+[[kv_namespaces]]
+binding = "CACHE"
+id = "e62b8e6535bd483bbe08e87cae4232bf"
+
 # 後台認證配置
 # ⚠️ 安全提醒：敏感配置必須使用環境變數，不要硬編碼
 # 本機開發：建立 .dev.vars 設 ADMIN_USER、ADMIN_PASSWORD（.dev.vars 已加入 .gitignore）

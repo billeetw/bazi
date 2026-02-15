@@ -1,0 +1,307 @@
+[
+  {
+    "name": "紫微",
+    "type": "major",
+    "currentDescription": "權威與領導"
+  },
+  {
+    "name": "紫微",
+    "type": "major",
+    "currentDescription": "領導統御"
+  },
+  {
+    "name": "天機",
+    "type": "major",
+    "currentDescription": "智慧與變通"
+  },
+  {
+    "name": "天機",
+    "type": "major",
+    "currentDescription": "機智靈活"
+  },
+  {
+    "name": "太陽",
+    "type": "major",
+    "currentDescription": "光明與熱情"
+  },
+  {
+    "name": "太陽",
+    "type": "major",
+    "currentDescription": "光明熱情"
+  },
+  {
+    "name": "武曲",
+    "type": "major",
+    "currentDescription": "效率與執行"
+  },
+  {
+    "name": "武曲",
+    "type": "major",
+    "currentDescription": "剛毅果決"
+  },
+  {
+    "name": "天同",
+    "type": "major",
+    "currentDescription": "和諧與享受"
+  },
+  {
+    "name": "天同",
+    "type": "major",
+    "currentDescription": "溫和包容"
+  },
+  {
+    "name": "廉貞",
+    "type": "major",
+    "currentDescription": "複雜與多變"
+  },
+  {
+    "name": "廉貞",
+    "type": "major",
+    "currentDescription": "複雜多變"
+  },
+  {
+    "name": "天府",
+    "type": "major",
+    "currentDescription": "穩定與包容"
+  },
+  {
+    "name": "天府",
+    "type": "major",
+    "currentDescription": "穩重務實"
+  },
+  {
+    "name": "太陰",
+    "type": "major",
+    "currentDescription": "溫柔與內斂"
+  },
+  {
+    "name": "太陰",
+    "type": "major",
+    "currentDescription": "溫柔細膩"
+  },
+  {
+    "name": "貪狼",
+    "type": "major",
+    "currentDescription": "慾望與創造"
+  },
+  {
+    "name": "貪狼",
+    "type": "major",
+    "currentDescription": "多才多藝"
+  },
+  {
+    "name": "巨門",
+    "type": "major",
+    "currentDescription": "溝通與分析"
+  },
+  {
+    "name": "巨門",
+    "type": "major",
+    "currentDescription": "深思熟慮"
+  },
+  {
+    "name": "天相",
+    "type": "major",
+    "currentDescription": "協調與服務"
+  },
+  {
+    "name": "天相",
+    "type": "major",
+    "currentDescription": "協調平衡"
+  },
+  {
+    "name": "天梁",
+    "type": "major",
+    "currentDescription": "穩重與保護"
+  },
+  {
+    "name": "天梁",
+    "type": "major",
+    "currentDescription": "穩重可靠"
+  },
+  {
+    "name": "七殺",
+    "type": "major",
+    "currentDescription": "果斷與變革"
+  },
+  {
+    "name": "七殺",
+    "type": "major",
+    "currentDescription": "果斷勇猛"
+  },
+  {
+    "name": "破軍",
+    "type": "major",
+    "currentDescription": "破壞與重建"
+  },
+  {
+    "name": "破軍",
+    "type": "major",
+    "currentDescription": "開創變革"
+  },
+  {
+    "name": "左輔",
+    "type": "supporting",
+    "currentDescription": "外在貴人：社會資源、對他人的依賴"
+  },
+  {
+    "name": "右弼",
+    "type": "supporting",
+    "currentDescription": "內在支持：自我調節、對完美的追求"
+  },
+  {
+    "name": "文昌",
+    "type": "supporting",
+    "currentDescription": "外在學識：文憑、社會認可的追求"
+  },
+  {
+    "name": "文曲",
+    "type": "supporting",
+    "currentDescription": "內在才華：藝術天賦、對美的渴望"
+  },
+  {
+    "name": "天魁",
+    "type": "supporting",
+    "currentDescription": "外在貴人：機會、對權威的依賴"
+  },
+  {
+    "name": "天鉞",
+    "type": "supporting",
+    "currentDescription": "內在貴人：直覺、對靈性的追求"
+  },
+  {
+    "name": "祿存",
+    "type": "supporting",
+    "currentDescription": "穩定資源：安全感、對物質的依賴"
+  },
+  {
+    "name": "天馬",
+    "type": "supporting",
+    "currentDescription": "變動：遷移、對自由的渴望"
+  },
+  {
+    "name": "擎羊",
+    "type": "supporting",
+    "currentDescription": "攻擊性：防衛機制、尖銳的保護殼"
+  },
+  {
+    "name": "陀羅",
+    "type": "supporting",
+    "currentDescription": "糾結：拖延、無法釋放的壓力"
+  },
+  {
+    "name": "火星",
+    "type": "supporting",
+    "currentDescription": "爆發力：急躁、衝動、憤怒的積累"
+  },
+  {
+    "name": "鈴星",
+    "type": "supporting",
+    "currentDescription": "焦慮：不安、持續的緊張感"
+  },
+  {
+    "name": "地劫",
+    "type": "supporting",
+    "currentDescription": "失去感：破滅感、對擁有的恐懼"
+  },
+  {
+    "name": "地空",
+    "type": "supporting",
+    "currentDescription": "虛無感：不安全感、對現實的逃避"
+  },
+  {
+    "name": "天刑",
+    "type": "supporting",
+    "currentDescription": "自我懲罰：內疚感、道德枷鎖"
+  },
+  {
+    "name": "天虛",
+    "type": "supporting",
+    "currentDescription": "空虛感：不真實感、對存在的質疑"
+  },
+  {
+    "name": "破碎",
+    "type": "supporting",
+    "currentDescription": "破碎感：不完整、對完美的執著"
+  },
+  {
+    "name": "旬空",
+    "type": "supporting",
+    "currentDescription": "虛無感：不確定感、對未來的恐懼"
+  },
+  {
+    "name": "截空",
+    "type": "supporting",
+    "currentDescription": "失落：中斷感、對連續性的渴望"
+  },
+  {
+    "name": "孤辰",
+    "type": "supporting",
+    "currentDescription": "孤獨感：疏離感、對連結的渴望"
+  },
+  {
+    "name": "寡宿",
+    "type": "supporting",
+    "currentDescription": "寂寞感：被遺棄感、對歸屬的渴望"
+  },
+  {
+    "name": "天哭",
+    "type": "supporting",
+    "currentDescription": "悲傷：失落感、對過去的執著"
+  },
+  {
+    "name": "天姚",
+    "type": "supporting",
+    "currentDescription": "浪漫：對愛的渴望、對完美的幻想"
+  },
+  {
+    "name": "天姚",
+    "type": "supporting",
+    "currentDescription": "非理性干擾"
+  },
+  {
+    "name": "三台",
+    "type": "supporting",
+    "currentDescription": "名望加持"
+  },
+  {
+    "name": "八座",
+    "type": "supporting",
+    "currentDescription": "名望加持"
+  },
+  {
+    "name": "龍池",
+    "type": "supporting",
+    "currentDescription": "名望加持"
+  },
+  {
+    "name": "鳳閣",
+    "type": "supporting",
+    "currentDescription": "名望加持"
+  },
+  {
+    "name": "天才",
+    "type": "supporting",
+    "currentDescription": "技術突破"
+  },
+  {
+    "name": "天壽",
+    "type": "supporting",
+    "currentDescription": "技術突破"
+  },
+  {
+    "name": "天巫",
+    "type": "supporting",
+    "currentDescription": "技術突破"
+  },
+  {
+    "name": "咸池",
+    "type": "supporting",
+    "currentDescription": "非理性干擾"
+  },
+  {
+    "name": "天刑",
+    "type": "supporting",
+    "currentDescription": "非理性干擾"
+  }
+]

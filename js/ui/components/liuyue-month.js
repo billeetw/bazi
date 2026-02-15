@@ -71,8 +71,9 @@
     const bounds = bazi?.liuyue2026?.bounds || [];
     mGrid.innerHTML = "";
 
+    const t = (key) => (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(key) : key;
     if (!bounds.length) {
-      mGrid.innerHTML = `<div class="text-xs text-slate-400 italic">（暫無流月資料）</div>`;
+      mGrid.innerHTML = `<div class="text-xs text-slate-400 italic">${t("flow.noData")}</div>`;
       if (consultCta) consultCta.innerHTML = "";
       return;
     }
@@ -407,9 +408,10 @@
     // 移除自動滾動到當月（已移除當月判斷）
 
     if (consultCta) {
+      const tCta = (key) => (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(key) : key;
       consultCta.innerHTML = `
         <a href="consultation.html" class="inline-flex items-center gap-1.5 text-[11px] text-amber-400/90 hover:text-amber-300 font-medium">
-          📘 獲取更精細的 1:1 詳細攻略
+          📘 ${tCta("flow.consultCtaLink")}
         </a>
       `;
     }

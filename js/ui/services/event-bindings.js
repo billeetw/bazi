@@ -11,6 +11,12 @@
     throw new Error("window object not available");
   }
 
+  function t(key, fallback) {
+    if (!window.I18n || typeof window.I18n.t !== "function") return fallback != null ? fallback : key;
+    var s = window.I18n.t(key);
+    return (s && s !== key) ? s : (fallback != null ? fallback : key);
+  }
+
   /**
    * 绑定启动按钮事件
    * @param {Function} calculateFn - calculate 函数
@@ -45,10 +51,10 @@
               const btn = document.getElementById("btnLaunch");
               if (btn) {
                 btn.disabled = false;
-                btn.textContent = "開啟 人生使用說明書";
+                btn.textContent = t("ui.launchBtn", "開啟 人生使用說明書");
               }
               if (hint) {
-                hint.textContent = "啟動失敗：" + (err.message || "未知錯誤");
+                hint.textContent = t("ui.launchFailed", "啟動失敗") + "：" + (err.message || t("ui.unknownError", "未知錯誤"));
                 hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
               }
             }
@@ -67,10 +73,10 @@
             const btn = document.getElementById("btnLaunch");
             if (btn) {
               btn.disabled = false;
-              btn.textContent = "開啟 人生使用說明書";
+              btn.textContent = t("ui.launchBtn", "開啟 人生使用說明書");
             }
             if (hint) {
-              hint.textContent = "啟動失敗：" + (err.message || "未知錯誤");
+              hint.textContent = t("ui.launchFailed", "啟動失敗") + "：" + (err.message || t("ui.unknownError", "未知錯誤"));
               hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
             }
           }

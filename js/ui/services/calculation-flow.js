@@ -103,22 +103,26 @@
    * 使用 StrategicPanel 组件渲染
    */
   function renderTactics(params) {
-    const { bazi, dbContent, ziweiPalaceMetadata, liuyueData } = params;
+    const { bazi, dbContent, ziweiPalaceMetadata, liuyueData, ziwei } = params;
     
-    // 使用 StrategicPanel 组件
+    // 使用 StrategicPanel 組件（ziwei 來自 contract.ziwei，用於命主/身主）
     if (window.UiComponents?.StrategicPanel?.renderStrategicPanel) {
       window.UiComponents.StrategicPanel.renderStrategicPanel({
         bazi,
         dbContent,
         ziweiPalaceMetadata,
         liuyueData,
+        ziwei,
       });
     } else {
       // Fallback: 使用旧的简单渲染方式
       const dominant = (bazi?.tenGod?.dominant || "").trim();
-      const tenGodText = dominant && dbContent?.tenGods?.[dominant] 
-        ? dbContent.tenGods[dominant] 
-        : "";
+      var ContentUtils = window.UiUtils?.ContentUtils;
+      var tenGodRaw = ContentUtils && typeof ContentUtils.getContentValue === "function"
+        ? ContentUtils.getContentValue(dbContent, "tenGods", dominant, null)
+        : (dominant && dbContent?.tenGods?.[dominant] ? dbContent.tenGods[dominant] : null);
+      if (tenGodRaw && tenGodRaw.startsWith("(missing:")) tenGodRaw = null;
+      const tenGodText = tenGodRaw || "";
       
       if (window.Calc?.computeDynamicTactics) {
         const tactics = window.Calc.computeDynamicTactics(

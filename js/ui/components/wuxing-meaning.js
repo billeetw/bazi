@@ -44,10 +44,17 @@
     
     // 根據 kind 選擇對應的默認描述
     const defaultMeanings = kind === "surface" ? DEFAULT_WUXING_MEANINGS_SURFACE : DEFAULT_WUXING_MEANINGS_STRATEGIC;
-    const src = (dbContent?.wuxing && Object.keys(dbContent.wuxing).length) ? dbContent.wuxing : defaultMeanings;
+    var ContentUtils = window.UiUtils?.ContentUtils;
+    var useHelper = ContentUtils && typeof ContentUtils.getWuxingItem === "function";
 
     ["木", "火", "土", "金", "水"].forEach((el) => {
-      const item = src[el] || defaultMeanings[el];
+      var item;
+      if (useHelper) {
+        item = ContentUtils.getWuxingItem(dbContent, el, defaultMeanings[el]);
+      } else {
+        var src = (dbContent?.wuxing && Object.keys(dbContent.wuxing).length) ? dbContent.wuxing : defaultMeanings;
+        item = src[el] || defaultMeanings[el];
+      }
       box.innerHTML += `
         <div class="p-3 rounded-xl border border-white/10 bg-white/5">
           <div class="flex items-center justify-between">

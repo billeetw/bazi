@@ -12,17 +12,19 @@ if [ -n "$(git status --porcelain)" ]; then
     fi
 fi
 
-# 检查语法
-echo "🔍 检查语法..."
-node -c js/calc/baziCore.js && \
-node -c js/calc/fourTransformations.js && \
-node -c js/calc/overlapAnalysis.js && \
-node -c js/calc.js && \
-node -c js/ui.js && \
-echo "✅ 语法检查通过" || {
-    echo "❌ 语法检查失败"
+# 建置主 bundle（index.html 依賴 dist/app.js）
+echo "📦 建置主 bundle..."
+npm run build:main || {
+    echo "❌ build:main 失败"
     exit 1
 }
+echo "✅ bundle 建置完成"
+
+# 检查 dist/app.js 存在
+if [ ! -f "dist/app.js" ]; then
+    echo "❌ dist/app.js 不存在"
+    exit 1
+fi
 
 # 部署
 echo "📦 部署到 Cloudflare Pages..."

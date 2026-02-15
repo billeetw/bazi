@@ -64,6 +64,62 @@
       renderRadarChart("strategicWxRadar", bazi.wuxing?.strategic);
       renderFiveElementComment("strategicWxComment", bazi.wuxing?.strategic, "strategic");
     }
+
+    // 渲染五行生剋診斷卡片（Normal Spec 五段式，標題與按鈕依 i18n）
+    const flowCardEl = document.getElementById("wuxingFlowCard");
+    if (flowCardEl) {
+      function escapeHtml(s) {
+        if (s == null) return "";
+        return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      }
+      var wuxingFallback = { "wuxing.title": "五行生剋診斷", "wuxing.section1": "一、氣勢", "wuxing.section2": "二、相生優勢", "wuxing.section3": "三、相生瓶頸", "wuxing.section4": "四、最大制衡壓力", "wuxing.section5": "五、下一步我們能為你做什麼？", "wuxing.consultButton": "預約諮詢", "wuxing.noReport": "尚未取得生剋報告，請先完成計算；若問題持續，請檢查 WuxingFlowPipeline 設定。" };
+      function wuxingT(k) {
+        if (window.I18n && typeof window.I18n.t === "function") return window.I18n.t(k);
+        return wuxingFallback[k] != null ? wuxingFallback[k] : k;
+      }
+      const wuxingTitle = wuxingT("wuxing.title");
+      const section1 = wuxingT("wuxing.section1");
+      const section2 = wuxingT("wuxing.section2");
+      const section3 = wuxingT("wuxing.section3");
+      const section4 = wuxingT("wuxing.section4");
+      const section5 = wuxingT("wuxing.section5");
+      const consultBtn = wuxingT("wuxing.consultButton");
+      const noReport = wuxingT("wuxing.noReport");
+
+      const report = bazi.wuxingFlowReport || window.wuxingFlowReport || null;
+      if (!report) {
+        flowCardEl.innerHTML = '<p class="text-slate-500 italic">' + escapeHtml(noReport) + '</p>';
+      } else {
+        const lines = [];
+        lines.push('<h4 class="text-amber-200 font-semibold mb-2">' + escapeHtml(wuxingTitle) + '</h4>');
+        if (report.momentumText) {
+          lines.push('<p class="text-amber-300/90 font-medium">' + escapeHtml(section1) + '</p><p class="text-slate-200 pl-2 whitespace-pre-line">' + escapeHtml(report.momentumText) + '</p>');
+        } else if (report.chief_complaint) {
+          lines.push('<p class="text-amber-300/90 font-medium">' + escapeHtml(section1) + '</p><p class="text-slate-200 pl-2 whitespace-pre-line">' + escapeHtml(report.chief_complaint) + '</p>');
+        }
+        if (report.genPositiveText) {
+          lines.push('<p class="text-amber-300/90 font-medium mt-2">' + escapeHtml(section2) + '</p><p class="text-slate-200 pl-2 whitespace-pre-line">' + escapeHtml(report.genPositiveText) + '</p>');
+        }
+        if (report.bottleneckText) {
+          lines.push('<p class="text-amber-300/90 font-medium mt-2">' + escapeHtml(section3) + '</p><p class="text-slate-200 pl-2 whitespace-pre-line">' + escapeHtml(report.bottleneckText) + '</p>');
+        } else if (Array.isArray(report.findings) && report.findings.length > 0) {
+          lines.push('<p class="text-amber-300/90 font-medium mt-2">' + escapeHtml(section3) + '</p><ul class="text-slate-200 pl-2">' + report.findings.map(function (f) { return '<li class="list-disc ml-4">' + escapeHtml(f) + '</li>'; }).join("") + '</ul>');
+        }
+        if (report.controlText) {
+          lines.push('<p class="text-amber-300/90 font-medium mt-2">' + escapeHtml(section4) + '</p><p class="text-slate-200 pl-2 whitespace-pre-line">' + escapeHtml(report.controlText) + '</p>');
+        } else if (report.diagnosis) {
+          lines.push('<p class="text-amber-300/90 font-medium mt-2">' + escapeHtml(section4) + '</p><p class="text-slate-200 pl-2">' + escapeHtml(report.diagnosis) + '</p>');
+        }
+        if (report.predictionText) {
+          lines.push('<p class="text-amber-300/90 font-medium mt-2">' + escapeHtml(section5) + '</p><p class="text-slate-400 text-xs pl-2 whitespace-pre-line leading-relaxed">' + escapeHtml(report.predictionText) + '</p>');
+        } else if (report.falsifiable_predictions) {
+          lines.push('<p class="text-amber-300/90 font-medium mt-2">' + escapeHtml(section5) + '</p><p class="text-slate-400 text-xs pl-2 whitespace-pre-line">' + escapeHtml(report.falsifiable_predictions) + '</p>');
+        }
+        var siteUrl = (typeof window !== "undefined" && window.Config?.SITE_URL) ? window.Config.SITE_URL : "https://www.17gonplay.com";
+        lines.push('<p class="mt-3 pl-2"><a href="' + siteUrl + '/consultation" target="_blank" rel="noopener noreferrer" class="inline-block px-4 py-2 rounded-lg bg-amber-500/90 text-slate-900 font-medium hover:bg-amber-400 transition">' + escapeHtml(consultBtn) + '</a></p>');
+        flowCardEl.innerHTML = lines.join("");
+      }
+    }
   }
 
   /**
@@ -77,7 +133,12 @@
     if (!bazi) return;
 
     const dominant = (bazi.tenGod?.dominant || "").trim();
-    const cmd = dominant && dbContent?.tenGods?.[dominant] ? dbContent.tenGods[dominant] : "";
+    var ContentUtils = window.UiUtils?.ContentUtils;
+    var cmdRaw = ContentUtils && typeof ContentUtils.getContentValue === "function"
+      ? ContentUtils.getContentValue(dbContent, "tenGods", dominant, null)
+      : (dominant && dbContent?.tenGods?.[dominant] ? dbContent.tenGods[dominant] : null);
+    if (cmdRaw && cmdRaw.startsWith("(missing:")) cmdRaw = null;
+    const cmd = cmdRaw || "";
     const tenGodEl = document.getElementById("tenGodCommand");
     if (tenGodEl) {
       tenGodEl.textContent =

@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="description" content="人生說明書：結合八字五行、紫微斗數與 2026 流月紅綠燈的個人戰略指揮中心，協助你規劃節奏與決策。" />
-  <title>人生說明書｜一起出來玩</title>
+  <meta id="metaDescription" name="description" content="人生說明書：結合八字五行、紫微斗數與 2026 流月紅綠燈的個人戰略指揮中心，協助你規劃節奏與決策。" />
+  <title id="pageTitle">人生說明書｜一起出來玩</title>
 
   <!-- 思源宋體（主標題） -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -538,20 +538,6 @@
       animation: none !important;
       transform: none !important;
     }
-    /* 首頁下方活動報名區：不晃動，固定位置 */
-    #activity-213,
-    section#activity-213,
-    #activity-213.glass-container,
-    #activity-213.glass-hero {
-      animation: none !important;
-      transform: none !important;
-    }
-    #activity-213:hover,
-    #activity-213.glass-container:hover,
-    #activity-213.glass-hero:hover {
-      animation: none !important;
-      transform: none !important;
-    }
     /* 已儲存的命盤區：不晃動、不傾斜 */
     #myChartsSection,
     section#myChartsSection,
@@ -1020,6 +1006,34 @@
     }
     .nav-chip[aria-current="page"] {
       background: rgba(255,191,0,0.15);
+    }
+    .lang-btn {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.7);
+      background: transparent;
+      border: none;
+      border-radius: 0.25rem;
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s;
+    }
+    .lang-btn:hover {
+      color: rgb(245 158 11);
+      background: rgba(255,191,0,0.1);
+    }
+    .lang-btn-mobile {
+      padding: 0.35rem 0.6rem;
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.8);
+      background: rgba(255,191,0,0.15);
+      border: 1px solid rgba(255,191,0,0.3);
+      border-radius: 0.375rem;
+      cursor: pointer;
+      transition: color 0.2s, background 0.2s;
+    }
+    .lang-btn-mobile:hover {
+      color: rgb(245 158 11);
+      background: rgba(255,191,0,0.25);
     }
     /* 首頁圖標按鈕樣式 */
     .nav-chip-icon {
@@ -1608,36 +1622,43 @@
   <div class="meteor" aria-hidden="true"></div>
   <div class="meteor" aria-hidden="true"></div>
 
-  <!-- TOP NAV（桌機：完整品牌＋導覽；手機：人生說明書＋漢堡選單） -->
+  <!-- TOP NAV（桌機：完整品牌＋導覽；手機：短品牌＋漢堡選單） -->
   <div class="nav-bar relative flex items-center justify-between gap-3">
     <div class="flex items-center gap-2 min-w-0">
-      <div class="nav-brand text-sm md:text-base" aria-label="一起出來玩 人生說明書">
-        <span class="nav-brand-gold">一起出來玩</span><span class="nav-brand-sep">｜</span><span class="nav-brand-main">人生說明書</span>
+      <div class="nav-brand text-sm md:text-base" aria-label="">
+        <span class="hidden md:inline" data-i18n="brand.navFull">一起出來玩｜人生說明書</span>
+        <span class="md:hidden" data-i18n="brand.navShort">人生說明書</span>
       </div>
       <a href="#" id="homeButton" class="hidden md:inline-flex nav-chip-icon" aria-label="回到首頁" title="回到首頁">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
       </a>
-      <a href="activity-213.html" class="hidden md:inline-flex nav-chip bg-amber-500/20 border-amber-300/40 text-amber-100" aria-label="2/13 活動報名">2/13 活動</a>
       <a href="consultation.html" class="hidden md:inline-flex nav-chip nav-chip-consult" aria-label="1:1 諮詢">1:1 諮詢</a>
     </div>
 
     <!-- workspace nav（桌機，進入儀表板後顯示） -->
     <div id="workspaceNav" class="hidden md:flex items-center gap-2">
-      <a class="nav-chip" href="#ws-ziwei">紫微</a>
-      <a class="nav-chip" href="#ws-bazi">八字</a>
-      <a class="nav-chip" href="#ws-liuyue">流年</a>
+      <a class="nav-chip" href="#ws-ziwei" data-i18n="ui.navZiwei">紫微</a>
+      <a class="nav-chip" href="#ws-bazi" data-i18n="ui.navBazi">八字</a>
+      <a class="nav-chip" href="#ws-liuyue" data-i18n="ui.navLiuyue">流年</a>
     </div>
 
-    <!-- 桌機：登入/登出 ＋ FB logo；手機：漢堡按鈕 -->
+    <!-- 桌機：登入/登出 ＋ 語言切換 ＋ FB logo；手機：漢堡按鈕 -->
     <div class="hidden md:flex items-center gap-2">
+      <div id="langSwitcher" class="flex items-center gap-1 text-xs" data-i18n-title="ui.langSwitchHint" title="">
+        <button type="button" class="lang-btn" data-lang="zh-CN" title="简体中文">简中</button>
+        <span class="text-slate-500">｜</span>
+        <button type="button" class="lang-btn" data-lang="zh-TW" title="繁體中文">繁中</button>
+        <span class="text-slate-500">｜</span>
+        <button type="button" class="lang-btn" data-lang="en" title="English">EN</button>
+      </div>
       <div id="authNav" class="flex items-center gap-2"></div>
       <a href="https://www.facebook.com/bill17gonplay/" target="_blank" rel="noopener noreferrer"
          class="nav-chip-logo"
-         aria-label="前往李伯彥 Facebook（一起出來玩）"
+         aria-label="Facebook"
          title="Facebook">
-        <img src="assets/logo-circle.png" alt="一起出來玩" class="logo-img">
+        <img src="assets/logo-circle.png" alt="17 Gon Play" class="logo-img">
       </a>
     </div>
     <button type="button" id="mobileNavToggle" class="md:hidden flex items-center justify-center w-10 h-10 rounded-lg border border-amber-400/30 bg-white/5 text-amber-300 hover:bg-amber-500/20 transition" aria-label="開啟選單" aria-expanded="false">
@@ -1646,12 +1667,17 @@
       </svg>
     </button>
     <div id="mobileNavMenu" class="mobile-nav-menu" aria-hidden="true">
-      <a href="#" id="mobileHomeLink" class="mobile-nav-link">回到首頁</a>
-      <a href="activity-213.html" class="mobile-nav-link">2/13 活動</a>
-      <a href="consultation.html" class="mobile-nav-link">1:1 諮詢</a>
-      <a href="#ws-ziwei" class="mobile-nav-link">紫微</a>
-      <a href="#ws-bazi" class="mobile-nav-link">八字</a>
-      <a href="#ws-liuyue" class="mobile-nav-link">流年</a>
+      <a href="#" id="mobileHomeLink" class="mobile-nav-link" data-i18n="ui.navHome">回到首頁</a>
+      <a href="consultation.html" class="mobile-nav-link" data-i18n="ui.navConsult">1:1 諮詢</a>
+      <a href="#ws-ziwei" class="mobile-nav-link" data-i18n="ui.navZiwei">紫微</a>
+      <a href="#ws-bazi" class="mobile-nav-link" data-i18n="ui.navBazi">八字</a>
+      <a href="#ws-liuyue" class="mobile-nav-link" data-i18n="ui.navLiuyue">流年</a>
+      <div id="langSwitcherMobile" class="flex items-center gap-2 py-2 border-t border-amber-400/20" data-i18n-title="ui.langSwitchHint" title="">
+        <span class="text-slate-500 text-xs" data-i18n="ui.lang">語言</span>
+        <button type="button" class="lang-btn-mobile" data-lang="zh-CN">简中</button>
+        <button type="button" class="lang-btn-mobile" data-lang="zh-TW">繁中</button>
+        <button type="button" class="lang-btn-mobile" data-lang="en">EN</button>
+      </div>
       <div id="authNavMobile" class="border-t border-amber-400/20 mt-2 pt-2"></div>
       <a href="https://www.facebook.com/bill17gonplay/" target="_blank" rel="noopener noreferrer" class="mobile-nav-link">Facebook</a>
     </div>
@@ -1661,17 +1687,34 @@
 
     <!-- 我的命盤（僅登入時顯示） -->
     <section id="myChartsSection" class="hidden glass-container glass-input p-6 max-w-3xl mx-auto space-y-4 scroll-mt-24">
-      <h2 class="page-hero-title text-amber-300 text-lg tracking-wider">已儲存的命盤</h2>
-      <p class="body-caption text-slate-400">點選下方命盤名稱可帶入表單並重新計算；最多 5 筆。</p>
+      <h2 class="page-hero-title text-amber-300 text-lg tracking-wider" data-i18n="ui.myChartsTitle">已儲存的命盤</h2>
+      <p class="body-caption text-slate-400" data-i18n="ui.myChartsHint">點選下方命盤名稱可帶入表單並重新計算；最多 5 筆。</p>
       <div id="myChartsList" class="space-y-2"></div>
-      <p id="myChartsEmpty" class="body-caption text-slate-500 hidden">尚無命盤。請在下方輸入出生資料後，點「儲存到我的命盤」；儲存後會出現在此處，點選即可載入。</p>
+      <p id="myChartsEmpty" class="body-caption text-slate-500 hidden" data-i18n="ui.myChartsEmpty">尚無命盤。請在下方輸入出生資料後，點「儲存到我的命盤」；儲存後會出現在此處，點選即可載入。</p>
     </section>
 
     <!-- 命運座標輸入（條狀排列 + 頂級玻璃擬態，保留原有 id 與邏輯） -->
     <section id="inputCard" class="glass-container glass-input p-8 md:p-12 max-w-3xl mx-auto space-y-8">
       <div class="text-center mb-6">
-        <h2 class="page-hero-title text-amber-300 mb-2 tracking-wider">命運座標輸入</h2>
-        <p class="body-text text-slate-400 italic">輸入你的出生資訊，開啟專屬的人生使用說明書</p>
+        <h2 class="page-hero-title text-amber-300 mb-2 tracking-wider" data-i18n="home.heroHeadline">命運座標輸入</h2>
+        <p class="body-text text-slate-400 italic" data-i18n="home.heroSubheadline">輸入你的出生資訊，開啟專屬的人生使用說明書</p>
+        <p id="heroSupporting" class="body-caption text-slate-500 mt-1 empty:hidden" data-i18n="home.heroSupporting"></p>
+      </div>
+
+      <!-- 首頁功能區塊（三張卡片） -->
+      <div id="homeFeatureBlocks" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="p-4 rounded-xl border border-white/10 bg-white/5">
+          <div class="font-black text-amber-300/90 text-sm mb-2" data-i18n="home.feature1Title">解讀你的結構</div>
+          <p class="text-xs text-slate-400 leading-relaxed" data-i18n="home.feature1Body">了解命宮與五行平衡如何形塑你的決策。</p>
+        </div>
+        <div class="p-4 rounded-xl border border-white/10 bg-white/5">
+          <div class="font-black text-amber-300/90 text-sm mb-2" data-i18n="home.feature2Title">掌握你的節奏</div>
+          <p class="text-xs text-slate-400 leading-relaxed" data-i18n="home.feature2Body">大限、小限、流月訊號。</p>
+        </div>
+        <div class="p-4 rounded-xl border border-white/10 bg-white/5">
+          <div class="font-black text-amber-300/90 text-sm mb-2" data-i18n="home.feature3Title">定位你的行動</div>
+          <p class="text-xs text-slate-400 leading-relaxed" data-i18n="home.feature3Body">順勢推進。必要時守成。</p>
+        </div>
       </div>
 
       <!-- 第一行：年、月、日 -->
@@ -1686,8 +1729,8 @@
         <div class="destiny-bar-wrap"><select id="gender" class="destiny-select" aria-label="性別"></select></div>
       </div>
       <div class="flex flex-wrap items-center gap-3 pt-2">
-        <span class="text-base md:text-lg font-bold text-amber-300/90">不確定出生時間？</span>
-        <button type="button" id="btnIdentifyBirthTimeGlobal" class="identify-time-btn">
+        <span class="text-base md:text-lg font-bold text-amber-300/90" data-i18n="home.helperUnsureTime">不確定出生時間？</span>
+        <button type="button" id="btnIdentifyBirthTimeGlobal" class="identify-time-btn" data-i18n="home.helperEstimateBtn">
           點我推算時辰
         </button>
       </div>
@@ -1704,51 +1747,41 @@
           <div class="destiny-bar-wrap"><select id="birthShichenHalf" class="destiny-select" aria-label="上半/下半"></select></div>
         </div>
         <div class="flex justify-center">
-          <button id="btnIdentifyBirthTime" type="button" class="identify-time-btn-enhanced">
+          <button id="btnIdentifyBirthTime" type="button" class="identify-time-btn-enhanced" data-i18n="home.helperEstimateBtn">
             不確定時辰？點我推算時辰
           </button>
         </div>
-        <p class="body-caption text-slate-500 text-center">註：選「時辰」會換算成代表時刻（上半/下半時辰各取代表時間）送入系統計算。</p>
+        <p class="body-caption text-slate-500 text-center" data-i18n="ui.shichenNote">註：選「時辰」會換算成代表時刻（上半/下半時辰各取代表時間）送入系統計算。</p>
       </div>
 
       <div class="pt-4">
         <button id="btnLaunch" type="button"
-          class="engine-button w-full py-5 rounded-2xl text-base md:text-lg font-black tracking-wider disabled:opacity-60 disabled:cursor-not-allowed">
+          class="engine-button w-full py-5 rounded-2xl text-base md:text-lg font-black tracking-wider disabled:opacity-60 disabled:cursor-not-allowed"
+          data-i18n="home.heroPrimaryCta">
           開啟 人生使用說明書
-        </button>
+      </button>
       </div>
 
       <div id="hint" class="text-center text-sm md:text-base text-slate-400 italic min-h-[1.2em]"></div>
 
       <!-- 儲存到我的命盤（僅登入時顯示） -->
       <div id="saveChartWrap" class="hidden pt-4 border-t border-amber-400/20">
-        <button type="button" id="btnSaveChart" class="auth-btn-login w-full py-3 rounded-xl">
+        <button type="button" id="btnSaveChart" class="auth-btn-login w-full py-3 rounded-xl" data-i18n="home.saveChart">
           儲存到我的命盤
         </button>
-      </div>
-    </section>
-
-    <!-- 一起出來玩夥伴聚會（2/13 活動預告，報名請至獨立活動頁） -->
-    <section id="activity-213" class="glass-container glass-hero p-6 md:p-8 max-w-2xl mx-auto space-y-4 scroll-mt-24">
-      <div class="text-center">
-        <p class="section-caption text-amber-400 font-black">一起出來玩夥伴聚會</p>
-        <h2 class="section-title-main text-amber-300 mt-1">如何玩好人生遊戲</h2>
-        <p class="body-caption text-slate-400 mt-2">2/13 週五晚上 18:30–21:30（18:00 可進場）</p>
-      </div>
-      <div class="body-text text-slate-200 space-y-3">
-        <p>為您揭開人生這場遊戲的真實面貌，讓您知道這個遊戲的前因後果、破關關鍵，還有專屬於您的通關密碼。</p>
-        <p>在這場說明會之後，你會對自己人生的過去、現在、未來，有更充足的理解，都能在未來的人生路上，提升自我，與我們一起實現自己的志願。</p>
-        <p class="text-amber-300 font-bold">一起出來玩吧！祝福你。</p>
-      </div>
-      <div class="text-center pt-2">
-        <a href="activity-213.html" class="engine-button inline-flex items-center justify-center px-8 py-4 rounded-2xl text-sm font-black tracking-[0.2em]">
-          活動報名
-        </a>
-      </div>
+            </div>
     </section>
 
     <!-- SYSTEM WORKSPACES -->
     <section id="system" class="hidden space-y-8">
+
+      <!-- Chart language mismatch banner (EN mode + chart in Chinese) -->
+      <div id="chartLangMismatchBanner" class="hidden p-4 rounded-xl border border-amber-400/50 bg-amber-500/10 flex flex-wrap items-center justify-between gap-3">
+        <span id="chartLangMismatchText" class="text-sm text-amber-200"></span>
+        <button type="button" id="chartLangMismatchRecalc" class="px-4 py-2 rounded-lg bg-amber-500/80 text-slate-900 font-bold text-sm hover:bg-amber-400 transition">
+          <!-- filled by JS -->
+        </button>
+      </div>
 
       <div id="dashboardMainContent" class="grid xl:grid-cols-[1fr,440px] gap-8 dashboard-content-transition">
 
@@ -1760,13 +1793,13 @@
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div class="section-caption mb-1">ZiWei DouShu</div>
-                <h2 class="section-title-main font-black tracking-tight">紫微 12 宮 · 作戰版方盤</h2>
-                <p class="body-caption text-slate-400 mt-1" id="ziweiMeta">
+                <h2 class="section-title-main font-black tracking-tight" data-i18n="ziwei.boardTitle">紫微 12 宮 · 作戰版方盤</h2>
+                <p class="body-caption text-slate-400 mt-1" id="ziweiMeta" data-i18n="ziwei.boardSubtitle">
                   命宮與身主會顯示在中央；外圈 12 宮固定佈局，與主流排盤方向一致。
                 </p>
               </div>
               <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 min-w-0">
-                <label for="currentAgeSlider" class="text-[10px] font-black tracking-widest text-slate-500 uppercase">小限動態導覽</label>
+                <label for="currentAgeSlider" class="text-[10px] font-black tracking-widest text-slate-500 uppercase" data-i18n="ziwei.minorLimitLabel">小限動態導覽</label>
                 <div class="flex items-center gap-3 flex-1">
                   <input type="range" id="currentAgeSlider" min="1" max="120" value="38" class="flex-1 h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-500" title="虛歲，拖曳可即時更新小限宮位與四化" />
                   <output id="currentAgeDisplay" class="text-sm font-mono font-black text-amber-400 tabular-nums w-10 text-right">38</output>
@@ -1782,16 +1815,16 @@
             <!-- 紫微分數 -->
             <section id="ws-ziwei-scores" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div class="rounded-xl border border-white/10 p-4">
-                <div class="text-sm md:text-base font-semibold text-slate-200 mb-2">宮位強度</div>
+                <div class="text-sm md:text-base font-semibold text-slate-200 mb-2" data-i18n="ziwei.palaceStrengthTitle">宮位強度</div>
                 <div id="ziweiPalaceScores"></div>
               </div>
               <div class="rounded-xl border border-white/10 p-4">
-                <div class="text-sm md:text-base font-semibold text-slate-200 mb-2">紫微五行比例</div>
+                <div class="text-sm md:text-base font-semibold text-slate-200 mb-2" data-i18n="ziwei.fivePhaseRatioTitle">紫微五行比例</div>
                 <div id="ziweiWuxingScores">
                   <div class="space-y-3">
                     <div id="ziweiWxBars"></div>
 
-                    <div class="body-caption font-black tracking-widest text-slate-400">
+                    <div class="body-caption font-black tracking-widest text-slate-400" data-i18n="bazi.ziweiQuestion">
                       紫微 —— 這關好過嗎？
                     </div>
                     <div id="ziweiWxRadar" class="w-full max-w-[260px]"></div>
@@ -1806,8 +1839,8 @@
           <section id="ws-bazi" class="glass dashboard-card p-6 md:p-7 space-y-6">
             <div>
               <div class="section-caption mb-1">BaZi + Elements</div>
-              <h2 class="section-title-main font-black tracking-tight">八字 · 四柱＋五行戰力</h2>
-              <p class="body-text text-slate-400 mt-1">
+              <h2 class="section-title-main font-black tracking-tight" data-i18n="bazi.sectionTitle">八字 · 四柱＋五行戰力</h2>
+              <p class="body-text text-slate-400 mt-1" data-i18n="bazi.sectionDesc">
                 上方顯示「四柱」，下方顯示「表層（天干）」與「實戰（天干＋藏干＋月令加權）」。
                 右側會附上五行意義（資料庫：wuxing_meanings）。
               </p>
@@ -1819,7 +1852,7 @@
             <!-- 藏干 -->
             <div class="space-y-3">
               <div class="body-caption text-slate-400">
-                地支藏干（權重顯示）：<span class="text-slate-500">（用來理解你「實戰五行」的來源）</span>
+                <span data-i18n="bazi.cangganLabel">地支藏干（權重顯示）：</span><span class="text-slate-500" data-i18n="bazi.cangganHint">（用來理解你「實戰五行」的來源）</span>
               </div>
               <div id="cangganGrid" class="grid md:grid-cols-2 gap-2"></div>
             </div>
@@ -1827,17 +1860,17 @@
             <!-- 五行 bar -->
             <div class="grid md:grid-cols-2 gap-6">
               <div>
-                <div class="body-caption text-slate-400 mb-2">表層結構（四柱天干）</div>
+                <div class="body-caption text-slate-400 mb-2" data-i18n="bazi.surfaceStructure">表層結構（四柱天干）</div>
                 <div class="space-y-3">
                   <!-- 特色標題：角色名望 -->
                   <div class="wuxing-title-card surface-title mb-3">
                     <div class="flex items-center gap-2">
                       <div class="wuxing-logo-icon surface-logo">👁️</div>
                       <div class="flex-1">
-                        <div class="body-text font-black text-amber-300 tracking-tight">
+                        <div class="body-text font-black text-amber-300 tracking-tight" data-i18n="bazi.surfaceTitle">
                           角色名望（八字表層）
-                        </div>
-                        <div class="body-caption text-slate-400 italic mt-0.5">
+                  </div>
+                        <div class="body-caption text-slate-400 italic mt-0.5" data-i18n="bazi.surfaceSub">
                           看起來強嗎？
                         </div>
                       </div>
@@ -1850,17 +1883,17 @@
                 </div>
               </div>
               <div>
-                <div class="body-caption text-slate-400 mb-2">實戰結構（天干＋藏干＋月令加權）</div>
+                <div class="body-caption text-slate-400 mb-2" data-i18n="bazi.strategicStructure">實戰結構（天干＋藏干＋月令加權）</div>
                 <div class="space-y-3">
                   <!-- 特色標題：核心戰力 -->
                   <div class="wuxing-title-card strategic-title mb-3">
                     <div class="flex items-center gap-2">
                       <div class="wuxing-logo-icon strategic-logo">⚔️</div>
                       <div class="flex-1">
-                        <div class="body-text font-black text-emerald-300 tracking-tight">
+                        <div class="body-text font-black text-emerald-300 tracking-tight" data-i18n="bazi.strategicTitle">
                           核心戰力（八字實戰）
-                        </div>
-                        <div class="body-caption text-slate-400 italic mt-0.5">
+                  </div>
+                        <div class="body-caption text-slate-400 italic mt-0.5" data-i18n="bazi.strategicSub">
                           真的能贏嗎？
                         </div>
                       </div>
@@ -1874,15 +1907,23 @@
               </div>
             </div>
 
+            <!-- 五行生剋診斷卡片（標題與預設說明可由 i18n 更新） -->
+            <div class="mt-4 pt-4 border-t border-white/10">
+              <div id="wuxingFlowCaption" class="body-caption text-slate-400 mb-2" data-i18n="wuxing.title">五行生剋診斷</div>
+              <div id="wuxingFlowCard" class="text-sm text-slate-300 space-y-2">
+                <p id="wuxingFlowPlaceholder" class="text-slate-500 italic" data-i18n="wuxing.placeholder">（計算完成後，這裡會顯示五行生剋診斷報告。）</p>
+              </div>
+            </div>
+
             <!-- 十神指令（已移除：避免與上方 Summary 的「十神主軸」重複） -->
           </section>
 
           <!-- 流月：年度賽季導航（單一垂直列表，可展開詳情） -->
           <section id="ws-liuyue" class="glass dashboard-card p-6 md:p-7 space-y-4">
             <div>
-              <div class="section-subtitle mb-1">2026 年度賽季導航</div>
-              <h2 class="text-xl md:text-2xl font-black text-amber-400 tracking-tight">流月戰略（12）</h2>
-              <p class="text-sm md:text-base text-slate-400 mt-1">點月份卡片展開十神參數與李伯彥助推建議</p>
+              <div class="section-subtitle mb-1" data-i18n="flow.yearStrategyNav">2026 戰略導航</div>
+              <h2 class="text-xl md:text-2xl font-black text-amber-400 tracking-tight" data-i18n="flow.monthlyStrategyTitle">流月戰略（12）</h2>
+              <p class="text-sm md:text-base text-slate-400 mt-1" data-i18n="flow.monthlyHint">點月份卡片展開十神參數與李伯彥助推建議</p>
             </div>
             <div id="monthGrid" class="space-y-2 max-h-[70vh] overflow-y-auto liuyue-nav"></div>
             <div id="liuyueConsultCta" class="pt-4 border-t border-white/10"></div>
@@ -1893,36 +1934,37 @@
 
           <section id="ws-strategy" class="glass dashboard-card p-6 md:p-7 space-y-4">
             <div>
-              <div class="text-sm md:text-base font-semibold text-slate-200 mb-2">2026 戰術建議（動態決策）</div>
-              <p class="body-caption text-slate-400 leading-relaxed mt-1">
+              <div class="text-sm md:text-base font-semibold text-slate-200 mb-2" data-i18n="strategy.tacticalTitle">2026 戰術建議（動態決策）</div>
+              <p class="body-caption text-slate-400 leading-relaxed mt-1" data-i18n="strategy.tacticalDesc">
                 依「五行佔比」＋「十神主軸」給你今年的戰術提示（前端即時計算；解釋文字優先吃資料庫）。
               </p>
             </div>
 
             <div id="tacticalBox" class="space-y-2"></div>
 
-            <div class="body-caption text-slate-500">
+            <div class="body-caption text-slate-500" data-i18n="strategy.tacticalNote">
               註：這段是「指揮中心的戰術提示」，宮位詳解請點紫微方盤。
             </div>
           </section>
 
           <section id="ws-consult" class="glass dashboard-card p-7 md:p-9 space-y-6 text-center border border-amber-400/40">
             <div>
-              <h2 class="text-2xl md:text-4xl font-black text-amber-400 tracking-tight">✨ 別讓你的初始設定，限制了你的一生。</h2>
+              <h2 class="text-2xl md:text-4xl font-black text-amber-400 tracking-tight" data-i18n="consult.ctaHeadline">✨ 別讓你的初始設定，限制了你的一生。</h2>
             </div>
-            <p class="text-slate-300 max-w-2xl mx-auto leading-relaxed text-sm md:text-base">
-              李伯彥老師 深度諮詢：帶你看清雷區、找回主場、實現自己的志願。諮詢後提供保用一生的 50 頁個人戰略手冊，照亮眼前的路。
+            <p class="text-slate-300 max-w-2xl mx-auto leading-relaxed text-sm md:text-base" data-i18n="consult.ctaSupport">
+              帶你看清雷區、找回主場、實現自己的志願。
             </p>
             <div class="space-y-2">
               <a href="consultation.html"
-                 class="inline-flex items-center justify-center px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 text-slate-950 font-black tracking-widest hover:brightness-110 active:scale-[0.98] transition shadow-xl shadow-amber-900/30">
-                預約深度諮詢
+                 class="inline-flex items-center justify-center px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700 text-slate-950 font-black tracking-widest hover:brightness-110 active:scale-[0.98] transition shadow-xl shadow-amber-900/30"
+                 data-i18n="consult.ctaButton">
+                預約戰略諮詢
               </a>
-              <p class="text-[10px] text-slate-500 italic">— 這是這輩子最值得的一場投資 —</p>
+              <p class="text-[10px] text-slate-500 italic" data-i18n="consult.ctaFooter">含個人化戰略報告。</p>
             </div>
           </section>
 
-          <div class="text-center text-[12px] text-slate-400 italic">
+          <div class="text-center text-[12px] text-slate-400 italic" data-i18n="consult.equipmentQuote">
             「裝備（表層）決定你的起點，戰力（實戰）決定你的終點。」
           </div>
 
@@ -1936,7 +1978,7 @@
             <div id="palaceSub" class="body-caption text-slate-400 mt-2 leading-relaxed"></div>
 
             <div class="mt-6 space-y-6" id="palaceDetailBody">
-              <div class="text-center py-10 text-slate-500 italic body-caption">點擊紫微方盤的任一宮位，這裡會顯示詳解。</div>
+              <div class="text-center py-10 text-slate-500 italic body-caption" data-i18n="ziwei.clickPalaceHint">點擊紫微方盤的任一宮位，這裡會顯示詳解。</div>
             </div>
 
             <!-- 流月改為左側單一導航，右側不再重複 -->
@@ -1944,7 +1986,7 @@
 
             <div id="wuxingMeaningSection" class="glass dashboard-card p-6 border border-white/10">
             <div class="section-subtitle mb-2">Five Elements Meanings</div>
-            <div class="text-xl md:text-2xl font-black text-emerald-400">金木水火土 · 基本意義</div>
+            <div class="text-xl md:text-2xl font-black text-emerald-400" data-i18n="wuxing.sectionTitle">金木水火土 · 基本意義</div>
             <div class="text-sm md:text-base text-slate-400 mt-1">（內容優先來自資料庫：wuxing_meanings；若無則顯示預設）</div>
             <div id="wuxingMeaningBox" class="mt-4 space-y-3"></div>
           </div>
@@ -1956,15 +1998,16 @@
 
   <!-- Footer -->
   <footer class="text-center py-8 px-4 border-t border-white/10 mt-12">
-    <div class="font-black tracking-[0.22em] text-sm uppercase text-amber-400 mb-2">一起出來玩</div>
-    <div class="text-xs text-slate-400">17gonplay</div>
+    <div class="font-black tracking-[0.22em] text-sm uppercase text-amber-400 mb-2" data-i18n="brand.footerBrand">一起出來玩</div>
+    <div class="text-xs text-slate-400" data-i18n="brand.footerHandle">17gonplay</div>
+    <div id="footerTagline" class="text-xs text-slate-500 mt-2 hidden" data-i18n="brand.tagline"></div>
   </footer>
 
   <!-- 行動端 BottomNav（md 以下且已進入儀表板時顯示） -->
   <nav class="bottom-nav" aria-label="戰略導航">
-    <a href="#ws-ziwei">紫微</a>
-    <a href="#ws-bazi">八字</a>
-    <a href="#ws-liuyue">流年</a>
+    <a href="#ws-ziwei" data-i18n="ui.navZiwei">紫微</a>
+    <a href="#ws-bazi" data-i18n="ui.navBazi">八字</a>
+    <a href="#ws-liuyue" data-i18n="ui.navLiuyue">流年</a>
     <a href="#ws-consult">1:1 諮詢</a>
   </nav>
 
@@ -1972,8 +2015,8 @@
   <div id="identifyBirthTimeBackdrop" class="fixed inset-0 bg-black/70 hidden z-50" aria-hidden="true"></div>
   <div id="identifyBirthTimeModal" class="identify-time-modal fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md max-h-[85vh] overflow-y-auto rounded-2xl border border-amber-400/30 bg-[var(--bg-mid)] shadow-2xl hidden z-50" role="dialog" aria-labelledby="identifyBirthTimeTitle" aria-modal="true">
     <div class="p-5 md:p-6">
-      <h2 id="identifyBirthTimeTitle" class="text-lg font-black text-amber-400 mb-1">不確定時辰？</h2>
-      <p class="body-caption text-slate-400 mb-3">依行為特徵推算候選時辰，答完將自動填入排盤表單。</p>
+      <h2 id="identifyBirthTimeTitle" class="text-lg font-black text-amber-400 mb-1" data-i18n="estimateHour.modalTitle">不確定時辰？</h2>
+      <p class="body-caption text-slate-400 mb-3" data-i18n="estimateHour.modalSubtitle">依行為特徵推算候選時辰，答完將自動填入排盤表單。</p>
       <div id="identifyBirthTimeProgressWrap" class="mb-4">
         <div class="flex justify-between body-caption text-slate-500 mb-1">
           <span id="identifyBirthTimeProgressText">第 1 / 19 題</span>
@@ -1985,18 +2028,10 @@
       <form id="identifyBirthTimeForm" class="space-y-4">
         <div id="identifyBirthTimeQuestions"></div>
         <div class="flex gap-2 pt-3">
-          <button type="button" id="identifyBirthTimePrev" class="px-4 py-2.5 rounded-xl border border-white/20 text-slate-300 text-sm hover:bg-white/5 transition disabled:opacity-40 disabled:cursor-not-allowed">
-            上一題
-          </button>
-          <button type="button" id="identifyBirthTimeNext" class="flex-1 py-2.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold text-sm hover:bg-amber-500/30 transition">
-            下一題
-          </button>
-          <button type="submit" id="identifyBirthTimeSubmit" class="hidden flex-1 py-2.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold text-sm hover:bg-amber-500/30 transition">
-            推算並填入
-          </button>
-          <button type="button" id="identifyBirthTimeClose" class="px-4 py-2.5 rounded-xl border border-white/20 text-slate-300 text-sm hover:bg-white/5 transition">
-            取消
-          </button>
+          <button type="button" id="identifyBirthTimePrev" class="px-4 py-2.5 rounded-xl border border-white/20 text-slate-300 text-sm hover:bg-white/5 transition disabled:opacity-40 disabled:cursor-not-allowed" data-i18n="estimateHour.prevBtn">上一題</button>
+          <button type="button" id="identifyBirthTimeNext" class="flex-1 py-2.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold text-sm hover:bg-amber-500/30 transition" data-i18n="estimateHour.nextBtn">下一題</button>
+          <button type="submit" id="identifyBirthTimeSubmit" class="hidden flex-1 py-2.5 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold text-sm hover:bg-amber-500/30 transition" data-i18n="estimateHour.submitBtn">推算並填入</button>
+          <button type="button" id="identifyBirthTimeClose" class="px-4 py-2.5 rounded-xl border border-white/20 text-slate-300 text-sm hover:bg-white/5 transition" data-i18n="estimateHour.closeBtn">取消</button>
         </div>
       </form>
     </div>
@@ -2010,29 +2045,28 @@
       <div id="ceremonyLine0" class="text-amber-300/90 font-bold text-sm tracking-wide mb-2 min-h-[1.25em]"></div>
       <div id="ceremonyLine1" class="text-amber-400/95 font-black text-sm tracking-[0.2em] mb-4 min-h-[1.5em]"></div>
       <div id="ceremonyLine2" class="text-slate-200 text-sm md:text-base leading-relaxed text-center min-h-[4em]"></div>
+      <div id="ceremonyUiHint" class="mt-3 text-amber-400/80 text-sm text-center hidden"></div>
       <div id="ceremonyFeedbackWrap" class="mt-6 w-full max-w-sm hidden">
-        <p class="text-slate-400 text-sm mb-3 text-center">這個推算對你來說正確嗎？</p>
+        <p class="text-slate-400 text-sm mb-3 text-center" data-i18n="ceremony.feedbackQuestion">這個推算對你來說正確嗎？</p>
         <div class="flex gap-3 justify-center flex-wrap">
-          <button type="button" id="ceremonyFeedbackCorrect" class="px-6 py-3 rounded-xl bg-green-500/20 border border-green-400/50 text-green-300 font-bold text-sm hover:bg-green-500/30 transition">✅ 準確</button>
-          <button type="button" id="ceremonyFeedbackIncorrect" class="px-6 py-3 rounded-xl bg-red-500/20 border border-red-400/50 text-red-300 font-bold text-sm hover:bg-red-500/30 transition">❌ 不準</button>
+          <button type="button" id="ceremonyFeedbackCorrect" class="px-6 py-3 rounded-xl bg-green-500/20 border border-green-400/50 text-green-300 font-bold text-sm hover:bg-green-500/30 transition" data-i18n="ceremony.feedbackCorrect">✅ 準確</button>
+          <button type="button" id="ceremonyFeedbackIncorrect" class="px-6 py-3 rounded-xl bg-red-500/20 border border-red-400/50 text-red-300 font-bold text-sm hover:bg-red-500/30 transition" data-i18n="ceremony.feedbackIncorrect">❌ 不準</button>
         </div>
         <div id="ceremonyFeedbackActualWrap" class="mt-4 hidden">
-          <p class="text-slate-400 text-xs mb-2 text-center">請選擇您的真實時辰</p>
+          <p class="text-slate-400 text-xs mb-2 text-center" data-i18n="ceremony.feedbackActualHint">請選擇您的真實時辰</p>
           <div class="flex gap-2 items-center justify-center flex-wrap">
             <select id="ceremonyFeedbackActualBranch" class="bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-slate-200" aria-label="真實時辰">
               <option value="子">子</option><option value="丑">丑</option><option value="寅">寅</option><option value="卯">卯</option><option value="辰">辰</option><option value="巳">巳</option><option value="午">午</option><option value="未">未</option><option value="申">申</option><option value="酉">酉</option><option value="戌">戌</option><option value="亥">亥</option>
             </select>
             <select id="ceremonyFeedbackActualHalf" class="bg-black/40 border border-white/20 rounded-lg px-3 py-2 text-sm text-slate-200" aria-label="上半或下半">
-              <option value="upper">上半時辰</option>
-              <option value="lower">下半時辰</option>
+              <option value="upper" data-i18n="ceremony.shichenUpperHalf">上半時辰</option>
+              <option value="lower" data-i18n="ceremony.shichenLowerHalf">下半時辰</option>
             </select>
-            <button type="button" id="ceremonyFeedbackSubmitActual" class="px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-400/50 text-amber-300 text-sm font-bold hover:bg-amber-500/30 transition">送出回饋</button>
+            <button type="button" id="ceremonyFeedbackSubmitActual" class="px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-400/50 text-amber-300 text-sm font-bold hover:bg-amber-500/30 transition" data-i18n="ceremony.feedbackSubmit">送出回饋</button>
           </div>
         </div>
       </div>
-      <button type="button" id="ceremonyConfirm" disabled class="mt-8 px-8 py-3 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-300 font-bold text-sm tracking-wider hover:bg-amber-500/30 transition opacity-0">
-        確認同步
-      </button>
+      <button type="button" id="ceremonyConfirm" disabled class="mt-8 px-8 py-3 rounded-xl bg-amber-500/20 border border-amber-400/50 text-amber-300 font-bold text-sm tracking-wider hover:bg-amber-500/30 transition opacity-0" data-i18n="ceremony.confirmBtn">確認同步</button>
     </div>
   </div>
 
@@ -2051,7 +2085,7 @@
       </button>
     </div>
     <div id="mobilePalaceBody" class="mt-4 space-y-4 text-sm md:text-xs text-slate-100 overflow-y-auto flex-1 min-h-0 pb-4" style="-webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
-      <div class="text-slate-500 italic">點擊紫微方盤任一宮位，下方會顯示詳解與星曜解釋。</div>
+      <div class="text-slate-500 italic" data-i18n="ziwei.clickPalaceHint">點擊紫微方盤任一宮位，下方會顯示詳解與星曜解釋。</div>
     </div>
   </div>
 
@@ -2070,63 +2104,102 @@
       }
     })();
   </script>
-  <!-- 階段1優化：工具函數、配置常量、狀態管理 -->
-  <script src="js/utils.js?v=1"></script>
-  <script src="js/config.js?v=1"></script>
-  <script src="js/state.js?v=2"></script>
-  <!-- 階段2優化：拆分 calc.js 常數模組、純函數模組、Pipeline 模組、L9 輸出模組、八字核心和戰術建議模組 -->
-  <script src="js/calc/constants.js?v=1"></script>
-  <script src="js/calc/helpers.js?v=1"></script>
-  <script src="js/calc/ziweiPipeline.js?v=1"></script>
-  <script src="js/calc/ziweiOutput.js?v=1"></script>
-  <script src="js/calc/baziCore.js?v=3"></script>
-  <script src="js/calc/fourTransformations.js?v=3"></script>
-  <script src="js/calc/overlapAnalysis.js?v=3"></script>
-  <script src="js/calc/luckIndex.js?v=1"></script>
-  <script src="js/calc/healthAnalysis.js?v=1"></script>
-  <script src="js/calc/monthlyDetailedAnalysis.js?v=1"></script>
-  <script src="js/calc/aiPromptGenerator.js?v=1"></script>
-  <script src="js/calc/tactics.js?v=1"></script>
-  <script src="js/ui/components/strategic-panel.js?v=4"></script>
-  <script src="js/strategyConfig.js?v=2"></script>
-  <script src="js/calc.js?v=3"></script>
-  <script src="js/identifyBirthTime.js?v=1"></script>
-  <!-- UI 常量模块（必须在 ui.js 之前加载） -->
-  <script src="js/ui/constants/ceremony-constants.js?v=1"></script>
-  <!-- UI 工具模块（必须在 ui.js 之前加载） -->
-  <script src="js/ui/utils/dom-helpers.js?v=1"></script>
-  <script src="js/ui/utils/render-helpers.js?v=1"></script>
-  <script src="js/ui/utils/strategy-tags.js?v=1"></script>
-  <script src="js/ui/utils/mobile-helpers.js?v=1"></script>
-  <!-- UI 服务模块（必须在 ui.js 之前加载） -->
-  <script src="js/ui/services/api-service.js?v=1"></script>
-  <script src="js/ui/services/navigation.js?v=2"></script>
-  <script src="js/ui/services/form-init.js?v=1"></script>
-  <script src="js/ui/services/sound-service.js?v=1"></script>
-  <script src="js/ui/services/auth-service.js?v=1"></script>
-  <script src="js/ui/services/my-charts-service.js?v=1"></script>
-  <script src="js/ui/services/calculation-flow.js?v=5"></script>
-  <script src="js/ui/services/event-bindings.js?v=3"></script>
-  <script src="js/ui/services/data-renderer.js?v=1"></script>
-  <script src="js/ui/services/user-identity.js?v=1"></script>
-  <script src="js/ui/services/feedback-service.js?v=3"></script>
-  <!-- UI 组件（必须在 ui.js 之前加载） -->
-  <script src="js/ui/components/wuxing-panel.js?v=1"></script>
-  <script src="js/ui/components/birth-time-identifier.js?v=1"></script>
-  <script src="js/ui/components/wuxing-meaning.js?v=1"></script>
-  <script src="js/ui/components/bazi-pillars.js?v=1"></script>
-  <script src="js/ui/components/ziwei-grid.js?v=1"></script>
-  <script src="js/ui/components/palace-scores.js?v=1"></script>
-  <script src="js/ui/components/palace-detail.js?v=2"></script>
-  <script src="js/ui/components/launch-effect.js?v=1"></script>
-  <script src="js/ui/components/ambient-sound.js?v=1"></script>
-  <script src="js/ui/components/liuyue-month.js?v=1"></script>
-  <script src="js/ui/components/feedback-widget.js?v=1"></script>
-  <script src="js/ui/components/feedback-history.js?v=1"></script>
-  <script src="js/ui/components/feedback-integration.js?v=1"></script>
-  <script src="js/ui/components/expert-questionnaire.js?v=1"></script>
-  <script src="js/ui/components/geolocation-calibration.js?v=1"></script>
-  <script src="js/ui.js?v=7"></script>
+  <!-- 主應用程式 bundle（執行 npm run build:main 產生 dist/app.js） -->
+  <script src="dist/app.js"></script>
+  <!-- 國際化：優先載入語系，供後續 I18n.t('key') 使用；語系由 ?lang= 或 localStorage 決定 -->
+  <script>
+    (function() {
+      function applyDataI18n() {
+        if (!window.I18n || typeof window.I18n.t !== "function") return;
+        var t = window.I18n.t.bind(window.I18n);
+        document.querySelectorAll("[data-i18n]").forEach(function (el) {
+          var key = el.getAttribute("data-i18n");
+          if (!key) return;
+          var val = t(key);
+          if (val === key) return;
+          el.textContent = val;
+          if (key === "brand.tagline") {
+            el.classList.toggle("hidden", !val || val.trim() === "");
+          }
+        });
+        document.querySelectorAll("[data-i18n-title]").forEach(function (el) {
+          var key = el.getAttribute("data-i18n-title");
+          if (key && t(key) !== key) el.title = t(key);
+        });
+        var titleEl = document.getElementById("pageTitle");
+        var metaEl = document.getElementById("metaDescription");
+        if (titleEl && t("meta.title") !== "meta.title") document.title = titleEl.textContent = t("meta.title");
+        if (metaEl && t("meta.description") !== "meta.description") metaEl.setAttribute("content", t("meta.description"));
+      }
+      function saveFormForLocaleSwitch() {
+        var y = document.getElementById("birthYear"), m = document.getElementById("birthMonth"), d = document.getElementById("birthDay");
+        if (!y || !m || !d) return false;
+        var vy = parseInt(y.value, 10), vm = parseInt(m.value, 10), vd = parseInt(d.value, 10);
+        if (!vy || !vm || !vd) return false;
+        var data = {
+          year: vy, month: vm, day: vd,
+          hour: parseInt(document.getElementById("birthHour")?.value || "0", 10),
+          minute: parseInt(document.getElementById("birthMinute")?.value || "0", 10),
+          gender: (document.getElementById("gender")?.value || "").trim(),
+          timeMode: (document.getElementById("timeMode")?.value || "exact").trim(),
+          shichen: (document.getElementById("birthShichen")?.value || "").trim(),
+          shichenHalf: (document.getElementById("birthShichenHalf")?.value || "").trim()
+        };
+        try { sessionStorage.setItem("localeSwitchFormData", JSON.stringify(data)); } catch (e) { return false; }
+        return true;
+      }
+      function restoreFormAndRecalc() {
+        try {
+          var raw = sessionStorage.getItem("localeSwitchFormData");
+          if (!raw) return;
+          var data = JSON.parse(raw);
+          if (!data.year || !data.month || !data.day) return;
+          sessionStorage.removeItem("localeSwitchFormData");
+          var setVal = function (id, v) { var el = document.getElementById(id); if (el) el.value = String(v || ""); };
+          setVal("birthYear", data.year);
+          setVal("birthMonth", data.month);
+          setVal("birthDay", data.day);
+          setVal("birthHour", data.hour ?? 0);
+          setVal("birthMinute", data.minute ?? 0);
+          setVal("gender", data.gender || "M");
+          setVal("timeMode", data.timeMode || "exact");
+          setVal("birthShichen", data.shichen || "子");
+          setVal("birthShichenHalf", data.shichenHalf || "upper");
+          var tm = document.getElementById("timeMode");
+          if (tm) tm.dispatchEvent(new Event("change", { bubbles: true }));
+          setTimeout(function () {
+            if (typeof window.reloadContentAndRecalc === "function") {
+              window.reloadContentAndRecalc();
+            } else if (typeof window.runCalculation === "function") {
+              window.runCalculation();
+            }
+          }, 500);
+        } catch (e) { if (window.console) window.console.warn("[i18n] restoreFormAndRecalc failed:", e); }
+      }
+      function bindLangSwitcher() {
+        document.querySelectorAll(".lang-btn, .lang-btn-mobile").forEach(function (btn) {
+          var lang = btn.getAttribute("data-lang");
+          if (!lang) return;
+          btn.addEventListener("click", function () {
+            saveFormForLocaleSwitch();
+            if (window.I18n && typeof window.I18n.setLocale === "function") {
+              window.I18n.setLocale(lang, { reload: true });
+            }
+          });
+        });
+      }
+      bindLangSwitcher();
+      if (window.I18n && typeof window.I18n.init === "function") {
+        window.I18n.init().then(function (locale) {
+          if (window.console && window.console.log) window.console.log("[i18n] locale:", locale);
+          applyDataI18n();
+          restoreFormAndRecalc();
+        }).catch(function (e) {
+          if (window.console && window.console.warn) window.console.warn("[i18n] init failed, using fallback:", e);
+        });
+      }
+    })();
+  </script>
   <!-- 登入服務：渲染導覽列登入/登出、綁定 Google 登入 -->
   <script>
     if (window.AuthService && typeof window.AuthService.init === "function") {

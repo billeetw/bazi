@@ -5,7 +5,11 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "build:startup": "vite build --config vite.startup.config.ts"
+    "build:startup": "vite build --config vite.startup.config.ts",
+    "build:main": "vite build --config vite.main.config.ts",
+    "deploy:worker": "cd worker && npm run deploy",
+    "deploy:pages": "wrangler pages deploy .",
+    "deploy": "npm run deploy:worker && npm run deploy:pages"
   },
   "dependencies": {
     "framer-motion": "^11.11.17",

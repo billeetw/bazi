@@ -1,0 +1,9 @@
+name = "bazi-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+[build]
+command = ""
+
+# Deploy to *.workers.dev by default; override with --route for custom domain
+# workers_dev = true

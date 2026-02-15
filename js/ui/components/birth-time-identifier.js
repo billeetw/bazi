@@ -47,7 +47,7 @@
 
     if (!modal || !backdrop || !form || !questionsEl) return;
 
-    var questions = window.IdentifyBirthTime.questions;
+    var questions = (window.IdentifyBirthTime.getQuestions && window.IdentifyBirthTime.getQuestions()) || window.IdentifyBirthTime.questions;
     var total = questions.length;
     var currentIndex = 0;
     var answers = {};
@@ -56,7 +56,7 @@
     const SoundService = window.UiServices?.SoundService || {};
     const playSyncSound = SoundService.playSyncSound || function() {};
     const Ceremony = window.UiConstants?.Ceremony || {};
-    const CEREMONY_PERSONALITY_KEYS = Ceremony.CEREMONY_PERSONALITY_KEYS || {
+    const CEREMONY_FALLBACK = Ceremony.CEREMONY_PERSONALITY_KEYS || {
       "子": "在世界安靜下來的瞬間，你能看見別人忽略的真相；這份深邃的洞察，讓你在人群中永遠不會被混淆。",
       "丑": "在壓力逼近的瞬間，你反而能站得更穩、扛得更久；這份沈穩的韌性，讓你在人群中永遠不會被混淆。",
       "寅": "在一切還沒開始的瞬間，你已經踏上荒野；這份開拓的爆發力，讓你在人群中永遠不會被混淆。",
@@ -70,6 +70,23 @@
       "戌": "在界線被踩到的瞬間，你明確守護自己的立場；這份堅定的原則，讓你在人群中永遠不會被混淆。",
       "亥": "在靈感閃過的瞬間，你將碎片拼湊成整體；這份超然的直覺，讓你在人群中永遠不會被混淆。",
     };
+    function getCeremonyText(branch) {
+      var I18n = window.I18n;
+      if (I18n && typeof I18n.t === "function") {
+        var s = I18n.t("ceremony." + branch);
+        if (s && s !== ("ceremony." + branch)) return s;
+      }
+      return CEREMONY_FALLBACK[branch] || CEREMONY_FALLBACK["子"];
+    }
+    function getUiHintText(apiHint) {
+      if (!apiHint) return null;
+      var I18n = window.I18n;
+      if (I18n && typeof I18n.t === "function" && (apiHint.indexOf("建議重測") !== -1 || apiHint.indexOf("特徵不穩定") !== -1)) {
+        var s = I18n.t("estimateHour.uiHintLowConfidence");
+        if (s && s !== "estimateHour.uiHintLowConfidence") return s;
+      }
+      return apiHint;
+    }
 
     function esc(s) {
       if (window.Utils?.escHtml) {
@@ -120,7 +137,7 @@
     function openCeremony(result) {
       var branch = result && result.branch ? result.branch : "子";
       var half = result && result.half === "lower" ? "lower" : "upper";
-      var text = CEREMONY_PERSONALITY_KEYS[branch] || CEREMONY_PERSONALITY_KEYS["子"];
+      var text = getCeremonyText(branch);
       pendingCeremonyResult = {
         branch: branch,
         half: half,
@@ -131,12 +148,27 @@
 
       var feedbackWrap = document.getElementById("ceremonyFeedbackWrap");
       var feedbackActualWrap = document.getElementById("ceremonyFeedbackActualWrap");
+      var uiHintEl = document.getElementById("ceremonyUiHint");
       if (feedbackWrap) feedbackWrap.classList.add("hidden");
       if (feedbackActualWrap) feedbackActualWrap.classList.add("hidden");
+      if (uiHintEl) {
+        var apiHint = result && result.uiHint;
+        var uiHint = getUiHintText(apiHint);
+        if (uiHint) {
+          uiHintEl.textContent = uiHint;
+          uiHintEl.classList.remove("hidden");
+        } else {
+          uiHintEl.textContent = "";
+          uiHintEl.classList.add("hidden");
+        }
+      }
 
       closeModal();
       var hourLabel = (result && result.hour_label) ? result.hour_label : branch + "時";
-      if (ceremonyLine0) ceremonyLine0.textContent = "推算結果：你是" + hourLabel;
+      var line0Text = (window.I18n && typeof window.I18n.t === "function")
+        ? window.I18n.t("ceremony.resultTemplate", { hour: hourLabel })
+        : "推算結果：你是" + hourLabel;
+      if (ceremonyLine0) ceremonyLine0.textContent = line0Text;
       if (ceremonyLine1) ceremonyLine1.textContent = "";
       if (ceremonyLine2) ceremonyLine2.textContent = "";
       if (ceremonyConfirm) {
@@ -147,7 +179,10 @@
       if (ceremonyBackdrop) ceremonyBackdrop.classList.add("ceremony-visible");
       if (ceremonyModal) ceremonyModal.classList.add("ceremony-visible");
 
-      if (ceremonyLine1) ceremonyLine1.textContent = "[ 系統鑑定 ]";
+      var line1Text = (window.I18n && typeof window.I18n.t === "function")
+        ? window.I18n.t("ceremony.systemLabel")
+        : "[ 系統鑑定 ]";
+      if (ceremonyLine1) ceremonyLine1.textContent = line1Text;
       ceremonyTypewriterTimer = setTimeout(function () {
         ceremonyTypewriterTimer = null;
         var idx = 0;
@@ -225,7 +260,12 @@
     function updateProgress(index) {
       var n = index + 1;
       var pct = total > 0 ? Math.round((n / total) * 100) : 0;
-      if (progressText) progressText.textContent = "第 " + n + " / " + total + " 題";
+      if (progressText) {
+        var pt = (window.I18n && typeof window.I18n.t === "function")
+          ? window.I18n.t("estimateHour.progressTemplate", { n: String(n), total: String(total) })
+          : "第 " + n + " / " + total + " 題";
+        progressText.textContent = pt;
+      }
       if (progressBar) progressBar.style.width = pct + "%";
     }
 
@@ -248,7 +288,7 @@
       }
       if (submitBtn) {
         submitBtn.classList.toggle("hidden", currentIndex < total - 1);
-        submitBtn.disabled = currentIndex < total - 1 || !hasCurrentAnswer();
+        submitBtn.disabled = currentIndex < total - 1;
       }
     }
 
@@ -274,6 +314,15 @@
 
     if (prevBtn) prevBtn.addEventListener("click", goPrev);
     if (nextBtn) nextBtn.addEventListener("click", goNext);
+    if (submitBtn) {
+      submitBtn.addEventListener("click", function (e) {
+        if (currentIndex < total - 1) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (form.requestSubmit) form.requestSubmit();
+        else form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+      });
+    }
 
     if (btn) btn.addEventListener("click", openModal);
     var btnGlobal = document.getElementById("btnIdentifyBirthTimeGlobal");
@@ -307,6 +356,20 @@
       });
     }
 
+    /** 檢查 q1～q19 皆有答案：q1、q2 可為陣列（至少一項），其餘為非空值。缺任一則回傳 false。 */
+    function hasAllAnswers() {
+      for (var i = 1; i <= 19; i++) {
+        var key = "q" + i;
+        var val = answers[key];
+        if (i <= 2) {
+          if (!Array.isArray(val) || val.length === 0) return false;
+        } else {
+          if (val === undefined || val === null || val === "") return false;
+        }
+      }
+      return true;
+    }
+
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       saveCurrentAnswer();
@@ -314,6 +377,11 @@
       var headers = auth && auth.getAuthHeaders ? auth.getAuthHeaders() : {};
       if (!headers.Authorization) {
         window.alert("請先登入以使用推算時辰功能。");
+        return;
+      }
+      if (!hasAllAnswers()) {
+        var hint = document.getElementById("hint");
+        if (hint) hint.textContent = "請完成所有題目。";
         return;
       }
       var submitBtnEl = document.getElementById("identifyBirthTimeSubmit");
@@ -342,6 +410,7 @@
             hour_range: data.hour_range,
             half: data.half,
             log_id: data.log_id,
+            uiHint: data.uiHint || null,
           });
         })
         .catch(function (err) {

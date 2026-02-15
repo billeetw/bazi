@@ -17,8 +17,13 @@
 
   const { SHICHEN_ORDER, pad2 } = window.Calc || {};
 
+  function t(key, fallback) {
+    if (window.I18n && typeof window.I18n.t === "function") return window.I18n.t(key);
+    return fallback != null ? fallback : key;
+  }
+
   /**
-   * 初始化表单选择器（年、月、日、时、分、性别、时间模式等）
+   * 初始化表单选择器（年、月、日、时、分、性别、时间模式等；選項文字依 i18n）
    */
   function initSelectors() {
     const y = document.getElementById("birthYear");
@@ -38,34 +43,41 @@
       return;
     }
 
+    const yearSuf = t("ui.yearSuffix", " 年");
+    const monthSuf = t("ui.monthSuffix", " 月");
+    const daySuf = t("ui.daySuffix", " 日");
+    const hourSuf = t("ui.hourSuffix", " 時");
+    const minSuf = t("ui.minuteSuffix", " 分");
+
     const nowY = new Date().getFullYear();
-    for (let i = nowY; i >= 1940; i--) y.add(new Option(i + " 年", i));
-    for (let i = 1; i <= 12; i++) m.add(new Option(i + " 月", i));
-    for (let i = 0; i < 24; i++) h.add(new Option(pad2(i) + " 時", i));
+    for (let i = nowY; i >= 1940; i--) y.add(new Option(i + yearSuf, i));
+    for (let i = 1; i <= 12; i++) m.add(new Option(i + monthSuf, i));
+    for (let i = 0; i < 24; i++) h.add(new Option(pad2(i) + hourSuf, i));
     for (let i = 0; i < 60; i++) {
       const v = pad2(i);
-      min.add(new Option(v + " 分", v));
+      min.add(new Option(v + minSuf, v));
     }
 
     if (gender) {
-      gender.add(new Option("性別：男", "M"));
-      gender.add(new Option("性別：女", "F"));
+      gender.add(new Option(t("ui.genderMale", "性別：男"), "M"));
+      gender.add(new Option(t("ui.genderFemale", "性別：女"), "F"));
     }
 
     if (timeMode) {
-      timeMode.add(new Option("時間：時分（精確）", "exact"));
-      timeMode.add(new Option("時間：時辰（子丑寅…）", "shichen"));
+      timeMode.add(new Option(t("ui.timeExact", "時間：時分（精確）"), "exact"));
+      timeMode.add(new Option(t("ui.timeShichen", "時間：時辰（子丑寅…）"), "shichen"));
     }
 
     if (shichen && SHICHEN_ORDER) {
+      const shichenLab = t("ui.shichenLabel", "時辰：");
       SHICHEN_ORDER.forEach((c) => {
-        shichen.add(new Option(`時辰：${c}`, c));
+        shichen.add(new Option(shichenLab + c, c));
       });
     }
 
     if (shichenHalf) {
-      shichenHalf.add(new Option("上半時辰", "upper"));
-      shichenHalf.add(new Option("下半時辰", "lower"));
+      shichenHalf.add(new Option(t("ui.shichenUpper", "上半時辰"), "upper"));
+      shichenHalf.add(new Option(t("ui.shichenLower", "下半時辰"), "lower"));
     }
 
     function updateTimeModeUI() {
@@ -87,7 +99,7 @@
 
       d.innerHTML = "";
       const days = new Date(year, month, 0).getDate();
-      for (let i = 1; i <= days; i++) d.add(new Option(i + " 日", i));
+      for (let i = 1; i <= days; i++) d.add(new Option(i + daySuf, i));
       if (cur && Number(cur) <= days) d.value = cur;
     }
 

@@ -108,16 +108,24 @@
     const rawStars = ziwei ? getStarsForPalace(ziwei, name) : [];
     const stars = rawStars.map(toTraditionalStarName);
 
-    const titleText = `2026 ${name} · 作戰面板`;
-    const subText = "三方四正已標示：本宮＋對宮＋三合（共四宮）。";
+    const t = (key, opts) => (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(key, opts) : key;
+    const palaceDisplayMap = (window.I18n && typeof window.I18n.tObject === "function") ? window.I18n.tObject("ziwei.palaceDisplay") : null;
+    const palaceDisplayName = (palaceDisplayMap && palaceDisplayMap[name]) || name;
+    const titleText = t("ziwei.strategyPanelTitle", { name: palaceDisplayName });
+    const subText = t("ziwei.strategyPanelSub");
 
     document.getElementById("palaceTitle").textContent = titleText;
     document.getElementById("palaceSub").textContent = subText;
 
-    const palaceText = (dbContent?.palaces && dbContent.palaces[name]) ? dbContent.palaces[name] : "（資料庫尚未填入此宮位解釋）";
+    var ContentUtils = window.UiUtils?.ContentUtils;
+    var palaceRaw = ContentUtils && typeof ContentUtils.getContentValue === "function"
+      ? ContentUtils.getContentValue(dbContent, "palaces", name, null)
+      : (dbContent?.palaces && dbContent.palaces[name]);
+    if (palaceRaw && palaceRaw.startsWith("(missing:")) palaceRaw = null;
+    var palaceText = palaceRaw || t("ziwei.palaceNoData");
 
     const Strategy = typeof window.StrategyConfig !== "undefined" ? window.StrategyConfig : null;
-    let strategyHtml = '<div id="palaceStrategyBlock" class="mb-4 text-sm md:text-xs text-slate-500">載入戰略金句…</div>';
+    let strategyHtml = '<div id="palaceStrategyBlock" class="mb-4 text-sm md:text-xs text-slate-500">' + t("ziwei.loadingStrategy") + '</div>';
     if (Strategy && window.ziweiScores?.palaceScores) {
       const baseScore = Number(window.ziweiScores.palaceScores[name]) || 0;
       const yearlyStem = horoscope?.yearlyStem ?? null;
@@ -135,12 +143,12 @@
         }).then(function (advice) {
           const block = document.getElementById("palaceStrategyBlock");
           if (!block) return;
-          if (advice && advice !== "（暫無戰略提示）") {
+          if (advice && advice !== t("ziwei.noStrategyHint") && advice !== "（暫無戰略提示）") {
             const escLocal = window.Utils?.escHtml || ((s) => {
               if (s == null) return "";
               return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
             });
-            block.outerHTML = "<div class=\"p-4 md:p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-xs md:text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">戰略金句</div><div class=\"text-base md:text-sm text-amber-100/95 leading-relaxed\">" + escLocal(advice) + "</div></div>";
+            block.outerHTML = "<div class=\"p-4 md:p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-xs md:text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">" + t("ziwei.strategyQuote") + "</div><div class=\"text-base md:text-sm text-amber-100/95 leading-relaxed\">" + escLocal(advice) + "</div></div>";
           } else {
             block.textContent = "";
           }
@@ -156,12 +164,12 @@
       Strategy.getStrategyNoteFromAPI(name, strength, sihuaList).then(function (advice) {
         const block = document.getElementById("palaceStrategyBlock");
         if (!block) return;
-        if (advice && advice !== "（暫無戰略提示）") {
+        if (advice && advice !== t("ziwei.noStrategyHint") && advice !== "（暫無戰略提示）") {
           const esc = window.Utils?.escHtml || ((s) => {
             if (s == null) return "";
             return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
           });
-          block.outerHTML = "<div class=\"p-4 md:p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-xs md:text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">戰略金句</div><div class=\"text-base md:text-sm text-amber-100/95 leading-relaxed\">" + esc(advice) + "</div></div>";
+          block.outerHTML = "<div class=\"p-4 md:p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-xs md:text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">" + t("ziwei.strategyQuote") + "</div><div class=\"text-base md:text-sm text-amber-100/95 leading-relaxed\">" + esc(advice) + "</div></div>";
         } else {
           block.textContent = "";
         }
@@ -178,14 +186,19 @@
       starCards = stars
         .map((s) => {
           const wx = STAR_WUXING_MAP[s] || "";
-          const explain = (dbContent?.stars && dbContent.stars[s]) ? dbContent.stars[s] : "（資料庫尚未填入此星曜解釋）";
+          var ContentUtils = window.UiUtils?.ContentUtils;
+          var starRaw = ContentUtils && typeof ContentUtils.getContentValue === "function"
+            ? ContentUtils.getContentValue(dbContent, "stars", s, null)
+            : (dbContent?.stars && dbContent.stars[s]);
+          if (starRaw && starRaw.startsWith("(missing:")) starRaw = null;
+          var explain = starRaw || t("ziwei.starNoData");
           const badgeHtml = getMutagenBadgeHtml(s, mutagenStars);
           const titleDisplay = badgeHtml ? `【${s}】 ${badgeHtml}` : `【${s}】`;
           return `
             <div class="p-4 md:p-4 rounded-xl border border-white/10 bg-white/5">
               <div class="flex items-center justify-between gap-3">
                 <div class="body-text font-black ${wx ? "star-wx-" + wx : "text-slate-200"}">${titleDisplay}</div>
-                <div class="body-caption text-slate-500">${wx ? "五行：" + wx : ""}</div>
+                <div class="body-caption text-slate-500">${wx ? t("ziwei.wuxingLabel") + wx : ""}</div>
               </div>
               <div class="body-text text-slate-300 mt-2 leading-relaxed">${explain}</div>
             </div>
@@ -195,8 +208,8 @@
     } else {
       starCards = `
         <div class="p-4 md:p-4 rounded-xl border border-white/10 bg-white/5">
-          <div class="body-text text-slate-300 font-black">空宮</div>
-          <div class="body-text text-slate-400 mt-2 leading-relaxed">空宮不等於沒有事件，重點是看三方四正與流月節奏如何引動。</div>
+          <div class="body-text text-slate-300 font-black">${t("ziwei.emptyPalace")}</div>
+          <div class="body-text text-slate-400 mt-2 leading-relaxed">${t("ziwei.emptyPalaceNote")}</div>
         </div>
       `;
     }
@@ -204,12 +217,12 @@
     const detailHtml = `
       ${strategyHtml}
       <div class="p-4 md:p-4 rounded-xl border border-amber-400/25 bg-amber-500/10">
-        <div class="body-text font-black text-emerald-400 mb-2">資料庫宮位解釋</div>
+        <div class="body-text font-black text-emerald-400 mb-2">${t("ziwei.palaceDatabaseTitle")}</div>
         <div class="body-text text-slate-100 leading-relaxed">${palaceText}</div>
       </div>
 
       <div>
-        <div class="body-text font-black text-emerald-400 mb-3">星曜解釋（資料庫）</div>
+        <div class="body-text font-black text-emerald-400 mb-3">${t("ziwei.starDatabaseTitle")}</div>
         <div class="space-y-3 md:space-y-3">${starCards}</div>
       </div>
     `;

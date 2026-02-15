@@ -1,17 +1,23 @@
 /**
  * identifyBirthTime.js (V4：18+1 題)
- * 推算時辰問卷：僅提供題目文本（無權重、無地支說明），推算由後端 POST /api/estimate-hour 完成。
+ * 推算時辰問卷：僅提供題目文本（無權重、無地支說明），推算由後端 POST /api/me/estimate-hour 完成。
  * 前端不得存放任何加權數值或五行/地支對應。（本地/離線時若 API 不可用，則使用內建 fallback 以利測試。）
  */
+
+import { estimateHourFromAnswers } from "./calc/shichen-logic.js";
 
 (function (global) {
   "use strict";
 
-  /** 遠端 API 基底（同源 /api 失敗時使用，例如本地靜態伺服器無 API） */
-  var REMOTE_API_BASE = "https://17gonplay-api.billeetw.workers.dev";
+  /** 遠端 API 基底：優先從 Config；同源 /api 失敗時使用，例如本地靜態伺服器無 API */
+  function getApiBase() {
+    return (typeof window !== "undefined" && window.Config?.API_BASE)
+      ? window.Config.API_BASE
+      : "https://17gonplay-api.billeetw.workers.dev";
+  }
 
-  /** V4 題庫：僅 id、text、options(key+text)；Q1/Q2 為複選最多 2 項，其餘單選 */
-  const QUESTIONS = [
+  /** V4 題庫：僅 id、text、options(key+text)；Q1/Q2 為複選最多 2 項，其餘單選（i18n 未載入時使用） */
+  const QUESTIONS_FALLBACK = [
     { id: "q1", text: "你一天中「精神最亮、效率最高」的時段是哪些？（可複選，至多 2 項）", options: [{ key: "A", text: "清晨（5–9 點）" }, { key: "B", text: "上午（9–12 點）" }, { key: "C", text: "下午（12–17 點）" }, { key: "D", text: "傍晚（17–20 點）" }, { key: "E", text: "深夜（20–01 點）" }, { key: "F", text: "凌晨（01–05 點）" }], multiSelect: true, maxSelect: 2 },
     { id: "q2", text: "哪些時段你會覺得「比較有動力／比較想行動」？（可複選，至多 2 項）", options: [{ key: "A", text: "清晨" }, { key: "B", text: "上午" }, { key: "C", text: "下午" }, { key: "D", text: "傍晚" }, { key: "E", text: "深夜" }, { key: "F", text: "凌晨" }], multiSelect: true, maxSelect: 2 },
     { id: "q3", text: "若不看外在作息，你的「自然節律」比較像？", options: [{ key: "A", text: "早上自然精神好" }, { key: "B", text: "早餐後才有狀態" }, { key: "C", text: "上午暖機、下午更強" }, { key: "D", text: "晚上精神最好" }, { key: "E", text: "半夜最有靈感" }] },
@@ -34,96 +40,64 @@
   ];
 
   /**
-   * 本地 fallback：與後端 V4 邏輯一致，僅在 API 不可用時使用（本地測試／離線）。
+   * 從 i18n 組出題目陣列；若無 I18n 或資料不完整則回傳 QUESTIONS_FALLBACK
+   */
+  function getQuestions() {
+    var I18n = typeof global !== "undefined" && global.I18n ? global.I18n : (typeof window !== "undefined" && window.I18n ? window.I18n : null);
+    if (!I18n || typeof I18n.tObject !== "function") return QUESTIONS_FALLBACK;
+    var data = I18n.tObject("estimateHour");
+    if (!data || typeof data !== "object") return QUESTIONS_FALLBACK;
+    var arr = [];
+    for (var i = 1; i <= 19; i++) {
+      var qid = "q" + i;
+      var q = data[qid];
+      if (!q || !q.text) {
+        arr.push(QUESTIONS_FALLBACK[i - 1]);
+        continue;
+      }
+      var opts = [];
+      if (q.options && typeof q.options === "object") {
+        Object.keys(q.options).forEach(function (k) {
+          opts.push({ key: k, text: q.options[k] });
+        });
+      }
+      var multi = (i === 1 || i === 2);
+      arr.push({
+        id: qid,
+        text: q.text,
+        options: opts.length ? opts : QUESTIONS_FALLBACK[i - 1].options,
+        multiSelect: multi,
+        maxSelect: multi ? 2 : undefined,
+      });
+    }
+    return arr;
+  }
+
+  /**
+   * 本地 fallback：與後端 vNext 邏輯一致，僅在 API 不可用時使用（本地測試／離線）。
    * @param {Object} answers - q1,q2 為 string[]，其餘為 string
-   * @returns {{ branch: string, hour_label: string, hour_range: string, half: string }}
+   * @returns {{ branch, hour_label, hour_range, half, score, debug, uiHint }}
    */
   function estimateHourLocal(answers) {
-    var BRANCHES = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
-    var TIE_ORDER = BRANCHES.slice();
-    var HOUR_RANGES = { 子: "23:00-01:00", 丑: "01:00-03:00", 寅: "03:00-05:00", 卯: "05:00-07:00", 辰: "07:00-09:00", 巳: "09:00-11:00", 午: "11:00-13:00", 未: "13:00-15:00", 申: "15:00-17:00", 酉: "17:00-19:00", 戌: "19:00-21:00", 亥: "21:00-23:00" };
-    function wuxingToBranches(wx, amount) {
-      amount = amount === undefined ? 1 : amount;
-      var out = {}; BRANCHES.forEach(function (b) { out[b] = 0; });
-      if (wx === "金") { out["申"] = amount; out["酉"] = amount; }
-      else if (wx === "木") { out["寅"] = amount; out["卯"] = amount; }
-      else if (wx === "水") { out["亥"] = amount; out["子"] = amount; }
-      else if (wx === "火") { out["巳"] = amount; out["午"] = amount; }
-      else if (wx === "土") { out["辰"] = amount * 0.5; out["戌"] = amount * 0.5; out["丑"] = amount * 0.5; out["未"] = amount * 0.5; }
-      return out;
-    }
-    function addTo(scores, delta, weight) {
-      weight = weight === undefined ? 1 : weight;
-      Object.keys(delta).forEach(function (b) {
-        if (BRANCHES.indexOf(b) !== -1) scores[b] = (scores[b] || 0) + (delta[b] || 0) * weight;
-      });
-    }
-    var Q1Q2_MAP = { A: ["寅", "卯", "辰"], B: ["卯", "辰", "巳"], C: ["巳", "午", "未"], D: ["申", "酉", "戌"], E: ["亥", "子", "丑"], F: ["子", "丑", "寅"] };
-    var Q3_MAP = { A: ["寅", "卯", "辰"], B: ["卯", "辰", "巳"], C: ["巳", "午", "未"], D: ["申", "酉", "戌"], E: ["亥", "子", "丑"] };
-    var WUXING_OPTION = { A: "金", B: "木", C: "水", D: "火", E: "土" };
-    var Q7_MAP = { A: { 金: 2 }, B: { 金: 1, 火: 1 }, C: { 水: 2 }, D: { 土: 2 }, E: { 木: 1, 水: 1 } };
-    function applyQ8(answers, scores, weight) {
-      var v = answers.q8; if (!v) return;
-      if (v === "B") { ["寅", "申", "巳", "亥"].forEach(function (b) { scores[b] = (scores[b] || 0) + 1 * weight; }); return; }
-      var wx = WUXING_OPTION[v]; if (wx) addTo(scores, wuxingToBranches(wx, 2), weight);
-    }
-    var DUEL_MAP = { q9: { A: { 申: 2, 寅: -2 }, B: { 寅: 2, 申: -2 } }, q10: { A: { 酉: 2, 卯: -2 }, B: { 卯: 2, 酉: -2 } }, q11: { A: { 辰: 2, 戌: -2 }, B: { 戌: 2, 辰: -2 } }, q12: { A: { 巳: 2, 亥: -2 }, B: { 亥: 2, 巳: -2 } }, q13: { A: { 午: 2, 子: -2 }, B: { 子: 2, 午: -2 } }, q14: { A: { 未: 2, 丑: -2 }, B: { 丑: 2, 未: -2 } } };
-    var Q18_MAP = { A: ["申", "午"], B: ["子", "亥"], C: ["寅", "辰"], D: ["戌", "丑"], E: ["卯", "未"], F: ["巳", "酉"] };
-
-    var score = {}, timeSubtotal = {}, duelSubtotal = {};
-    BRANCHES.forEach(function (b) { score[b] = 0; timeSubtotal[b] = 0; duelSubtotal[b] = 0; });
-
-    var q1Arr = Array.isArray(answers.q1) ? answers.q1.slice(0, 2) : (answers.q1 ? [answers.q1] : []);
-    q1Arr.forEach(function (key) {
-      var arr = Q1Q2_MAP[key]; if (arr) arr.forEach(function (b) { score[b] += 3; timeSubtotal[b] += 3; });
-    });
-    var q2Arr = Array.isArray(answers.q2) ? answers.q2.slice(0, 2) : (answers.q2 ? [answers.q2] : []);
-    q2Arr.forEach(function (key) {
-      var arr = Q1Q2_MAP[key]; if (arr) arr.forEach(function (b) { score[b] += 3; timeSubtotal[b] += 3; });
-    });
-    if (answers.q3 && Q3_MAP[answers.q3]) Q3_MAP[answers.q3].forEach(function (b) { score[b] += 3; timeSubtotal[b] += 3; });
-    [4, 5, 6].forEach(function (n) {
-      var wx = WUXING_OPTION[answers["q" + n]]; if (wx) addTo(score, wuxingToBranches(wx, 1), 2);
-    });
-    if (answers.q7 && Q7_MAP[answers.q7]) Object.keys(Q7_MAP[answers.q7]).forEach(function (wx) { addTo(score, wuxingToBranches(wx, Q7_MAP[answers.q7][wx]), 2); });
-    applyQ8(answers, score, 2);
-    [9, 10, 11, 12, 13, 14].forEach(function (n) {
-      var qid = "q" + n, key = answers[qid], map = DUEL_MAP[qid];
-      if (!map || !key || !map[key]) return;
-      Object.keys(map[key]).forEach(function (b) {
-        var v = map[key][b] * 3; score[b] += v; duelSubtotal[b] += v;
-      });
-    });
-    [15, 16, 17].forEach(function (n) {
-      var wx = WUXING_OPTION[answers["q" + n]]; if (wx) addTo(score, wuxingToBranches(wx, 1), 1);
-    });
-    if (answers.q18 && Q18_MAP[answers.q18]) Q18_MAP[answers.q18].forEach(function (b) { score[b] += 1; });
-
-    var maxScore = Math.max.apply(null, Object.keys(score).map(function (b) { return score[b]; }));
-    var candidates = BRANCHES.filter(function (b) { return score[b] === maxScore; });
-    if (candidates.length > 1) {
-      var maxTime = Math.max.apply(null, candidates.map(function (b) { return timeSubtotal[b]; }));
-      candidates = candidates.filter(function (b) { return timeSubtotal[b] === maxTime; });
-    }
-    if (candidates.length > 1) {
-      var maxDuel = Math.max.apply(null, candidates.map(function (b) { return duelSubtotal[b]; }));
-      candidates = candidates.filter(function (b) { return duelSubtotal[b] === maxDuel; });
-    }
-    if (candidates.length > 1) {
-      var first = TIE_ORDER.filter(function (b) { return candidates.indexOf(b) !== -1; })[0];
-      candidates = first ? [first] : [candidates[0]];
-    }
-    var branch = candidates[0] || "子";
-    var half = answers.q19 === "B" ? "lower" : "upper";
-    return { branch: branch, hour_label: branch + "時", hour_range: HOUR_RANGES[branch] || "", half: half };
+    var result = estimateHourFromAnswers(answers, {});
+    return {
+      branch: result.branch,
+      hour_label: result.hour_label,
+      hour_range: result.hour_range,
+      half: result.half,
+      score: result.score,
+      debug: result.debug,
+      uiHint: result.uiHint,
+    };
   }
 
   function parseApiResult(data) {
     return {
       branch: data.branch || "子",
-      hour_label: data.hour_label || data.branch + "時",
+      hour_label: data.hour_label || (data.branch ? data.branch + "時" : "子時"),
       hour_range: data.hour_range || "",
       half: data.half === "lower" ? "lower" : "upper",
+      uiHint: data.uiHint || null,
     };
   }
 
@@ -134,29 +108,30 @@
    */
   function identifyBirthTimeFromAPI(answers) {
     var origin = (typeof window !== "undefined" && window.location && window.location.origin) ? window.location.origin : "";
-    var remoteBase = (typeof window !== "undefined" && window.API_BASE) ? window.API_BASE : REMOTE_API_BASE;
+    var remoteBase = getApiBase();
     var body = JSON.stringify({ answers: answers });
-    var opts = { method: "POST", headers: { "Content-Type": "application/json" }, body: body };
-
-    function tryFetch(base) {
+    var auth = (typeof window !== "undefined" && window.AuthService && window.AuthService.getAuthHeaders) ? window.AuthService.getAuthHeaders() : {};
+    var headers = Object.assign({ "Content-Type": "application/json" }, auth);
+    var optsWithAuth = { method: "POST", headers: headers, body: body };
+    function tryFetchWithOpts(base, fetchOpts) {
       if (!base) return Promise.reject(new Error("no base"));
-      return fetch(base + "/api/estimate-hour", opts)
+      return fetch(base + "/api/me/estimate-hour", fetchOpts)
         .then(function (r) { return r.json(); })
         .then(function (data) {
           if (data && data.error) throw new Error(data.error);
           return parseApiResult(data || {});
         });
     }
-
-    return tryFetch(origin).catch(function () {
-      return tryFetch(remoteBase).catch(function () {
+    return tryFetchWithOpts(origin, optsWithAuth).catch(function () {
+      return tryFetchWithOpts(remoteBase, optsWithAuth).catch(function () {
         return Promise.resolve(estimateHourLocal(answers));
       });
     });
   }
 
   global.IdentifyBirthTime = {
-    questions: QUESTIONS,
+    questions: QUESTIONS_FALLBACK,
+    getQuestions: getQuestions,
     identifyBirthTimeFromAPI: identifyBirthTimeFromAPI,
   };
 })(typeof window !== "undefined" ? window : this);

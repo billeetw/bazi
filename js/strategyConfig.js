@@ -36,7 +36,7 @@
                         hostname === "127.0.0.1" || 
                         base.includes("localhost") || 
                         base.includes("127.0.0.1");
-    const isDevPort = port === "8081" || port === "8080" || base.includes(":8081") || base.includes(":8080");
+    const isDevPort = port === "8081" || port === "8080" || port === "8788" || base.includes(":8081") || base.includes(":8080") || base.includes(":8788");
     const useGet = isLocalhost || isDevPort;
     
     // 調試日誌（僅在開發環境）

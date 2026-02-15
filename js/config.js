@@ -1,10 +1,25 @@
 /* config.js
  * 配置常量庫
- * 集中管理顏色映射、狀態標籤等配置
+ * 集中管理 API 基底、站點 URL、顏色映射、狀態標籤等配置
  */
 
 (function () {
   "use strict";
+
+  /**
+   * API 基底 URL
+   * 依 hostname 自動切換：localhost → 本地 Worker；否則 → 遠端
+   */
+  const REMOTE_API_BASE = "https://bazi-api.billeetw.workers.dev";
+  const API_BASE =
+    typeof window !== "undefined" && /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname)
+      ? "http://localhost:8787"
+      : REMOTE_API_BASE;
+
+  /**
+   * 站點主網址（用於諮詢連結等）
+   */
+  const SITE_URL = "https://www.17gonplay.com";
 
   /**
    * 狀態標籤映射表（根據內部等級 1-5）
@@ -118,6 +133,9 @@
   // 導出到 window.Config
   if (typeof window !== "undefined") {
     window.Config = {
+      API_BASE,
+      REMOTE_API_BASE,
+      SITE_URL,
       STATUS_LABELS,
       COLOR_CODES,
       RGB_COLORS,
@@ -131,6 +149,9 @@
     };
   } else if (typeof globalThis !== "undefined") {
     globalThis.Config = {
+      API_BASE,
+      REMOTE_API_BASE,
+      SITE_URL,
       STATUS_LABELS,
       COLOR_CODES,
       RGB_COLORS,

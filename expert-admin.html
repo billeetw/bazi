@@ -166,6 +166,61 @@
         </div>
       </section>
 
+      <!-- 異常監控（推算時辰） -->
+      <section class="glass p-4 md:p-6 mb-6">
+        <h2 class="text-lg font-black text-amber-300 mb-3">異常監控</h2>
+        <p class="text-xs text-slate-500 mb-3">過去 24h / 1h 推算頻率與異常用戶，供第一時間發現刷量或腳本。</p>
+        <div class="mb-4">
+          <button type="button" id="loadEstimateStatsBtn" class="px-4 py-2 rounded-lg bg-amber-600/80 text-slate-900 text-sm font-medium hover:bg-amber-500">載入監控</button>
+        </div>
+        <div id="estimateStats24hWrap" class="mb-4 hidden">
+          <p class="text-xs text-slate-500 mb-2">過去 24h 推算次數 Top 10</p>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border border-white/10 rounded-lg overflow-hidden">
+              <thead>
+                <tr class="bg-white/5 text-left">
+                  <th class="p-2 border-b border-white/10">用戶</th>
+                  <th class="p-2 border-b border-white/10">user_id</th>
+                  <th class="p-2 border-b border-white/10">次數</th>
+                </tr>
+              </thead>
+              <tbody id="estimateStats24hBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="estimateStats1hWrap" class="mb-4 hidden">
+          <p class="text-xs text-slate-500 mb-2">過去 1h 推算次數（&gt;20 次為警訊）</p>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border border-white/10 rounded-lg overflow-hidden">
+              <thead>
+                <tr class="bg-white/5 text-left">
+                  <th class="p-2 border-b border-white/10">用戶</th>
+                  <th class="p-2 border-b border-white/10">user_id</th>
+                  <th class="p-2 border-b border-white/10">次數</th>
+                </tr>
+              </thead>
+              <tbody id="estimateStats1hBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="estimateStatsAnomalyWrap" class="text-sm text-slate-400 hidden"></div>
+        <div id="estimateStatsIpWrap" class="mb-4 hidden">
+          <p class="text-xs text-slate-500 mb-2">過去 24h 依 IP 聚合（請求數／用戶數，供同 IP 多帳號分析）</p>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm border border-white/10 rounded-lg overflow-hidden">
+              <thead>
+                <tr class="bg-white/5 text-left">
+                  <th class="p-2 border-b border-white/10">IP</th>
+                  <th class="p-2 border-b border-white/10">請求數</th>
+                  <th class="p-2 border-b border-white/10">用戶數</th>
+                </tr>
+              </thead>
+              <tbody id="estimateStatsIpBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <!-- 推算時辰結果 -->
       <section class="glass p-4 md:p-6 mb-6">
         <h2 class="text-lg font-black text-amber-300 mb-3">推算時辰結果</h2>
@@ -210,6 +265,7 @@
               <tr class="bg-white/5 text-left">
                 <th class="p-2 border-b border-white/10">時間</th>
                 <th class="p-2 border-b border-white/10">用戶</th>
+                <th class="p-2 border-b border-white/10">IP</th>
                 <th class="p-2 border-b border-white/10">推算結果</th>
                 <th class="p-2 border-b border-white/10">回饋</th>
                 <th class="p-2 border-b border-white/10">真實時辰</th>
@@ -424,6 +480,7 @@
         if (contract.version !== 'strategic_features_v1') {
           throw new Error('features 格式錯誤（不是 strategic_features_v1）');
         }
+        contract.astrolabeLanguage = payload.language || 'zh-CN';
 
         // 2. 存儲基礎數據到全局狀態
         window.contract = contract;
@@ -1395,6 +1452,9 @@
       alert('一鍵生成命書功能：\n\n1. 已生成 AI Prompt\n2. 請將 Prompt 複製到 AI 服務（如 ChatGPT）\n3. 或整合到後續的 AI API 調用流程\n\n提示：Prompt 已準備好，可以直接使用');
     }
 
+    // 異常監控：last_24h_by_user, last_1h_by_user, anomaly_user_ids（供推算時辰表格紅色標示）
+    var lastAnomalyUserIds = [];
+
     // 推算時辰結果：載入、摘要、熱圖、表格、匯出
     var lastEstimateLogs = [];
 
@@ -1476,6 +1536,8 @@
       }
       if (wrap) wrap.classList.remove('hidden');
       if (emptyEl) emptyEl.classList.add('hidden');
+      var anomalySet = {};
+      lastAnomalyUserIds.forEach(function (id) { anomalySet[id] = true; });
       logs.forEach(function (l) {
         var feedbackText = l.feedback_correct === null || l.feedback_correct === undefined ? '未回饋' : (l.feedback_correct === 1 ? '正確' : '不正確');
         var actualText = (l.feedback_actual_branch || '') + (l.feedback_actual_half === 'lower' ? '下' : l.feedback_actual_half === 'upper' ? '上' : '');
@@ -1486,10 +1548,81 @@
           answersShort = Object.keys(a).slice(0, 5).map(function (k) { return k + ':' + (Array.isArray(a[k]) ? a[k].join(',') : a[k]); }).join('; ') || '-';
         } catch (_) { answersShort = '-'; }
         var tr = document.createElement('tr');
-        tr.className = 'border-b border-white/10 hover:bg-white/5';
-        tr.innerHTML = '<td class="p-2">' + (l.created_at || '-') + '</td><td class="p-2">' + userText + '</td><td class="p-2">' + (l.estimated_branch || '') + (l.estimated_half === 'lower' ? '下' : '上') + '</td><td class="p-2">' + feedbackText + '</td><td class="p-2">' + actualText + '</td><td class="p-2 max-w-[200px] truncate" title="' + (l.answers_json || '').replace(/"/g, '&quot;') + '">' + answersShort + '</td>';
+        tr.className = 'border-b border-white/10 hover:bg-white/5' + (anomalySet[l.user_id] ? ' bg-red-900/30' : '');
+        var ipText = (l.user_ip != null && l.user_ip !== '') ? l.user_ip : '-';
+        tr.innerHTML = '<td class="p-2">' + (l.created_at || '-') + '</td><td class="p-2">' + userText + '</td><td class="p-2 font-mono text-xs">' + ipText + '</td><td class="p-2">' + (l.estimated_branch || '') + (l.estimated_half === 'lower' ? '下' : '上') + '</td><td class="p-2">' + feedbackText + '</td><td class="p-2">' + actualText + '</td><td class="p-2 max-w-[200px] truncate" title="' + (l.answers_json || '').replace(/"/g, '&quot;') + '">' + answersShort + '</td>';
         tbody.appendChild(tr);
       });
+    }
+
+    async function loadEstimateStats() {
+      var btn = document.getElementById('loadEstimateStatsBtn');
+      if (btn) btn.disabled = true;
+      try {
+        var res = await fetch('/api/admin/estimate-hour-stats', { headers: authHeader() });
+        if (res.status === 401) {
+          showLogin();
+          alert('請重新登入');
+          return;
+        }
+        if (!res.ok) throw new Error('載入失敗');
+        var data = await res.json();
+        if (!data.ok) throw new Error('資料格式錯誤');
+        lastAnomalyUserIds = data.anomaly_user_ids || [];
+        var t24 = document.getElementById('estimateStats24hBody');
+        var t1 = document.getElementById('estimateStats1hBody');
+        var wrap24 = document.getElementById('estimateStats24hWrap');
+        var wrap1 = document.getElementById('estimateStats1hWrap');
+        var wrapAnomaly = document.getElementById('estimateStatsAnomalyWrap');
+        if (t24 && Array.isArray(data.last_24h_by_user)) {
+          t24.innerHTML = '';
+          data.last_24h_by_user.forEach(function (r) {
+            var tr = document.createElement('tr');
+            tr.className = 'border-b border-white/10';
+            tr.innerHTML = '<td class="p-2">' + (r.user_email || '-') + '</td><td class="p-2 font-mono text-xs">' + (r.user_id || '-') + '</td><td class="p-2">' + r.count + '</td>';
+            t24.appendChild(tr);
+          });
+          wrap24.classList.remove('hidden');
+        }
+        if (t1 && Array.isArray(data.last_1h_by_user)) {
+          t1.innerHTML = '';
+          data.last_1h_by_user.forEach(function (r) {
+            var tr = document.createElement('tr');
+            tr.className = 'border-b border-white/10' + (r.count > 20 ? ' bg-red-900/30' : '');
+            tr.innerHTML = '<td class="p-2">' + (r.user_email || '-') + '</td><td class="p-2 font-mono text-xs">' + (r.user_id || '-') + '</td><td class="p-2">' + r.count + '</td>';
+            t1.appendChild(tr);
+          });
+          wrap1.classList.remove('hidden');
+        }
+        if (wrapAnomaly) {
+          if (lastAnomalyUserIds.length > 0) {
+            wrapAnomaly.textContent = '異常用戶（24h 或 1h 內 >10 次）：' + lastAnomalyUserIds.join(', ');
+            wrapAnomaly.classList.remove('hidden');
+          } else {
+            wrapAnomaly.textContent = '無異常用戶（24h/1h 內皆無 >10 次）。';
+            wrapAnomaly.classList.remove('hidden');
+          }
+        }
+        var ipBody = document.getElementById('estimateStatsIpBody');
+        var ipWrap = document.getElementById('estimateStatsIpWrap');
+        if (ipBody && Array.isArray(data.last_24h_by_ip) && data.last_24h_by_ip.length > 0) {
+          ipBody.innerHTML = '';
+          data.last_24h_by_ip.forEach(function (r) {
+            var tr = document.createElement('tr');
+            tr.className = 'border-b border-white/10';
+            tr.innerHTML = '<td class="p-2 font-mono text-xs">' + (r.ip || '-') + '</td><td class="p-2">' + r.request_count + '</td><td class="p-2">' + r.user_count + '</td>';
+            ipBody.appendChild(tr);
+          });
+          ipWrap.classList.remove('hidden');
+        } else if (ipWrap) {
+          ipWrap.classList.add('hidden');
+        }
+        if (lastEstimateLogs.length > 0) renderEstimateLogsTable(lastEstimateLogs);
+      } catch (err) {
+        alert('載入監控失敗：' + (err.message || err));
+      } finally {
+        if (btn) btn.disabled = false;
+      }
     }
 
     async function loadEstimateHourLogs() {
@@ -1521,13 +1654,13 @@
 
     function exportEstimateLogsCsv() {
       if (lastEstimateLogs.length === 0) { alert('請先載入推算紀錄'); return; }
-      var headers = ['id', 'created_at', 'user_id', 'user_email', 'user_name', 'estimated_branch', 'estimated_half', 'feedback_correct', 'feedback_actual_branch', 'feedback_actual_half', 'feedback_at'];
+      var headers = ['id', 'created_at', 'user_id', 'user_email', 'user_name', 'user_ip', 'estimated_branch', 'estimated_half', 'feedback_correct', 'feedback_actual_branch', 'feedback_actual_half', 'feedback_at'];
       for (var i = 1; i <= 19; i++) headers.push('q' + i);
       var rows = [headers.join(',')];
       lastEstimateLogs.forEach(function (l) {
         var a = {};
         try { a = JSON.parse(l.answers_json || '{}'); } catch (_) {}
-        var cells = [l.id, l.created_at, l.user_id, (l.user_email || '').replace(/,/g, ' '), (l.user_name || '').replace(/,/g, ' '), l.estimated_branch, l.estimated_half, l.feedback_correct === null ? '' : l.feedback_correct, l.feedback_actual_branch || '', l.feedback_actual_half || '', l.feedback_at || ''];
+        var cells = [l.id, l.created_at, l.user_id, (l.user_email || '').replace(/,/g, ' '), (l.user_name || '').replace(/,/g, ' '), l.user_ip || '', l.estimated_branch, l.estimated_half, l.feedback_correct === null ? '' : l.feedback_correct, l.feedback_actual_branch || '', l.feedback_actual_half || '', l.feedback_at || ''];
         for (var i = 1; i <= 19; i++) {
           var v = a['q' + i];
           cells.push(v === undefined ? '' : (Array.isArray(v) ? v.join(';') : String(v)).replace(/,/g, ' ').replace(/"/g, '""'));
@@ -1601,6 +1734,7 @@
     document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
     document.getElementById('exportToApiBtn').addEventListener('click', submitToApi);
     document.getElementById('generateLifeBookBtn').addEventListener('click', generateLifeBook);
+    document.getElementById('loadEstimateStatsBtn').addEventListener('click', loadEstimateStats);
     document.getElementById('loadEstimateLogsBtn').addEventListener('click', loadEstimateHourLogs);
     document.getElementById('exportEstimateLogsCsvBtn').addEventListener('click', exportEstimateLogsCsv);
     document.getElementById('exportEstimateLogsJsonBtn').addEventListener('click', exportEstimateLogsJson);

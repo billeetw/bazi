@@ -531,6 +531,112 @@
   const BOYAN_RISK_ONE = BOYAN_RISK_ONE_STRATEGIC;
   const BOYAN_PUSH = BOYAN_PUSH_STRATEGIC;
 
+  // ==============================
+  // EN: Five-Phase / Boyan texts
+  // ==============================
+  const ELEMENT_TYPE_EN = { "木": "Execution-Type", "火": "Amplification-Type", "土": "Integration-Type", "金": "Decision-Type", "水": "Flow-Type" };
+  const ELEMENT_TYPE_EN_FALLBACK = "Balanced-Type";
+  const ENERGY_LABEL_EN = { 0: "Low", 1: "Stable", 2: "Strong", 3: "Overactive" };
+  const RELATION_BADGE_EN = { "強弱": "Strong–Weak", "弱強": "Weak–Strong", "強強": "Strong–Strong", "弱弱": "Weak–Weak" };
+  const ELEMENT_CORE_MEANING_SURFACE_EN = {
+    "木": { core: "Outer Growth Module", low01: "More reserved; less willing to initiate connections", level2: "Proactive; willing to expand your social circle", level3: "Over-expanding; struggling to focus", remedy: "This year, practice balancing expansion with restraint—make every connection serve a clear purpose." },
+    "火": { core: "Outer Visibility Module", low01: "Low-key; slower to respond", level2: "Warm, fast-reacting, naturally attracts attention", level3: "Emotion-led decisions; over-spending attention and energy", remedy: "This year, practice controlling your output rhythm—make each expression carry more weight." },
+    "土": { core: "Outer Stability Module", low01: "More volatile; hard to build trust", level2: "Steady and reliable; gives others a sense of safety", level3: "Too conservative; lacks flexibility", remedy: "This year, practice balancing stability with innovation—let reliability be an advantage, not a limit." },
+    "金": { core: "Outer Boundaries Module", low01: "Blurry standards; hard to hold a line", level2: "Decisive and principled; conveys professionalism", level3: "Too strict; lacks flexibility", remedy: "This year, practice balancing principles with human context—make boundaries protective, not obstructive." },
+    "水": { core: "Outer Communication Module", low01: "Closed-off; information flow feels blocked", level2: "Flexible and communicative; approachable and friendly", level3: "Over-shifting; lacks a stable core", remedy: "This year, practice balancing flow with stability—let communication become a bridge, not a drain." },
+  };
+  const ELEMENT_CORE_MEANING_STRATEGIC_EN = {
+    "木": { core: "Strategy Module", low01: "Hesitant; hard to initiate", level2: "Plans well, starts willingly, can run multiple threads", level3: "Over-planning; under-executing", remedy: "This year, practice starting directly—let strategy guide action, not justify delay." },
+    "火": { core: "Momentum Module", low01: "Low drive; hard to push forward", level2: "Fast execution; high throughput; finishes tasks quickly", level3: "Over-consuming energy; fades after the burst", remedy: "This year, practice managing output rhythm—make each push more sustainable." },
+    "土": { core: "Endurance Module", low01: "Hard to sustain; lacks foundation", level2: "Steady persistence; accumulates results; builds systems", level3: "Too conservative; lacks breakthroughs", remedy: "This year, practice balancing accumulation with innovation—make stability a base, not a ceiling." },
+    "金": { core: "Decisiveness Module", low01: "Decision friction; blurry boundaries", level2: "Cuts cleanly; decides decisively; builds clear processes", level3: "Too harsh; lacks flexibility", remedy: "This year, practice balancing efficiency with humanity—let decisiveness help, not harden." },
+    "水": { core: "Insight Module", low01: "Mental dryness; narrowed perspective", level2: "Thinks deeply; discerns well; handles complexity", level3: "Overthinking; underacting", remedy: "This year, practice balancing thought with action—make insight a base for decisions, not a reason to stall." },
+  };
+  const BOYAN_CONVERSION_ONE_SURFACE_EN = {
+    "木->火": "Convert growth presence (Wood) into visibility and influence (Fire)—that's the asset you can actually take with you.",
+    "火->土": "Settle high attention (Fire) into a reliable image and long-term credit (Earth)—that's the asset you can actually take with you.",
+    "土->金": "Refine a stable base (Earth) into professional standards and execution rules (Metal)—that's the asset you can actually take with you.",
+    "金->水": "Turn professional boundaries (Metal) into effective communication and an information network (Water)—that's the asset you can actually take with you.",
+    "水->木": "Convert communication links (Water) into growth networks and relationship expansion (Wood)—that's the asset you can actually take with you.",
+  };
+  const BOYAN_CONVERSION_ONE_STRATEGIC_EN = {
+    "木->火": "Convert strategy planning (Wood) into execution momentum (Fire)—that's the asset you can actually take with you.",
+    "火->土": "Settle momentum (Fire) into system accumulation and long-term assets (Earth)—that's the asset you can actually take with you.",
+    "土->金": "Refine a stable base (Earth) into process efficiency and decision standards (Metal)—that's the asset you can actually take with you.",
+    "金->水": "Turn decision processes (Metal) into deep insight and information synthesis (Water)—that's the asset you can actually take with you.",
+    "水->木": "Convert insight analysis (Water) into strategy expansion and initiation (Wood)—that's the asset you can actually take with you.",
+  };
+  const BOYAN_RISK_ONE_SURFACE_EN = {
+    "木->土": "Over-expansion (Wood) is damaging your reliability and trust foundation (Earth).",
+    "土->水": "Over-conservatism (Earth) is limiting communication flow and information links (Water).",
+    "水->火": "Over-shifting (Water) suppresses expressive heat (Fire), making influence hard to focus.",
+    "火->金": "Emotion-led decisions (Fire) are burning down your professional boundaries and execution standards (Metal).",
+    "金->木": "Over-strictness (Metal) is choking growth momentum and relationship expansion (Wood).",
+  };
+  const BOYAN_RISK_ONE_STRATEGIC_EN = {
+    "木->土": "Over-planning (Wood) is damaging system stability and result accumulation (Earth).",
+    "土->水": "Over-conservatism (Earth) is limiting insight flow and information processing (Water).",
+    "水->火": "Overthinking (Water) suppresses execution momentum (Fire), making action hard to land.",
+    "火->金": "Over-consumption (Fire) is burning down your decision process and execution standards (Metal).",
+    "金->木": "Over-strictness (Metal) is choking strategy expansion and initiation (Wood).",
+  };
+  const BOYAN_PUSH_SURFACE_EN = {
+    "木": "This year, practice balancing expansion with restraint—make every connection serve a clear purpose.",
+    "火": "This year, practice controlling your output rhythm—make each expression carry more weight.",
+    "土": "This year, practice balancing stability with innovation—let reliability be an advantage, not a limit.",
+    "金": "This year, practice balancing principles with human context—make boundaries protective, not obstructive.",
+    "水": "This year, practice balancing flow with stability—let communication become a bridge, not a drain.",
+  };
+  const BOYAN_PUSH_STRATEGIC_EN = {
+    "木": "This year, practice starting directly—let strategy guide action, not justify delay.",
+    "火": "This year, practice managing output rhythm—make each push more sustainable.",
+    "土": "This year, practice balancing accumulation with innovation—make stability a base, not a ceiling.",
+    "金": "This year, practice balancing efficiency with humanity—let decisiveness help, not harden.",
+    "水": "This year, practice balancing thought with action—make insight a base for decisions, not a reason to stall.",
+  };
+  const GENERATION_POST_STYLE_EN = {
+    "木->火": { headline: "Strategy Ignites the Market", text: "Your execution channel (Wood) is converting precisely into visibility and reputation (Fire). Brand energy is rising." },
+    "火->土": { headline: "Attention Settles Into Assets", text: "High attention (Fire) should quickly convert into brand credit and infrastructure (Earth) before heat leaks away." },
+    "土->金": { headline: "Resources Become Efficiency", text: "A thick base (Earth) is here to refine higher-efficiency SOPs and rules (Metal) so the system can run itself." },
+    "金->水": { headline: "Discipline Generates Wisdom", text: "Your discipline and boundaries (Metal) are creating a clean environment for deeper thinking and strategy (Water)." },
+    "水->木": { headline: "Insight Drives Execution", text: "Abundant insight (Water) is converting efficiently into concrete execution channels (Wood)—a high-leverage monetization path." },
+  };
+  const OVERCOMING_POST_STYLE_EN = {
+    "木->土": { headline: "Expansion Shakes the Base", text: "Excess expansion drive (Wood) is damaging your trust and stability (Earth). Slow the pace and secure the base." },
+    "土->水": { headline: "Structure Restricts Creativity", text: "Rigid systems or over-seeking stability (Earth) can choke your flexible insight flow (Water)." },
+    "水->火": { headline: "Rationality Suppresses Heat", text: "Absolute cool rationality (Water) reduces risk—but may also drain the emotional upside and expression (Fire)." },
+    "火->金": { headline: "Emotion Breaks the Rules", text: "Sudden impulses or chasing exposure (Fire) can challenge the decision boundaries and standards (Metal) you built." },
+    "金->木": { headline: "Rules Cut Off Growth", text: "Harsh control and self-limits (Metal) can prune the execution vitality and growth space (Wood) you need." },
+  };
+  const STRONG_COMMENTS_SURFACE_EN = {
+    "木": "You come across as proactive and growth-oriented—willing to expand your circle.",
+    "火": "You come across as warm, fast-reacting, and attention-attracting.",
+    "土": "You come across as steady, reliable, and safe to trust.",
+    "金": "You come across as decisive, principled, and professional.",
+    "水": "You come across as flexible, communicative, and approachable.",
+  };
+  const WEAK_COMMENTS_SURFACE_EN = {
+    "木": "You may appear reserved, less initiating, and lacking expansion drive.",
+    "火": "You may appear low-key, slower to react, and less present.",
+    "土": "You may appear unsettled, harder to trust, and lacking carrying capacity.",
+    "金": "You may appear blurry on standards, struggling to hold boundaries.",
+    "水": "You may appear closed-off, with blocked information flow and low communication drive.",
+  };
+  const STRONG_COMMENTS_STRATEGIC_EN = {
+    "木": "You tend to plan well, initiate willingly, and run multiple threads effectively.",
+    "火": "You tend to push fast, execute strongly, and finish tasks quickly.",
+    "土": "You tend to sustain, accumulate results, and build systems.",
+    "金": "You tend to decide cleanly, cut clearly, and establish workflows.",
+    "水": "You tend to think deeply, see patterns, and handle complexity well.",
+  };
+  const WEAK_COMMENTS_STRATEGIC_EN = {
+    "木": "You may hesitate, struggle to start, and lack strategic drive.",
+    "火": "You may lack momentum, struggle to push, and have low execution fuel.",
+    "土": "You may struggle to sustain, lack foundation, and fail to accumulate.",
+    "金": "You may struggle to decide, have blurry boundaries, and lack execution standards.",
+    "水": "You may feel mentally drained, narrow in vision, and lack deep analysis.",
+  };
+
   // ====== 小限／四化相關常數 ======
   
   /**
@@ -632,6 +738,26 @@
       BOYAN_PUSH,
       BOYAN_PUSH_SURFACE,
       BOYAN_PUSH_STRATEGIC,
+
+      // EN variants
+      ELEMENT_TYPE_EN,
+      ELEMENT_TYPE_EN_FALLBACK,
+      ENERGY_LABEL_EN,
+      RELATION_BADGE_EN,
+      ELEMENT_CORE_MEANING_SURFACE_EN,
+      ELEMENT_CORE_MEANING_STRATEGIC_EN,
+      BOYAN_CONVERSION_ONE_SURFACE_EN,
+      BOYAN_CONVERSION_ONE_STRATEGIC_EN,
+      BOYAN_RISK_ONE_SURFACE_EN,
+      BOYAN_RISK_ONE_STRATEGIC_EN,
+      BOYAN_PUSH_SURFACE_EN,
+      BOYAN_PUSH_STRATEGIC_EN,
+      GENERATION_POST_STYLE_EN,
+      OVERCOMING_POST_STYLE_EN,
+      STRONG_COMMENTS_SURFACE_EN,
+      WEAK_COMMENTS_SURFACE_EN,
+      STRONG_COMMENTS_STRATEGIC_EN,
+      WEAK_COMMENTS_STRATEGIC_EN,
       
       // 小限／四化相關
       STEMS,
@@ -683,6 +809,24 @@
       BOYAN_PUSH,
       BOYAN_PUSH_SURFACE,
       BOYAN_PUSH_STRATEGIC,
+      ELEMENT_TYPE_EN,
+      ELEMENT_TYPE_EN_FALLBACK,
+      ENERGY_LABEL_EN,
+      RELATION_BADGE_EN,
+      ELEMENT_CORE_MEANING_SURFACE_EN,
+      ELEMENT_CORE_MEANING_STRATEGIC_EN,
+      BOYAN_CONVERSION_ONE_SURFACE_EN,
+      BOYAN_CONVERSION_ONE_STRATEGIC_EN,
+      BOYAN_RISK_ONE_SURFACE_EN,
+      BOYAN_RISK_ONE_STRATEGIC_EN,
+      BOYAN_PUSH_SURFACE_EN,
+      BOYAN_PUSH_STRATEGIC_EN,
+      GENERATION_POST_STYLE_EN,
+      OVERCOMING_POST_STYLE_EN,
+      STRONG_COMMENTS_SURFACE_EN,
+      WEAK_COMMENTS_SURFACE_EN,
+      STRONG_COMMENTS_STRATEGIC_EN,
+      WEAK_COMMENTS_STRATEGIC_EN,
       STEMS,
       BRANCH_ORDER,
       YIN_STEM_FROM_YEAR,

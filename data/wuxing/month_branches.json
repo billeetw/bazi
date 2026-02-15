@@ -1,0 +1,16 @@
+{
+  "month_branches": [
+    { "branch": "yin", "zh": "寅", "in_season": "wood", "seasonal_multiplier": { "wood": 1.30, "fire": 1.00, "earth": 0.90, "metal": 0.95, "water": 1.10 } },
+    { "branch": "mao", "zh": "卯", "in_season": "wood", "seasonal_multiplier": { "wood": 1.30, "fire": 1.00, "earth": 0.90, "metal": 0.95, "water": 1.10 } },
+    { "branch": "chen", "zh": "辰", "in_season": "earth", "seasonal_multiplier": { "wood": 0.95, "fire": 1.10, "earth": 1.30, "metal": 1.00, "water": 0.90 } },
+    { "branch": "si", "zh": "巳", "in_season": "fire", "seasonal_multiplier": { "wood": 0.95, "fire": 1.30, "earth": 1.00, "metal": 0.90, "water": 1.10 } },
+    { "branch": "wu", "zh": "午", "in_season": "fire", "seasonal_multiplier": { "wood": 0.95, "fire": 1.30, "earth": 1.00, "metal": 0.90, "water": 1.10 } },
+    { "branch": "wei", "zh": "未", "in_season": "earth", "seasonal_multiplier": { "wood": 0.95, "fire": 1.10, "earth": 1.30, "metal": 1.00, "water": 0.90 } },
+    { "branch": "shen", "zh": "申", "in_season": "metal", "seasonal_multiplier": { "wood": 0.90, "fire": 0.95, "earth": 1.10, "metal": 1.30, "water": 1.00 } },
+    { "branch": "you", "zh": "酉", "in_season": "metal", "seasonal_multiplier": { "wood": 0.90, "fire": 0.95, "earth": 1.10, "metal": 1.30, "water": 1.00 } },
+    { "branch": "xu", "zh": "戌", "in_season": "earth", "seasonal_multiplier": { "wood": 0.95, "fire": 1.10, "earth": 1.30, "metal": 1.00, "water": 0.90 } },
+    { "branch": "hai", "zh": "亥", "in_season": "water", "seasonal_multiplier": { "wood": 1.00, "fire": 0.90, "earth": 0.95, "metal": 1.10, "water": 1.30 } },
+    { "branch": "zi", "zh": "子", "in_season": "water", "seasonal_multiplier": { "wood": 1.00, "fire": 0.90, "earth": 0.95, "metal": 1.10, "water": 1.30 } },
+    { "branch": "chou", "zh": "丑", "in_season": "earth", "seasonal_multiplier": { "wood": 0.95, "fire": 1.10, "earth": 1.30, "metal": 1.00, "water": 0.90 } }
+  ]
+}

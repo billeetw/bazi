@@ -64,9 +64,10 @@
 
     container.innerHTML = "";
     if (!ziwei) {
+      const noDataMsg = (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t("ziwei.dataUnavailable") : "紫微資料暫不可用（後端 iztro 出錯或未回傳）。請稍後重試。";
       container.innerHTML = `
         <div class="col-span-4 flex items-center justify-center text-xs text-slate-500 text-center">
-          紫微資料暫不可用（後端 iztro 出錯或未回傳）。請稍後重試。
+          ${noDataMsg}
         </div>`;
       if (hint) hint.textContent = "";
       return;
@@ -92,13 +93,16 @@
               return `<span class="${wx ? "star-wx-" + wx : ""}">${withBadge}</span>`;
             })
             .join("<br>")
-        : `<span class="text-slate-600 text-xs italic font-normal">空宮</span>`;
+        : `<span class="text-slate-600 text-xs italic font-normal">${(window.I18n && typeof window.I18n.t === "function") ? window.I18n.t("ziwei.emptyPalace") : "空宮"}</span>`;
 
-      let title = slot.palaceName + " " + slot.branch;
-      if (slot.isMing && slot.isShen) title += "（命身同宮）";
-      else if (slot.isMing) title += "（命）";
-      else if (slot.isShen) title += "（身）";
-      if (slot.isActiveLimit) title += " · 小限命宮";
+      const t = (key, opts) => (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(key, opts) : key;
+      const palaceDisplayMap = (window.I18n && typeof window.I18n.tObject === "function") ? window.I18n.tObject("ziwei.palaceDisplay") : null;
+      const palaceDisplayName = (palaceDisplayMap && palaceDisplayMap[slot.palaceName]) || slot.palaceName;
+      let title = palaceDisplayName + " " + slot.branch;
+      if (slot.isMing && slot.isShen) title += t("ziwei.suffixMingShenSame");
+      else if (slot.isMing) title += t("ziwei.suffixMing");
+      else if (slot.isShen) title += t("ziwei.suffixShen");
+      if (slot.isActiveLimit) title += " · " + t("ziwei.minorLimitPalace");
 
       const el = document.createElement("div");
       el.className = `zw-palace ${isKey ? "zw-palace-key" : ""} ${glowClass}${activeLimitClass}`;
@@ -106,7 +110,7 @@
       el.setAttribute("data-palace-name", slot.palaceName);
 
       const dl = slot.decadalLimit || {};
-      const decadalText = (dl.start != null && dl.end != null) ? `大限 ${dl.start}–${dl.end}` : "";
+      const decadalText = (dl.start != null && dl.end != null) ? (t("ziwei.majorLimitLabel", { start: dl.start, end: dl.end })) : "";
 
       el.innerHTML = `
         <div class="text-[13px] font-black text-slate-300 leading-snug mb-1">
@@ -164,23 +168,24 @@
     } else if (yearBranch && window.CalcHelpers?.calculateShengong) {
       shengong = window.CalcHelpers.calculateShengong(yearBranch) || "";
     }
+    const lt = (k, o) => (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(k, o) : k;
     const siHuaText =
       birthMutagen.祿 && birthMutagen.權 && birthMutagen.科 && birthMutagen.忌
-        ? `${birthMutagen.祿}化祿 · ${birthMutagen.權}化權 · ${birthMutagen.科}化科 · ${birthMutagen.忌}化忌`
+        ? `${birthMutagen.祿}${lt("ziwei.huaLu")} · ${birthMutagen.權}${lt("ziwei.huaQuan")} · ${birthMutagen.科}${lt("ziwei.huaKe")} · ${birthMutagen.忌}${lt("ziwei.huaJi")}`
         : "—";
     center.innerHTML = `
-      <div class="text-[10px] tracking-[0.18em] text-slate-500 font-black">DESTINY CORE</div>
-      <div class="text-slate-300 text-[11px] mt-2">命主：<span class="text-amber-400 font-bold">${mingzhu || "—"}</span></div>
-      <div class="text-slate-300 text-[11px] mt-1">身主：<span class="text-amber-400 font-bold">${shengong || "—"}</span></div>
-      <div class="text-[10px] text-slate-500 mt-2 font-black">生年四化</div>
+      <div class="text-[10px] tracking-[0.18em] text-slate-500 font-black">${lt("ziwei.destinyCore")}</div>
+      <div class="text-slate-300 text-[11px] mt-2">${lt("ziwei.lifeMasterLabel")}<span class="text-amber-400 font-bold">${mingzhu || "—"}</span></div>
+      <div class="text-slate-300 text-[11px] mt-1">${lt("ziwei.bodyMasterLabel")}<span class="text-amber-400 font-bold">${shengong || "—"}</span></div>
+      <div class="text-[10px] text-slate-500 mt-2 font-black">${lt("ziwei.fourTransformations")}</div>
       <div class="text-slate-300 text-[10px] leading-tight mt-0.5">${siHuaText}</div>
-      <div class="text-[11px] text-slate-400 mt-2">五行局：${core.wuxingju || "—"}</div>
-      <div class="text-[10px] text-slate-500 mt-1">命宮支：${core.minggongBranch || "—"} ｜ 身宮支：${core.shengongBranch || "—"}</div>
+      <div class="text-[11px] text-slate-400 mt-2">${lt("ziwei.fivePhaseJuLabel")}${core.wuxingju || "—"}</div>
+      <div class="text-[10px] text-slate-500 mt-1">${lt("ziwei.mingBranchLabelFull")}${core.minggongBranch || "—"} ｜ ${lt("ziwei.bodyBranchLabelFull")}${core.shengongBranch || "—"}</div>
     `;
     container.appendChild(center);
 
     if (hint) {
-      hint.innerHTML = "提示：命宮位置會依命宮地支旋轉排盤；三方四正＝本宮＋對宮＋三合兩宮（點宮位自動標示）。";
+      hint.innerHTML = (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t("ziwei.tipRotation") : "提示：命宮位置會依命宮地支旋轉排盤；三方四正＝本宮＋對宮＋三合兩宮（點宮位自動標示）。";
     }
   }
 

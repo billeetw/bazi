@@ -11,28 +11,43 @@
   </style>
 </head>
 <body class="min-h-screen p-4 md:p-8">
-  <div class="max-w-xl mx-auto">
-    <h1 class="text-2xl font-black text-amber-400 mb-2">深度諮詢報名</h1>
-    <p class="text-sm text-slate-400">填寫後送出，我們將與您聯絡確認時段與付款。</p>
-    <p class="text-sm text-slate-300/90 mt-2 mb-6">
-      可預約時間：平日下午 13:30–17:30｜晚上 20:00–21:30
-    </p>
+  <div class="max-w-xl mx-auto space-y-6">
+    <h1 class="text-2xl font-black text-amber-400">深度諮詢報名</h1>
+
+    <!-- 引言 -->
+    <div class="text-slate-300 text-sm leading-relaxed space-y-3">
+      <p>因為每一張命盤，都是一份獨特的人生劇本。</p>
+      <p>很多人問我，深度諮詢內容是什麼？為什麼要給到 50 頁的命書？</p>
+      <p>在我們見面前，我會先仔細研讀您的命盤，根據您當下的困惑反覆推敲。</p>
+      <p>諮詢不只是算命，而是一場關於「你是誰」與「你要去哪裡」的深度對話。</p>
+      <p>諮詢完成後我會製作一份五十頁的命書，三天內寄送給您。</p>
+      <p>希望這 50 頁命書能成為您人生裡隨時翻閱的指南，幫您認清自己、認識局勢、掌握好生涯脈動，活出自己想要的人生。</p>
+    </div>
+
+    <!-- 活動詳情 -->
+    <div class="glass p-4 rounded-xl space-y-2 text-sm">
+      <p class="font-bold text-amber-300">活動詳情</p>
+      <p><span class="text-slate-500">諮詢費用：</span> NT$ 3,600</p>
+      <p><span class="text-slate-500">預約時段：</span> 平日下午 13:30–17:30｜晚上 20:00–21:30</p>
+      <p class="text-slate-400 text-xs mt-2">流程說明：填寫報名表 → 匯款並回傳後五碼 → 我們將與您聯繫確認時段 → 伯彥老師開始前置研讀。</p>
+    </div>
 
     <form id="consultForm" class="glass p-6 space-y-4" novalidate>
       <div>
-        <label class="block text-xs text-slate-500 mb-1">姓名 *</label>
-        <input type="text" name="name" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="您的姓名" />
+        <label class="block text-xs text-slate-500 mb-1">姓名／稱呼 *</label>
+        <input type="text" name="name" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="您的姓名或稱呼" />
       </div>
       <div>
-        <label class="block text-xs text-slate-500 mb-1">Email *</label>
-        <input type="email" name="email" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="email@example.com" />
-      </div>
-      <div>
-        <label class="block text-xs text-slate-500 mb-1">電話 *</label>
+        <label class="block text-xs text-slate-500 mb-1">聯絡電話 * <span class="text-slate-500 font-normal">（方便諮詢時間聯繫）</span></label>
         <input type="tel" name="phone" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="09xxxxxxxx" />
       </div>
       <div>
-        <label class="block text-xs text-slate-500 mb-1">出生（國曆）* 年／月／日必選；時辰或時分選填</label>
+        <label class="block text-xs text-slate-500 mb-1">Email * <span class="text-slate-500 font-normal">（用於寄送 50 頁電子版命書）</span></label>
+        <input type="email" name="email" required class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="email@example.com" />
+      </div>
+      <div>
+        <label class="block text-xs text-slate-500 mb-1">出生資訊（國曆）*</label>
+        <p class="text-xs text-slate-500 mb-2">提示：請務必正確，若已知精確出生時分請註明，這會讓 50 頁命書的細節更精準。</p>
         <div class="grid grid-cols-3 gap-2 mb-2">
           <select name="birthYear" id="birthYear" required class="bg-black/40 border border-white/10 rounded-xl px-2 py-3 text-slate-100 text-sm">
             <option value="">年</option>
@@ -72,27 +87,30 @@
       <div>
         <label class="block text-xs text-slate-500 mb-1">想討論的主題 *（可複選）</label>
         <div class="space-y-2">
-          <label class="flex items-center gap-2"><input type="checkbox" name="topics" value="生涯規劃" class="rounded" /> 生涯規劃</label>
-          <label class="flex items-center gap-2"><input type="checkbox" name="topics" value="流年節奏" class="rounded" /> 流年節奏</label>
-          <label class="flex items-center gap-2"><input type="checkbox" name="topics" value="命盤解讀" class="rounded" /> 命盤解讀</label>
-          <label class="flex items-center gap-2"><input type="checkbox" name="topics" value="其他" class="rounded" /> 其他</label>
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="topics" value="生涯戰略佈局（工作轉換、創業時機）" class="rounded" /> 生涯戰略佈局（工作轉換、創業時機）</label>
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="topics" value="流年運勢節奏（今年該衝刺還是該沉潛？）" class="rounded" /> 流年運勢節奏（今年該衝刺還是該沉潛？）</label>
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="topics" value="本命潛能深度解讀（找回此生的使命與志願）" class="rounded" /> 本命潛能深度解讀（找回此生的使命與志願）</label>
+          <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="topics" value="其他個人困惑" class="rounded" /> 其他個人困惑（請在下方說明）</label>
         </div>
       </div>
       <div>
-        <label class="block text-xs text-slate-500 mb-1">其他說明</label>
+        <label class="block text-xs text-slate-500 mb-1">目前的困擾或想問的問題 <span class="font-normal">（選填）</span></label>
+        <p class="text-xs text-slate-500 mb-2">提示：您可以稍微描述現狀，這能幫助我在研讀命盤時，更精準地為您推敲解答。</p>
         <textarea name="topicExtra" rows="3" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="選填"></textarea>
       </div>
-      <div>
-        <label class="block text-xs text-slate-500 mb-1">匯款帳號後五碼 *</label>
+      <div class="pt-2 border-t border-white/10">
+        <p class="text-sm font-bold text-amber-300 mb-2">付款資訊確認 *</p>
+        <p class="text-sm text-slate-300 mb-3">匯款帳號：國泰世華 (013) 帳號 011035019997（一起出來玩股份有限公司）</p>
+        <label class="block text-xs text-slate-500 mb-1">您的匯款帳號後五碼 *</label>
         <input type="text" name="bankLast5" required maxlength="5" pattern="[0-9]{5}" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="五位數字" />
       </div>
       <div>
-        <label class="block text-xs text-slate-500 mb-1">統編（選填）</label>
+        <label class="block text-xs text-slate-500 mb-1">公司統編 <span class="font-normal">（選填）</span></label>
         <input type="text" name="taxId" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="需要開立發票請填" />
       </div>
       <input type="hidden" name="source" value="consultation-page" />
       <button type="submit" id="submitBtn" class="w-full py-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 text-slate-950 font-black tracking-wide hover:brightness-110 transition">
-        送出報名
+        立即預約，開啟人生新篇章
       </button>
     </form>
     <p id="message" class="mt-4 text-sm text-center hidden"></p>
@@ -238,7 +256,7 @@
           }
           showMsg(msgEl, errText, true);
           btn.disabled = false;
-          btn.textContent = '送出報名';
+          btn.textContent = '立即預約，開啟人生新篇章';
           return;
         }
 
@@ -315,7 +333,7 @@
         showMsg(msgEl, '網路錯誤，請檢查連線後再試。若為本機測試，請用 npx wrangler pages dev 啟動後再試。', true);
       } finally {
         btn.disabled = false;
-        btn.textContent = '送出報名';
+        btn.textContent = '立即預約，開啟人生新篇章';
       }
     });
   </script>

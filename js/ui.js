@@ -76,8 +76,23 @@
   } = window.UiRenderHelpers || {};
 
   // ====== CONFIG ======
-  // API_BASE 已移至 api-service.js
-  const API_BASE = window.UiServices?.ApiService?.API_BASE || "https://17gonplay-api.billeetw.workers.dev";
+  // API_BASE 來自 api-service（其由 Config.API_BASE 初始化）
+  const API_BASE = window.UiServices?.ApiService?.API_BASE || window.Config?.API_BASE || "https://bazi-api.billeetw.workers.dev";
+  const REMOTE_API_BASE = window.Config?.REMOTE_API_BASE || "https://bazi-api.billeetw.workers.dev";
+
+  async function fetchWithFallback(url, opts) {
+    try {
+      return await fetch(url, opts);
+    } catch (e) {
+      const isLocal = /^https?:\/\/localhost(:\d+)?\//.test(url) || /^https?:\/\/127\.0\.0\.1(:\d+)?\//.test(url);
+      if (isLocal && (e?.name === "TypeError" || /fetch|network|refused/i.test(String(e)))) {
+        const fallbackUrl = url.replace(/^https?:\/\/[^/]+/, REMOTE_API_BASE);
+        console.warn("[ui.js] 本地 API 無法連線，改用遠端:", fallbackUrl);
+        return fetch(fallbackUrl, opts);
+      }
+      throw e;
+    }
+  }
 
   // DEFAULT_WUXING_MEANINGS 已移至 wuxing-meaning.js 组件
 
@@ -239,16 +254,37 @@
       });
       if (result) dbContent = result;
     } else {
-      // Fallback to direct fetch
+      // Fallback to direct fetch (with zh-TW merge when locale=en)
       try {
-        const r = await fetch(`${API_BASE}/content/2026`, { method: "GET" });
-        const j = await r.json();
+        const i18nLocale = (window.I18n && typeof window.I18n.getLocale === "function") ? window.I18n.getLocale() : "zh-TW";
+        const locale =
+          typeof mapToContentLocale === "function"
+            ? mapToContentLocale(i18nLocale)
+            : (i18nLocale === "en" ? "en" : i18nLocale === "zh-CN" ? "zh-CN" : "zh-TW");
+        const r = await fetchWithFallback(`${API_BASE}/content/2026?locale=${encodeURIComponent(locale)}`, { method: "GET" });
+        let j = await r.json();
+        if (locale === "en" && j?.ok) {
+          const r2 = await fetchWithFallback(`${API_BASE}/content/2026?locale=zh-TW`, { method: "GET" });
+          const j2 = await r2.json();
+          if (j2?.ok) {
+            ["palaces", "stars", "tenGods", "wuxing"].forEach((k) => {
+              if (j2[k] && typeof j2[k] === "object") {
+                j[k] = Object.assign({}, j2[k], j[k] || {});
+              }
+            });
+          }
+        }
         if (j?.ok) dbContent = j;
       } catch (e) {
         console.warn("loadDbContent failed", e);
       }
     }
     renderWuxingMeaningBox(dbContent);
+    var i18nLoc = (typeof window.inferI18nLocale === "function" ? window.inferI18nLocale() : null) || (window.I18n && typeof window.I18n.getLocale === "function" ? window.I18n.getLocale() : "zh-TW");
+    var contentLoc = (typeof window.inferContentLocale === "function" ? window.inferContentLocale(i18nLoc) : null) || (i18nLoc === "en" ? "en" : i18nLoc === "zh-CN" ? "zh-CN" : "zh-TW");
+    if (window.__debugOverlay && typeof window.__debugOverlay.update === "function") {
+      window.__debugOverlay.update({ contentOk: !!dbContent, contentLocaleUsed: contentLoc });
+    }
   }
 
   // syncNavChipActive, initDashboardContentTransition 已移至 navigation.js 服务模块
@@ -264,6 +300,28 @@
   const initDashboardContentTransition = Navigation.initDashboardContentTransition || function() {
     console.warn("[ui.js] Navigation service not available, using fallback");
   };
+
+  /**
+   * Show/hide chart language mismatch banner.
+   * When UI locale is EN but chart was computed in Chinese, show banner prompting recalc.
+   */
+  function updateChartLangMismatchBanner() {
+    const banner = document.getElementById("chartLangMismatchBanner");
+    const textEl = document.getElementById("chartLangMismatchText");
+    const btnEl = document.getElementById("chartLangMismatchRecalc");
+    if (!banner || !textEl || !btnEl) return;
+
+    const i18nLocale = (window.I18n && typeof window.I18n.getLocale === "function") ? window.I18n.getLocale() : "zh-TW";
+    const chartLang = window.currentChartLanguage || "zh-TW";
+
+    if (i18nLocale.startsWith("en") && chartLang !== "en-US") {
+      banner.classList.remove("hidden");
+      textEl.textContent = (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t("chartLangMismatch.bannerEn") : "This chart is in Chinese. Recalculate to view English.";
+      btnEl.textContent = (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t("chartLangMismatch.recalcEn") : "Recalculate in English";
+    } else {
+      banner.classList.add("hidden");
+    }
+  }
 
   // ====== Calculate ======
   async function calculate(skipStartupSequence) {
@@ -336,9 +394,9 @@
       console.log("[ui.js] calculate: 時間解析結果:", resolved);
 
       btn.disabled = true;
-      btn.textContent = "計算中…";
+      btn.textContent = (window.I18n?.t("ui.calculating") || "計算中…");
       if (hint) {
-        hint.textContent = "正在連線後端計算（八字＋紫微＋流月＋十神）…";
+        hint.textContent = (window.I18n?.t("ui.connecting") || "正在連線後端計算（八字＋紫微＋流月＋十神）…");
       }
       console.log("[ui.js] calculate: 按鈕狀態已更新為「計算中」");
 
@@ -362,13 +420,18 @@
       } else {
         console.log("[ui.js] calculate: 使用 fallback fetch");
         // Fallback to direct fetch
-        const baseBody = { year: vy, month: vm, day: vd, hour: resolved.hour, minute: resolved.minute };
+        const i18nLocale = (window.I18n && typeof window.I18n.getLocale === "function") ? window.I18n.getLocale() : "zh-TW";
+        const language =
+          typeof getIzTroLanguage === "function"
+            ? getIzTroLanguage(i18nLocale)
+            : (i18nLocale === "en" ? "en-US" : i18nLocale === "zh-CN" ? "zh-CN" : "zh-TW");
+        const baseBody = { year: vy, month: vm, day: vd, hour: resolved.hour, minute: resolved.minute, language };
         const bodyWithGender = gender ? { ...baseBody, gender } : baseBody;
         const apiUrl = `${API_BASE}/compute/all`;
         console.log("[ui.js] calculate: 發送 API 請求到:", apiUrl);
         console.log("[ui.js] calculate: 請求體:", bodyWithGender);
         
-        const resp = await fetch(apiUrl, {
+        const resp = await fetchWithFallback(apiUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(bodyWithGender),
@@ -389,10 +452,19 @@
       console.log("compute/all payload:", payload);
       console.log("chartId from payload:", payload.chartId);
 
+      // Store chart language for mismatch banner (EN mode + chart in Chinese)
+      window.currentChartLanguage = payload.language || "zh-TW";
+      if (window.__debugOverlay && typeof window.__debugOverlay.update === "function") {
+        window.__debugOverlay.update({ payloadLanguage: payload.language || "zh-TW" });
+      }
+
       contract = payload.features;
       if (!contract || contract.version !== "strategic_features_v1") {
         throw new Error("features 格式錯誤（不是 strategic_features_v1）");
       }
+      // Worker 回傳的 astrolabe 語系，供轉繁邏輯判斷；無則預設 zh-CN（保守，照舊轉繁）
+      contract.astrolabeLanguage = payload.language || "zh-CN";
+      window.contract = contract;
 
       lastBirthYear = vy;
       lastGender = gender;
@@ -403,6 +475,51 @@
       const ziwei = contract.ziwei;
 
       if (!bazi) throw new Error("後端未回傳 bazi");
+
+      // ===== 五行生剋管線（四柱 → 向量 → 生剋報告） =====
+      if (window.WuxingFlowPipeline && bazi) {
+        try {
+          // 簡單快取 KB，避免每次重載
+          if (!window.__wuxingFlowKB) {
+            window.__wuxingFlowKB = await window.WuxingFlowPipeline.loadKB("/data/wuxing");
+          }
+          const kb = window.__wuxingFlowKB;
+          const pillars = window.WuxingFlowPipeline.buildPillarsFromBazi(bazi);
+          if (!pillars) {
+            console.warn("[WuxingFlowPipeline] 無法從 bazi 組出 pillars，五行將為 0。請確認 API 回傳 bazi.display（yG,yZ,mG,mZ,dG,dZ,hG,hZ）或 bazi.year/month/day/hour。當前 bazi:", bazi);
+          }
+          if (pillars) {
+            const locale = (window.I18n && typeof window.I18n.getLocale === "function") ? window.I18n.getLocale() : "zh-TW";
+            const out = window.WuxingFlowPipeline.runPipeline(pillars, kb, { stem_w: 1.0, branch_w: 1.0, locale });
+            // 將報告掛到 contract.bazi 與全域，供戰略看板或其他模組使用
+            contract.bazi.wuxingFlowReport = out.report;
+            window.wuxingFlowReport = out.report;
+            // 從管線結果填充 surface/strategic，供五行條與雷達圖顯示
+            const toZh = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
+            const vRaw = out.v_raw || {};
+            const vSeason = out.v_season || {};
+            contract.bazi.wuxing = contract.bazi.wuxing || {};
+            contract.bazi.wuxing.surface = Object.fromEntries(Object.entries(toZh).map(([en, zh]) => [zh, Number(vRaw[en]) || 0]));
+            contract.bazi.wuxing.strategic = Object.fromEntries(Object.entries(toZh).map(([en, zh]) => [zh, Number(vSeason[en]) || 0]));
+            contract.bazi.wuxing.maxStrategic = Math.max(0.01, ...Object.values(contract.bazi.wuxing.strategic));
+            // 計算十神主軸（日干 vs 月干，月令影響最大）
+            const dayStem = (pillars.day && pillars.day.stem) || "";
+            const monthStem = (pillars.month && pillars.month.stem) || "";
+            if (dayStem && monthStem) {
+              const tengod = (window.CalcHelpers && window.CalcHelpers.tenGodFromStems) ? window.CalcHelpers.tenGodFromStems(dayStem, monthStem) : null;
+              if (tengod) {
+                contract.bazi.tenGod = contract.bazi.tenGod || {};
+                contract.bazi.tenGod.dominant = tengod;
+              }
+            }
+            console.log("[WuxingFlowPipeline] report:", out.report);
+          } else {
+            console.warn("[WuxingFlowPipeline] 無法從 bazi.display 組出 pillars");
+          }
+        } catch (e) {
+          console.warn("[WuxingFlowPipeline] 執行失敗：", e);
+        }
+      }
 
       // 使用 API 服务模块获取宫位分数
       let ziweiScores = null;
@@ -416,7 +533,7 @@
         // Fallback to direct fetch
         if (chartId) {
           try {
-            const scoreResp = await fetch(`${API_BASE}/charts/${encodeURIComponent(chartId)}/scores`, { method: "GET" });
+            const scoreResp = await fetchWithFallback(`${API_BASE}/charts/${encodeURIComponent(chartId)}/scores`, { method: "GET" });
             if (scoreResp.ok) {
               ziweiScores = await scoreResp.json();
               window.ziweiScores = ziweiScores; // debug
@@ -465,6 +582,9 @@
 
       syncNavChipActive();
       initDashboardContentTransition();
+
+      // Chart language mismatch banner (EN mode + chart in Chinese)
+      updateChartLangMismatchBanner();
       
       // 綁定首頁按鈕
       if (Navigation.bindHomeButton) {
@@ -508,7 +628,7 @@
           renderFiveElementComment,
         });
       } else {
-        // Fallback
+        // Fallback（含五行生剋卡片，確保上線後即使 DataRenderer 未載入也會更新）
         renderPillars(bazi);
         renderBar("surfaceWxBars", bazi.wuxing?.surface, 4);
         renderRadarChart("surfaceWxRadar", bazi.wuxing?.surface);
@@ -516,6 +636,35 @@
         renderBar("strategicWxBars", bazi.wuxing?.strategic, bazi.wuxing?.maxStrategic || 1);
         renderRadarChart("strategicWxRadar", bazi.wuxing?.strategic);
         renderFiveElementComment("strategicWxComment", bazi.wuxing?.strategic, "strategic");
+        var flowCardEl = document.getElementById("wuxingFlowCard");
+        if (flowCardEl) {
+          var wuxingReport = bazi.wuxingFlowReport || window.wuxingFlowReport || null;
+          var wxFb = { title: "五行生剋診斷", s1: "一、氣勢", s2: "二、相生優勢", s3: "三、相生瓶頸", s4: "四、最大制衡壓力", s5: "五、下一步我們能為你做什麼？", btn: "預約諮詢", noReport: "尚未取得生剋報告，請先完成計算；若問題持續，請檢查 WuxingFlowPipeline 設定。" };
+          var wuxTitle = (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t("wuxing.title") : wxFb.title;
+          var ws1 = (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t("wuxing.section1") : wxFb.s1;
+          var ws2 = (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t("wuxing.section2") : wxFb.s2;
+          var ws3 = (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t("wuxing.section3") : wxFb.s3;
+          var ws4 = (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t("wuxing.section4") : wxFb.s4;
+          var ws5 = (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t("wuxing.section5") : wxFb.s5;
+          var wuxBtn = (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t("wuxing.consultButton") : wxFb.btn;
+          var wuxNoReport = (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t("wuxing.noReport") : wxFb.noReport;
+          if (!wuxingReport) {
+            flowCardEl.innerHTML = "<p class=\"text-slate-500 italic\">" + wuxNoReport.replace(/</g, "&lt;").replace(/>/g, "&gt;") + "</p>";
+          } else {
+            function esc(s) { if (s == null) return ""; return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;"); }
+            var cardLines = [];
+            cardLines.push("<h4 class=\"text-amber-200 font-semibold mb-2\">" + esc(wuxTitle) + "</h4>");
+            if (wuxingReport.momentumText) cardLines.push("<p class=\"text-amber-300/90 font-medium\">" + esc(ws1) + "</p><p class=\"text-slate-200 pl-2 whitespace-pre-line\">" + esc(wuxingReport.momentumText) + "</p>");
+            else if (wuxingReport.chief_complaint) cardLines.push("<p class=\"text-amber-300/90 font-medium\">" + esc(ws1) + "</p><p class=\"text-slate-200 pl-2 whitespace-pre-line\">" + esc(wuxingReport.chief_complaint) + "</p>");
+            if (wuxingReport.genPositiveText) cardLines.push("<p class=\"text-amber-300/90 font-medium mt-2\">" + esc(ws2) + "</p><p class=\"text-slate-200 pl-2 whitespace-pre-line\">" + esc(wuxingReport.genPositiveText) + "</p>");
+            if (wuxingReport.bottleneckText) cardLines.push("<p class=\"text-amber-300/90 font-medium mt-2\">" + esc(ws3) + "</p><p class=\"text-slate-200 pl-2 whitespace-pre-line\">" + esc(wuxingReport.bottleneckText) + "</p>");
+            if (wuxingReport.controlText) cardLines.push("<p class=\"text-amber-300/90 font-medium mt-2\">" + esc(ws4) + "</p><p class=\"text-slate-200 pl-2 whitespace-pre-line\">" + esc(wuxingReport.controlText) + "</p>");
+            if (wuxingReport.predictionText) cardLines.push("<p class=\"text-amber-300/90 font-medium mt-2\">" + esc(ws5) + "</p><p class=\"text-slate-400 text-xs pl-2 whitespace-pre-line leading-relaxed\">" + esc(wuxingReport.predictionText) + "</p>");
+            else if (wuxingReport.falsifiable_predictions) cardLines.push("<p class=\"text-amber-300/90 font-medium mt-2\">" + esc(ws5) + "</p><p class=\"text-slate-400 text-xs pl-2 whitespace-pre-line\">" + esc(wuxingReport.falsifiable_predictions) + "</p>");
+            cardLines.push("<p class=\"mt-3 pl-2\"><a href=\"" + (window.Config?.SITE_URL || "https://www.17gonplay.com") + "/consultation\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"inline-block px-4 py-2 rounded-lg bg-amber-500/90 text-slate-900 font-medium hover:bg-amber-400 transition\">" + esc(wuxBtn) + "</a></p>");
+            flowCardEl.innerHTML = cardLines.join("");
+          }
+        }
       }
 
       // 渲染十神指令
@@ -524,7 +673,12 @@
       } else {
         // Fallback
         const dominant = (bazi.tenGod?.dominant || "").trim();
-        const cmd = dominant && dbContent.tenGods?.[dominant] ? dbContent.tenGods[dominant] : "";
+        var ContentUtils = window.UiUtils?.ContentUtils;
+        var cmdRaw = ContentUtils && typeof ContentUtils.getContentValue === "function"
+          ? ContentUtils.getContentValue(dbContent, "tenGods", dominant, null)
+          : (dominant && dbContent.tenGods?.[dominant] ? dbContent.tenGods[dominant] : null);
+        if (cmdRaw && cmdRaw.startsWith("(missing:")) cmdRaw = null;
+        const cmd = cmdRaw || "";
         const tenGodEl = document.getElementById("tenGodCommand");
         if (tenGodEl) {
           tenGodEl.textContent = cmd || `（資料庫尚未填入「${dominant || "—"}」的十神指令。你可以先在 ten_god_analysis 補上 2026 內容。）`;
@@ -581,12 +735,18 @@
         });
       }
 
-      // 初始戰術建議（僅基於五行和十神，不依賴紫微數據）
+      // 初始戰術建議（傳入 ziwei 以顯示命主/身主）
       if (CalculationFlow.renderTactics) {
-        CalculationFlow.renderTactics({ bazi, dbContent, ziweiPalaceMetadata: null, liuyueData: null });
+        CalculationFlow.renderTactics({ bazi, dbContent, ziweiPalaceMetadata: null, liuyueData: null, ziwei });
       } else {
         // Fallback
-        const tenGodText = dominant && dbContent.tenGods?.[dominant] ? dbContent.tenGods[dominant] : "";
+        const dom = (bazi?.tenGod?.dominant || "").trim();
+        var ContentUtils = window.UiUtils?.ContentUtils;
+        var tenGodRaw = ContentUtils && typeof ContentUtils.getContentValue === "function"
+          ? ContentUtils.getContentValue(dbContent, "tenGods", dom, null)
+          : (dom && dbContent.tenGods?.[dom] ? dbContent.tenGods[dom] : null);
+        if (tenGodRaw && tenGodRaw.startsWith("(missing:")) tenGodRaw = null;
+        const tenGodText = tenGodRaw || "";
         const initialTactics = window.Calc?.computeDynamicTactics 
           ? window.Calc.computeDynamicTactics(bazi, tenGodText, null, null)
           : [];
@@ -611,14 +771,18 @@
         const ziweiPalaceMetadata = (window.BaziApp?.State?.getState("ziweiPalaceMetadata")) || window.ziweiPalaceMetadata || null;
         const liuyueData = bazi?.liuyue2026 || null;
         
-        // 使用计算流程服务模块渲染战术建议
+        // 使用計算流程服務渲染戰術建議（傳入 ziwei 以顯示命主/身主）
         if (CalculationFlow.renderTactics) {
-          CalculationFlow.renderTactics({ bazi, dbContent, ziweiPalaceMetadata, liuyueData });
+          CalculationFlow.renderTactics({ bazi, dbContent, ziweiPalaceMetadata, liuyueData, ziwei });
         } else {
           // Fallback
-          const tenGodText = (bazi?.tenGod?.dominant || "").trim() && dbContent.tenGods?.[bazi.tenGod.dominant] 
-            ? dbContent.tenGods[bazi.tenGod.dominant] 
-            : "";
+          const dom = (bazi?.tenGod?.dominant || "").trim();
+          var ContentUtils = window.UiUtils?.ContentUtils;
+          var tenGodRaw = ContentUtils && typeof ContentUtils.getContentValue === "function"
+            ? ContentUtils.getContentValue(dbContent, "tenGods", dom, null)
+            : (dom && dbContent.tenGods?.[dom] ? dbContent.tenGods[dom] : null);
+          if (tenGodRaw && tenGodRaw.startsWith("(missing:")) tenGodRaw = null;
+          const tenGodText = tenGodRaw || "";
           if (window.Calc?.computeDynamicTactics) {
             const tactics = window.Calc.computeDynamicTactics(bazi, tenGodText, ziweiPalaceMetadata, liuyueData);
             const tacticalBox = document.getElementById("tacticalBox");
@@ -827,7 +991,7 @@
       });
       const hint = document.getElementById("hint");
       if (hint) {
-        hint.textContent = "系統載入失敗，請刷新頁面重試（錯誤：calc.js 未載入）";
+        hint.textContent = (window.I18n?.t("ui.loadErrorDetail") || "系統載入失敗，請刷新頁面重試（錯誤：calc.js 未載入）");
         hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
       }
       // 即使 Calc 未載入，也嘗試綁定按鈕事件（使用 fallback）
@@ -838,7 +1002,7 @@
           e.stopPropagation();
           const hint = document.getElementById("hint");
           if (hint) {
-            hint.textContent = "系統載入失敗，請刷新頁面重試";
+            hint.textContent = (window.I18n?.t("ui.loadError") || "系統載入失敗，請刷新頁面重試");
             hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
           }
           console.error("無法啟動：calc.js 未載入");
@@ -848,6 +1012,9 @@
     }
     
     try {
+      if (window.I18n && typeof window.I18n.init === "function") {
+        await window.I18n.init();
+      }
       initSelectors();
       initIdentifyBirthTime();
       syncNavChipActive();
@@ -879,10 +1046,10 @@
         const hint = document.getElementById("hint");
         if (btn) {
           btn.disabled = false;
-          btn.textContent = "開啟 人生使用說明書";
+          btn.textContent = (window.I18n?.t("ui.launchBtn") || "開啟 人生使用說明書");
         }
         if (hint) {
-          hint.textContent = "啟動失敗：" + (err.message || "未知錯誤");
+          hint.textContent = (window.I18n?.t("ui.launchFailed") || "啟動失敗") + "：" + (err.message || (window.I18n?.t("ui.unknownError") || "未知錯誤"));
           hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
         }
       }
@@ -985,10 +1152,26 @@
         Navigation.bindHomeButton();
       }
 
+      // Chart language mismatch recalc button
+      const chartLangRecalcBtn = document.getElementById("chartLangMismatchRecalc");
+      if (chartLangRecalcBtn && !chartLangRecalcBtn.dataset.bound) {
+        chartLangRecalcBtn.dataset.bound = "1";
+        chartLangRecalcBtn.addEventListener("click", function () {
+          if (typeof window.runCalculation === "function") window.runCalculation();
+        });
+      }
+
       // 供「我的命盤」等外部呼叫：填入表單後觸發計算（等同點擊開啟按鈕）
       window.runCalculation = function () {
         var btn = document.getElementById("btnLaunch");
         if (btn) btn.click();
+      };
+
+      // 語系切換還原時使用：先用當前 locale 重載 content，再計算（確保星曜解釋等用對語系）
+      window.reloadContentAndRecalc = function () {
+        loadDbContent().then(function () {
+          if (typeof window.runCalculation === "function") window.runCalculation();
+        });
       };
 
       console.log("[ui.js] DOMContentLoaded 初始化完成");

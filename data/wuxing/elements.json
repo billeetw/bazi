@@ -1,0 +1,23 @@
+{
+  "elements": [
+    { "id": "wood", "zh": "木", "gen": "fire", "ctl": "earth" },
+    { "id": "fire", "zh": "火", "gen": "earth", "ctl": "metal" },
+    { "id": "earth", "zh": "土", "gen": "metal", "ctl": "water" },
+    { "id": "metal", "zh": "金", "gen": "water", "ctl": "wood" },
+    { "id": "water", "zh": "水", "gen": "wood", "ctl": "fire" }
+  ],
+  "gen_edges": [
+    { "from": "water", "to": "wood" },
+    { "from": "wood", "to": "fire" },
+    { "from": "fire", "to": "earth" },
+    { "from": "earth", "to": "metal" },
+    { "from": "metal", "to": "water" }
+  ],
+  "ctl_edges": [
+    { "from": "wood", "to": "earth" },
+    { "from": "earth", "to": "water" },
+    { "from": "water", "to": "fire" },
+    { "from": "fire", "to": "metal" },
+    { "from": "metal", "to": "wood" }
+  ]
+}

@@ -59,17 +59,28 @@
     const box = document.getElementById(targetId);
     if (!box) return;
     const { animateValue } = getDomHelpers();
-    const strongest = opts?.strongest ?? null;
-    const weakest = opts?.weakest ?? null;
+    const t = (k) => (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(k) : k;
+    const zhToKey = { "木": "wuxing.wood", "火": "wuxing.fire", "土": "wuxing.earth", "金": "wuxing.metal", "水": "wuxing.water" };
+    const keys = ["木", "火", "土", "金", "水"];
+    const values = keys.map((e) => Number(data?.[e] || 0));
+    const dataMax = Math.max(0, ...values);
+    const dataMin = Math.min(...values);
+    /** 若全為 0 或無差異，不顯示 [最強]/[最弱] 標籤 */
+    const hasVariation = dataMax > 0 && dataMax !== dataMin;
+    const strongest = hasVariation ? (opts?.strongest ?? null) : null;
+    const weakest = hasVariation ? (opts?.weakest ?? null) : null;
+    const strongestLabel = t("wuxing.strongest");
+    const weakestLabel = t("wuxing.weakest");
     box.innerHTML = "";
-    ["木", "火", "土", "金", "水"].forEach((e) => {
+    keys.forEach((e) => {
       const v = Number(data?.[e] || 0);
       const w = max ? Math.max(3, (v / max) * 100) : 0;
-      const tag = e === strongest ? " <span class=\"text-amber-400 text-[10px] font-black\">[ 最強 ]</span>" : e === weakest ? " <span class=\"text-slate-400 text-[10px] font-black\">[ 最弱 ]</span>" : "";
+      const tag = e === strongest ? ` <span class="text-amber-400 text-[10px] font-black">[ ${strongestLabel} ]</span>` : e === weakest ? ` <span class="text-slate-400 text-[10px] font-black">[ ${weakestLabel} ]</span>` : "";
+      const label = t(zhToKey[e]) || e;
       box.innerHTML += `
         <div class="mb-1 wx-row">
           <div class="flex justify-between text-xs text-slate-300">
-            <span class="font-bold">${e}${tag}</span>
+            <span class="font-bold">${label}${tag}</span>
             <span class="font-mono wx-value" data-value="${v}">0</span>
           </div>
           <div class="h-2 bg-white/10 rounded overflow-hidden">
@@ -163,16 +174,19 @@
       })
       .join(" ");
 
+    const zhToKey = { "木": "wuxing.wood", "火": "wuxing.fire", "土": "wuxing.earth", "金": "wuxing.metal", "水": "wuxing.water" };
+    const t = (key) => (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(key) : key;
     const labels = order
       .map((k, i) => {
         const a = startAngle + step * i;
         const p = polar(a, r + 18);
         const v = Number(raw[k] || 0);
+        const label = t(zhToKey[k]) || k;
         return `
           <text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}"
                 fill="rgba(226,232,240,0.92)" font-size="11" font-weight="800"
                 text-anchor="middle" dominant-baseline="middle">
-            ${k}
+            ${label}
           </text>
           <text x="${p.x.toFixed(1)}" y="${(p.y + 12).toFixed(1)}"
                 fill="rgba(148,163,184,0.9)" font-size="10"
@@ -203,9 +217,13 @@
 
     const { generateFiveElementComment } = getCalcHelpers();
 
+    const t = (k) => (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(k) : k;
+    const fallbackTpl = t("wuxing.fallbackStrongWeak") || "本局五行：最強【{{s}}】、最弱【{{w}}】。";
+
     if (typeof window.Calc?.getBoyanBoard !== "function") {
       const c = generateFiveElementComment(wx || {}, kind);
-      el.innerHTML = `<div class="text-slate-100">本局五行：最強【${c.strongest}】、最弱【${c.weakest}】。</div><div class="text-slate-300 mt-1">${c.strongComment} ${c.weakComment}</div>`;
+      const label = fallbackTpl.replace("{{s}}", c.strongest).replace("{{w}}", c.weakest);
+      el.innerHTML = `<div class="text-slate-100">${label}</div><div class="text-slate-300 mt-1">${c.strongComment} ${c.weakComment}</div>`;
       return;
     }
 
@@ -215,7 +233,8 @@
     } catch (err) {
       console.warn("getBoyanBoard error:", err);
       const c = generateFiveElementComment(wx || {}, kind);
-      el.innerHTML = `<div class="text-slate-100">本局五行：最強【${c.strongest}】、最弱【${c.weakest}】。</div><div class="text-slate-300 mt-1">${c.strongComment} ${c.weakComment}</div>`;
+      const label = fallbackTpl.replace("{{s}}", c.strongest).replace("{{w}}", c.weakest);
+      el.innerHTML = `<div class="text-slate-100">${label}</div><div class="text-slate-300 mt-1">${c.strongComment} ${c.weakComment}</div>`;
       return;
     }
 

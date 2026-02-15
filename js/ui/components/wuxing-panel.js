@@ -27,9 +27,10 @@
 
     if (window.innerWidth < 1280) {
       // 移动端：使用底部面板
+      const t = (key) => (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(key) : key;
       setMobileSheetContent({
-        title: "金木水火土 · 基本意義",
-        sub: "點五行雷達圖展開（內容優先來自資料庫：wuxing_meanings）",
+        title: t("wuxing.sectionTitle"),
+        sub: t("wuxing.sheetSub"),
         bodyHtml: meaningBox ? meaningBox.innerHTML : `<div class="text-slate-500 italic">（五行解釋暫不可用）</div>`,
       });
       openPalaceSheet();
