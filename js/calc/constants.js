@@ -686,6 +686,15 @@
     1: "穩步調整。系統基礎穩固，建議從關鍵環節開始優化，為後續發展打好基礎。"
   };
 
+  /** EN: Decision Structure tone — strategic analytical, no fate/emotional language */
+  const STRATEGIC_ADVICE_BY_STARS_EN = {
+    5: "Strategic Window Open. Conditions support high-leverage execution. Move decisively while structural support is strong.",
+    4: "Expansion Supported. System flow is smooth. Increase resource allocation gradually and optimize process depth.",
+    3: "Maintain Rhythm. Stability is present. Refine rather than expand.",
+    2: "Focus Optimization. System operates normally. Prioritize core tasks and build steadier operational patterns.",
+    1: "Structural Consolidation Phase. Strengthen core mechanics before scaling. Focus on critical nodes first."
+  };
+
   // ====== 導出 ======
   
   // 導出到 window.CalcConstants（如果 window 存在）
@@ -767,6 +776,7 @@
       
       // 星等評分相關
       STRATEGIC_ADVICE_BY_STARS,
+      STRATEGIC_ADVICE_BY_STARS_EN,
     };
   } else if (typeof globalThis !== "undefined") {
     // 讓 Node / 測試環境也能引用
@@ -832,6 +842,7 @@
       YIN_STEM_FROM_YEAR,
       SI_HUA_MAP,
       STRATEGIC_ADVICE_BY_STARS,
+      STRATEGIC_ADVICE_BY_STARS_EN,
     };
   }
 })();

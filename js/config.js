@@ -23,15 +23,22 @@
 
   /**
    * 狀態標籤映射表（根據內部等級 1-5）
+   * 依 I18n 語系回傳，無 I18n 時 fallback 繁中
    */
-  const STATUS_LABELS = {
-    5: "極佳",
-    4: "強勁",
-    3: "平穩",
-    2: "穩健",
-    1: "基礎"
-  };
-
+  function getStatusLabels() {
+    const t = (typeof window !== "undefined" && window.I18n && typeof window.I18n.t === "function")
+      ? window.I18n.t.bind(window.I18n)
+      : null;
+    const fallback = { 5: "極佳", 4: "強勁", 3: "平穩", 2: "穩健", 1: "基礎" };
+    if (!t) return fallback;
+    return {
+      5: t("ui.statusExcellent") || fallback[5],
+      4: t("ui.statusStrong") || fallback[4],
+      3: t("ui.statusStable") || fallback[3],
+      2: t("ui.statusSteady") || fallback[2],
+      1: t("ui.statusBase") || fallback[1],
+    };
+  }
   /**
    * 顏色代碼映射表（根據內部等級 1-5）
    * 五級分級對應五種顏色，更精確地反映能量狀態
@@ -130,13 +137,13 @@
     return TEXT_COLOR_CLASSES[colorCode] || TEXT_COLOR_CLASSES.default;
   }
 
-  // 導出到 window.Config
+  // 導出到 window.Config（STATUS_LABELS 為 getter，每次存取依當前 I18n 語系）
   if (typeof window !== "undefined") {
     window.Config = {
       API_BASE,
       REMOTE_API_BASE,
       SITE_URL,
-      STATUS_LABELS,
+      get STATUS_LABELS() { return getStatusLabels(); },
       COLOR_CODES,
       RGB_COLORS,
       BORDER_COLOR_CLASSES,
@@ -152,7 +159,7 @@
       API_BASE,
       REMOTE_API_BASE,
       SITE_URL,
-      STATUS_LABELS,
+      get STATUS_LABELS() { return getStatusLabels(); },
       COLOR_CODES,
       RGB_COLORS,
       BORDER_COLOR_CLASSES,

@@ -154,7 +154,18 @@
     "loadErrorDetail": "系統載入失敗，請刷新頁面重試（錯誤：calc.js 未載入）",
     "launchFailed": "啟動失敗",
     "unknownError": "未知錯誤",
-    "langSwitchHint": "切換語言後頁面會重新載入，請重新輸入生日並計算以更新星盤顯示。"
+    "langSwitchHint": "切換語言後頁面會重新載入，請重新輸入生日並計算以更新星盤顯示。",
+    "statusExcellent": "極佳",
+    "statusStrong": "強勁",
+    "statusStable": "平穩",
+    "statusSteady": "穩健",
+    "statusBase": "基礎",
+    "statusCurrentStable": "當前狀態平穩",
+    "levelNoteExcellent": "能量通道完全開啟",
+    "levelNoteStrong": "系統運轉順暢",
+    "levelNoteStable": "當前狀態平穩",
+    "levelNoteSteady": "運作正常",
+    "levelNoteBase": "基礎穩固"
   },
   "bazi": {
     "palaceStrength": "宮位強度",

@@ -16,16 +16,22 @@
   const {
     PALACE_ONE_LINERS,
     STRATEGIC_ADVICE_BY_STARS,
+    STRATEGIC_ADVICE_BY_STARS_EN,
   } = window.CalcConstants;
 
-  // 從 window.Config 載入狀態標籤和顏色代碼（如果可用）
-  const STATUS_LABELS = (typeof window !== "undefined" && window.Config?.STATUS_LABELS) || {
-    5: "極佳",
-    4: "強勁",
-    3: "平穩",
-    2: "穩健",
-    1: "基礎"
-  };
+  function isEnLocale() {
+    if (typeof window === "undefined") return false;
+    const loc = (typeof window.inferI18nLocale === "function" ? window.inferI18nLocale() : null)
+      || (window.I18n && typeof window.I18n.getLocale === "function" ? window.I18n.getLocale() : "") || "";
+    return String(loc).trim().startsWith("en");
+  }
+
+  // 狀態標籤：每次存取 Config.STATUS_LABELS（getter 依 I18n 語系）
+  const FALLBACK_LABELS = { 5: "極佳", 4: "強勁", 3: "平穩", 2: "穩健", 1: "基礎" };
+  function getStatusLabel(level) {
+    const labels = (typeof window !== "undefined" && window.Config?.STATUS_LABELS) || FALLBACK_LABELS;
+    return labels[level] || FALLBACK_LABELS[3];
+  }
 
   const COLOR_CODES = (typeof window !== "undefined" && window.Config?.COLOR_CODES) || {
     5: "emerald",  // 極佳：翠綠色（4.5星）
@@ -212,14 +218,18 @@
       return parts.join("，");
     }
     
-    // 如果沒有關聯數據，根據等級生成通用說明
-    const levelNotes = {
-      5: "能量通道完全開啟",
-      4: "系統運轉順暢",
-      3: "當前狀態平穩",
-      2: "運作正常",
-      1: "基礎穩固"
-    };
+    // 如果沒有關聯數據，根據等級生成通用說明（依 I18n 語系）
+    const t = (typeof window !== "undefined" && window.I18n && typeof window.I18n.t === "function")
+      ? window.I18n.t.bind(window.I18n)
+      : null;
+    const fallback = { 5: "能量通道完全開啟", 4: "系統運轉順暢", 3: "當前狀態平穩", 2: "運作正常", 1: "基礎穩固" };
+    const levelNotes = t ? {
+      5: t("ui.levelNoteExcellent") || fallback[5],
+      4: t("ui.levelNoteStrong") || fallback[4],
+      3: t("ui.levelNoteStable") || fallback[3],
+      2: t("ui.levelNoteSteady") || fallback[2],
+      1: t("ui.levelNoteBase") || fallback[1],
+    } : fallback;
     return levelNotes[internalLevel] || "";
   }
 
@@ -260,7 +270,7 @@
     const displayStars = mapInternalLevelToDisplayStars(internalLevel);
     
     // 5. 獲取狀態標籤和顏色代碼
-    const statusLabel = STATUS_LABELS[internalLevel] || "平穩";
+    const statusLabel = getStatusLabel(internalLevel);
     const colorCode = COLOR_CODES[internalLevel] || "amber";
     
     // 6. 生成與紫微、五行關聯的一句話說明
@@ -330,15 +340,22 @@
     // 3. 獲取一句話宮位說明
     const oneLiner = PALACE_ONE_LINERS[palaceName] || palaceName;
 
-    // 4. 獲取戰略建議（使用內部等級1-5來映射描述文字）
-    let strategicText = STRATEGIC_ADVICE_BY_STARS[internalLevel] || STRATEGIC_ADVICE_BY_STARS[3];
+    // 4. 獲取戰略建議（使用內部等級1-5來映射描述文字，依語系）
+    const adviceMap = (isEnLocale() && STRATEGIC_ADVICE_BY_STARS_EN) ? STRATEGIC_ADVICE_BY_STARS_EN : STRATEGIC_ADVICE_BY_STARS;
+    let strategicText = adviceMap[internalLevel] || adviceMap[3];
     
     // 合併來自神煞的戰略建議
     const allStrategicAdvice = [...strategicAdvice];
     
     // L7 主觀頻率修正：若觸發了 L7 增益，在建議文字前加入提示
     if (isSubjectiveFocus) {
-      allStrategicAdvice.unshift("此領域為你本年度的生命重心，波動感將會特別強烈。");
+      const zhHint = "此領域為你本年度的生命重心，波動感將會特別強烈。";
+      let hint = zhHint;
+      if (isEnLocale() && window.I18n && typeof window.I18n.t === "function") {
+        const tVal = window.I18n.t("ziwei.subjectiveFocusHint");
+        if (tVal && tVal !== "ziwei.subjectiveFocusHint") hint = tVal;
+      }
+      allStrategicAdvice.unshift(hint);
     }
     
     // 將神煞建議附加到戰略文字後
@@ -347,7 +364,7 @@
     }
 
     // 5. 獲取狀態標籤和顏色代碼（使用內部等級）
-    const statusLabel = STATUS_LABELS[internalLevel] || "平穩";
+    const statusLabel = getStatusLabel(internalLevel);
     const colorCode = COLOR_CODES[internalLevel] || "amber";
 
     return {

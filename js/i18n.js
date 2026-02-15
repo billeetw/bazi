@@ -16,6 +16,10 @@
   var currentLocale = DEFAULT_LOCALE;
   var cache = {};
 
+  /**
+   * 取得當前語系。優先順序：URL ?lang= > localStorage > 瀏覽器（僅 zh）> 預設 zh-TW
+   * 無法區分時一律預設繁體中文（不依瀏覽器 en 推斷）
+   */
   function getLocale() {
     if (typeof window === "undefined") return DEFAULT_LOCALE;
     var params = new URLSearchParams(window.location.search);
@@ -24,6 +28,12 @@
     try {
       var stored = localStorage.getItem(STORAGE_KEY);
       if (stored && (stored === "zh-TW" || stored === "zh-CN" || stored === "en")) return stored;
+    } catch (e) {}
+    // 無明確選擇時：僅依瀏覽器 zh 區分繁簡，其餘一律預設 zh-TW
+    try {
+      var nav = (navigator.language || navigator.userLanguage || "").toLowerCase();
+      if (/^zh-(tw|hk|mo)/.test(nav) || nav === "zh-hant") return "zh-TW";
+      if (/^zh-(cn|sg)/.test(nav) || nav === "zh-hans") return "zh-CN";
     } catch (e) {}
     return DEFAULT_LOCALE;
   }

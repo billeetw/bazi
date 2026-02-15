@@ -91,7 +91,7 @@
     "bestStrategyLabel": "Best Strategy:",
     "systemRiskLabel": "System Risk:",
     "thisYearAdviceLabel": "This Year:",
-    "subjectiveFocusHint": "This area is your life focus this year; expect stronger fluctuations.",
+    "subjectiveFocusHint": "Primary structural focus this year. Higher variance expected.",
     "palaceDisplay": {
       "命宮": "Life Palace",
       "兄弟": "Siblings",
@@ -154,7 +154,18 @@
     "loadErrorDetail": "Load failed. Please refresh (calc.js not loaded).",
     "launchFailed": "Launch failed",
     "unknownError": "Unknown error",
-    "langSwitchHint": "Page will reload. Re-enter birth data and calculate to update the chart."
+    "langSwitchHint": "Page will reload. Re-enter birth data and calculate to update the chart.",
+    "statusExcellent": "Peak Alignment",
+    "statusStrong": "High Momentum",
+    "statusStable": "Stable Flow",
+    "statusSteady": "Steady Flow",
+    "statusBase": "Foundational",
+    "statusCurrentStable": "Current status stable",
+    "levelNoteExcellent": "Strategic window open. High-leverage conditions.",
+    "levelNoteStrong": "Expansion supported. System flow smooth.",
+    "levelNoteStable": "Maintain rhythm. Stability present.",
+    "levelNoteSteady": "Focus optimization. Core tasks first.",
+    "levelNoteBase": "Structural consolidation. Strengthen core before scaling."
   },
   "bazi": {
     "palaceStrength": "Palace Strength",
@@ -194,10 +205,10 @@
     "acquiredToolSection": "Acquired Tool (Body Master)",
     "direct50": "Direct (50%)",
     "inspire30": "Inspire (30%)",
-    "sectionBTitle": "Section B: 2026 Energy Forecast (The Environment)",
+    "sectionBTitle": "Section B: 2026 Energy Landscape",
     "sectionCTitle": "Section C: Ten-God Strategy",
     "tenGodModeTitle": "Section C: {{name}} Mode (The Strategy)",
-    "systemOverloadWarning": "System overload warning",
+    "systemOverloadWarning": "Structural Imbalance Detected",
     "capturePlaceholder": "What are your thoughts on this year's \"{{name}} mode\"? Any plans or concerns?",
     "savedStatus": "✓ Saved"
   },

@@ -154,7 +154,18 @@
     "loadErrorDetail": "系统载入失败，请刷新页面重试（错误：calc.js 未载入）",
     "launchFailed": "启动失败",
     "unknownError": "未知错误",
-    "langSwitchHint": "切换语言后页面会重新载入，请重新输入生日并计算以更新星盘显示。"
+    "langSwitchHint": "切换语言后页面会重新载入，请重新输入生日并计算以更新星盘显示。",
+    "statusExcellent": "极佳",
+    "statusStrong": "强劲",
+    "statusStable": "平稳",
+    "statusSteady": "稳健",
+    "statusBase": "基础",
+    "statusCurrentStable": "当前状态平稳",
+    "levelNoteExcellent": "能量通道完全开启",
+    "levelNoteStrong": "系统运转顺畅",
+    "levelNoteStable": "当前状态平稳",
+    "levelNoteSteady": "运作正常",
+    "levelNoteBase": "基础稳固"
   },
   "bazi": {
     "palaceStrength": "宫位强度",

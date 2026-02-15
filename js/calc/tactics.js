@@ -227,7 +227,7 @@
           name,
           internalLevel: data.internalLevel || 3,
           stars: data.stars || 3.0,
-          statusLabel: data.statusLabel || "平穩",
+          statusLabel: data.statusLabel || (typeof window !== "undefined" && window.I18n && window.I18n.t("ui.statusStable")) || "平穩",
           oneLiner: data.oneLiner || name,
           isSubjectiveFocus: data.isSubjectiveFocus || false
         }))
