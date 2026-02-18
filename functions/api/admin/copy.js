@@ -1,52 +1,10 @@
-const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
-
-function parseBasicAuth(request) {
-  const auth = request.headers.get('Authorization');
-  if (!auth || !auth.startsWith('Basic ')) return null;
-  try {
-    const base64 = auth.slice(6).trim();
-    const decoded = atob(base64);
-    const i = decoded.indexOf(':');
-    if (i === -1) return null;
-    return { user: decoded.slice(0, i), pass: decoded.slice(i + 1) };
-  } catch {
-    return null;
-  }
-}
-
-function unauthorized() {
-  return new Response(
-    JSON.stringify({ error: '請登入' }),
-    { status: 401, headers: { ...JSON_HEADERS, 'WWW-Authenticate': 'Basic realm="Admin"' } }
-  );
-}
-
-function checkAuth(request, env) {
-  const cred = parseBasicAuth(request);
-  const adminUser = env.ADMIN_USER;
-  const adminPass = env.ADMIN_PASSWORD;
-
-  if (!adminUser || !adminPass) {
-    return { error: '後台未設定 ADMIN_USER / ADMIN_PASSWORD', status: 500 };
-  }
-
-  if (!cred || cred.user !== adminUser || cred.pass !== adminPass) {
-    return { error: unauthorized(), status: 401 };
-  }
-
-  return { user: cred.user };
-}
+import { requireAdmin, jsonResponse } from "../../shared/admin-auth.js";
 
 // GET: 列表查询（支持搜索、筛选、分页）
 export async function onRequestGet(context) {
   const { request, env } = context;
-  const authResult = checkAuth(request, env);
-  if (authResult.error) {
-    return authResult.error instanceof Response ? authResult.error : new Response(
-      JSON.stringify({ error: authResult.error }),
-      { status: authResult.status, headers: JSON_HEADERS }
-    );
-  }
+  const auth = requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
 
   try {
     const url = new URL(request.url);
@@ -59,16 +17,10 @@ export async function onRequestGet(context) {
       const result = await stmt.bind(id).first();
 
       if (!result) {
-        return new Response(
-          JSON.stringify({ error: '記錄不存在' }),
-          { status: 404, headers: JSON_HEADERS }
-        );
+        return jsonResponse({ error: '記錄不存在' }, 404);
       }
 
-      return new Response(
-        JSON.stringify({ ok: true, list: [result] }),
-        { status: 200, headers: JSON_HEADERS }
-      );
+      return jsonResponse({ ok: true, list: [result] });
     }
 
     // 否则返回列表
@@ -112,62 +64,45 @@ export async function onRequestGet(context) {
     const stmt = db.prepare(query);
     const { results } = await stmt.bind(...params).all();
 
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        list: results || [],
-        pagination: {
-          page,
-          pageSize,
-          total,
-          totalPages: Math.ceil(total / pageSize),
-        },
-      }),
-      { status: 200, headers: JSON_HEADERS }
-    );
+    return jsonResponse({
+      ok: true,
+      list: results || [],
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    });
   } catch (err) {
     console.error('Error in GET /api/admin/copy:', err);
-    return new Response(
-      JSON.stringify({ error: '讀取失敗: ' + err.message }),
-      { status: 500, headers: JSON_HEADERS }
-    );
+    return jsonResponse({ error: '讀取失敗: ' + err.message }, 500);
   }
 }
 
 // POST: 新增文案
 export async function onRequestPost(context) {
   const { request, env } = context;
-  const authResult = checkAuth(request, env);
-  if (authResult.error) {
-    return authResult.error instanceof Response ? authResult.error : new Response(
-      JSON.stringify({ error: authResult.error }),
-      { status: authResult.status, headers: JSON_HEADERS }
-    );
-  }
+  const auth = requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
 
   try {
     const data = await request.json();
     const { copy_key, locale = 'zh-TW', content, category, description } = data;
 
     if (!copy_key || !content || !category) {
-      return new Response(
-        JSON.stringify({ error: '缺少必填欄位：copy_key, content, category' }),
-        { status: 400, headers: JSON_HEADERS }
-      );
+      return jsonResponse({ error: '缺少必填欄位：copy_key, content, category' }, 400);
     }
 
     const db = env.CONSULT_DB;
     const now = new Date().toISOString();
-    const updatedBy = authResult.user;
+    const updatedBy = auth.user;
 
     // 检查唯一性
     const checkStmt = db.prepare('SELECT id FROM ui_copy_texts WHERE copy_key = ? AND locale = ?');
     const existing = await checkStmt.bind(copy_key, locale).first();
     if (existing) {
-      return new Response(
-        JSON.stringify({ error: `copy_key "${copy_key}" 與 locale "${locale}" 的組合已存在` }),
-        { status: 400, headers: JSON_HEADERS }
-      );
+      return jsonResponse({ error: `copy_key "${copy_key}" 與 locale "${locale}" 的組合已存在` }, 400);
     }
 
     const stmt = db.prepare(`
@@ -191,53 +126,43 @@ export async function onRequestPost(context) {
       .bind(copy_key, locale)
       .first();
 
-    return new Response(
-      JSON.stringify({ ok: true, data: newRecord }),
-      { status: 201, headers: JSON_HEADERS }
-    );
+    // 失效 content KV 快取，使下次請求從 D1 重新載入
+    try {
+      if (env.CACHE) await env.CACHE.delete(`content:${locale}`);
+    } catch (e) {
+      console.warn('[admin/copy] KV cache invalidation failed:', e);
+    }
+
+    return jsonResponse({ ok: true, data: newRecord }, 201);
   } catch (err) {
     console.error('Error in POST /api/admin/copy:', err);
-    return new Response(
-      JSON.stringify({ error: '新增失敗: ' + err.message }),
-      { status: 500, headers: JSON_HEADERS }
-    );
+    return jsonResponse({ error: '新增失敗: ' + err.message }, 500);
   }
 }
 
 // PUT: 更新文案
 export async function onRequestPut(context) {
   const { request, env } = context;
-  const authResult = checkAuth(request, env);
-  if (authResult.error) {
-    return authResult.error instanceof Response ? authResult.error : new Response(
-      JSON.stringify({ error: authResult.error }),
-      { status: authResult.status, headers: JSON_HEADERS }
-    );
-  }
+  const auth = requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
 
   try {
     const data = await request.json();
     const { id, content, category, description } = data;
 
     if (!id) {
-      return new Response(
-        JSON.stringify({ error: '缺少必填欄位：id' }),
-        { status: 400, headers: JSON_HEADERS }
-      );
+      return jsonResponse({ error: '缺少必填欄位：id' }, 400);
     }
 
     const db = env.CONSULT_DB;
     const now = new Date().toISOString();
-    const updatedBy = authResult.user;
+    const updatedBy = auth.user;
 
     // 检查记录是否存在
     const checkStmt = db.prepare('SELECT id FROM ui_copy_texts WHERE id = ?');
     const existing = await checkStmt.bind(id).first();
     if (!existing) {
-      return new Response(
-        JSON.stringify({ error: '記錄不存在' }),
-        { status: 404, headers: JSON_HEADERS }
-      );
+      return jsonResponse({ error: '記錄不存在' }, 404);
     }
 
     // 构建更新语句（只更新提供的字段）
@@ -260,10 +185,7 @@ export async function onRequestPut(context) {
     }
 
     if (updates.length === 0) {
-      return new Response(
-        JSON.stringify({ error: '沒有要更新的欄位' }),
-        { status: 400, headers: JSON_HEADERS }
-      );
+      return jsonResponse({ error: '沒有要更新的欄位' }, 400);
     }
 
     updates.push('updated_by = ?', 'updated_at = ?');
@@ -282,65 +204,58 @@ export async function onRequestPut(context) {
       .bind(id)
       .first();
 
-    return new Response(
-      JSON.stringify({ ok: true, data: updatedRecord }),
-      { status: 200, headers: JSON_HEADERS }
-    );
+    // 失效 content KV 快取
+    try {
+      const locale = updatedRecord?.locale;
+      if (env.CACHE && locale) await env.CACHE.delete(`content:${locale}`);
+    } catch (e) {
+      console.warn('[admin/copy] KV cache invalidation failed:', e);
+    }
+
+    return jsonResponse({ ok: true, data: updatedRecord });
   } catch (err) {
     console.error('Error in PUT /api/admin/copy:', err);
-    return new Response(
-      JSON.stringify({ error: '更新失敗: ' + err.message }),
-      { status: 500, headers: JSON_HEADERS }
-    );
+    return jsonResponse({ error: '更新失敗: ' + err.message }, 500);
   }
 }
 
 // DELETE: 删除文案
 export async function onRequestDelete(context) {
   const { request, env } = context;
-  const authResult = checkAuth(request, env);
-  if (authResult.error) {
-    return authResult.error instanceof Response ? authResult.error : new Response(
-      JSON.stringify({ error: authResult.error }),
-      { status: authResult.status, headers: JSON_HEADERS }
-    );
-  }
+  const auth = requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
 
   try {
     const url = new URL(request.url);
     const id = url.searchParams.get('id');
 
     if (!id) {
-      return new Response(
-        JSON.stringify({ error: '缺少參數：id' }),
-        { status: 400, headers: JSON_HEADERS }
-      );
+      return jsonResponse({ error: '缺少參數：id' }, 400);
     }
 
     const db = env.CONSULT_DB;
 
-    // 检查记录是否存在
-    const checkStmt = db.prepare('SELECT id FROM ui_copy_texts WHERE id = ?');
+    // 检查记录是否存在並取得 locale
+    const checkStmt = db.prepare('SELECT id, locale FROM ui_copy_texts WHERE id = ?');
     const existing = await checkStmt.bind(id).first();
     if (!existing) {
-      return new Response(
-        JSON.stringify({ error: '記錄不存在' }),
-        { status: 404, headers: JSON_HEADERS }
-      );
+      return jsonResponse({ error: '記錄不存在' }, 404);
     }
 
     const stmt = db.prepare('DELETE FROM ui_copy_texts WHERE id = ?');
     await stmt.bind(id).run();
 
-    return new Response(
-      JSON.stringify({ ok: true }),
-      { status: 200, headers: JSON_HEADERS }
-    );
+    // 失效 content KV 快取
+    try {
+      const locale = existing?.locale;
+      if (env.CACHE && locale) await env.CACHE.delete(`content:${locale}`);
+    } catch (e) {
+      console.warn('[admin/copy] KV cache invalidation failed:', e);
+    }
+
+    return jsonResponse({ ok: true });
   } catch (err) {
     console.error('Error in DELETE /api/admin/copy:', err);
-    return new Response(
-      JSON.stringify({ error: '刪除失敗: ' + err.message }),
-      { status: 500, headers: JSON_HEADERS }
-    );
+    return jsonResponse({ error: '刪除失敗: ' + err.message }, 500);
   }
 }

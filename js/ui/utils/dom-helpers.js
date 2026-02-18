@@ -33,23 +33,20 @@
     requestAnimationFrame(tick);
   }
 
-  /** 取得當前年齡（虛歲）：從 #currentAgeSlider 或依出生年推算 */
+  /** 取得當前年齡（虛歲）：一律由出生年月日推算，無預設值 */
   function getCurrentAge(lastBirthYear) {
-    const slider = document.getElementById("currentAgeSlider");
-    if (slider && slider.value !== "" && Number.isFinite(Number(slider.value))) {
-      return Math.max(1, Math.min(120, Number(slider.value)));
-    }
     if (lastBirthYear != null) {
       return Math.max(1, new Date().getFullYear() - Number(lastBirthYear));
     }
-    return 38;
+    return null;
   }
 
-  /** 同步小限滑桿顯示與數值 */
+  /** 同步小限滑桿顯示與數值（滑桿已移除，保留以相容舊呼叫） */
   function syncAgeSliderDisplay(age) {
     const slider = document.getElementById("currentAgeSlider");
     const display = document.getElementById("currentAgeDisplay");
-    const a = Math.max(1, Math.min(120, Number(age) || 38));
+    if (age == null || !Number.isFinite(Number(age))) return;
+    const a = Math.max(1, Math.min(120, Number(age)));
     if (slider) slider.value = String(a);
     if (display) display.textContent = String(a);
   }

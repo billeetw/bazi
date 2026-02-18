@@ -72,6 +72,7 @@
       if (hint) hint.textContent = "";
       return;
     }
+    if (hint) hint.textContent = "點場域看耦合（本宮＋對宮＋三合）。";
 
     const { buildSlotsFromZiwei, gridAreas, getMutagenStars, toTraditionalStarName, STAR_WUXING_MAP } = getCalcHelpers();
     const { starWithBadgeHtml } = getRenderHelpers();

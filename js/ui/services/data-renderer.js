@@ -31,20 +31,20 @@
     }
 
     // 计算五行板（如果可用）
-    const surfaceBoard = typeof window.Calc?.getBoyanBoard === "function" 
+    const surfaceBoard = typeof window.Calc?.getPoYenBoard === "function" 
       ? (() => { 
           try { 
-            return window.Calc.getBoyanBoard(bazi.wuxing?.surface || {}, "surface"); 
+            return window.Calc.getPoYenBoard(bazi.wuxing?.surface || {}, "surface"); 
           } catch (_) { 
             return null; 
           } 
         })() 
       : null;
     
-    const strategicBoard = typeof window.Calc?.getBoyanBoard === "function" 
+    const strategicBoard = typeof window.Calc?.getPoYenBoard === "function" 
       ? (() => { 
           try { 
-            return window.Calc.getBoyanBoard(bazi.wuxing?.strategic || {}, "strategic"); 
+            return window.Calc.getPoYenBoard(bazi.wuxing?.strategic || {}, "strategic"); 
           } catch (_) { 
             return null; 
           } 
@@ -58,11 +58,66 @@
       renderRadarChart("surfaceWxRadar", bazi.wuxing?.surface);
       renderFiveElementComment("surfaceWxComment", bazi.wuxing?.surface, "surface");
 
-      // 渲染战略五行条形图和雷达图
-      renderBar("strategicWxBars", bazi.wuxing?.strategic, bazi.wuxing?.maxStrategic || 1, 
-        strategicBoard ? { strongest: strategicBoard.strongest, weakest: strategicBoard.weakest } : undefined);
+      // 渲染战略五行条形图和雷达图（含超載預警）
+      const overloadAdvice = window.UiUtils?.WuxingOneLiner?.getOverloadAdvice(bazi.wuxing?.strategic || {}) || null;
+      const strategicOpts = strategicBoard ? { strongest: strategicBoard.strongest, weakest: strategicBoard.weakest } : {};
+      if (overloadAdvice) strategicOpts.overloadAdvice = overloadAdvice;
+      renderBar("strategicWxBars", bazi.wuxing?.strategic, bazi.wuxing?.maxStrategic || 1, strategicOpts);
       renderRadarChart("strategicWxRadar", bazi.wuxing?.strategic);
       renderFiveElementComment("strategicWxComment", bazi.wuxing?.strategic, "strategic");
+    }
+
+    // 五行一句話註解
+    const wuxingOneLinerEl = document.getElementById("wuxingOneLiner");
+    if (wuxingOneLinerEl) {
+      const WuxingOneLiner = window.UiUtils?.WuxingOneLiner;
+      if (WuxingOneLiner && bazi.wuxing?.strategic) {
+        const oneLiner = WuxingOneLiner.generateWuxingOneLiner(bazi.wuxing.strategic);
+        wuxingOneLinerEl.textContent = oneLiner;
+        wuxingOneLinerEl.classList.remove("hidden");
+      } else {
+        wuxingOneLinerEl.classList.add("hidden");
+      }
+    }
+
+    // 能量結構分析區塊：標題（登入時顯示使用者名）、陰陽條 + 結構定位 + 年度主軸 + 交叉洞察
+    syncEnergyStructureTitle();
+    const yinYangBarEl = document.getElementById("yinYangBar");
+    const yangLabelEl = document.getElementById("yinYangYangLabel");
+    const yinLabelEl = document.getElementById("yinYangYinLabel");
+    const structureLabelEl = document.getElementById("yinYangStructureLabel");
+    const baseTextEl = document.getElementById("yinYangBaseText");
+    const mainShishenEl = document.getElementById("yinYangMainShishen");
+    const mainShishenTextEl = document.getElementById("yinYangMainShishenText");
+    const crossInsightEl = document.getElementById("yinYangCrossInsight");
+
+    if (yinYangBarEl || baseTextEl) {
+      const WuxingOneLiner = window.UiUtils?.WuxingOneLiner;
+      const YinyangAdvanced = window.UiUtils?.YinyangAdvanced;
+      const wxStrategic = bazi.wuxing?.strategic;
+      const dominant = (bazi.tenGod?.dominant || "").trim() || "—";
+
+      if (WuxingOneLiner && wxStrategic) {
+        const { yangPct, yinPct } = WuxingOneLiner.computeYinYangFromWuxing(wxStrategic);
+        if (yinYangBarEl) yinYangBarEl.style.width = yangPct + "%";
+        if (yangLabelEl) yangLabelEl.textContent = "陽比例：" + yangPct + "%";
+        if (yinLabelEl) yinLabelEl.textContent = "陰比例：" + yinPct + "%";
+
+        if (YinyangAdvanced && YinyangAdvanced.buildAdvancedAnalysis) {
+          const analysis = YinyangAdvanced.buildAdvancedAnalysis(yangPct, dominant);
+          if (structureLabelEl) structureLabelEl.textContent = "結構定位：" + ((analysis.structureLabel || "").replace(/型+$/, "") || "—") + "型";
+          if (baseTextEl) baseTextEl.textContent = analysis.baseText;
+          if (mainShishenEl) mainShishenEl.textContent = analysis.mainShishen;
+          if (mainShishenTextEl) mainShishenTextEl.textContent = analysis.mainShishenText;
+          if (crossInsightEl) crossInsightEl.textContent = analysis.crossInsight;
+        }
+      } else {
+        if (structureLabelEl) structureLabelEl.textContent = "結構定位：計算完成後顯示";
+        if (baseTextEl) baseTextEl.textContent = "計算完成後顯示";
+        if (mainShishenEl) mainShishenEl.textContent = dominant || "—";
+        if (mainShishenTextEl) mainShishenTextEl.textContent = "計算完成後顯示";
+        if (crossInsightEl) crossInsightEl.textContent = "計算完成後顯示";
+      }
     }
 
     // 渲染五行生剋診斷卡片（Normal Spec 五段式，標題與按鈕依 i18n）
@@ -215,10 +270,13 @@
     }
     
     return computeAllPalaceScores(ziwei, horoscope, { bazi, age })
-      .then(function (computedScores) {
+      .then(function (result) {
+        const { scores: computedScores, elementRatios: computedRatios } = (result && typeof result === "object" && result.scores != null)
+          ? result
+          : { scores: result, elementRatios: {} };
         const scores = {
           palaceScores: computedScores,
-          elementRatios: ziweiScores?.elementRatios || {},
+          elementRatios: computedRatios || ziweiScores?.elementRatios || {},
         };
         window.ziweiScores = scores;
         
@@ -238,15 +296,17 @@
       })
       .catch(function (err) {
         console.error("計算宮位分數失敗:", err);
-        // Fallback：使用後端數據
+        // Fallback：使用後端數據；若無，從 ziwei 計算五行比例
+        const fallbackElementRatios = ziweiScores?.elementRatios
+          || (ziwei && window.Calc?.computeZiweiElementRatios ? window.Calc.computeZiweiElementRatios(ziwei) : {});
         if (ziweiScores && ziweiScores.palaceScores) {
           console.warn("使用後端 API 數據作為 fallback");
           if (renderZiweiScores) {
-            renderZiweiScores(ziweiScores, horoscope, ziwei);
+            renderZiweiScores({ ...ziweiScores, elementRatios: ziweiScores.elementRatios || fallbackElementRatios }, horoscope, ziwei);
           }
         } else {
           if (renderZiweiScores) {
-            renderZiweiScores({ palaceScores: {}, elementRatios: ziweiScores?.elementRatios || {} }, horoscope, ziwei);
+            renderZiweiScores({ palaceScores: {}, elementRatios: fallbackElementRatios }, horoscope, ziwei);
           }
         }
         
@@ -260,6 +320,28 @@
           updateAnnualTactics(bazi, horoscope, ziwei);
         }
       });
+  }
+
+  /** 依登入狀態更新「能量結構分析」標題：登入時顯示「{name} 的能量結構分析」 */
+  function syncEnergyStructureTitle() {
+    var el = document.getElementById("energyStructureTitle");
+    if (!el) return;
+    var AuthService = window.AuthService;
+    if (AuthService && AuthService.isLoggedIn && AuthService.isLoggedIn()) {
+      var user = AuthService.getUser ? AuthService.getUser() : null;
+      var name = (user && (user.name || user.email)) ? (user.name || user.email).trim() : "使用者";
+      el.textContent = name + " 的能量結構分析";
+    } else {
+      el.textContent = "能量結構分析";
+    }
+  }
+
+  if (typeof window.addEventListener === "function") {
+    window.addEventListener("auth-state-changed", syncEnergyStructureTitle);
+  }
+  // 頁面載入時若已登入，先同步一次
+  if (typeof window.requestAnimationFrame === "function") {
+    window.requestAnimationFrame(function () { syncEnergyStructureTitle(); });
   }
 
   // 导出到 window.UiServices.DataRenderer

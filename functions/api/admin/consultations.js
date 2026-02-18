@@ -1,42 +1,9 @@
-const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
-
-function parseBasicAuth(request) {
-  const auth = request.headers.get('Authorization');
-  if (!auth || !auth.startsWith('Basic ')) return null;
-  try {
-    const base64 = auth.slice(6).trim();
-    const decoded = atob(base64);
-    const i = decoded.indexOf(':');
-    if (i === -1) return null;
-    return { user: decoded.slice(0, i), pass: decoded.slice(i + 1) };
-  } catch {
-    return null;
-  }
-}
-
-function unauthorized() {
-  return new Response(
-    JSON.stringify({ error: '請登入' }),
-    { status: 401, headers: { ...JSON_HEADERS, 'WWW-Authenticate': 'Basic realm="Admin"' } }
-  );
-}
+import { requireAdmin, jsonResponse } from "../../shared/admin-auth.js";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
-  const cred = parseBasicAuth(request);
-  const adminUser = env.ADMIN_USER;
-  const adminPass = env.ADMIN_PASSWORD;
-
-  if (!adminUser || !adminPass) {
-    return new Response(
-      JSON.stringify({ error: '後台未設定 ADMIN_USER / ADMIN_PASSWORD' }),
-      { status: 500, headers: JSON_HEADERS }
-    );
-  }
-
-  if (!cred || cred.user !== adminUser || cred.pass !== adminPass) {
-    return unauthorized();
-  }
+  const auth = requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
 
   try {
     const db = env.CONSULT_DB;
@@ -48,15 +15,9 @@ export async function onRequestGet(context) {
       )
       .all();
 
-    return new Response(JSON.stringify({ list: results || [] }), {
-      status: 200,
-      headers: JSON_HEADERS,
-    });
+    return jsonResponse({ list: results || [] });
   } catch (err) {
     console.error('Error in GET /api/admin/consultations:', err);
-    return new Response(JSON.stringify({ error: '讀取失敗' }), {
-      status: 500,
-      headers: JSON_HEADERS,
-    });
+    return jsonResponse({ error: '讀取失敗' }, 500);
   }
 }

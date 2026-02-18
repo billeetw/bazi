@@ -62,8 +62,40 @@
     return !!getToken();
   }
 
+  /** 17gonplay 專用的 fallback，當 /api/auth/config 無法取得時使用（Client ID 為公開值） */
+  var FALLBACK_CLIENT_ID = '600329304958-me8iui2q7ec5k7ajhjijf939os6vann3.apps.googleusercontent.com';
   var googleClientId = null;
   var googleCodeClient = null;
+  var configFetchPromise = null;
+
+  function renderLampBadge(containerId, isMobile) {
+    var el = document.getElementById(containerId);
+    if (!el || !getToken()) return;
+    var existing = el.querySelector('.lamp-badge');
+    if (existing) existing.remove();
+    var origin = window.location.origin || '';
+    fetch(origin + '/api/me/badges?year=2026', { headers: getAuthHeaders() })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (!data || !data.badges || data.badges.length === 0) return;
+        var badge = document.createElement('span');
+        badge.className = 'lamp-badge inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-amber-500/20 border border-amber-400/40 text-amber-300';
+        badge.textContent = '\uD83C\uDFEE 2026';
+        badge.title = '2026 光明燈已點亮';
+        badge.setAttribute('aria-label', '2026 光明燈已點亮');
+        if (isMobile) {
+          el.insertBefore(badge, el.firstChild);
+        } else {
+          var userSpan = el.querySelector('.auth-user');
+          if (userSpan && userSpan.nextSibling) {
+            el.insertBefore(badge, userSpan.nextSibling);
+          } else {
+            el.insertBefore(badge, el.querySelector('.auth-btn-logout') || el.firstChild);
+          }
+        }
+      })
+      .catch(function () {});
+  }
 
   function renderAuthNav(containerId, isMobile) {
     var el = document.getElementById(containerId);
@@ -90,6 +122,7 @@
         el.appendChild(userSpan);
         el.appendChild(logoutBtn);
       }
+      renderLampBadge(containerId, isMobile);
     } else {
       var loginBtn = document.createElement('button');
       loginBtn.type = 'button';
@@ -114,10 +147,51 @@
     }
   }
 
+  function fetchConfig() {
+    if (configFetchPromise) return configFetchPromise;
+    configFetchPromise = fetch('/api/auth/config')
+      .then(function (res) {
+        if (!res.ok) throw new Error('config ' + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        if (data && data.config && data.config.google && data.config.google.clientId) {
+          googleClientId = data.config.google.clientId;
+        } else {
+          if (data) console.warn('[AuthService] config missing clientId:', data);
+          if (FALLBACK_CLIENT_ID) googleClientId = FALLBACK_CLIENT_ID;
+        }
+        return googleClientId;
+      })
+      .catch(function (err) {
+        console.warn('[AuthService] config fetch failed:', err);
+        if (FALLBACK_CLIENT_ID) googleClientId = FALLBACK_CLIENT_ID;
+        return googleClientId;
+      });
+    return configFetchPromise;
+  }
+
+  function ensureConfig(cb) {
+    if (googleClientId && typeof cb === 'function') {
+      cb();
+      return;
+    }
+    fetchConfig().then(function () {
+      if (typeof cb === 'function') cb();
+    });
+  }
+
   function loginWithGoogle() {
-    if (!googleCodeClient) {
+    function doLogin() {
+      if (!googleClientId && FALLBACK_CLIENT_ID) {
+        googleClientId = FALLBACK_CLIENT_ID;
+      }
+      if (!window.google || !window.google.accounts || !window.google.accounts.oauth2) {
+        alert('Google 登入尚未載入，請稍候幾秒或重新整理頁面後再試。');
+        return;
+      }
       if (!googleClientId) {
-        console.warn('[AuthService] Google Client ID 未設定');
+        console.warn('[AuthService] Google Client ID 未設定（API 無法取得且無 fallback）');
         alert(
           '登入功能尚未設定。\n\n' +
           '本機測試：在專案根目錄建立 .dev.vars，加入：\n' +
@@ -183,13 +257,14 @@
         alert('Google 登入尚未載入，請重新整理頁面再試。');
         return;
       }
+      try {
+        googleCodeClient.requestCode();
+      } catch (e) {
+        console.error('[AuthService] requestCode 錯誤:', e);
+        alert('無法開啟登入視窗，請再試一次。');
+      }
     }
-    try {
-      googleCodeClient.requestCode();
-    } catch (e) {
-      console.error('[AuthService] requestCode 錯誤:', e);
-      alert('無法開啟登入視窗，請再試一次。');
-    }
+    ensureConfig(doLogin);
   }
 
   /**
@@ -197,14 +272,7 @@
    */
   function init() {
     updateUI();
-    fetch(window.location.origin + '/api/auth/config')
-      .then(function (res) { return res.json(); })
-      .then(function (data) {
-        if (data && data.config && data.config.google && data.config.google.clientId) {
-          googleClientId = data.config.google.clientId;
-        }
-      })
-      .catch(function () {});
+    fetchConfig();
   }
 
   window.AuthService = {
@@ -216,7 +284,11 @@
     handle401: handle401,
     init: init,
     updateUI: updateUI,
+    refreshBadges: function () { renderLampBadge('authNav', false); renderLampBadge('authNavMobile', true); },
     /** 直接觸發 Google 登入（供「點我推算時辰」等未登入時一鍵打開登入 popup） */
     triggerLogin: loginWithGoogle,
   };
+  if (typeof window.UiServices !== 'undefined') {
+    window.UiServices.AuthService = window.AuthService;
+  }
 })();

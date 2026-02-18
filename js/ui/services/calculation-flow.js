@@ -15,21 +15,31 @@
    * 验证输入参数
    * @returns {Object} { isValid: boolean, errors: string[] }
    */
+  /** 與 form-init 的 placeholder 值一致，用於判斷「未選擇」 */
+  const PLACEHOLDER_VAL = "__";
+
   function validateInputs(params) {
     const { vy, vm, vd, vh, vmin, timeMode, shichen, shichenHalf } = params;
     const errors = [];
     
     // 基本验证逻辑
     if (!vy || !vm || !vd) {
-      errors.push("请填写完整的出生日期");
+      errors.push("請填寫完整的出生日期");
     }
     
-    if (timeMode === "exact" && (vh === null || vh === undefined)) {
-      errors.push("请填写出生时间");
+    function isPlaceholder(val) {
+      return val === "" || val === PLACEHOLDER_VAL || val == null;
     }
     
-    if (timeMode === "shichen" && !shichen) {
-      errors.push("请选择时辰");
+    if (timeMode === "exact") {
+      /* 不驗證時分：未選擇時以 12:00 處理，不阻擋送出 */
+    }
+    
+    if (timeMode === "shichen") {
+      const shVal = (shichen || "").trim();
+      if (isPlaceholder(shVal)) {
+        errors.push("請選擇時辰");
+      }
     }
     
     return {
@@ -55,9 +65,10 @@
     console.log("[calculation-flow.js] inputCard 元素:", !!inputCardEl);
     console.log("[calculation-flow.js] activity-213 元素:", !!activity213El);
     
-    // 显示系统区域
+    // 显示系统区域（含 skeleton 與卡片進場動畫）
     if (systemEl) {
       systemEl.classList.remove("hidden");
+      systemEl.classList.add("dashboard-skeleton", "dashboard-enter");
       console.log("[calculation-flow.js] system hidden 類已移除");
     } else {
       console.error("[calculation-flow.js] 找不到 system 元素");
@@ -84,7 +95,9 @@
       navEl.classList.remove("hidden");
       console.log("[calculation-flow.js] workspaceNav 已顯示");
     }
-    
+
+    // 儀式感：捲動由 ui.js 在資料渲染完成後統一執行（見 scheduleScrollToTop）
+
     console.log("[calculation-flow.js] updateDashboardUI 執行完成");
   }
 

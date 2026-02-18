@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /expert-admin.html
+Disallow: /admin.html
+Disallow: /admin-copy.html
+Disallow: /test-
+Disallow: /activity-
+
+Sitemap: https://www.17gonplay.com/sitemap.xml

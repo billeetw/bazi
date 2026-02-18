@@ -151,8 +151,23 @@
             const palaceDisplayMapL9 = (window.I18n && typeof window.I18n.tObject === "function") ? window.I18n.tObject("ziwei.palaceDisplay") : null;
             const displayNameL9 = (palaceDisplayMapL9 && palaceDisplayMapL9[r.name]) || r.name;
             const labelSuffixL9 = r.isActiveLimit ? " · " + t("ziwei.minorLimitPalace") : "";
-            const strategicAdvice = l9Output.strategicAdvice;
-            const statusLabel = l9Output.statusLabel;
+            const locale = (window.I18n && typeof window.I18n.getLocale === "function") ? window.I18n.getLocale() : "zh-TW";
+            const isEn = String(locale || "").trim().startsWith("en");
+            // EN 模式：依語系覆寫 statusLabel 與 strategicAdvice（避免混用中文）
+            let statusLabel = l9Output.statusLabel;
+            let strategicAdvice = l9Output.strategicAdvice;
+            if (isEn) {
+              const labels = (window.Config && window.Config.STATUS_LABELS) || {};
+              const adviceEn = (window.CalcConstants && window.CalcConstants.STRATEGIC_ADVICE_BY_STARS_EN) || {};
+              const lv = l9Output.internalLevel;
+              if (labels[lv]) statusLabel = labels[lv];
+              if (adviceEn[lv]) {
+                const parts = [];
+                if (r.isSubjectiveFocus) parts.push(t("ziwei.subjectiveFocusHint"));
+                parts.push(adviceEn[lv]);
+                strategicAdvice = parts.join(" · ");
+              }
+            }
             const colorCode = l9Output.colorCode;
             
             // 根據顏色代碼設置樣式（使用統一的五級顏色系統）
@@ -266,8 +281,8 @@
           var name = row.getAttribute("data-palace-name");
           if (!name) return;
           
-          // 如果點擊的是同一個宮位，則收合（toggle）
-          if (window.innerWidth < 1280) {
+          // 如果點擊的是同一個宮位，則收合（toggle）（與 detailPanel 隱藏斷點 768px 一致）
+          if (window.innerWidth < 768) {
             const sheet = document.getElementById("palaceSheet");
             const isCurrentlyOpen = sheet && sheet.classList.contains("open");
             // 優先使用狀態管理器獲取當前選中的宮位
@@ -296,10 +311,15 @@
             window.currentSelectedPalace = name;
           }
           
-          if (window.innerWidth < 1280) {
+          if (window.innerWidth < 768) {
             openPalaceSheet();
           } else {
-            document.getElementById("detailPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            const Scroll = window.UiServices?.Scroll;
+            if (Scroll && typeof Scroll.scrollToSection === "function") {
+              Scroll.scrollToSection("detailPanel", { behavior: "smooth", block: "nearest", allowOnMobile: false });
+            } else {
+              document.getElementById("detailPanel")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
           }
         });
         palaceBox.addEventListener("keydown", function (e) {
@@ -311,7 +331,7 @@
           if (!name) return;
           
           // 如果按鍵觸發的是同一個宮位，則收合（toggle）
-          if (window.innerWidth < 1280) {
+          if (window.innerWidth < 768) {
             const sheet = document.getElementById("palaceSheet");
             const isCurrentlyOpen = sheet && sheet.classList.contains("open");
             // 優先使用狀態管理器獲取當前選中的宮位
@@ -340,10 +360,15 @@
             window.currentSelectedPalace = name;
           }
           
-          if (window.innerWidth < 1280) {
+          if (window.innerWidth < 768) {
             openPalaceSheet();
           } else {
-            document.getElementById("detailPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            const Scroll = window.UiServices?.Scroll;
+            if (Scroll && typeof Scroll.scrollToSection === "function") {
+              Scroll.scrollToSection("detailPanel", { behavior: "smooth", block: "nearest", allowOnMobile: false });
+            } else {
+              document.getElementById("detailPanel")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
           }
         });
       }

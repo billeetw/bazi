@@ -6,7 +6,7 @@
 |------|------|
 | `elements.json` | 五行 id/zh、相生邊（gen_edges）、相剋邊（ctl_edges） |
 | `stems.json` | 十天干 → 五行 id |
-| `branches.json` | 十二地支 id/zh、主氣、藏干比例 |
+| `branches.json` | 十二地支 id/zh、主氣、藏干比例（權重來源見 `docs/data-wuxing-source.md`） |
 | `month_branches.json` | 月支 → 當令五行、季節乘數（五元素） |
 | `flow_descriptions.json` | 5 條相生、5 條相剋的語意描述（positive / stress） |
 

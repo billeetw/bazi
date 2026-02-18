@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>占卦儀式效果預覽</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0b;
+            --active-purple: #bb86fc;
+            --future-blue: #00d4ff;
+            --text-main: #ffffff;
+            --text-dim: #666666;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --neon-glow-blue: 0 0 15px rgba(0, 212, 255, 0.6);
+            --neon-glow-purple: 0 0 15px rgba(187, 134, 252, 0.6);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        header { margin-top: 40px; text-align: center; z-index: 10; }
+        h1 { font-weight: 200; letter-spacing: 5px; margin-bottom: 5px; color: var(--future-blue); text-shadow: var(--neon-glow-blue); }
+        .subtitle { font-size: 0.9rem; color: var(--text-dim); letter-spacing: 2px; }
+
+        #ritual-container {
+            position: relative;
+            width: 320px;
+            height: 320px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 40px 0;
+        }
+
+        .vortex {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 1px dashed rgba(187, 134, 252, 0.1);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .holding .vortex {
+            animation: rotateVortex 1s linear infinite;
+            border-color: var(--active-purple);
+            box-shadow: inset 0 0 50px rgba(187, 134, 252, 0.2);
+            scale: 1.1;
+        }
+
+        @keyframes rotateVortex {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        #shaman-btn {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: transparent;
+            border: 2px solid var(--future-blue);
+            color: var(--future-blue);
+            font-size: 1.1rem;
+            cursor: pointer;
+            z-index: 20;
+            transition: all 0.3s;
+            box-shadow: var(--neon-glow-blue);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            outline: none;
+        }
+
+        #shaman-btn:active { scale: 0.9; background: rgba(0, 212, 255, 0.1); }
+
+        .holding #shaman-btn {
+            border-color: var(--active-purple);
+            color: var(--active-purple);
+            box-shadow: var(--neon-glow-purple);
+        }
+
+        .progress-dots { display: flex; gap: 10px; margin-top: 20px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); transition: all 0.4s; }
+        .dot.active { background: var(--active-purple); box-shadow: 0 0 10px var(--active-purple); transform: scale(1.3); }
+
+        #result-screen {
+            display: none;
+            width: 100%;
+            max-width: 900px;
+            padding: 20px;
+            box-sizing: border-box;
+            animation: fadeIn 1s forwards;
+        }
+
+        .hex-grid { display: flex; justify-content: space-around; gap: 10px; margin-bottom: 40px; }
+        .hex-box {
+            flex: 1;
+            text-align: center;
+            background: var(--glass-bg);
+            padding: 20px 10px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .hex-title { font-size: 0.8rem; margin-bottom: 20px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px; }
+        .lines-stack { display: flex; flex-direction: column-reverse; gap: 12px; align-items: center; }
+        .line-wrap { height: 12px; width: 100px; position: relative; }
+        .line-solid { width: 100%; height: 100%; background: #444; border-radius: 2px; }
+        .line-broken { width: 100%; height: 100%; display: flex; justify-content: space-between; }
+        .line-broken div { width: 42%; height: 100%; background: #444; border-radius: 2px; }
+        .moving-line .line-solid, .moving-line .line-broken div { background: var(--active-purple) !important; box-shadow: var(--neon-glow-purple); }
+        .future-hex .line-solid, .future-hex .line-broken div { background: var(--future-blue) !important; box-shadow: var(--neon-glow-blue); }
+        .static-line .line-solid, .static-line .line-broken div { background: #eee; }
+
+        #save-drawer {
+            position: fixed;
+            bottom: -200px;
+            width: 100%;
+            max-width: 500px;
+            background: rgba(15, 15, 20, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 30px;
+            border-radius: 30px 30px 0 0;
+            border-top: 1px solid rgba(187, 134, 252, 0.3);
+            text-align: center;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+            transition: bottom 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+            z-index: 100;
+        }
+        #save-drawer.open { bottom: 0; }
+        .btn-save {
+            background: linear-gradient(135deg, var(--active-purple), var(--future-blue));
+            border: none;
+            color: white;
+            padding: 15px 50px;
+            border-radius: 40px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        @media (max-width: 600px) {
+            .hex-grid { flex-direction: column; align-items: center; }
+            .hex-box { width: 80%; margin-bottom: 15px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>大衍占卦</h1>
+        <div class="subtitle">不動不占 · 心誠則靈</div>
+    </header>
+
+    <main id="divination-ritual">
+        <div id="ritual-container">
+            <div class="vortex"></div>
+            <button id="shaman-btn"><span id="btn-text">長按揲蓍</span></button>
+        </div>
+        <div class="progress-dots" id="dots-container">
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+        </div>
+        <p id="hint-text" style="color: var(--text-dim); margin-top: 30px; font-size: 0.8rem; letter-spacing: 1px;">請屏氣凝神，觀想所問之事...</p>
+    </main>
+
+    <section id="result-screen">
+        <div class="hex-grid">
+            <div class="hex-box">
+                <div class="hex-title">本卦 (現狀)</div>
+                <div class="lines-stack" id="main-lines"></div>
+                <div id="main-name" style="margin-top:15px; color: var(--active-purple)"></div>
+            </div>
+            <div class="hex-box" style="opacity: 0.6">
+                <div class="hex-title">互卦 (過程)</div>
+                <div class="lines-stack" id="mutual-lines"></div>
+                <div id="mutual-name" style="margin-top:15px;"></div>
+            </div>
+            <div class="hex-box future-hex">
+                <div class="hex-title">變卦 (發展)</div>
+                <div class="lines-stack" id="future-lines"></div>
+                <div id="future-name" style="margin-top:15px; color: var(--future-blue)"></div>
+            </div>
+        </div>
+        <div style="text-align: center; color: var(--text-dim); font-size: 0.9rem; line-height: 1.6; padding: 0 20px;">
+            <p id="summary-text"></p>
+        </div>
+    </section>
+
+    <div id="save-drawer">
+        <div style="font-size: 1.5rem; margin-bottom: 10px;">🔮</div>
+        <div style="color: white; font-weight: bold; margin-bottom: 5px;">想保留這份天機嗎？</div>
+        <div style="color: #888; font-size: 0.85rem;">登入後可永久儲存紀錄，並結合個人命盤深度解析。</div>
+        <button class="btn-save" onclick="alert('跳轉至登入頁面並同步數據...')">立即儲存</button>
+    </div>
+
+    <script>
+        let holdInterval;
+        let currentLine = 0;
+        let results = [];
+        const shamanBtn = document.getElementById('shaman-btn');
+        const container = document.getElementById('divination-ritual');
+        const dots = document.querySelectorAll('.dot');
+        const hintText = document.getElementById('hint-text');
+
+        shamanBtn.addEventListener('mousedown', startRitual);
+        shamanBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRitual(); });
+        window.addEventListener('mouseup', stopRitual);
+        window.addEventListener('touchend', stopRitual);
+
+        function startRitual() {
+            if (currentLine >= 6) return;
+            document.body.classList.add('holding');
+            hintText.innerText = "感應中，請勿放手...";
+            holdInterval = setInterval(() => {
+                if (currentLine < 6) {
+                    const val = Math.random() < 0.1 ? 6 : Math.random() < 0.45 ? 7 : Math.random() < 0.9 ? 8 : 9;
+                    results.push(val);
+                    dots[currentLine].classList.add('active');
+                    currentLine++;
+                    if (navigator.vibrate) navigator.vibrate(60);
+                    if (currentLine === 6) finishRitual();
+                }
+            }, 1200);
+        }
+
+        function stopRitual() {
+            document.body.classList.remove('holding');
+            clearInterval(holdInterval);
+            if (currentLine < 6 && currentLine > 0) hintText.innerText = "儀式中斷，請繼續長按...";
+        }
+
+        function finishRitual() {
+            stopRitual();
+            shamanBtn.innerHTML = "已結卦";
+            hintText.innerText = "天機已成，正在顯像...";
+            setTimeout(() => {
+                container.style.display = 'none';
+                renderResults();
+            }, 1000);
+        }
+
+        function createLineElement(val, isMain = false) {
+            const wrap = document.createElement('div');
+            wrap.className = 'line-wrap';
+            const isYang = (val === 7 || val === 9);
+            const isMoving = (val === 6 || val === 9);
+            if (isMain && isMoving) wrap.classList.add('moving-line');
+            else if (!isMain) wrap.classList.add('static-line');
+            wrap.innerHTML = isYang ? '<div class="line-solid"></div>' : '<div class="line-broken"><div></div><div></div></div>';
+            return wrap;
+        }
+
+        function renderResults() {
+            document.getElementById('result-screen').style.display = 'block';
+            const mainStack = document.getElementById('main-lines');
+            results.forEach(v => mainStack.appendChild(createLineElement(v, true)));
+            const futureStack = document.getElementById('future-lines');
+            const futureValues = results.map(v => v === 6 ? 7 : v === 9 ? 8 : v);
+            futureValues.forEach(v => futureStack.appendChild(createLineElement(v, false)));
+            const mutualStack = document.getElementById('mutual-lines');
+            const mValues = [results[1], results[2], results[3], results[2], results[3], results[4]];
+            mValues.forEach(v => mutualStack.appendChild(createLineElement(v, false)));
+            document.getElementById('summary-text').innerHTML = '2026 丙午火年，五行受生。目前現狀呈現穩定累積，<br>中間過程雖有決斷之憂，但最終指向長久之道。<br><b>動爻提醒：</b> 初爻與五爻能量交匯，第 5 月為關鍵轉折點。';
+            setTimeout(() => document.getElementById('save-drawer').classList.add('open'), 3000);
+        }
+    </script>
+</body>
+</html>

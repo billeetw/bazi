@@ -37,6 +37,8 @@ import { estimateHourFromAnswers } from "./calc/shichen-logic.js";
     { id: "q17", text: "第一次面對陌生情境／陌生人時你的傾向是？", options: [{ key: "A", text: "越互動越順" }, { key: "B", text: "先找共同點" }, { key: "C", text: "先感受對方氣氛" }, { key: "D", text: "很快帶動互動" }, { key: "E", text: "放輕鬆、慢慢來" }] },
     { id: "q18", text: "最直覺地說，你認為自己更像哪種類型？", options: [{ key: "A", text: "執行型" }, { key: "B", text: "觀察型／軍師型" }, { key: "C", text: "推動者／領導型" }, { key: "D", text: "穩定可靠型" }, { key: "E", text: "連結協調型" }, { key: "F", text: "改變與創新型" }] },
     { id: "q19", text: "你一天的精神高峰通常比別人來得早還是晚？", options: [{ key: "A", text: "偏早" }, { key: "B", text: "偏晚" }] },
+    { id: "qx1", text: "你目前作息主要由什麼決定？", options: [{ key: "A", text: "自然" }, { key: "B", text: "工作／育兒／輪班" }], optional: true },
+    { id: "qx2", text: "你現在作息和 18–25 歲相比是否差很多？", options: [{ key: "A", text: "差不多" }, { key: "B", text: "差很多" }], optional: true },
   ];
 
   /**
@@ -68,6 +70,20 @@ import { estimateHourFromAnswers } from "./calc/shichen-logic.js";
         options: opts.length ? opts : QUESTIONS_FALLBACK[i - 1].options,
         multiSelect: multi,
         maxSelect: multi ? 2 : undefined,
+      });
+    }
+    for (var xid of ['qx1', 'qx2']) {
+      var xq = data[xid];
+      if (!xq || !xq.text) continue;
+      var xopts = [];
+      if (xq.options && typeof xq.options === 'object') {
+        Object.keys(xq.options).forEach(function (k) { xopts.push({ key: k, text: xq.options[k] }); });
+      }
+      arr.push({
+        id: xid,
+        text: xq.text,
+        options: xopts.length ? xopts : [{ key: 'A', text: '' }, { key: 'B', text: '' }],
+        optional: true,
       });
     }
     return arr;

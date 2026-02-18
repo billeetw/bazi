@@ -1,56 +1,15 @@
 /**
  * Admin API: Calculation Results Export
  * GET /api/admin/calculation-results
- * 
- * 輸出所有計算結果的結構化數據，供後台管理界面使用
- * 用於判讀和命書輸出（未來收費服務）的基礎
- * 
  * 認證：Basic Auth（與其他 admin API 一致）
  */
 
-const JSON_HEADERS = {
-  'Content-Type': 'application/json; charset=utf-8',
-};
-
-function unauthorized() {
-  return new Response(
-    JSON.stringify({ error: '未授權' }),
-    { status: 401, headers: { ...JSON_HEADERS, 'WWW-Authenticate': 'Basic realm="Admin"' } }
-  );
-}
-
-/**
- * 解析 Basic Auth 認證信息
- * 注意：此函數僅用於驗證，不會記錄或輸出敏感信息
- */
-function parseBasicAuth(request) {
-  const auth = request.headers.get('Authorization');
-  if (!auth || !auth.startsWith('Basic ')) return null;
-  const b64 = auth.slice(6);
-  try {
-    const [user, pass] = atob(b64).split(':');
-    return { user, pass };
-  } catch {
-    return null;
-  }
-}
+import { requireAdmin, jsonResponse } from "../../shared/admin-auth.js";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
-  const cred = parseBasicAuth(request);
-  const adminUser = env.ADMIN_USER;
-  const adminPass = env.ADMIN_PASSWORD;
-
-  if (!adminUser || !adminPass) {
-    return new Response(
-      JSON.stringify({ error: '後台未設定 ADMIN_USER / ADMIN_PASSWORD' }),
-      { status: 500, headers: JSON_HEADERS }
-    );
-  }
-
-  if (!cred || cred.user !== adminUser || cred.pass !== adminPass) {
-    return unauthorized();
-  }
+  const auth = requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
 
   try {
     const url = new URL(request.url);
@@ -226,16 +185,10 @@ export async function onRequestGet(context) {
       note: '實際數據需要從前端計算後通過 POST 請求提交，或從數據庫讀取已保存的結果'
     };
 
-    return new Response(JSON.stringify(response), {
-      status: 200,
-      headers: JSON_HEADERS,
-    });
+    return jsonResponse(response);
   } catch (err) {
     console.error('Error in GET /api/admin/calculation-results:', err);
-    return new Response(
-      JSON.stringify({ error: '讀取失敗', details: err.message }),
-      { status: 500, headers: JSON_HEADERS }
-    );
+    return jsonResponse({ error: '讀取失敗', details: err.message }, 500);
   }
 }
 
@@ -245,20 +198,8 @@ export async function onRequestGet(context) {
  */
 export async function onRequestPost(context) {
   const { request, env } = context;
-  const cred = parseBasicAuth(request);
-  const adminUser = env.ADMIN_USER;
-  const adminPass = env.ADMIN_PASSWORD;
-
-  if (!adminUser || !adminPass) {
-    return new Response(
-      JSON.stringify({ error: '後台未設定 ADMIN_USER / ADMIN_PASSWORD' }),
-      { status: 500, headers: JSON_HEADERS }
-    );
-  }
-
-  if (!cred || cred.user !== adminUser || cred.pass !== adminPass) {
-    return unauthorized();
-  }
+  const auth = requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
 
   try {
     const data = await request.json();
@@ -276,29 +217,20 @@ export async function onRequestPost(context) {
     } = data || {};
 
     if (!chartId) {
-      return new Response(
-        JSON.stringify({ error: '缺少 chartId' }),
-        { status: 400, headers: JSON_HEADERS }
-      );
+      return jsonResponse({ error: '缺少 chartId' }, 400);
     }
 
     // TODO: 保存到數據庫
     // 需要創建 migration 來建立 calculation_results 表
     // 目前先返回成功，實際保存邏輯待實現
 
-    return new Response(
-      JSON.stringify({
-        ok: true,
-        message: '計算結果已接收（待實現數據庫保存）',
-        chartId: chartId
-      }),
-      { status: 200, headers: JSON_HEADERS }
-    );
+    return jsonResponse({
+      ok: true,
+      message: '計算結果已接收（待實現數據庫保存）',
+      chartId: chartId
+    });
   } catch (err) {
     console.error('Error in POST /api/admin/calculation-results:', err);
-    return new Response(
-      JSON.stringify({ error: '保存失敗', details: err.message }),
-      { status: 500, headers: JSON_HEADERS }
-    );
+    return jsonResponse({ error: '保存失敗', details: err.message }, 500);
   }
 }

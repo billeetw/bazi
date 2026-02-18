@@ -68,7 +68,16 @@
     const consultCta = document.getElementById("liuyueConsultCta");
     if (!mGrid) return;
 
-    const bounds = bazi?.liuyue2026?.bounds || [];
+    let bounds = bazi?.liuyue2026?.bounds || [];
+    if (!bounds.length && bazi && window.Calc?.buildLiuyue2026Fallback) {
+      const fallback = window.Calc.buildLiuyue2026Fallback(bazi);
+      bounds = fallback?.bounds || [];
+      if (bounds.length) {
+        bazi.liuyue2026 = bazi.liuyue2026 || {};
+        bazi.liuyue2026.bounds = bounds;
+        if (fallback?.redMonths) bazi.liuyue2026.redMonths = fallback.redMonths;
+      }
+    }
     mGrid.innerHTML = "";
 
     const t = (key) => (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(key) : key;
@@ -119,6 +128,9 @@
       };
     }
     
+    // 當前月份（國曆）：用於置頂與高亮
+    const currentSolarMonth = new Date().getMonth() + 1;
+
     // 解析並排序：按農曆月份排序（1-12月）
     const ordered = bounds.slice().sort((a, b) => {
       let ma = 0, mb = 0;
@@ -161,6 +173,28 @@
       
       return 0;
     });
+
+    // 當前月份置頂：找出 isCurrent 的項並移到最前
+    const now = new Date();
+    const curM = now.getMonth() + 1;
+    const currentIdx = ordered.findIndex((b) => {
+      const solarInfo = getSolarFromLunarRange(b.range);
+      if (solarInfo) {
+        const [sStartM, sStartD] = solarInfo.solarStart.split("/").map(Number);
+        const [sEndM, sEndD] = solarInfo.solarEnd.split("/").map(Number);
+        const nowM = now.getMonth() + 1;
+        const nowD = now.getDate();
+        if (sStartM === sEndM) return nowM === sStartM && nowD >= sStartD && nowD <= sEndD;
+        return (nowM === sStartM && nowD >= sStartD) || (nowM === sEndM && nowD <= sEndD);
+      }
+      return parseMonthFromRange(b.range) === curM;
+    });
+    if (currentIdx > 0) {
+      const [curItem] = ordered.splice(currentIdx, 1);
+      ordered.unshift(curItem);
+    } else if (currentIdx < 0 && ordered.length > 0) {
+      console.warn("[renderLiuyue] 無法可靠取得當前月份對應項目，僅做高亮不置頂。");
+    }
 
     function collapseAll() {
       mGrid.querySelectorAll(".liuyue-expand").forEach((el) => {
@@ -224,15 +258,28 @@
       // 如果解析失敗，使用索引+1作為月份編號（fallback）
       const displayMonthNum = monthNum || (index + 1);
       
-      // 移除"當月"判斷，避免錯誤（用戶要求：只顯示農曆1-12月，不做當月換算）
-      const isCurrent = false; // 不再判斷當月
-      
-      // 獲取農曆對應的國曆日期信息
+      // 獲取農曆對應的國曆日期信息（需先計算才能判斷 isCurrent）
       let solarInfo = null;
       const rangeStr = String(b.range || "").trim();
       if (rangeStr.match(/^\d{1,2}\.\d{1,2}/)) {
-        // 農曆格式：獲取對應的國曆日期
         solarInfo = getSolarFromLunarRange(b.range);
+      }
+      
+      // 判斷是否為當前月份：比對國曆月份或農曆對應的國曆區間
+      let isCurrent = false;
+      if (solarInfo && solarInfo.solarStart) {
+        const parts = solarInfo.solarStart.split("/");
+        const sStartM = parseInt(parts[0], 10);
+        const sEndParts = (solarInfo.solarEnd || "").split("/");
+        const sEndM = sEndParts[0] ? parseInt(sEndParts[0], 10) : sStartM;
+        const now = new Date();
+        const nowM = now.getMonth() + 1;
+        if (nowM >= sStartM && nowM <= sEndM) isCurrent = true;
+      } else if (monthNum === currentSolarMonth) {
+        isCurrent = true;
+      }
+      if (monthNum === 0 && !solarInfo && b.range) {
+        console.warn("[renderLiuyue] 無法可靠取得月份，僅做高亮不置頂。range:", b.range);
       }
       
       // 如果解析失敗，記錄警告（但繼續渲染）
@@ -372,12 +419,21 @@
       expand.setAttribute("aria-hidden", "true");
 
       const reasons = (b.reasonTags || []).join("．");
+      const shareBtnsHtml = isCurrent
+        ? `<div class="mt-2 flex flex-wrap gap-2">
+            <button type="button" class="liuyue-share-btn flex-1 min-w-0 py-2 rounded-lg border border-amber-400/40 text-amber-300 text-xs font-bold hover:bg-amber-500/20 transition">📤 分享</button>
+            <button type="button" class="liuyue-share-fb-btn px-3 py-2 rounded-lg border border-blue-400/40 text-blue-300 text-xs font-medium hover:bg-blue-500/20 transition">FB</button>
+            <button type="button" class="liuyue-share-dl-btn px-3 py-2 rounded-lg border border-amber-400/40 text-amber-300 text-xs font-medium hover:bg-amber-500/20 transition">下載</button>
+          </div>
+          <p class="text-[10px] text-slate-500 mt-1">FB／IG：圖片請下載後從相簿選擇貼文</p>`
+        : "";
       expand.innerHTML = `
         <div class="p-3 mt-1 rounded-xl border border-amber-400/20 bg-black/30 text-[11px] leading-relaxed space-y-2">
           <div class="text-slate-400 uppercase tracking-wider">十神技術參數</div>
           <div class="text-slate-200">干 ${b.ssStem || "—"} ／ 支 ${b.ssBranch || "—"}${reasons ? " · " + reasons : ""}</div>
           <div class="text-amber-200/90 font-medium pt-1 border-t border-white/10">李伯彥老師助推建議</div>
           <div class="text-slate-100">${b.strategy || "（尚未撰寫戰術建議）"}</div>
+          ${shareBtnsHtml}
         </div>
       `;
 
@@ -403,9 +459,91 @@
       wrap.appendChild(card);
       wrap.appendChild(expand);
       mGrid.appendChild(wrap);
+
+      // 當月：預設展開、scrollIntoView 聚焦、分享避雷卡
+      if (isCurrent) {
+        const year = 2026;
+        wrap.dataset.liuyueCurrent = "1";
+        wrap.dataset.liuyueMonthLabel = year + "年" + (solarInfo ? solarInfo.lunarMonth : displayMonthNum) + "月";
+        wrap.dataset.liuyueGz = b.gz || "";
+        wrap.dataset.liuyueRisk = String(risk);
+        wrap.dataset.liuyueAvoid = (b.reasonTags || []).join("．") || "";
+        wrap.dataset.liuyueBoost = (b.strategy || "").trim().slice(0, 80) || "";
+      }
     });
 
-    // 移除自動滾動到當月（已移除當月判斷）
+    // 本月避雷卡分享按鈕（與年度圖片相同邏輯：分享／FB／下載）
+    function getLiuyueDataUrl(wrap) {
+      const gen = window.UiUtils?.LiuyueShareCard?.generateLiuyueShareCard;
+      if (!gen) return null;
+      return gen({
+        monthLabel: wrap.dataset.liuyueMonthLabel || "",
+        gz: wrap.dataset.liuyueGz || "",
+        riskScore: Number(wrap.dataset.liuyueRisk) || 0,
+        avoidPhrase: wrap.dataset.liuyueAvoid || "",
+        boostPhrase: wrap.dataset.liuyueBoost || "",
+      });
+    }
+    function doLiuyueDownload(wrap) {
+      const dataUrl = getLiuyueDataUrl(wrap);
+      if (dataUrl) {
+        const a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = "liuyue-share-" + (wrap.dataset.liuyueMonthLabel || "card").replace(/\s/g, "") + ".png";
+        a.click();
+      }
+    }
+    function doLiuyueShareFb() {
+      const u = encodeURIComponent((typeof window !== "undefined" && window.location.origin) || "https://www.17gonplay.com");
+      window.open("https://www.facebook.com/sharer/sharer.php?u=" + u, "_blank", "width=600,height=400");
+    }
+    mGrid.addEventListener("click", function (e) {
+      const shareBtn = e.target.closest(".liuyue-share-btn");
+      const fbBtn = e.target.closest(".liuyue-share-fb-btn");
+      const dlBtn = e.target.closest(".liuyue-share-dl-btn");
+      const wrap = (shareBtn || fbBtn || dlBtn)?.closest("[data-liuyue-current]");
+      if (!wrap) return;
+      if (fbBtn) {
+        doLiuyueShareFb();
+        return;
+      }
+      if (dlBtn) {
+        doLiuyueDownload(wrap);
+        return;
+      }
+      if (shareBtn) {
+        const dataUrl = getLiuyueDataUrl(wrap);
+        if (!dataUrl) return;
+        if (navigator.share && navigator.canShare) {
+          (async function () {
+            try {
+              const res = await fetch(dataUrl);
+              const blob = await res.blob();
+              const file = new File([blob], "liuyue-" + (wrap.dataset.liuyueMonthLabel || "card").replace(/\s/g, "") + ".png", { type: "image/png" });
+              if (navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: (wrap.dataset.liuyueMonthLabel || "本月") + " 避雷卡", text: "一起出來玩 · 17gonplay.com" });
+                return;
+              }
+            } catch (err) { /* fallback */ }
+            doLiuyueDownload(wrap);
+          })();
+        } else {
+          doLiuyueDownload(wrap);
+        }
+      }
+    });
+
+    // 當月聚焦：預設展開當月卡片，但不自動捲動（儀表板載入時已捲至能量結構，用戶從上往下閱讀）
+    const currentWrap = mGrid.querySelector("[data-liuyue-current]");
+    if (currentWrap) {
+      const card = currentWrap.querySelector(".liuyue-card");
+      const expand = currentWrap.querySelector(".liuyue-expand");
+      if (card && expand && !card.classList.contains("is-expanded")) {
+        expand.style.maxHeight = expand.scrollHeight + "px";
+        expand.setAttribute("aria-hidden", "false");
+        card.classList.add("is-expanded");
+      }
+    }
 
     if (consultCta) {
       const tCta = (key) => (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(key) : key;

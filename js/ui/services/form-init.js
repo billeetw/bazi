@@ -12,10 +12,12 @@
   }
 
   if (!window.Calc) {
-    console.warn("[form-init.js] window.Calc not found, some features may not work");
+    console.warn("[form-init.js] window.Calc not found, using fallback for form init");
   }
 
-  const { SHICHEN_ORDER, pad2 } = window.Calc || {};
+  const SHICHEN_ORDER = (window.Calc && window.Calc.SHICHEN_ORDER) || ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+  const pad2 = (window.Calc && window.Calc.pad2) || function (n) { return String(n).padStart(2, "0"); };
+  const PLACEHOLDER_VAL = "__";
 
   function t(key, fallback) {
     if (window.I18n && typeof window.I18n.t === "function") return window.I18n.t(key);
@@ -38,8 +40,8 @@
     const exactRow = document.getElementById("exactTimeRow");
     const shichenRow = document.getElementById("shichenRow");
 
-    if (!pad2) {
-      console.error("[form-init.js] pad2 not available from window.Calc");
+    if (!y || !m || !d) {
+      console.warn("[form-init.js] Form elements (birthYear/Month/Day) not found, skip init");
       return;
     }
 
@@ -52,10 +54,16 @@
     const nowY = new Date().getFullYear();
     for (let i = nowY; i >= 1940; i--) y.add(new Option(i + yearSuf, i));
     for (let i = 1; i <= 12; i++) m.add(new Option(i + monthSuf, i));
-    for (let i = 0; i < 24; i++) h.add(new Option(pad2(i) + hourSuf, i));
-    for (let i = 0; i < 60; i++) {
-      const v = pad2(i);
-      min.add(new Option(v + minSuf, v));
+    if (h) {
+      h.add(new Option(t("ui.hourPlaceholder", "請選擇時"), PLACEHOLDER_VAL));
+      for (let i = 0; i < 24; i++) h.add(new Option(pad2(i) + hourSuf, i));
+    }
+    if (min) {
+      min.add(new Option(t("ui.minutePlaceholder", "請選擇分"), PLACEHOLDER_VAL));
+      for (let i = 0; i < 60; i++) {
+        const v = pad2(i);
+        min.add(new Option(v + minSuf, v));
+      }
     }
 
     if (gender) {
@@ -68,8 +76,12 @@
       timeMode.add(new Option(t("ui.timeShichen", "時間：時辰（子丑寅…）"), "shichen"));
     }
 
+    var timeModeToggle = document.getElementById("timeModeToggle");
+    var timeModeBtns = timeModeToggle ? timeModeToggle.querySelectorAll(".time-mode-btn") : [];
+
     if (shichen && SHICHEN_ORDER) {
       const shichenLab = t("ui.shichenLabel", "時辰：");
+      shichen.add(new Option(t("ui.shichenPlaceholder", "請選擇時辰"), PLACEHOLDER_VAL));
       SHICHEN_ORDER.forEach((c) => {
         shichen.add(new Option(shichenLab + c, c));
       });
@@ -80,9 +92,10 @@
       shichenHalf.add(new Option(t("ui.shichenLower", "下半時辰"), "lower"));
     }
 
-    function updateTimeModeUI() {
-      const mode = timeMode?.value || "exact";
+    function updateTimeModeUI(forceMode) {
+      const mode = forceMode ?? timeMode?.value ?? "shichen";
       if (!exactRow || !shichenRow) return;
+      if (timeMode) timeMode.value = mode;
       if (mode === "shichen") {
         exactRow.classList.add("hidden");
         shichenRow.classList.remove("hidden");
@@ -90,6 +103,10 @@
         shichenRow.classList.add("hidden");
         exactRow.classList.remove("hidden");
       }
+      timeModeBtns.forEach(function (btn) {
+        var active = btn.getAttribute("data-value") === mode;
+        btn.classList.toggle("time-mode-active", active);
+      });
     }
 
     function updateDays() {
@@ -105,11 +122,11 @@
 
     y.value = "1990";
     m.value = "1";
-    h.value = "12";
-    min.value = "00";
-    if (gender) gender.value = "M";
-    if (timeMode) timeMode.value = "exact";
-    if (shichen) shichen.value = "子";
+    if (h) h.value = "12";
+    if (min) min.value = "00";
+    if (gender) gender.value = "F";
+    if (timeMode) timeMode.value = "shichen";
+    if (shichen) shichen.value = PLACEHOLDER_VAL;
     if (shichenHalf) shichenHalf.value = "upper";
     updateDays();
     updateTimeModeUI();
@@ -117,9 +134,19 @@
     y.addEventListener("change", updateDays);
     m.addEventListener("change", updateDays);
     timeMode?.addEventListener("change", updateTimeModeUI);
+
+    timeModeBtns.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var val = btn.getAttribute("data-value");
+        if (timeMode && val) {
+          timeMode.value = val;
+          updateTimeModeUI(val);
+          timeMode.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      });
+    });
   }
 
-  // 导出到 window.UiServices.FormInit
   if (!window.UiServices) {
     window.UiServices = {};
   }

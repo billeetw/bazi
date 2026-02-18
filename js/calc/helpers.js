@@ -36,15 +36,15 @@
     GENERATION_POST_STYLE,
     OVERCOMING_POST_STYLE,
     ELEMENT_TYPE,
-    BOYAN_CONVERSION_ONE,
-    BOYAN_CONVERSION_ONE_SURFACE,
-    BOYAN_CONVERSION_ONE_STRATEGIC,
-    BOYAN_RISK_ONE,
-    BOYAN_RISK_ONE_SURFACE,
-    BOYAN_RISK_ONE_STRATEGIC,
-    BOYAN_PUSH,
-    BOYAN_PUSH_SURFACE,
-    BOYAN_PUSH_STRATEGIC,
+    POYEN_CONVERSION_ONE,
+    POYEN_CONVERSION_ONE_SURFACE,
+    POYEN_CONVERSION_ONE_STRATEGIC,
+    POYEN_RISK_ONE,
+    POYEN_RISK_ONE_SURFACE,
+    POYEN_RISK_ONE_STRATEGIC,
+    POYEN_PUSH,
+    POYEN_PUSH_SURFACE,
+    POYEN_PUSH_STRATEGIC,
     SI_HUA_MAP,
     ELEMENT_TYPE_EN,
     ELEMENT_TYPE_EN_FALLBACK,
@@ -52,12 +52,12 @@
     RELATION_BADGE_EN,
     ELEMENT_CORE_MEANING_SURFACE_EN,
     ELEMENT_CORE_MEANING_STRATEGIC_EN,
-    BOYAN_CONVERSION_ONE_SURFACE_EN,
-    BOYAN_CONVERSION_ONE_STRATEGIC_EN,
-    BOYAN_RISK_ONE_SURFACE_EN,
-    BOYAN_RISK_ONE_STRATEGIC_EN,
-    BOYAN_PUSH_SURFACE_EN,
-    BOYAN_PUSH_STRATEGIC_EN,
+    POYEN_CONVERSION_ONE_SURFACE_EN,
+    POYEN_CONVERSION_ONE_STRATEGIC_EN,
+    POYEN_RISK_ONE_SURFACE_EN,
+    POYEN_RISK_ONE_STRATEGIC_EN,
+    POYEN_PUSH_SURFACE_EN,
+    POYEN_PUSH_STRATEGIC_EN,
     GENERATION_POST_STYLE_EN,
     OVERCOMING_POST_STYLE_EN,
     STRONG_COMMENTS_SURFACE_EN,
@@ -156,6 +156,21 @@
    * @param {string} palaceName 宮位名稱
    * @returns {Array<string>} 星曜名稱陣列
    */
+  /**
+   * 將 API/iztro 回傳的宮位名稱正規化為前端 PALACE_DEFAULT 的繁體 key
+   * @param {string} raw - 原始宮位名稱（可能為簡體、奴僕、交友等）
+   * @returns {string|null} 正規化後的宮位名稱
+   */
+  function normalizePalaceName(raw) {
+    if (!raw || typeof raw !== "string") return null;
+    const t = raw.trim();
+    if (PALACE_DEFAULT.includes(t)) return t;
+    for (const p of PALACE_DEFAULT) {
+      if ((PALACE_KEY_MAP[p] || []).includes(t)) return p;
+    }
+    return t;
+  }
+
   function getStarsForPalace(ziwei, palaceName) {
     if (!ziwei || !ziwei.mainStars) return [];
     const keys = PALACE_KEY_MAP[palaceName] || [palaceName];
@@ -476,14 +491,14 @@
     const weakestTxt = `${weakest} ${tag(levels[weakest])}`;
 
     const titleTpls = en
-      ? ["Balanced distribution: let ${s} lead while reinforcing ${w}.", "Polarized energy: ${s} over-dominates; ${w} becomes the bottleneck.", "Overactive signal: ${s} drives the rhythm—watch the cost of imbalance.", "Clear weakness: ${w} is underpowered and may slow momentum.", "Uneven distribution: ${s} strong, ${w} weak—patch the weak spot before scaling."]
-      : ["五行偏均衡：以${s}帶動，${w}需補位。", "能量兩極：${s}過度主導，${w}成瓶頸。", "存在過旺：${s}主導節奏，注意失衡代價。", "明顯短板：${w}偏弱，易拖慢推進。", "分布不均：${s}偏強、${w}偏弱，先補短板再放大。"];
+      ? ["Balanced structure: ${strongest} leads; ${weakest} requires reinforcement.\nA stable configuration suited for gradual expansion.", "Polarized structure: ${strongest} dominates; ${weakest} becomes a bottleneck.\nRecalibration is required to prevent structural backlash.", "${strongest} momentum is excessive and driving the rhythm.\nMonitor overload risks and counter-pressure.", "${weakest} is a clear weak node.\nWithout reinforcement, overall progress slows.", "Uneven distribution: ${strongest} strong, ${weakest} weak.\nRepair weaknesses before scaling."]
+      : ["結構分布均衡：${strongest}主導，${weakest}待補。\n此為穩定架構，適合循序擴展。", "結構極化：${strongest}過度主導，${weakest}成為瓶頸。\n需調整節奏，避免失衡反作用。", "${strongest}勢能過強，主導節奏。\n注意過載風險與反向壓力。", "${weakest}為明顯短板。\n若不補強，將拖慢整體推進。", "分布失衡：${strongest}偏強，${weakest}偏弱。\n優先修補短板，再談擴張。"];
     let title = "";
-    if (maxLv - minLv <= 1) title = titleTpls[0].replace("${s}", strongestTxt).replace("${w}", weakestTxt);
-    else if (maxLv === 3 && minLv === 0) title = titleTpls[1].replace("${s}", strongestTxt).replace("${w}", weakestTxt);
-    else if (maxLv === 3) title = titleTpls[2].replace("${s}", strongestTxt).replace("${w}", weakestTxt);
-    else if (minLv === 0) title = titleTpls[3].replace("${s}", strongestTxt).replace("${w}", weakestTxt);
-    else title = titleTpls[4].replace("${s}", strongestTxt).replace("${w}", weakestTxt);
+    if (maxLv - minLv <= 1) title = titleTpls[0].replace(/\$\{strongest\}/g, strongestTxt).replace(/\$\{weakest\}/g, weakestTxt);
+    else if (maxLv === 3 && minLv === 0) title = titleTpls[1].replace(/\$\{strongest\}/g, strongestTxt).replace(/\$\{weakest\}/g, weakestTxt);
+    else if (maxLv === 3) title = titleTpls[2].replace(/\$\{strongest\}/g, strongestTxt).replace(/\$\{weakest\}/g, weakestTxt);
+    else if (minLv === 0) title = titleTpls[3].replace(/\$\{strongest\}/g, strongestTxt).replace(/\$\{weakest\}/g, weakestTxt);
+    else title = titleTpls[4].replace(/\$\{strongest\}/g, strongestTxt).replace(/\$\{weakest\}/g, weakestTxt);
 
     const genPairs = [["木", "火"], ["火", "土"], ["土", "金"], ["金", "水"], ["水", "木"]];
     const GEN_STYLE = en ? GENERATION_POST_STYLE_EN : GENERATION_POST_STYLE;
@@ -498,7 +513,7 @@
     genPairs.forEach(([m, c]) => {
       const post = GEN_STYLE[`${m}->${c}`];
       if (post && (energyBand(levels[m]) === "healthy" || energyBand(levels[m]) === "excess") && clampEnergyLevel(levels[c]) >= 1) {
-        conversionHighlights.push(`${post.headline}${sep}${post.text}`);
+        conversionHighlights.push(post.text ? `${post.headline}${sep}${post.text}` : post.headline);
       }
     });
     const conversionTop2 = conversionHighlights.slice(0, 2);
@@ -523,8 +538,8 @@
     kePairs.forEach(([a, b]) => {
       const badge = relationBadge(levels[a], levels[b]);
       const post = OVERCOME_STYLE[`${a}->${b}`];
-      if (badge === strongWeakVal && post) destructiveNotes.push(`${post.headline}${sep}${post.text}`);
-      else if (badge === weakStrongVal && post) constraintNotes.push(`${post.headline}${sep}${post.text}`);
+      if (badge === strongWeakVal && post) destructiveNotes.push(post.text ? `${post.headline}${sep}${post.text}` : post.headline);
+      else if (badge === weakStrongVal && post) constraintNotes.push(post.text ? `${post.headline}${sep}${post.text}` : post.headline);
     });
     const destructiveTop2 = destructiveNotes.slice(0, 2);
     const constraintTop2 = constraintNotes.slice(0, 2);
@@ -599,7 +614,7 @@
    * @param {string} kind 類型："surface"（表層）或 "strategic"（實戰），預設為 "strategic"
    * @returns {Object} { levels, strongest, weakest, wxRaw, 本局屬性, 戰略亮點, 系統風險, 伯彥助推 }
    */
-  function getBoyanBoard(wx, kind = "strategic") {
+  function getPoYenBoard(wx, kind = "strategic") {
     const EN_TO_ZH = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
     const keysZh = ["木", "火", "土", "金", "水"];
     const wxUse = {};
@@ -615,26 +630,28 @@
     const isSurface = kind === "surface";
     const en = isEnLocale();
     if (typeof window !== "undefined" && window.UiUtils?.ContentUtils?.isDebugMode?.()) {
-      try { console.log("[Boyan] dict:", en ? "en" : "zh"); } catch (e) {}
+      try { console.log("[PoYen] dict:", en ? "en" : "zh"); } catch (e) {}
     }
     const M = en ? (isSurface ? ELEMENT_CORE_MEANING_SURFACE_EN : ELEMENT_CORE_MEANING_STRATEGIC_EN) : (isSurface ? ELEMENT_CORE_MEANING_SURFACE : ELEMENT_CORE_MEANING_STRATEGIC);
-    const CONVERSION = en ? (isSurface ? BOYAN_CONVERSION_ONE_SURFACE_EN : BOYAN_CONVERSION_ONE_STRATEGIC_EN) : (isSurface ? BOYAN_CONVERSION_ONE_SURFACE : BOYAN_CONVERSION_ONE_STRATEGIC);
-    const RISK = en ? (isSurface ? BOYAN_RISK_ONE_SURFACE_EN : BOYAN_RISK_ONE_STRATEGIC_EN) : (isSurface ? BOYAN_RISK_ONE_SURFACE : BOYAN_RISK_ONE_STRATEGIC);
-    const PUSH = en ? (isSurface ? BOYAN_PUSH_SURFACE_EN : BOYAN_PUSH_STRATEGIC_EN) : (isSurface ? BOYAN_PUSH_SURFACE : BOYAN_PUSH_STRATEGIC);
+    const CONVERSION = en ? (isSurface ? POYEN_CONVERSION_ONE_SURFACE_EN : POYEN_CONVERSION_ONE_STRATEGIC_EN) : (isSurface ? POYEN_CONVERSION_ONE_SURFACE : POYEN_CONVERSION_ONE_STRATEGIC);
+    const RISK = en ? (isSurface ? POYEN_RISK_ONE_SURFACE_EN : POYEN_RISK_ONE_STRATEGIC_EN) : (isSurface ? POYEN_RISK_ONE_SURFACE : POYEN_RISK_ONE_STRATEGIC);
+    const PUSH = en ? (isSurface ? POYEN_PUSH_SURFACE_EN : POYEN_PUSH_STRATEGIC_EN) : (isSurface ? POYEN_PUSH_SURFACE : POYEN_PUSH_STRATEGIC);
     const ELEMENT_TYPE_DICT = en ? ELEMENT_TYPE_EN : ELEMENT_TYPE;
     const ELEMENT_TYPE_FALLBACK = en ? ELEMENT_TYPE_EN_FALLBACK : "均衡型";
 
+    const typeVal = ELEMENT_TYPE_DICT[strongest] || ELEMENT_TYPE_FALLBACK;
+    const meaningVal = meaningText(strongest, levels[strongest], kind);
     const 本局屬性 = en
-      ? `🔥 Core Profile: ${strongest}-dominant (${ELEMENT_TYPE_DICT[strongest] || ELEMENT_TYPE_FALLBACK}). ${meaningText(strongest, levels[strongest], kind)}, but your ${M[weakest]?.core || ""} support is insufficient.`
-      : `🔥 本局屬性：${strongest}系主導（${ELEMENT_TYPE_DICT[strongest] || ELEMENT_TYPE_FALLBACK}）。${meaningText(strongest, levels[strongest], kind)}，但${M[weakest]?.core || ""}支撐不足。`;
+      ? `🔥 Core structure: ${strongest} dominant (${typeVal}).\n${meaningVal}\n${weakest} under-supported.`
+      : `🔥 核心結構：${strongest}主導（${typeVal}）。\n${meaningVal}\n${weakest}支撐不足。`;
 
     const genPairs = [["木", "火"], ["火", "土"], ["土", "金"], ["金", "水"], ["水", "木"]];
     const genPair = genPairs.find(([m]) => m === strongest);
     const [m, c] = genPair || genPairs[0];
     const onePath = CONVERSION[`${m}->${c}`];
     const 戰略亮點 = onePath
-      ? (en ? `🚀 Best Path: ${onePath}` : `🚀 最優路徑：${onePath}`)
-      : (en ? `🚀 Best Path: Convert ${M[m]?.core || ""} (${m}) into ${M[c]?.core || ""} (${c})—that's the asset you can actually take with you.` : `🚀 最優路徑：將${M[m]?.core}（${m}）轉化為${M[c]?.core}（${c}），這才是你能拿走的資產。`);
+      ? (en ? `🚀 Structural conversion: transform ${m} into ${c}. This becomes a compounding long-term asset.` : `🚀 結構轉換建議：將${m}轉化為${c}。此為可累積之長期資產。`)
+      : (en ? `🚀 Structural conversion: transform ${m} into ${c}. This becomes a compounding long-term asset.` : `🚀 結構轉換建議：將${m}轉化為${c}。此為可累積之長期資產。`);
 
     const kePairs = [["木", "土"], ["土", "水"], ["水", "火"], ["火", "金"], ["金", "木"]];
     const strongWeakVal = en ? "Strong–Weak" : "強弱";
@@ -644,15 +661,15 @@
       if (badge !== strongWeakVal) continue;
       const one = RISK[`${a}->${b}`];
       if (one) {
-        系統風險 = en ? `🚨 System Risk: ${one}` : `🚨 系統風險：${one}`;
+        系統風險 = en ? `🚨 Risk node: ${one}` : `🚨 風險節點：${one}`;
         break;
       }
     }
     if (!系統風險) {
-      系統風險 = en ? `🚨 System Risk: ${weakest} (${M[weakest]?.core || ""}) is weak and may slow the whole system down.` : `🚨 系統風險：${weakest}（${M[weakest]?.core}）偏弱，易拖慢整體。`;
+      系統風險 = en ? `🚨 Risk node: ${weakest} (${M[weakest]?.core || ""}) is weak and may slow the whole system down.` : `🚨 風險節點：${weakest}（${M[weakest]?.core}）偏弱，易拖慢整體。`;
     }
 
-    const 伯彥助推 = PUSH[weakest] || (en ? `This stage: patch ${weakest} first—then talk about scaling.` : `這一關，先把【${weakest}】補上再談放大。`);
+    const 伯彥助推 = PUSH[weakest] || (en ? `Reinforce ${weakest} before expansion.` : `優先補強【${weakest}】後，再擴張。`);
 
     return { levels, strongest, weakest, wxRaw: wxUse, 本局屬性, 戰略亮點, 系統風險, 伯彥助推 };
   }
@@ -822,6 +839,7 @@
       // 星曜相關
       toTraditionalStarName,
       getStarsForPalace,
+      normalizePalaceName,
       getStarBrightness,
       buildCompleteStarNameMap,
       getStarWeightConfig,
@@ -840,7 +858,7 @@
       toEnergyLevelsFromWx,
       generateFiveElementDiagnosis,
       buildStrategistNote,
-      getBoyanBoard,
+      getPoYenBoard,
       
       // 宮位相關
       computeRelatedPalaces,
@@ -862,6 +880,7 @@
       resolveBirthTime,
       toTraditionalStarName,
       getStarsForPalace,
+      normalizePalaceName,
       getStarBrightness,
       buildCompleteStarNameMap,
       getStarWeightConfig,
@@ -876,7 +895,7 @@
       toEnergyLevelsFromWx,
       generateFiveElementDiagnosis,
       buildStrategistNote,
-      getBoyanBoard,
+      getPoYenBoard,
       computeRelatedPalaces,
       getMutagenStars,
       getSiHuaWeights,

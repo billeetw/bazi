@@ -51,10 +51,9 @@
 
     // 從全局狀態獲取數據
     if (typeof window !== "undefined") {
-      // 四化系統
-      if (window.FourTransformations) {
-        // 需要從計算流程中獲取，這裡先標記為需要計算
-        results.fourTransformations = "需要從計算流程獲取";
+      // 四化系統（從計算流程存儲到 window.fourTransformations）
+      if (window.fourTransformations) {
+        results.fourTransformations = window.fourTransformations;
       }
 
       // 疊宮分析（原始數據）

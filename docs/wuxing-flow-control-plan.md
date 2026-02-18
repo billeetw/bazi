@@ -11,7 +11,7 @@
 - **既有資源可直接沿用**：
   - `js/calc/constants.js` 已有 **十天干**（`STEMS`）、**地支順序**（`BRANCH_ORDER`、`BRANCH_RING`）、**地支藏干**（`CANGGAN_DATA`，格式為 `{ "子": { "癸": 1.0 }, "丑": { "己": 0.6, "癸": 0.3, "辛": 0.1 }, ... }`）。
   - 相生／相剋已有 **中文鍵** 的對照：`SHENG_MAP`、`KE_MAP`（木火土金水）。
-  - 五行診斷與文案：`getStrongestWeakest`、`generateFiveElementComment`、`getBoyanBoard`、`GENERATION_POST_STYLE`、`OVERCOMING_POST_STYLE` 等，可與新「生剋流量／制衡壓力」報告**並存**或**漸進替換**。
+  - 五行診斷與文案：`getStrongestWeakest`、`generateFiveElementComment`、`getPoYenBoard`、`GENERATION_POST_STYLE`、`OVERCOMING_POST_STYLE` 等，可與新「生剋流量／制衡壓力」報告**並存**或**漸進替換**。
 - **建議定位**：本系統做「**可驗證、可回測的五行向量與生剋圖**」，與現有「紫微＋五行強弱＋戰略看板」互補：  
   - 輸入：**四柱**（年／月／日／時 干＋支）。  
   - 輸出：`v_raw`、`v_season`、相生流量／瓶頸、相剋壓力、三層報告＋病例式文本。  
@@ -43,7 +43,7 @@
 ### 5. 報告與既有文案的整合
 
 - **三層報告**（向量總表、相生鏈診斷、制衡壓力）可作為 **新區塊** 或 **新 API** 回傳，與現有「五行強弱＋戰略看板」並列。  
-- **病例式欄位**（`chief_complaint`、`findings`、`diagnosis`、`falsifiable_predictions`）可對接既有 `getBoyanBoard`、`generateFiveElementDiagnosis` 的風格，或先獨立輸出，再由上層決定是否與紫微／流年混搭呈現。
+- **病例式欄位**（`chief_complaint`、`findings`、`diagnosis`、`falsifiable_predictions`）可對接既有 `getPoYenBoard`、`generateFiveElementDiagnosis` 的風格，或先獨立輸出，再由上層決定是否與紫微／流年混搭呈現。
 
 ### 6. 回測與調參
 

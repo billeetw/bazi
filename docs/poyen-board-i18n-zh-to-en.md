@@ -1,10 +1,10 @@
-# getBoyanBoard 與相關常數：中文原文 → 需翻譯成英文
+# getPoYenBoard 與相關常數：中文原文 → 需翻譯成英文
 
-以下為 `js/calc/helpers.js` 的 `getBoyanBoard` 及 `js/calc/constants.js` 中所有需翻譯的內容。key 維持中文（木、火、土、金、水）供程式 lookup，value 需提供英文版。
+以下為 `js/calc/helpers.js` 的 `getPoYenBoard` 及 `js/calc/constants.js` 中所有需翻譯的內容。key 維持中文（木、火、土、金、水）供程式 lookup，value 需提供英文版。
 
 ---
 
-## 1. getBoyanBoard 模板（helpers.js）
+## 1. getPoYenBoard 模板（helpers.js）
 
 ### 本局屬性模板
 ```
@@ -75,7 +75,7 @@
 
 ---
 
-## 5. BOYAN_CONVERSION_ONE_SURFACE（最優路徑・表層）
+## 5. POYEN_CONVERSION_ONE_SURFACE（最優路徑・表層）
 
 | key | 中文 |
 |-----|------|
@@ -87,7 +87,7 @@
 
 ---
 
-## 6. BOYAN_CONVERSION_ONE_STRATEGIC（最優路徑・實戰）
+## 6. POYEN_CONVERSION_ONE_STRATEGIC（最優路徑・實戰）
 
 | key | 中文 |
 |-----|------|
@@ -99,7 +99,7 @@
 
 ---
 
-## 7. BOYAN_RISK_ONE_SURFACE（系統風險・表層）
+## 7. POYEN_RISK_ONE_SURFACE（系統風險・表層）
 
 | key | 中文 |
 |-----|------|
@@ -111,7 +111,7 @@
 
 ---
 
-## 8. BOYAN_RISK_ONE_STRATEGIC（系統風險・實戰）
+## 8. POYEN_RISK_ONE_STRATEGIC（系統風險・實戰）
 
 | key | 中文 |
 |-----|------|
@@ -123,7 +123,7 @@
 
 ---
 
-## 9. BOYAN_PUSH_SURFACE（助推建議・表層）
+## 9. POYEN_PUSH_SURFACE（助推建議・表層）
 
 | key | 中文 |
 |-----|------|
@@ -135,7 +135,7 @@
 
 ---
 
-## 10. BOYAN_PUSH_STRATEGIC（助推建議・實戰）
+## 10. POYEN_PUSH_STRATEGIC（助推建議・實戰）
 
 | key | 中文 |
 |-----|------|
@@ -278,4 +278,4 @@
 ## 備註
 
 - 五行 key（木、火、土、金、水）維持不變，程式用於 lookup。
-- 翻譯完成後需在 `constants.js` 新增 `*_EN` 常數，並在 `getBoyanBoard` 等函數依 locale 選擇對應常數。
+- 翻譯完成後需在 `constants.js` 新增 `*_EN` 常數，並在 `getPoYenBoard` 等函數依 locale 選擇對應常數。

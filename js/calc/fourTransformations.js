@@ -216,7 +216,10 @@
     // 根據命宮陰陽和性別確定大限行進方向
     if (!gender) return null;
     
-    const directionSign = getMajorLuckDirection(gender, mingBranch);
+    const yangBranches = ["寅", "午", "戌", "申", "子", "辰"];
+    const yinBranches = ["巳", "酉", "丑", "亥", "卯", "未"];
+    const branchYinYang = yangBranches.includes(mingBranch) ? "yang" : yinBranches.includes(mingBranch) ? "yin" : "yang";
+    const directionSign = getMajorLuckDirection(gender, branchYinYang);
     
     // 計算大限宮位索引：從命宮開始，根據方向循環
     const N = 12;

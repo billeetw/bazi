@@ -4,28 +4,7 @@
  * 若有 env.CACHE 則先讀 KV，無或過期再查 D1 並寫入（TTL 3600）。
  */
 
-const JSON_HEADERS = { 'Content-Type': 'application/json; charset=utf-8' };
-
-function parseBasicAuth(request) {
-  const auth = request.headers.get('Authorization');
-  if (!auth || !auth.startsWith('Basic ')) return null;
-  try {
-    const base64 = auth.slice(6).trim();
-    const decoded = atob(base64);
-    const i = decoded.indexOf(':');
-    if (i === -1) return null;
-    return { user: decoded.slice(0, i), pass: decoded.slice(i + 1) };
-  } catch {
-    return null;
-  }
-}
-
-function unauthorized() {
-  return new Response(
-    JSON.stringify({ error: '請登入' }),
-    { status: 401, headers: { ...JSON_HEADERS, 'WWW-Authenticate': 'Basic realm="Admin"' } }
-  );
-}
+import { requireAdmin, jsonResponse } from "../../shared/admin-auth.js";
 
 async function fetchStatsFromDb(db) {
   const last24h = await db
@@ -113,20 +92,8 @@ async function fetchStatsFromDb(db) {
 
 export async function onRequestGet(context) {
   const { request, env } = context;
-  const cred = parseBasicAuth(request);
-  const adminUser = env.ADMIN_USER;
-  const adminPass = env.ADMIN_PASSWORD;
-
-  if (!adminUser || !adminPass) {
-    return new Response(
-      JSON.stringify({ error: '後台未設定 ADMIN_USER / ADMIN_PASSWORD' }),
-      { status: 500, headers: JSON_HEADERS }
-    );
-  }
-
-  if (!cred || cred.user !== adminUser || cred.pass !== adminPass) {
-    return unauthorized();
-  }
+  const auth = requireAdmin(request, env);
+  if (auth instanceof Response) return auth;
 
   try {
     const CACHE_KEY = 'estimate_hour_stats';
@@ -138,22 +105,14 @@ export async function onRequestGet(context) {
         try {
           const data = JSON.parse(cached);
           if (data.last_24h_by_user && data.anomaly_user_ids) {
-            return new Response(
-              JSON.stringify({ ok: true, last_24h_by_ip: data.last_24h_by_ip || [], ...data }),
-              { status: 200, headers: JSON_HEADERS }
-            );
+            return jsonResponse({ ok: true, last_24h_by_ip: data.last_24h_by_ip || [], ...data });
           }
         } catch (_) {}
       }
     }
 
     const db = env.CONSULT_DB;
-    if (!db) {
-      return new Response(
-        JSON.stringify({ error: '資料庫未綁定' }),
-        { status: 500, headers: JSON_HEADERS }
-      );
-    }
+    if (!db) return jsonResponse({ error: "資料庫未綁定" }, 500);
 
     const data = await fetchStatsFromDb(db);
 
@@ -165,15 +124,9 @@ export async function onRequestGet(context) {
       }
     }
 
-    return new Response(
-      JSON.stringify({ ok: true, ...data }),
-      { status: 200, headers: JSON_HEADERS }
-    );
+    return jsonResponse({ ok: true, ...data });
   } catch (err) {
     console.error('[admin/estimate-hour-stats] Error:', err);
-    return new Response(
-      JSON.stringify({ error: err.message || '伺服器錯誤' }),
-      { status: 500, headers: JSON_HEADERS }
-    );
+    return jsonResponse({ error: err.message || "伺服器錯誤" }, 500);
   }
 }

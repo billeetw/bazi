@@ -1,40 +1,51 @@
 {
   "meta": {
-    "title": "Life Blueprint | 17 Gon Play",
-    "description": "Life Blueprint is a modern navigation system rooted in ancient intelligence — the I Ching, Ziwei, and Bazi.\n\nIt helps you understand your inner structure, life themes, and timing cycles,\nso you can see the architecture of your destiny\nand move forward with clarity and strength."
+    "title": "Life Blueprint | Bazi & Ziwei 2026 | 17 Gon Play",
+    "description": "Enter your birth time to get free BaZi, Zi Wei Dou Shu 12 palaces, and 2026 annual analysis. Understand your character, live with no regrets."
   },
   "brand": {
-    "navFull": "17 Gon Play | Life Blueprint",
-    "navShort": "Life Blueprint",
+    "navFull": "Life Manual",
+    "navShort": "Life Manual",
     "footerBrand": "17 Gon Play",
     "footerHandle": "17gonplay",
     "tagline": "Ancient Intelligence.\nEngineered for Modern Life."
   },
   "home": {
-    "heroHeadline": "A Strategic Map for Real Life.",
-    "heroSubheadline": "Built on Ziwei and Bazi. Designed as a modern decision system.",
-    "heroSupporting": "Ancient structure, translated into practical strategy.",
-    "heroPrimaryCta": "Open My Life Manual",
-    "heroTitle": "Birth Matrix Input",
-    "heroSubtitle": "Enter your birth details to open your personal Life Manual.",
-    "heroCtaPrimary": "Open Life Manual",
+    "heroHeadline": "Unlock Your Character",
+    "heroSubheadline": "30 seconds to unlock your character",
+    "extendedReadingPrompt": "↓ Extended Reading ↓",
+    "heroSupporting": "",
+    "heroPrimaryCta": "Enter Game: 17gonplay",
+    "heroTitle": "Unlock Your Character",
+    "heroSubtitle": "Discover your path. Begin your life analysis now.",
+    "heroCtaPrimary": "Enter Game: 17gonplay",
+    "arrivalDate": "Arrival Date",
+    "genderLabel": "Identity",
+    "genderMale": "Male",
+    "genderFemale": "Female",
     "helperUnsureTime": "Not sure of your birth time?",
-    "helperEstimateBtn": "Estimate my Shichen",
+    "helperUnsureHighlight": "Unsure of birth time? You can still use it",
+    "helperEstimateShort": "Estimate",
+    "helperEstimateBtn": "Find My Birth Time",
+    "helperEstimateBtnShichen": "Unsure of shichen? Find My Birth Time",
+    "loadingPhrase1": "Loading your character attributes…",
+    "loadingPhrase2": "Computing your main life quests…",
+    "loadingPhrase3": "Organizing your potential and aspirations…",
+    "loadingPhraseSingle": "17gonplay is analyzing your cosmic data...",
     "saveChart": "Save to My Charts",
-    "feature1Title": "Decode Your Structure",
-    "feature1Body": "Understand how your Life Palace and Five-Phase balance shape your decisions.",
-    "feature2Title": "Track Your Timing",
-    "feature2Body": "Major cycles. Minor limits. Monthly flow signals.",
-    "feature3Title": "Position Your Moves",
-    "feature3Body": "Push when aligned. Hold when necessary."
+    "feature1Title": "Structure & Archetypes",
+    "feature1Body": "Decode innate archetypes. Define your core edge.",
+    "feature2Title": "Cycles & Momentum",
+    "feature2Body": "Anticipate cycles. Maximize your impact.",
+    "feature3Title": "Will & Future",
+    "feature3Body": "Master the source code. Own your trajectory."
   },
   "ziwei": {
-    "boardTitle": "Ziwei 12 Palaces · Tactical Board",
-    "boardSubtitle": "The Life Palace sits at the center; surrounding palaces align with the mainstream chart layout.",
-    "strategyPanelTitle": "2026 {{name}} · Strategy Panel",
-    "strategyPanelSub": "Three-harmony and opposition palaces marked: this palace + opposite + three-alliance (four total).",
-    "palaceDatabaseTitle": "Palace Meaning (Database)",
-    "starDatabaseTitle": "Star Meaning (Database)",
+    "boardTitle": "Ziwei 12 Palaces",
+    "strategyPanelTitle": "2026 {{name}}",
+    "strategyPanelSub": "",
+    "palaceDatabaseTitle": "Palace Meaning",
+    "starDatabaseTitle": "Star Meaning",
     "minorLimitLabel": "Minor Limit Navigation",
     "minorLimitPalace": "Minor Limit Palace",
     "majorLimitLabel": "Major Cycle {{start}}–{{end}}",
@@ -107,6 +118,12 @@
       "父母": "Parents"
     }
   },
+  "share": {
+    "title": "Share",
+    "toLine": "Share to LINE",
+    "toFb": "Share to Facebook",
+    "text": "I just used Life Blueprint for my 2026 annual analysis—free BaZi, Zi Wei 12 palaces. Try it!"
+  },
   "ui": {
     "appTitle": "17 Gon Play",
     "submit": "Submit",
@@ -126,7 +143,9 @@
     "genderMale": "Male",
     "genderFemale": "Female",
     "timeExact": "Exact time (hr:min)",
+    "timeExactShort": "Hr:Min",
     "timeShichen": "Shichen (子丑寅…)",
+    "timeShichenShort": "Shichen",
     "shichenLabel": "Shichen: ",
     "shichenUpper": "Upper half",
     "shichenLower": "Lower half",
@@ -135,16 +154,22 @@
     "daySuffix": "",
     "hourSuffix": "",
     "minuteSuffix": "",
+    "hourPlaceholder": "Select hour",
+    "minutePlaceholder": "Select minute",
+    "shichenPlaceholder": "Select shichen",
     "unsureTime": "Unsure of birth time?",
     "estimateBtn": "Estimate from quiz",
     "shichenNote": "Note: Shichen is converted to a representative time for calculation.",
-    "launchBtn": "Open Life Manual",
+    "advancedExactTime": "Know exact time? Switch",
+    "backToShichen": "Back to shichen",
+    "launchBtn": "Enter Game: 17gonplay",
     "saveChart": "Save to My Charts",
     "navZiwei": "Ziwei",
     "navBazi": "Bazi",
     "navLiuyue": "Flow",
     "navHome": "Home",
-    "navConsult": "1:1 Session",
+    "navArticles": "Articles",
+    "navConsult": "Consult",
     "myChartsTitle": "Saved Charts",
     "myChartsHint": "Click a chart to load and recalculate; max 5.",
     "myChartsEmpty": "No charts yet. Enter birth info below and click \"Save to My Charts\".",
@@ -154,6 +179,7 @@
     "loadErrorDetail": "Load failed. Please refresh (calc.js not loaded).",
     "launchFailed": "Launch failed",
     "unknownError": "Unknown error",
+    "retry": "Retry",
     "langSwitchHint": "Page will reload. Re-enter birth data and calculate to update the chart.",
     "statusExcellent": "Peak Alignment",
     "statusStrong": "High Momentum",
@@ -197,9 +223,9 @@
     "wuxingUnavailable": "(Five-Phase data unavailable)",
     "tenGodUnavailable": "(Ten-God axis data unavailable)",
     "tenGodDbMissing": "(Database has no Ten-God instruction for \"{{name}}\")",
-    "actionChecklist": "Action Checklist",
-    "tabooChecklist": "Taboo Checklist",
-    "capture20": "Capture (20%)",
+    "actionChecklist": "Next Move",
+    "tabooChecklist": "Risk Signals",
+    "capture20": "Compounding Assets",
     "annualTheme": "Annual Theme",
     "lifeGeneSection": "Life Gene (Life Master)",
     "acquiredToolSection": "Acquired Tool (Body Master)",
@@ -212,6 +238,82 @@
     "capturePlaceholder": "What are your thoughts on this year's \"{{name}} mode\"? Any plans or concerns?",
     "savedStatus": "✓ Saved"
   },
+  "tenGods": {
+    "sectionTitle": "Action Archetypes",
+    "actionTitle": "Next Move",
+    "riskTitle": "Risk Signals",
+    "captureTitle": "Compounding Assets",
+    "比肩": {
+      "archetype": "同行者",
+      "archetypeEn": "Peer Drive",
+      "core": "You strengthen through consistency, repetition, and shared standards.",
+      "risk": "Stagnation from staying \"too equal\" and avoiding differentiation.",
+      "nextMove": "Pick one domain to differentiate: skill, taste, or responsibility."
+    },
+    "劫財": {
+      "archetype": "競合者",
+      "archetypeEn": "Rival Drive",
+      "core": "You grow through competition, pressure, and fast adaptation.",
+      "risk": "Impulsive decisions and resource leakage under comparison pressure.",
+      "nextMove": "Set one boundary: time, money, or attention — then defend it for 30 days."
+    },
+    "偏印": {
+      "archetype": "轉化者",
+      "archetypeEn": "Catalyst Drive",
+      "core": "You learn by reframing, remixing, and turning chaos into insight.",
+      "risk": "Overthinking and detachment from real execution.",
+      "nextMove": "Convert one insight into one deliverable within 48 hours."
+    },
+    "正印": {
+      "archetype": "支援者",
+      "archetypeEn": "Support Drive",
+      "core": "You stabilize through knowledge, mentorship, and proper grounding.",
+      "risk": "Dependence on preparation; slow start.",
+      "nextMove": "Start imperfectly: 20 minutes of action before more research."
+    },
+    "食神": {
+      "archetype": "建造者",
+      "archetypeEn": "Builder Drive",
+      "core": "You win through quality, craft, and steady output.",
+      "risk": "Comfort traps: polishing instead of shipping.",
+      "nextMove": "Ship one \"good enough\" version; refine after feedback."
+    },
+    "傷官": {
+      "archetype": "突破者",
+      "archetypeEn": "Breaker Drive",
+      "core": "You create advantage by challenging norms and improving systems.",
+      "risk": "Friction with authority; cutting too hard, too fast.",
+      "nextMove": "Challenge one rule, but propose one replacement system."
+    },
+    "偏財": {
+      "archetype": "機會者",
+      "archetypeEn": "Opportunity Drive",
+      "core": "You spot opportunities via networks, timing, and flexible strategy.",
+      "risk": "Chasing too many signals; unstable focus.",
+      "nextMove": "Choose one bet; define entry, exit, and risk cap."
+    },
+    "正財": {
+      "archetype": "積累者",
+      "archetypeEn": "Accumulator Drive",
+      "core": "You build power through reliability, compounding, and discipline.",
+      "risk": "Over-conservatism; missing windows.",
+      "nextMove": "Allocate a small \"exploration budget\" to keep growth alive."
+    },
+    "七殺": {
+      "archetype": "壓力者",
+      "archetypeEn": "Pressure Drive",
+      "core": "You move when stakes are real; decisive under constraint.",
+      "risk": "Burnout and conflict escalation.",
+      "nextMove": "Define one non-negotiable recovery block each week."
+    },
+    "正官": {
+      "archetype": "秩序者",
+      "archetypeEn": "Order Drive",
+      "core": "You operate best with structure, responsibility, and clear rules.",
+      "risk": "Rigidity; fear of making \"wrong\" moves.",
+      "nextMove": "Write a simple decision policy: what you will/won't do this season."
+    }
+  },
   "consult": {
     "ctaHeadline": "When structure becomes clear, strategy becomes simple.",
     "ctaSupport": "Work directly with Li Bo to analyze your full birth matrix and build a long-term positioning framework.",
@@ -221,7 +323,7 @@
   },
   "strategy": {
     "tacticalTitle": "2026 Tactical Tips (Dynamic)",
-    "tacticalDesc": "Based on Five-Phase share + Ten-Gods focus, with real-time tips (DB content preferred).",
+    "tacticalDesc": "Based on Five-Phase share + Ten-Gods focus for your tactical tips this year.",
     "tacticalNote": "Note: This section provides tactical guidance from your command center."
   },
   "chartLangMismatch": {
@@ -278,7 +380,9 @@
     "q16": { "text": "Your inspiration usually comes from?", "options": { "A": "Old ways breaking", "B": "Seeing new possibilities", "C": "Daydream or dreams", "D": "When emotions are full", "E": "Mid-flow sudden idea" } },
     "q17": { "text": "With new situations or strangers you tend to?", "options": { "A": "Get into flow by interacting", "B": "Find common ground", "C": "Read the vibe first", "D": "Quick to lead interaction", "E": "Relax and take it slow" } },
     "q18": { "text": "Which type fits you best?", "options": { "A": "Executor", "B": "Observer / strategist", "C": "Driver / leader", "D": "Steady and reliable", "E": "Connector / coordinator", "F": "Change and innovation" } },
-    "q19": { "text": "Is your peak energy earlier or later than most people?", "options": { "A": "Earlier", "B": "Later" } }
+    "q19": { "text": "Is your peak energy earlier or later than most people?", "options": { "A": "Earlier", "B": "Later" } },
+    "qx1": { "text": "What mainly determines your current schedule?", "options": { "A": "Natural rhythm", "B": "Work / childcare / shift" } },
+    "qx2": { "text": "Is your current schedule very different from when you were 18–25?", "options": { "A": "Similar", "B": "Very different" } }
   },
   "ceremony": {
     "resultTemplate": "Result: You are {{hour}}",

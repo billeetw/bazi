@@ -28,7 +28,7 @@
     var vy = Number(y.value);
     var vm = Number(m.value);
     var vd = Number(d.value);
-    var birthDate = y.value + "-" + pad2(vm) + "-" + pad2(vd);
+    var birthDateStr = y.value + "-" + pad2(vm) + "-" + pad2(vd);
     var birthTime;
     if ((timeMode.value || "").trim() === "shichen" && shichen && shichenHalf) {
       birthTime = "shichen:" + (shichen.value || "子") + ":" + (shichenHalf.value || "upper");
@@ -38,7 +38,7 @@
       birthTime = "exact:" + pad2(vh) + ":" + pad2(vmin);
     }
     var g = (gender.value || "").trim();
-    return { birth_date: birthDate, birth_time: birthTime, gender: g || "M" };
+    return { birth_date: birthDateStr, birth_time: birthTime, gender: g || "M" };
   }
 
   /** 解析 birth_time 字串 */
@@ -172,19 +172,26 @@
     fetchCharts().then(renderList);
   }
 
-  function saveCurrentChart(label) {
+  /**
+   * 以指定 formData 儲存命盤（供程式化呼叫，如點光明燈流程）
+   * @param {Object} formData - { birth_date, birth_time, gender }
+   * @param {string} [label="本人"]
+   * @returns {Promise<{ok: boolean, error?: string}>}
+   */
+  function saveChartWithData(formData, label) {
     var auth = window.AuthService;
-    if (!auth || !auth.getAuthHeaders) return;
-    var formData = getCurrentFormData();
-    if (!formData) return;
+    if (!auth || !auth.getAuthHeaders) return Promise.resolve({ ok: false, error: "未登入" });
+    if (!formData || !formData.birth_date || !formData.birth_time) {
+      return Promise.resolve({ ok: false, error: "缺少出生資料" });
+    }
     var body = {
-      label: (label || "").trim() || "未命名",
+      label: (label || "本人").trim(),
       birth_date: formData.birth_date,
       birth_time: formData.birth_time,
-      gender: formData.gender,
+      gender: formData.gender || "M",
     };
     var base = window.location.origin;
-    fetch(base + API_ME_CHARTS, {
+    return fetch(base + API_ME_CHARTS, {
       method: "POST",
       headers: Object.assign({ "Content-Type": "application/json" }, auth.getAuthHeaders()),
       body: JSON.stringify(body),
@@ -195,23 +202,29 @@
         });
       })
       .then(function (result) {
-        if (result.status === 401) {
-          window.alert("儲存失敗，登入可能已過期，請試著登出後重新登入。");
-          return;
-        }
+        if (result.status === 401) return { ok: false, error: "登入已過期" };
         if (!result.ok) {
-          if (result.data && result.data.error === "MAX_CHARTS") {
-            window.alert("最多 5 筆命盤，請先刪除舊的再儲存。");
-          } else {
-            window.alert((result.data && result.data.message) || (result.data && result.data.error) || "儲存失敗");
-          }
-          return;
+          var msg = (result.data && result.data.error === "MAX_CHARTS")
+            ? "最多 5 筆命盤"
+            : (result.data && result.data.message) || (result.data && result.data.error) || "儲存失敗";
+          return { ok: false, error: msg };
         }
         refreshList();
+        return { ok: true };
       })
       .catch(function () {
-        window.alert("儲存失敗，請稍後再試。");
+        return { ok: false, error: "儲存失敗，請稍後再試" };
       });
+  }
+
+  function saveCurrentChart(label) {
+    var auth = window.AuthService;
+    if (!auth || !auth.getAuthHeaders) return;
+    var formData = getCurrentFormData();
+    if (!formData) return;
+    saveChartWithData(formData, label || "未命名").then(function (result) {
+      if (!result.ok && result.error) window.alert(result.error);
+    });
   }
 
   function deleteChart(id) {
@@ -278,6 +291,7 @@
     renderList: renderList,
     refreshList: refreshList,
     saveCurrentChart: saveCurrentChart,
+    saveChartWithData: saveChartWithData,
     deleteChart: deleteChart,
     init: init,
   };

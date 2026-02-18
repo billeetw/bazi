@@ -5,5 +5,16 @@ compatibility_date = "2024-12-01"
 [build]
 command = ""
 
+# D1：與 Pages 共用 consult-db，content/2026 可從 ui_copy_texts 讀取
+[[d1_databases]]
+binding = "CONSULT_DB"
+database_name = "consult-db"
+database_id = "9bdd8684-9fbe-444d-b2bd-16225ff8da79"
+
+# KV：content/2026 快取層，與 Pages 共用同一 namespace
+[[kv_namespaces]]
+binding = "CACHE"
+id = "e62b8e6535bd483bbe08e87cae4232bf"
+
 # Deploy to *.workers.dev by default; override with --route for custom domain
 # workers_dev = true

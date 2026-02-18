@@ -29,22 +29,30 @@ import "./calc/tactics.js";
 import "./ui/components/strategic-panel.js";
 import "./strategyConfig.js";
 import "./calc.js";
-import "./identifyBirthTime.js";
+// identifyBirthTime.js 改為動態載入（點擊「點我推算」時才載入）
 
 // UI 常量、工具、服務、組件
 import "./ui/constants/ceremony-constants.js";
 import "./ui/utils/dom-helpers.js";
+import "./ui/utils/lamp-image.js";
+import "./ui/utils/liuyue-share-card.js";
 import "./ui/utils/render-helpers.js";
 import "./ui/utils/content-utils.js";
 import "./ui/utils/strategy-tags.js";
+import "./ui/utils/wuxing-one-liner.js";
+import "./ui/utils/yinyang-advanced.js";
+import "./ui/utils/liuyue-strategy.js";
 import "./ui/utils/mobile-helpers.js";
 import "./ui/services/api-service.js";
+import "./ui/services/scroll.js";
 import "./ui/services/navigation.js";
+import "./ui/services/section-collapse.js";
 import "./ui/services/form-init.js";
 import "./ui/services/sound-service.js";
 import "./ui/services/auth-service.js";
 import "./ui/services/my-charts-service.js";
 import "./ui/services/calculation-flow.js";
+import "./ui/services/toast.js";
 import "./ui/services/event-bindings.js";
 import "./ui/services/data-renderer.js";
 import "./ui/services/user-identity.js";
@@ -59,9 +67,11 @@ import "./ui/components/palace-detail.js";
 import "./ui/components/launch-effect.js";
 import "./ui/components/ambient-sound.js";
 import "./ui/components/liuyue-month.js";
+import "./ui/components/taisui-card.js";
+import "./ui/components/divination-entrance.js";
 import "./ui/components/feedback-widget.js";
 import "./ui/components/feedback-history.js";
 import "./ui/components/feedback-integration.js";
-import "./ui/components/expert-questionnaire.js";
-import "./ui/components/geolocation-calibration.js";
+import "./ui/components/share-buttons.js";
+// expert-questionnaire、geolocation-calibration 僅用於 expert-admin.html，主站不載入
 import "./ui.js";

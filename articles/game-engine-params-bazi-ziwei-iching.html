@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="遊戲引擎的參數：八字、紫微、易經到底在算什麼？李伯彥用工程架構拆解三套人生掃描系統。底層代碼、顯示介面、動態演算法——三位一體的導航系統。" />
+  <title>遊戲引擎的參數：八字、紫微、易經到底在算什麼？｜人生說明書</title>
+  <link rel="canonical" href="https://www.17gonplay.com/articles/game-engine-params-bazi-ziwei-iching.html" />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://www.17gonplay.com/articles/game-engine-params-bazi-ziwei-iching.html" />
+  <meta property="og:title" content="遊戲引擎的參數：八字、紫微、易經到底在算什麼？" />
+  <meta property="og:description" content="八字是底層代碼、紫微是顯示介面、易經是動態演算法。三套掃描儀各司其職，整合成人生說明書的導航系統。" />
+  <link href="../dist/tailwind.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;600;700&display=swap" rel="stylesheet" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "遊戲引擎的參數：八字、紫微、易經到底在算什麼？",
+    "description": "八字是底層代碼、紫微是顯示介面、易經是動態演算法。三套掃描儀各司其職，整合成人生說明書的導航系統。",
+    "url": "https://www.17gonplay.com/articles/game-engine-params-bazi-ziwei-iching.html",
+    "publisher": { "@type": "Organization", "name": "一起出來玩", "url": "https://www.17gonplay.com" }
+  }
+  </script>
+  <style>
+    body { font-family: 'Noto Serif TC', system-ui, serif; background: #0a0a16; color: #e2e8f0; line-height: 1.8; }
+    .article-content h2 { font-size: 1.25rem; font-weight: 700; color: #fcd34d; margin-top: 2rem; margin-bottom: 1rem; }
+    .article-content h3 { font-size: 1.1rem; font-weight: 600; color: #e2e8f0; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+    .article-content p { margin-bottom: 1rem; color: #cbd5e1; }
+    .article-content ul { margin: 1rem 0; padding-left: 1.5rem; }
+    .article-content li { margin-bottom: 0.5rem; }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+  <article class="max-w-2xl mx-auto">
+    <a href="../articles.html" class="inline-flex items-center gap-2 text-amber-400/90 hover:text-amber-300 text-sm mb-6">← 回文章列表</a>
+    <header class="mb-8">
+      <h1 class="text-2xl md:text-3xl font-black text-amber-400">遊戲引擎的參數——八字、紫微、易經到底在算什麼？</h1>
+      <p class="text-slate-500 text-sm mt-2">人生說明書 · 深度分析 · ＃深度貼文 02</p>
+    </header>
+
+    <div class="article-content prose prose-invert max-w-none">
+      <p>在進入職場或創業時，我們常說「知己知彼」。但在這場人生遊戲裡，大部分人連自己的「屬性面板」都沒看過。</p>
+      <p>你可能聽過人家說你「缺水」、「紫微坐命」或是「卦象不佳」。這些術語聽起來像神棍，但如果我們用系統架構的角度來拆解，你會發現中國老祖宗設計了一套極其精密的「人生掃描系統」。</p>
+      <p>這套系統由三種層次組成：底層代碼（八字）、顯示介面（紫微）、以及動態演算法（易經）。</p>
+
+      <h2>1. 八字：你的「底層代碼」與能量守恆</h2>
+      <p>八字（四柱命理）掃描的是你的能量組成（Energy Composition）。</p>
+      <p>想像一下，每個玩家登入遊戲時，系統會分配給你一組由「金木水火土」組成的原始代碼。八字不看你長什麼樣子，它只看你這個「生物個體」在出生的那一剎那，承接了宇宙間什麼樣的電磁頻率。</p>
+      <p>八字看的是「質」：它是你的硬體配置。你是耐操的伺服器（土多），還是運算飛快但容易過熱的顯示卡（火旺）？你是適合儲存數據的硬碟（水多），還是負責裁決秩序的處理器（金旺）？</p>
+      <p>工程學解釋：八字其實是在算你的「能量慣性」。如果你八字中「木」的能量極強，你天生就有向外擴張、不服輸、想冒頭的演算法。這不是神準，這是你的底層代碼在驅動你的行為。</p>
+      <p>所以，八字分析最重要的不是預測你會不會發財，而是告訴你：你的引擎適合燒什麼油？叫一個「水旺」的文職人才去幹「火旺」的業務開拓，就像是用文書機去跑 3D 大作，最後只會落得當機毀損（生病或失敗）。</p>
+
+      <h2>2. 紫微斗數：你的「顯示介面」與社會維度</h2>
+      <p>如果八字是看不見的代碼，那紫微斗數就是你的遊戲 UI（使用者介面）。</p>
+      <p>紫微斗數將人生拆解成十二個宮位：命宮、兄弟、夫妻、子女、財帛、疾厄、遷移、奴僕、官祿、田宅、福德、父母。這是一個非常先進的「多維度分析架構」。</p>
+      <p>紫微看的是「位」：它是你的地圖投影。它告訴你，你的資源被分配到了哪裡。有人的「財帛宮」很強，代表他在賺錢這個副本裡有神裝加持；有人的「官祿宮」帶煞，代表他在職場這個地圖裡，怪獸特別多，陷阱特別深。</p>
+      <p>顯示介面的意義：紫微斗數最迷人的地方在於「宮位聯動」。它告訴你，你的感情問題（夫妻宮）可能源自於你的價值觀（福德宮）或是你的工作壓力（官祿宮）。這是一張全像的人生拓撲圖，讓你一眼看穿人生的因果連鎖。</p>
+      <p>在人生說明書中，紫微斗數負責告訴你：你的主戰場在哪裡？很多人一輩子在弱勢宮位死磕（例如明明沒財運卻偏要賭博），卻無視自己強勢的「遷移宮」（適合外派或出國）。這就是不看說明書的代價。</p>
+
+      <h2>3. 易經：你的「動態演算法」與隨機應變</h2>
+      <p>如果八字是硬體，紫微是地圖，那易經就是遊戲的運行邏輯（Runtime Logic）。</p>
+      <p>很多人以為易經只是卜卦看吉凶，那是小看了它。易經處理的是「變化的規律」。它掃描的是你當下所處的「時位」。</p>
+      <p>易經看的是「態」：它是你的戰略指南。即便你八字好、紫微盤強，但如果你現在處於「蹇卦」（前有大山後有大水），你硬衝就是死。易經告訴你，這時候的演算法是「見險而能止」，是等待，是蓄勢。</p>
+      <p>動態調整：易經的 64 卦是 64 種局勢模板。它教你如何根據當下的參數進行「優化」。在遊戲裡，這叫「Buff」與「Debuff」的判讀。</p>
+
+      <h2>總結：三位一體的導航系統</h2>
+      <p>為什麼我要同時研究這三者？因為單看一項是有盲點的：</p>
+      <ul>
+        <li>只看八字：你會變得很宿命。覺得自己能量就這樣，無法改變。</li>
+        <li>只看紫微：你會變得很功利。只想要趨吉避凶，卻忘了調整底層行為（代碼）。</li>
+        <li>只看易經：你會變得很隨機。雖然懂變通，卻不知道自己的根基在哪。</li>
+      </ul>
+      <p>「人生說明書」的核心，就是將這三者整合。我們用八字理解自己的天賦邊界，用紫微定位自己的社會資源，最後用易經來決策當下的進退。</p>
+      <p>這就像是你開著一台車（八字），看著導航地圖（紫微），並根據當下的路況、天氣、紅綠燈（易經）來決定踩油門還是踩剎車。</p>
+      <p>如果你能理解這三套掃描儀的邏輯，你就會發現，這世界上沒有絕對的「爛命」。所謂的爛命，通常只是「把賽車開進了泥濘地」，或是「用拖拉機去跑 F1 賽道」。</p>
+
+      <p class="text-slate-500 text-sm mt-8">下一篇：既然是遊戲，那你的角色設定是什麼？魔王、天使與 NPC，你在這場遊戲的角色定位。</p>
+
+      <p class="mt-8"><a href="../index.html" class="inline-flex px-6 py-3 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold text-sm hover:bg-amber-500/30 transition">👉 輸入出生時間，查看你的命盤</a></p>
+      <p class="mt-4"><a href="https://www.facebook.com/bill17gonplay/" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-500/40 text-blue-300 text-sm hover:bg-blue-500/10 transition">跟李伯彥一起出來玩</a></p>
+    </div>
+
+    <footer class="mt-12 pt-8 border-t border-white/10 flex justify-between items-center">
+      <a href="why-life-is-game-quantum-projection.html" class="text-amber-400/90 hover:text-amber-300 text-sm">← 上一篇：為什麼人生是一場遊戲？</a>
+      <a href="soul-task-1-demon-angel-npc.html" class="text-amber-400/90 hover:text-amber-300 text-sm">下一篇：靈魂任務（一）→</a>
+    </footer>
+  </article>
+</body>
+</html>

@@ -14,8 +14,9 @@ export default defineConfig({
       input: path.resolve(__dirname, "js/entry.js"),
       output: {
         entryFileNames: "app.js",
-        format: "iife",
-        inlineDynamicImports: true,
+        chunkFileNames: "chunks/[name]-[hash].js",
+        format: "es",
+        inlineDynamicImports: false,
       },
     },
     sourcemap: true,

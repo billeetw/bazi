@@ -3,6 +3,7 @@
 .env
 .env.local
 .env.production
+.env.deploy
 
 # 配置文件（如果包含敏感信息）
 config/secrets.json
@@ -18,6 +19,11 @@ dist/
 # 日誌文件（可能包含敏感信息）
 *.log
 logs/
+
+# Playwright E2E
+test-results/
+playwright-report/
+playwright/.cache/
 
 # 臨時文件
 tmp/

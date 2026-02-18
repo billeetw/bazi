@@ -30,55 +30,62 @@
         e.preventDefault();
         e.stopPropagation();
         console.log("[event-bindings.js] 按鈕點擊事件觸發");
-        
+
+        // 先驗證：未選擇時辰時立即提示，不進入 Loading
+        const vy = Number(document.getElementById("birthYear")?.value);
+        const vm = Number(document.getElementById("birthMonth")?.value);
+        const vd = Number(document.getElementById("birthDay")?.value);
+        const timeMode = (document.getElementById("timeMode")?.value || "exact").trim();
+        const vh = Number(document.getElementById("birthHour")?.value);
+        const vmin = Number(document.getElementById("birthMinute")?.value);
+        const shichen = (document.getElementById("birthShichen")?.value || "").trim();
+        const shichenHalf = (document.getElementById("birthShichenHalf")?.value || "").trim();
+        const CalculationFlow = window.UiServices?.CalculationFlow || {};
+        const validation = CalculationFlow.validateInputs
+          ? CalculationFlow.validateInputs({ vy, vm, vd, vh, vmin, timeMode, shichen, shichenHalf })
+          : { isValid: true, errors: [] };
+        if (!validation.isValid) {
+          const msg = (validation.errors && validation.errors[0]) || validation.error || "請選擇時辰";
+          const Toast = window.UiServices?.Toast;
+          if (Toast?.show) Toast.show(msg, { type: "info" });
+          else window.alert(msg);
+          return;
+        }
+
         // 禁用按鈕防止重複點擊
         btnLaunch.disabled = true;
-        
-        // 播放啟動特效
+
+        // 沉浸式 Loading（全畫面 + 輪播文案 3–5 秒）+ 計算
         const LaunchEffect = window.UiComponents?.LaunchEffect;
-        if (LaunchEffect && typeof LaunchEffect.playLaunchEffect === "function") {
-          console.log("[event-bindings.js] 播放啟動特效");
-          LaunchEffect.playLaunchEffect(btnLaunch, async function() {
-            // 特效完成後執行計算
-            try {
-              console.log("[event-bindings.js] 調用 calculateFn");
-              await calculateFn(); // 使用 await 確保異步錯誤被捕獲
-              console.log("[event-bindings.js] calculateFn 執行完成");
-            } catch (err) {
-              console.error("[event-bindings.js] 啟動引擎失敗:", err);
-              console.error("[event-bindings.js] 錯誤堆棧:", err.stack);
-              const hint = document.getElementById("hint");
-              const btn = document.getElementById("btnLaunch");
-              if (btn) {
-                btn.disabled = false;
-                btn.textContent = t("ui.launchBtn", "開啟 人生使用說明書");
-              }
-              if (hint) {
-                hint.textContent = t("ui.launchFailed", "啟動失敗") + "：" + (err.message || t("ui.unknownError", "未知錯誤"));
-                hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
-              }
-            }
-          });
-        } else {
-          // 如果特效模組不可用，直接執行計算
-          console.warn("[event-bindings.js] LaunchEffect 模組不可用，跳過特效");
-          try {
-            console.log("[event-bindings.js] 調用 calculateFn");
-            await calculateFn();
-            console.log("[event-bindings.js] calculateFn 執行完成");
-          } catch (err) {
-            console.error("[event-bindings.js] 啟動引擎失敗:", err);
-            console.error("[event-bindings.js] 錯誤堆棧:", err.stack);
-            const hint = document.getElementById("hint");
-            const btn = document.getElementById("btnLaunch");
-            if (btn) {
-              btn.disabled = false;
-              btn.textContent = t("ui.launchBtn", "開啟 人生使用說明書");
-            }
-            if (hint) {
-              hint.textContent = t("ui.launchFailed", "啟動失敗") + "：" + (err.message || t("ui.unknownError", "未知錯誤"));
-              hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
-            }
+        const runCalc = (typeof LaunchEffect?.playImmersiveLoading === "function")
+          ? LaunchEffect.playImmersiveLoading.bind(LaunchEffect, calculateFn)
+          : function () { return Promise.resolve(calculateFn()); };
+
+        try {
+          await runCalc();
+        } catch (err) {
+          console.error("[event-bindings.js] 啟動引擎失敗:", err);
+          const hint = document.getElementById("hint");
+          const btn = document.getElementById("btnLaunch");
+          if (btn) {
+            btn.disabled = false;
+            btn.textContent = t("ui.retry", "重試");
+          }
+          if (hint) {
+            hint.textContent = t("ui.launchFailed", "啟動失敗") + "：" + (err.message || t("ui.unknownError", "未知錯誤"));
+            hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
+          }
+          const Toast = window.UiServices?.Toast;
+          const errMsg = err.message || t("ui.unknownError", "未知錯誤");
+          if (Toast?.show) {
+            Toast.show(errMsg, {
+              type: "error",
+              onRetry: function () {
+                if (btn) btn.disabled = true;
+                runCalc();
+              },
+              duration: 0,
+            });
           }
         }
       });
@@ -108,6 +115,38 @@
     });
   }
 
+  /** 綁定五行超載預警彈窗（點擊黃色三角形） */
+  function bindOverloadAdviceModal() {
+    const modal = document.getElementById("overloadModal");
+    const backdrop = document.getElementById("overloadModalBackdrop");
+    const body = document.getElementById("overloadModalBody");
+    const closeBtn = document.getElementById("overloadModalClose");
+
+    function show(adviceText) {
+      if (!modal || !body) return;
+      body.textContent = adviceText || "";
+      modal.classList.remove("hidden");
+      if (backdrop) backdrop.classList.remove("hidden");
+    }
+    function hide() {
+      if (modal) modal.classList.add("hidden");
+      if (backdrop) backdrop.classList.add("hidden");
+    }
+
+    document.addEventListener("click", function (e) {
+      const btn = e.target.closest(".wx-overload-trigger");
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const container = btn.closest("[data-overload-advice]");
+      const advice = container?.dataset?.overloadAdvice || "";
+      show(advice);
+    });
+
+    if (closeBtn) closeBtn.addEventListener("click", hide);
+    if (backdrop) backdrop.addEventListener("click", hide);
+  }
+
   /**
    * 绑定年龄滑块事件
    * @param {Object} params - 参数对象
@@ -123,7 +162,8 @@
    */
   function bindAgeSlider(params) {
     const {
-      contract,
+      getContract,
+      contract: contractParam,
       getCurrentAge,
       lastGender,
       renderZiwei,
@@ -137,25 +177,27 @@
     const currentAgeSlider = document.getElementById("currentAgeSlider");
     if (currentAgeSlider) {
       currentAgeSlider.addEventListener("input", () => {
+        const contract = (getContract && typeof getContract === "function" ? getContract() : null) || contractParam || window.contract;
         const age = Math.max(1, Math.min(120, Number(currentAgeSlider.value) || 38));
         syncAgeSliderDisplay(age);
         if (!contract?.ziwei) return;
         const bazi = contract.bazi;
-        const horoscope = contract.ziwei.horoscope || getHoroscopeFromAge(age, lastGender, contract.ziwei, bazi);
+        const horoscope = contract.ziwei.horoscope || getHoroscopeFromAge(age, contract.ziwei, bazi, lastGender);
         renderZiwei(contract.ziwei, horoscope);
         // 使用新算法重新計算宮位強度（年齡變化會影響小限四化）
-        // 傳遞 bazi 和 age 以啟用完整四化系統
-        computeAllPalaceScores(contract.ziwei, horoscope, { bazi: contract.bazi, age }).then(function (computedScores) {
+        computeAllPalaceScores(contract.ziwei, horoscope, { bazi: contract.bazi, age }).then(function (result) {
+          const { scores: computedScores, elementRatios: computedRatios } = (result && typeof result === "object" && result.scores != null)
+            ? result
+            : { scores: result, elementRatios: {} };
           const scores = {
             palaceScores: computedScores,
-            elementRatios: window.ziweiScores?.elementRatios || {},
+            elementRatios: computedRatios || window.ziweiScores?.elementRatios || {},
           };
           window.ziweiScores = scores;
           renderZiweiScores(scores, horoscope, contract.ziwei);
           selectPalace(params.selectedPalace || "命宮");
         }).catch(function (err) {
           console.error("重新計算宮位分數失敗:", err);
-          // Fallback：使用現有數據
           if (window.ziweiScores?.palaceScores) {
             renderZiweiScores(window.ziweiScores, horoscope, contract.ziwei);
           }
@@ -221,6 +263,7 @@
   window.UiServices.EventBindings = {
     bindLaunchButton,
     bindWuxingClickEvents,
+    bindOverloadAdviceModal,
     bindAgeSlider,
     bindMobileSheetCloseEvents,
   };

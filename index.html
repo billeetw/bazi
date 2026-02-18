@@ -3,1613 +3,85 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta id="metaDescription" name="description" content="人生說明書：結合八字五行、紫微斗數與 2026 流月紅綠燈的個人戰略指揮中心，協助你規劃節奏與決策。" />
-  <title id="pageTitle">人生說明書｜一起出來玩</title>
+  <meta id="metaDescription" name="description" content="輸入出生時間，免費取得八字五行、紫微斗數 12 宮與 2026 流年分析。了解你的角色設定，迎向無悔人生。" />
+  <title id="pageTitle">人生說明書｜八字紫微 2026 戰略｜一起出來玩</title>
+
+  <link rel="canonical" href="https://www.17gonplay.com/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.17gonplay.com/" />
+  <meta property="og:title" content="人生說明書｜八字紫微 2026 戰略｜一起出來玩" />
+  <meta property="og:description" content="輸入出生時間，取得八字五行、紫微 12 宮與 2026 流年紅綠燈。" />
+  <meta property="og:image" content="https://www.17gonplay.com/assets/og-image.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="zh_TW" />
+  <meta property="og:site_name" content="一起出來玩" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="人生說明書｜八字紫微 2026 戰略" />
+  <meta name="twitter:description" content="輸入出生時間，取得八字五行與紫微 12 宮分析。" />
+  <meta name="twitter:image" content="https://www.17gonplay.com/assets/og-image.jpg" />
 
   <!-- 思源宋體（主標題） -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;600;700;900&display=swap" rel="stylesheet" />
 
-  <!-- Tailwind CDN（開發用） -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind（build-time 編譯，僅含實際使用的 class） -->
+  <link href="dist/tailwind.css" rel="stylesheet" />
   <!-- Google Identity Services（登入用） -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
-  <style>
-    :root {
-      --amber-gold: #FFBF00;
-      --ghost-blue: #00D2FF;
-      --bg-deep: #050505;
-      --bg-mid: #1A1A2E;
-      --theme-amber: #FFBF00;
-      --theme-amber-glow: rgba(255, 191, 0, 0.3);
-      --theme-dark-blue: #0A0A16;
-      --glass-border: rgba(255, 255, 255, 0.08);
-      --vh: 1vh;
-    }
-
-    body {
-      font-family: 'Noto Serif TC', system-ui, -apple-system, serif;
-      background-color: var(--theme-dark-blue);
-      color: #fff;
-      min-height: 100vh;
-      min-height: 100svh;
-      min-height: calc(var(--vh, 1vh) * 100);
-      position: relative;
-      overflow-x: hidden;
-      overscroll-behavior-y: none;
-      padding-top: env(safe-area-inset-top);
-      padding-bottom: env(safe-area-inset-bottom);
-    }
-
-    /* 專家問卷樣式 */
-    .expert-questionnaire-container {
-      padding: 1.5rem;
-      background: var(--bg-mid);
-      border-radius: 0.75rem;
-      border: 1px solid var(--glass-border);
-    }
-
-    .expert-questionnaire-header h3 {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--theme-amber);
-      margin-bottom: 0.5rem;
-    }
-
-    .questionnaire-description {
-      font-size: 0.875rem;
-      color: rgba(255, 255, 255, 0.6);
-      margin-bottom: 1rem;
-    }
-
-    .progress-container {
-      margin-bottom: 1.5rem;
-    }
-
-    .progress-bar {
-      width: 100%;
-      height: 0.5rem;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 0.25rem;
-      overflow: hidden;
-      margin-bottom: 0.5rem;
-    }
-
-    .progress-fill {
-      height: 100%;
-      background: var(--theme-amber);
-      transition: width 0.3s ease;
-    }
-
-    .progress-text {
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.6);
-    }
-
-    .expert-question {
-      margin-bottom: 2rem;
-      padding: 1rem;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 0.5rem;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .question-header {
-      margin-bottom: 1rem;
-    }
-
-    .question-number {
-      display: inline-block;
-      padding: 0.25rem 0.5rem;
-      background: var(--theme-amber);
-      color: var(--bg-deep);
-      border-radius: 0.25rem;
-      font-size: 0.75rem;
-      font-weight: 700;
-      margin-right: 0.5rem;
-    }
-
-    .question-category {
-      display: inline-block;
-      padding: 0.25rem 0.5rem;
-      background: rgba(255, 191, 0, 0.2);
-      color: var(--theme-amber);
-      border-radius: 0.25rem;
-      font-size: 0.75rem;
-      margin-right: 0.5rem;
-    }
-
-    .question-text {
-      margin-top: 0.75rem;
-      font-size: 1rem;
-      line-height: 1.5;
-      color: rgba(255, 255, 255, 0.9);
-    }
-
-    .question-options {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .option-label {
-      display: flex;
-      align-items: center;
-      padding: 0.75rem;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 0.5rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .option-label:hover {
-      background: rgba(255, 255, 255, 0.05);
-      border-color: rgba(255, 191, 0, 0.3);
-    }
-
-    .option-label input:checked + .option-text {
-      color: var(--theme-amber);
-      font-weight: 600;
-    }
-
-    .option-label input:checked ~ .option-label {
-      border-color: var(--theme-amber);
-      background: rgba(255, 191, 0, 0.1);
-    }
-
-    .option-input {
-      margin-right: 0.75rem;
-      width: 1.25rem;
-      height: 1.25rem;
-      accent-color: var(--theme-amber);
-    }
-
-    .option-text {
-      flex: 1;
-      font-size: 0.9375rem;
-      color: rgba(255, 255, 255, 0.8);
-    }
-
-    .expert-questionnaire-actions {
-      display: flex;
-      gap: 1rem;
-      justify-content: flex-end;
-      margin-top: 2rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .btn-clear,
-    .btn-submit {
-      padding: 0.75rem 1.5rem;
-      border-radius: 0.5rem;
-      font-size: 0.9375rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .btn-clear {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: rgba(255, 255, 255, 0.8);
-    }
-
-    .btn-clear:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .btn-submit {
-      background: var(--theme-amber);
-      border: 1px solid var(--theme-amber);
-      color: var(--bg-deep);
-    }
-
-    .btn-submit:hover {
-      background: #FFD700;
-      border-color: #FFD700;
-    }
-
-    /* 經緯度校準樣式 */
-    .geolocation-calibration-container {
-      padding: 1.5rem;
-      background: var(--bg-mid);
-      border-radius: 0.75rem;
-      border: 1px solid var(--glass-border);
-    }
-
-    .geolocation-header h3 {
-      font-size: 1.25rem;
-      font-weight: 700;
-      color: var(--theme-amber);
-      margin-bottom: 0.5rem;
-    }
-
-    .geolocation-description {
-      font-size: 0.875rem;
-      color: rgba(255, 255, 255, 0.6);
-      margin-bottom: 1rem;
-    }
-
-    .geolocation-status {
-      margin-bottom: 1rem;
-      padding: 0.75rem;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 0.5rem;
-    }
-
-    .status-success {
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 0.9375rem;
-    }
-
-    .status-source {
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 0.75rem;
-      margin-left: 0.5rem;
-    }
-
-    .status-empty {
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 0.875rem;
-      font-style: italic;
-    }
-
-    .geolocation-actions {
-      display: flex;
-      gap: 0.75rem;
-      margin-bottom: 1rem;
-      flex-wrap: wrap;
-    }
-
-    .btn-browser,
-    .btn-manual,
-    .btn-clear {
-      padding: 0.75rem 1.5rem;
-      border-radius: 0.5rem;
-      font-size: 0.9375rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      background: rgba(255, 255, 255, 0.05);
-      color: rgba(255, 255, 255, 0.9);
-    }
-
-    .btn-browser:hover,
-    .btn-manual:hover {
-      background: rgba(255, 191, 0, 0.1);
-      border-color: rgba(255, 191, 0, 0.3);
-      color: var(--theme-amber);
-    }
-
-    .btn-clear {
-      background: rgba(255, 0, 0, 0.1);
-      border-color: rgba(255, 0, 0, 0.3);
-      color: rgba(255, 150, 150, 0.9);
-    }
-
-    .btn-clear:hover {
-      background: rgba(255, 0, 0, 0.2);
-      border-color: rgba(255, 0, 0, 0.5);
-    }
-
-    .geolocation-manual-form {
-      margin-top: 1rem;
-      padding: 1rem;
-      background: rgba(255, 255, 255, 0.02);
-      border-radius: 0.5rem;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .geolocation-manual-form.hidden {
-      display: none;
-    }
-
-    .form-row {
-      margin-bottom: 1rem;
-    }
-
-    .form-row label {
-      display: block;
-      margin-bottom: 0.5rem;
-    }
-
-    .form-row span {
-      display: block;
-      font-size: 0.875rem;
-      color: rgba(255, 255, 255, 0.7);
-      margin-bottom: 0.25rem;
-    }
-
-    .form-row input {
-      width: 100%;
-      padding: 0.75rem;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 0.5rem;
-      color: rgba(255, 255, 255, 0.9);
-      font-size: 0.9375rem;
-    }
-
-    .form-row input:focus {
-      outline: none;
-      border-color: var(--theme-amber);
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    .form-actions {
-      display: flex;
-      gap: 0.75rem;
-      justify-content: flex-end;
-    }
-
-    .btn-submit,
-    .btn-cancel {
-      padding: 0.75rem 1.5rem;
-      border-radius: 0.5rem;
-      font-size: 0.9375rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .btn-submit {
-      background: var(--theme-amber);
-      border: 1px solid var(--theme-amber);
-      color: var(--bg-deep);
-    }
-
-    .btn-submit:hover {
-      background: #FFD700;
-      border-color: #FFD700;
-    }
-
-    .btn-cancel {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      color: rgba(255, 255, 255, 0.8);
-    }
-
-    .btn-cancel:hover {
-      background: rgba(255, 255, 255, 0.1);
-    }
-
-    .geolocation-error {
-      margin-top: 1rem;
-      padding: 0.75rem;
-      background: rgba(255, 0, 0, 0.1);
-      border: 1px solid rgba(255, 0, 0, 0.3);
-      border-radius: 0.5rem;
-      color: rgba(255, 150, 150, 0.9);
-      font-size: 0.875rem;
-    }
-
-    .geolocation-error.hidden {
-      display: none;
-    }
-
-    /* 核心特效 1：活的星際背景 (The Living Cosmos) */
-    body::before {
-      content: '';
-      position: fixed;
-      top: -10%;
-      left: -10%;
-      width: 120%;
-      height: 120%;
-      z-index: -2;
-      background-image: url('assets/bg-destiny.png');
-      background-size: cover;
-      background-position: center center;
-      background-color: var(--bg-deep);
-      filter: brightness(0.7) contrast(1.1);
-      animation: cosmic-drift 120s infinite alternate ease-in-out;
-      pointer-events: none;
-    }
-    @keyframes cosmic-drift {
-      0% { transform: scale(1) rotate(0deg) translateZ(0); }
-      50% { transform: scale(1.08) rotate(2deg) translateZ(0); }
-      100% { transform: scale(1) rotate(0deg) translateZ(0); }
-    }
-    /* 流星動畫 */
-    @keyframes meteor-shower {
-      0% {
-        opacity: 0;
-        transform: translateX(-100px) translateY(-100px);
-      }
-      10% {
-        opacity: 1;
-      }
-      90% {
-        opacity: 1;
-      }
-      100% {
-        opacity: 0;
-        transform: translateX(200vw) translateY(200vh);
-      }
-    }
-    .meteor {
-      position: fixed;
-      width: 2px;
-      height: 100px;
-      background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.8), transparent);
-      box-shadow: 0 0 10px rgba(255, 191, 0, 0.6);
-      z-index: -1;
-      pointer-events: none;
-      animation: meteor-shower 3s linear infinite;
-    }
-    .meteor:nth-child(1) { top: 10%; left: 20%; animation-delay: 0s; animation-duration: 2.5s; }
-    .meteor:nth-child(2) { top: 30%; left: 60%; animation-delay: 4s; animation-duration: 3s; }
-    .meteor:nth-child(3) { top: 50%; left: 40%; animation-delay: 8s; animation-duration: 2.8s; }
-    .meteor:nth-child(4) { top: 70%; left: 80%; animation-delay: 12s; animation-duration: 3.2s; }
-    .meteor:nth-child(5) { top: 20%; left: 10%; animation-delay: 16s; animation-duration: 2.6s; }
-    /* 星圖網格：opacity 調低至 0.1，避免太明顯 */
-    body::after {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        radial-gradient(1.5px 1.5px at 20% 30%, rgba(255,255,255,0.1), transparent),
-        radial-gradient(1.5px 1.5px at 60% 70%, rgba(0,210,255,0.06), transparent),
-        radial-gradient(2px 2px at 80% 20%, rgba(255,191,0,0.04), transparent);
-      background-size: 60px 60px, 90px 90px, 110px 110px;
-      z-index: -1;
-      pointer-events: none;
-      opacity: 0.1;
-    }
-    /* 星雲氛圍：巨大模糊 radial-gradient 深藍／深紫 */
-    .ambient-nebula {
-      position: fixed;
-      inset: 0;
-      z-index: -2;
-      pointer-events: none;
-      overflow: hidden;
-    }
-    .ambient-nebula::before,
-    .ambient-nebula::after {
-      content: '';
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(80px);
-      opacity: 0.5;
-    }
-    .ambient-nebula::before {
-      width: 120vmax;
-      height: 120vmax;
-      top: -40vmax;
-      left: -30vmax;
-      background: radial-gradient(circle, rgba(30, 20, 80, 0.6) 0%, transparent 50%);
-    }
-    .ambient-nebula::after {
-      width: 100vmax;
-      height: 100vmax;
-      bottom: -50vmax;
-      right: -20vmax;
-      background: radial-gradient(circle, rgba(20, 30, 60, 0.5) 0%, transparent 55%);
-    }
-    body .ambient-nebula-spot {
-      position: fixed;
-      width: 80vmax;
-      height: 80vmax;
-      top: 30%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: radial-gradient(circle, rgba(40, 25, 70, 0.35) 0%, transparent 60%);
-      filter: blur(60px);
-      z-index: -2;
-      pointer-events: none;
-    }
-
-    /* 玻璃擬態：極透明深藍 + blur(12px) + 白邊 + 四角亮點 */
-    /* 核心特效 2：頂級玻璃擬態 (Premium Glassmorphism) */
-    .glass-container {
-      background: rgba(10, 10, 22, 0.3);
-      backdrop-filter: blur(16px) saturate(110%);
-      -webkit-backdrop-filter: blur(16px) saturate(110%);
-      border-top: 1px solid rgba(255, 255, 255, 0.2);
-      border-left: 1px solid rgba(255, 255, 255, 0.12);
-      border-right: 1px solid rgba(255, 255, 255, 0.12);
-      border-bottom: 1px solid rgba(0, 0, 0, 0.3);
-      border-radius: 24px;
-      box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.03), 0 10px 30px -5px rgba(0, 0, 0, 0.5);
-      transition: all 0.4s ease;
-      animation: float-gentle 7s ease-in-out infinite;
-    }
-    .glass-container:hover {
-      border-top: 1px solid var(--theme-amber-glow);
-      box-shadow: inset 0 0 25px rgba(255, 191, 0, 0.08), 0 15px 35px -5px rgba(0, 0, 0, 0.6);
-      transform: translateY(-4px);
-      animation: float-gentle 5s ease-in-out infinite;
-    }
-    /* 首頁命運座標輸入區：不晃動，固定位置（!important 確保覆蓋） */
-    #inputCard,
-    #inputCard.glass-container,
-    #inputCard.glass-input,
-    section#inputCard {
-      animation: none !important;
-      transform: none !important;
-    }
-    #inputCard:hover,
-    #inputCard.glass-container:hover,
-    #inputCard.glass-input:hover {
-      animation: none !important;
-      transform: none !important;
-    }
-    /* 已儲存的命盤區：不晃動、不傾斜 */
-    #myChartsSection,
-    section#myChartsSection,
-    #myChartsSection.glass-container,
-    #myChartsSection.glass-input {
-      animation: none !important;
-      transform: none !important;
-    }
-    #myChartsSection:hover,
-    #myChartsSection.glass-container:hover,
-    #myChartsSection.glass-input:hover {
-      animation: none !important;
-      transform: none !important;
-    }
-
-    .glass-hero {
-      background: rgba(26, 26, 46, 0.4);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 1.5rem;
-      box-shadow:
-        inset 0 0 0 1px rgba(255, 255, 255, 0.03),
-        0 24px 60px rgba(0, 0, 0, 0.4);
-      position: relative;
-      transition: border-color 0.4s ease, box-shadow 0.4s ease;
-    }
-    .glass-hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      pointer-events: none;
-      box-shadow:
-        inset 2px 2px 0 0 rgba(255, 255, 255, 0.08),
-        inset -2px -2px 0 0 rgba(255, 255, 255, 0.06),
-        inset 2px -2px 0 0 rgba(255, 255, 255, 0.06),
-        inset -2px 2px 0 0 rgba(255, 255, 255, 0.06);
-    }
-    .glass-hero:hover {
-      border-color: rgba(255, 255, 255, 0.15);
-      box-shadow:
-        inset 0 0 0 1px rgba(255, 255, 255, 0.04),
-        0 0 40px rgba(255, 191, 0, 0.06),
-        0 24px 60px rgba(0, 0, 0, 0.4);
-    }
-    .glass-input {
-      background: rgba(15, 15, 30, 0.35);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 2px solid rgba(255, 191, 0, 0.25);
-      border-radius: 2rem;
-      position: relative;
-      box-shadow: 
-        0 0 40px rgba(255, 191, 0, 0.15),
-        inset 0 0 60px rgba(255, 191, 0, 0.08),
-        0 20px 60px rgba(0, 0, 0, 0.4);
-      transition: border-color 0.4s ease, box-shadow 0.4s ease;
-    }
-    .glass-input:hover {
-      border-color: rgba(255, 191, 0, 0.5);
-      box-shadow: 
-        0 0 60px rgba(255, 191, 0, 0.25),
-        inset 0 0 80px rgba(255, 191, 0, 0.12),
-        0 25px 80px rgba(0, 0, 0, 0.6);
-    }
-    .glass-input::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      border-radius: inherit;
-      pointer-events: none;
-      box-shadow:
-        inset 2px 2px 0 0 rgba(255, 255, 255, 0.08),
-        inset -2px -2px 0 0 rgba(255, 255, 255, 0.06),
-        inset 2px -2px 0 0 rgba(255, 255, 255, 0.06),
-        inset -2px 2px 0 0 rgba(255, 255, 255, 0.06);
-    }
-    .glass-input:hover {
-      border-color: rgba(255, 255, 255, 0.15);
-      box-shadow:
-        inset 0 0 0 1px rgba(255, 255, 255, 0.04),
-        0 0 36px rgba(0, 210, 255, 0.05),
-        0 24px 60px rgba(0, 0, 0, 0.4);
-    }
-
-    /* 主標題：linear-gradient 琥珀金→淺金 + drop-shadow 光暈 + 思源宋體 + letter-spacing 0.2em */
-    .hero-title {
-      font-family: "Noto Serif TC", "Source Han Serif TC", serif;
-      font-weight: 700;
-      letter-spacing: 0.2em;
-      background: linear-gradient(180deg, #FFBF00 0%, #FFD54F 40%, #FFE082 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      filter: drop-shadow(0 0 10px rgba(255, 191, 0, 0.5)) drop-shadow(0 0 20px rgba(255, 191, 0, 0.25));
-    }
-    .hero-subtitle {
-      font-size: 11px;
-      letter-spacing: 0.24em;
-      text-transform: uppercase;
-      color: rgba(0, 210, 255, 0.9);
-    }
-    .hero-desc {
-      color: rgba(226, 232, 240, 0.92);
-      font-size: 0.95rem;
-      line-height: 1.7;
-      letter-spacing: 0.02em;
-    }
-
-    /* 金屬質感按鈕：radial-gradient + 光影流動動畫 */
-    .btn-strategy,
-    .btn-metal {
-      position: relative;
-      overflow: hidden;
-      background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(255, 215, 0, 0.35), transparent 50%),
-                  radial-gradient(ellipse 60% 40% at 50% 100%, rgba(255, 191, 0, 0.2), transparent 45%),
-                  radial-gradient(ellipse 100% 100% at 50% 50%, rgba(40, 35, 30, 0.9), rgba(20, 18, 15, 0.95));
-      border: 1px solid rgba(255, 191, 0, 0.4);
-      color: rgba(255, 230, 180, 0.98);
-      font-weight: 800;
-      letter-spacing: 0.2em;
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.15),
-        inset 0 -1px 0 rgba(0, 0, 0, 0.2),
-        0 0 24px rgba(255, 191, 0, 0.2);
-      animation: metal-flow 4s ease-in-out infinite;
-      transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
-    }
-    .btn-strategy:hover:not(:disabled),
-    .btn-metal:hover {
-      border-color: rgba(255, 191, 0, 0.6);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.2),
-        0 0 32px rgba(255, 191, 0, 0.35),
-        0 0 48px rgba(255, 191, 0, 0.15);
-      transform: translateY(-2px);
-    }
-    .btn-strategy:disabled {
-      animation: none;
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    .btn-strategy:disabled::before { animation: none; }
-
-    /* 核心特效 3：戰略引擎按鈕 (The Engine Button) */
-    .engine-button {
-      background: radial-gradient(circle at center, #FFBF00 0%, #D48800 70%, #A66200 100%);
-      color: #fff;
-      text-shadow: 0 2px 5px rgba(0,0,0,0.4);
-      border: none;
-      position: relative;
-      overflow: hidden;
-      z-index: 1;
-      box-shadow: 0 0 20px var(--theme-amber-glow), 0 0 40px rgba(255, 191, 0, 0.1);
-      transition: all 0.3s ease;
-    }
-    .engine-button::after {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 60%);
-      opacity: 0;
-      animation: pulse-light 3s infinite ease-in-out;
-      pointer-events: none;
-    }
-    @keyframes pulse-light {
-      0%, 100% { opacity: 0; transform: scale(0.8); }
-      50% { opacity: 0.6; transform: scale(1); }
-    }
-    .engine-button:hover:not(:disabled) {
-      box-shadow: 0 0 30px var(--theme-amber-glow), 0 0 60px rgba(255, 191, 0, 0.3);
-      transform: scale(1.02);
-      filter: brightness(1.1);
-    }
-    .engine-button:disabled {
-      animation: none;
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    .engine-button:disabled::after { animation: none; }
-    .btn-strategy::before,
-    .btn-metal::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      overflow: hidden;
-      border-radius: inherit;
-    }
-    .btn-strategy::after,
-    .btn-metal::after {
-      content: '';
-      position: absolute;
-      width: 3px;
-      height: 3px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.9);
-      box-shadow: 0 0 6px rgba(255, 191, 0, 0.9), 0 0 12px rgba(255, 191, 0, 0.5);
-      pointer-events: none;
-      opacity: 0;
-      animation: sparkle-fly 27s linear infinite;
-    }
-    .btn-strategy::after {
-      animation-delay: 0s;
-    }
-    .btn-metal::after {
-      animation-delay: 13.5s;
-    }
-    @keyframes metal-flow {
-      0%, 100% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.15), inset 0 -1px 0 rgba(0,0,0,0.2), 0 0 24px rgba(255,191,0,0.2); }
-      50% { box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.2), 0 0 32px rgba(255,191,0,0.3), 0 0 16px rgba(0,210,255,0.08); }
-    }
-    @keyframes sparkle-fly {
-      0% {
-        left: -5px;
-        top: 15%;
-        opacity: 0;
-      }
-      3% {
-        opacity: 1;
-      }
-      97% {
-        opacity: 1;
-      }
-      100% {
-        left: 105%;
-        top: 85%;
-        opacity: 0;
-      }
-    }
-
-    /* 命運座標：水平條狀排列 + 頂級玻璃擬態條（無圓形） */
-    .destiny-bar-row {
-      display: grid;
-      gap: 1rem;
-      align-items: stretch;
-    }
-    .destiny-bar-wrap {
-      display: flex;
-      align-items: stretch;
-      min-width: 0;
-    }
-    .destiny-select {
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
-      width: 100%;
-      min-width: 0;
-      padding: 0.6rem 2rem 0.6rem 0.85rem;
-      background: rgba(0, 0, 0, 0.2);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 191, 0, 0.3);
-      border-radius: 10px;
-      color: var(--amber-gold);
-      font-size: 0.875rem;
-      cursor: pointer;
-      box-shadow: inset 0 0 10px rgba(255, 191, 0, 0.1);
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23FFBF00' opacity='0.9'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 0.5rem center;
-      background-size: 1rem;
-      transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
-    }
-    .destiny-select:hover {
-      border-color: rgba(255, 191, 0, 0.5);
-      background: rgba(0, 0, 0, 0.5);
-      box-shadow: 
-        inset 0 0 20px rgba(255, 191, 0, 0.15),
-        0 0 20px rgba(255, 191, 0, 0.2),
-        0 6px 16px rgba(0, 0, 0, 0.4);
-      transform: translateY(-2px);
-    }
-    .destiny-select:focus {
-      outline: none;
-      border-color: rgba(255, 191, 0, 0.6);
-      box-shadow: 
-        inset 0 0 20px rgba(255, 191, 0, 0.18),
-        0 0 30px rgba(255, 191, 0, 0.3),
-        0 0 0 2px rgba(255, 191, 0, 0.2);
-      transform: translateY(-2px);
-    }
-    .destiny-select option {
-      background: #0f0f18;
-      color: var(--amber-gold);
-    }
-    /* 推算時辰按鈕：鮮明設計 */
-    .identify-time-btn-enhanced {
-      text-sm md:text-base font-bold text-amber-50 bg-gradient-to-r from-amber-600/80 to-amber-500/80 hover:from-amber-500 hover:to-amber-400 border-2 border-amber-400/50 hover:border-amber-300 rounded-xl px-5 py-2.5 transition-all shadow-lg hover:shadow-amber-500/30 hover:scale-105;
-    }
-    .identify-time-btn {
-      padding: 0.875rem 2rem;
-      font-size: 1rem;
-      font-weight: 800;
-      letter-spacing: 0.08em;
-      color: #fff;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-      background: linear-gradient(135deg, rgba(255, 191, 0, 0.95) 0%, rgba(255, 140, 0, 0.9) 50%, rgba(255, 191, 0, 0.95) 100%);
-      border: 2px solid rgba(255, 191, 0, 0.7);
-      border-radius: 1rem;
-      box-shadow: 
-        0 6px 20px rgba(255, 191, 0, 0.4),
-        inset 0 2px 4px rgba(255, 255, 255, 0.3),
-        0 0 30px rgba(255, 191, 0, 0.3),
-        inset 0 -2px 4px rgba(0, 0, 0, 0.2);
-      transition: all 0.3s ease;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-    }
-    .identify-time-btn::before {
-      content: '';
-      position: absolute;
-      width: 3px;
-      height: 3px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.9);
-      box-shadow: 0 0 6px rgba(255, 191, 0, 0.9);
-      pointer-events: none;
-      opacity: 0;
-      animation: sparkle-fly-btn 27s linear infinite;
-    }
-    .identify-time-btn:hover {
-      transform: translateY(-3px) scale(1.08);
-      background: linear-gradient(135deg, rgba(255, 191, 0, 1) 0%, rgba(255, 140, 0, 0.95) 50%, rgba(255, 191, 0, 1) 100%);
-      border-color: rgba(255, 191, 0, 0.9);
-      box-shadow: 
-        0 8px 25px rgba(255, 191, 0, 0.5),
-        inset 0 2px 6px rgba(255, 255, 255, 0.4),
-        0 0 40px rgba(255, 191, 0, 0.4),
-        inset 0 -2px 6px rgba(0, 0, 0, 0.2);
-    }
-    @keyframes sparkle-fly-btn {
-      0% {
-        left: -5px;
-        top: 25%;
-        opacity: 0;
-      }
-      3% {
-        opacity: 1;
-      }
-      97% {
-        opacity: 1;
-      }
-      100% {
-        left: 105%;
-        top: 75%;
-        opacity: 0;
-      }
-    }
-    .identify-time-btn:active {
-      transform: translateY(-1px) scale(1.05);
-      box-shadow: 
-        0 4px 15px rgba(255, 191, 0, 0.4),
-        inset 0 2px 4px rgba(255, 255, 255, 0.3);
-    }
-
-    .glass{
-      background: rgba(15,23,42,0.88);
-      backdrop-filter: blur(18px);
-      border: 1px solid rgba(148,163,184,0.35);
-      box-shadow: 0 24px 60px rgba(15,23,42,0.85);
-      border-radius: 1.25rem;
-    }
-    .section-subtitle{
-      font-size: 11px;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      color: #94a3b8;
-    }
-    .nav-bar {
-      background: linear-gradient(90deg, rgba(26,26,46,0.95), rgba(10,10,20,0.98));
-      backdrop-filter: blur(12px);
-      color: #fff;
-      padding: 10px 16px;
-      padding-top: max(10px, env(safe-area-inset-top));
-      position: sticky;
-      top: 0;
-      z-index: 60;
-      border-bottom: 1px solid rgba(255,191,0,0.12);
-      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
-      transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    }
-    /* 手機版：隱藏「一起出來玩」與「｜」，只顯示「人生說明書」 */
-    @media (max-width: 767px) {
-      .nav-brand-gold,
-      .nav-brand-sep { display: none; }
-    }
-    /* 手機版選單（漢堡展開） */
-    .mobile-nav-menu {
-      display: none;
-      position: absolute;
-      top: 100%;
-      left: 0;
-      right: 0;
-      background: rgba(10, 10, 22, 0.98);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255,191,0,0.12);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-      z-index: 59;
-      padding: 12px 16px;
-      padding-bottom: max(12px, env(safe-area-inset-bottom));
-      flex-direction: column;
-      gap: 4px;
-    }
-    .mobile-nav-menu.mobile-nav-menu-open { display: flex; }
-    .mobile-nav-menu a {
-      display: block;
-      padding: 12px 16px;
-      color: rgba(226, 232, 240, 0.95);
-      font-size: 14px;
-      font-weight: 600;
-      border-radius: 12px;
-      text-decoration: none;
-      transition: background 0.2s, color 0.2s;
-    }
-    .mobile-nav-menu a:hover { background: rgba(255, 191, 0, 0.12); color: #FFBF00; }
-    @media (min-width: 768px) {
-      .mobile-nav-toggle,
-      .mobile-nav-menu { display: none !important; }
-    }
-    /* 左上角品牌 Logo：一起出來玩｜人生說明書（字級沿用原本 text-sm md:text-base） */
-    .nav-brand {
-      font-family: "Noto Serif TC", "PingFang TC", "Heiti TC", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      white-space: nowrap;
-      margin-left: 12px;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35em;
-    }
-    .nav-brand-gold { color: #D7C8A0; }
-    .nav-brand-sep { color: rgba(231, 231, 231, 0.5); font-weight: 400; user-select: none; }
-    .nav-brand-main { color: #E7E7E7; }
-    .nav-chip {
-      background: rgba(0,0,0,0.35);
-      border: 1px solid rgba(255,191,0,0.2);
-      border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: rgba(226,232,240,0.95);
-      transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
-      user-select: none;
-    }
-    .nav-chip:hover,
-    .nav-chip:active,
-    .nav-chip[aria-current="page"] {
-      color: rgb(245 158 11);
-      border-color: rgba(245, 158, 11, 0.6);
-      box-shadow: 0 0 12px rgba(245, 158, 11, 0.2);
-    }
-    .nav-chip:hover {
-      transform: translateY(-1px);
-      background: rgba(255,191,0,0.12);
-    }
-    .nav-chip:active {
-      background: rgba(255,191,0,0.18);
-    }
-    .nav-chip[aria-current="page"] {
-      background: rgba(255,191,0,0.15);
-    }
-    .lang-btn {
-      padding: 0.25rem 0.5rem;
-      font-size: 0.75rem;
-      color: rgba(255,255,255,0.7);
-      background: transparent;
-      border: none;
-      border-radius: 0.25rem;
-      cursor: pointer;
-      transition: color 0.2s, background 0.2s;
-    }
-    .lang-btn:hover {
-      color: rgb(245 158 11);
-      background: rgba(255,191,0,0.1);
-    }
-    .lang-btn-mobile {
-      padding: 0.35rem 0.6rem;
-      font-size: 0.8rem;
-      color: rgba(255,255,255,0.8);
-      background: rgba(255,191,0,0.15);
-      border: 1px solid rgba(255,191,0,0.3);
-      border-radius: 0.375rem;
-      cursor: pointer;
-      transition: color 0.2s, background 0.2s;
-    }
-    .lang-btn-mobile:hover {
-      color: rgb(245 158 11);
-      background: rgba(255,191,0,0.25);
-    }
-    /* 首頁圖標按鈕樣式 */
-    .nav-chip-icon {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-      padding: 0;
-      background: rgba(255,191,0,0.15);
-      border: 1px solid rgba(255,191,0,0.3);
-      border-radius: 50%;
-      color: rgba(255,191,0,0.9);
-      transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease;
-      user-select: none;
-    }
-    .nav-chip-icon:hover {
-      transform: translateY(-1px) scale(1.05);
-      background: rgba(255,191,0,0.25);
-      border-color: rgba(255,191,0,0.5);
-    }
-    .nav-chip-icon:active {
-      transform: translateY(0) scale(0.98);
-    }
-    .nav-chip-icon svg {
-      display: block;
-    }
-    /* 圓形 Logo 按鈕樣式 */
-    .nav-chip-logo {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      padding: 0;
-      background: transparent;
-      border: none;
-      border-radius: 50%;
-      transition: transform 0.25s ease;
-      user-select: none;
-      overflow: hidden;
-    }
-    .nav-chip-logo:hover {
-      transform: translateY(-1px) scale(1.05);
-    }
-    .nav-chip-logo:active {
-      transform: translateY(0) scale(0.98);
-    }
-    .nav-chip-logo .logo-img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
-    /* 登入/登出按鈕（與 nav-chip 風格一致） */
-    .auth-btn-login,
-    .auth-btn-logout {
-      background: rgba(0,0,0,0.35);
-      border: 1px solid rgba(255,191,0,0.2);
-      border-radius: 999px;
-      padding: 6px 12px;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      color: rgba(226,232,240,0.95);
-      cursor: pointer;
-      transition: background 0.25s, border-color 0.25s, color 0.25s;
-    }
-    .auth-btn-login:hover,
-    .auth-btn-logout:hover {
-      background: rgba(255,191,0,0.15);
-      border-color: rgba(255,191,0,0.4);
-      color: #FFBF00;
-    }
-    .auth-user {
-      font-size: 11px;
-      color: rgba(226,232,240,0.8);
-      margin-right: 4px;
-    }
-    /* 導覽列登入區：固定最小寬度，避免登入前後切換時晃動 */
-    #authNav {
-      min-width: 120px;
-    }
-    /* 我的命盤區塊：固定高度，避免登入後版面晃動（內容多時區塊內捲動） */
-    #myChartsSection {
-      height: 280px;
-      min-height: 280px;
-      overflow-y: auto;
-      overflow-x: hidden;
-      contain: layout;
-      transform: translateZ(0);
-    }
-    #myChartsList {
-      min-height: 64px;
-    }
-    /* 諮詢鏈接醒目樣式 */
-    .nav-chip-consult {
-      background: rgba(255,191,0,0.25) !important;
-      border-color: rgba(255,191,0,0.6) !important;
-      color: rgb(255,191,0) !important;
-      font-weight: 900 !important;
-      box-shadow: 0 0 16px rgba(255,191,0,0.3) !important;
-    }
-    .nav-chip-consult:hover {
-      background: rgba(255,191,0,0.35) !important;
-      border-color: rgba(255,191,0,0.8) !important;
-      box-shadow: 0 0 20px rgba(255,191,0,0.4) !important;
-      transform: translateY(-2px) scale(1.05);
-    }
-    .nav-chip-consult[aria-current="page"] {
-      background: rgba(255,191,0,0.4) !important;
-      border-color: rgba(255,191,0,0.9) !important;
-      box-shadow: 0 0 24px rgba(255,191,0,0.5) !important;
-    }
-
-    /* 主儀表板：卡片依序登場（stagger），僅首次進入時播放 */
-    @keyframes dashboard-card-enter {
-      from {
-        opacity: 0;
-        transform: translateY(12px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-    #system.dashboard-enter .dashboard-card {
-      animation: dashboard-card-enter 0.35s ease-out forwards;
-    }
-    #system.dashboard-enter .dashboard-card { opacity: 0; }
-
-    /* 戰略維度切換：內容區塊淡入淡出 */
-    .dashboard-content-transition {
-      transition: opacity 0.2s ease;
-    }
-    .dashboard-content-transition.dashboard-content-fade {
-      opacity: 0;
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      #system.dashboard-enter .dashboard-card {
-        animation: none;
-        opacity: 1;
-        transform: none;
-      }
-      .dashboard-content-transition {
-        transition-duration: 0.05s;
-      }
-    }
-
-    .bazi-char{
-      font-size: 1.9rem;
-      font-weight: 900;
-      line-height: 1.05;
-      letter-spacing: .08em;
-    }
-
-    /* 五行 bar 顏色 */
-    .wuxing-木{background:#22c55e}
-    .wuxing-火{background:#ef4444}
-    .wuxing-土{background:#eab308}
-    .wuxing-金{background:#e5e7eb}
-    .wuxing-水{background:#3b82f6}
-
-    /* 五行標題卡片樣式 */
-    .wuxing-title-card {
-      padding: 0.75rem 1rem;
-      border-radius: 0.75rem;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
-      backdrop-filter: blur(8px);
-      position: relative;
-      overflow: hidden;
-      transition: all 0.3s ease;
-    }
-
-    .wuxing-title-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent, currentColor, transparent);
-      opacity: 0.6;
-    }
-
-    .wuxing-title-card.surface-title {
-      border-color: rgba(251, 191, 36, 0.3);
-      box-shadow: 0 2px 8px rgba(251, 191, 36, 0.1);
-    }
-
-    .wuxing-title-card.surface-title::before {
-      background: linear-gradient(90deg, transparent, rgba(251, 191, 36, 0.6), transparent);
-    }
-
-    .wuxing-title-card.surface-title:hover {
-      border-color: rgba(251, 191, 36, 0.5);
-      box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
-      transform: translateY(-1px);
-    }
-
-    .wuxing-title-card.strategic-title {
-      border-color: rgba(16, 185, 129, 0.3);
-      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1);
-    }
-
-    .wuxing-title-card.strategic-title::before {
-      background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.6), transparent);
-    }
-
-    .wuxing-title-card.strategic-title:hover {
-      border-color: rgba(16, 185, 129, 0.5);
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
-      transform: translateY(-1px);
-    }
-
-    .wuxing-logo-icon {
-      font-size: 1.25rem;
-      line-height: 1;
-      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-      animation: float-gentle 3s ease-in-out infinite;
-    }
-
-    .wuxing-logo-icon.surface-logo {
-      animation-delay: 0s;
-    }
-
-    .wuxing-logo-icon.surface-logo:last-child {
-      animation-delay: 1.5s;
-    }
-
-    .wuxing-logo-icon.strategic-logo {
-      animation-delay: 0.5s;
-    }
-
-    .wuxing-logo-icon.strategic-logo:last-child {
-      animation-delay: 2s;
-    }
-
-    @keyframes float-gentle {
-      0%, 100% {
-        transform: translateY(0) rotate(0deg);
-      }
-      50% {
-        transform: translateY(-4px) rotate(5deg);
-      }
-    }
-
-    /* 五行 bar 動畫 */
-    .wx-row{
-      opacity: 0;
-      animation: fadeInUp 0.35s ease-out forwards;
-    }
-    .wx-bar-inner{
-      transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    /* 伯彥戰略看板：精簡四行，手機一屏看完 */
-    .boyan-board { max-width: 22em; }
-    .boyan-attr, .boyan-highlight, .boyan-risk { font-size: 11px; line-height: 1.5; }
-    .boyan-push { font-size: 11px; margin-top: 0.25rem; }
-    @media (max-width: 767px) {
-      .boyan-board { padding-bottom: 0.5rem; }
-      .wuxing-line { margin-bottom: 0.5em; line-height: 1.6; max-width: 20em; }
-    }
-    /* 流月：MonthlyFlowCard 年度賽季導航、能量條、狀態標籤、展開區 */
-    .liuyue-nav { scroll-behavior: smooth; }
-    .liuyue-month-wrap { margin-bottom: 0.5rem; }
-    .liuyue-card.monthly-flow-card { transition: background 0.2s, border-color 0.2s; border-radius: 0.75rem; }
-    .liuyue-card.monthly-flow-card.is-current { border-color: rgba(255, 191, 0, 0.5); background: rgba(255, 191, 0, 0.08); box-shadow: 0 0 0 1px rgba(255, 191, 0, 0.2); }
-    .liuyue-energy-bar { height: 6px; border-radius: 999px; overflow: hidden; background: rgba(255,255,255,0.08); border: 1px solid rgba(255, 191, 0, 0.12); }
-    .liuyue-energy-fill { height: 100%; border-radius: 999px; transition: width 0.3s; min-width: 2%; }
-    .liuyue-badge { white-space: nowrap; }
-    .liuyue-badge-high { border-color: rgba(251, 191, 36, 0.5); background: rgba(251, 191, 36, 0.12); color: #fcd34d; }
-    .liuyue-badge-cai { border-color: rgba(255, 191, 0, 0.4); background: rgba(255, 191, 0, 0.08); color: #fde047; }
-    .liuyue-expand { overflow: hidden; transition: max-height 0.3s ease-out; }
-    @keyframes fadeInUp{
-      from{ opacity:0; transform: translateY(4px); }
-      to{ opacity:1; transform: translateY(0); }
-    }
-
-    /* 星曜五行顏色 */
-    .star-wx-木 { color: #86efac; text-shadow: 0 0 5px rgba(34,197,94,0.5); }
-    .star-wx-火 { color: #fca5a5; text-shadow: 0 0 5px rgba(239,68,68,0.5); }
-    .star-wx-土 { color: #fde047; text-shadow: 0 0 5px rgba(234,179,8,0.5); }
-    .star-wx-金 { color: #e2e8f0; text-shadow: 0 0 5px rgba(255,255,255,0.5); }
-    .star-wx-水 { color: #93c5fd; text-shadow: 0 0 5px rgba(59,130,246,0.5); }
-
-    /* 紫微 12 宮格 */
-    .zw-grid-container{
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(4, 1fr);
-      gap: 8px;
-      width: 100%;
-      max-width: 540px;
-      aspect-ratio: 1/1;
-      margin: 0 auto;
-    }
-    .zw-palace{
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(148, 163, 184, 0.35);
-      border-radius: 0.85rem;
-      padding: 8px;
-      display:flex;
-      flex-direction: column;
-      position: relative;
-      overflow:hidden;
-      cursor:pointer;
-      transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
-    }
-    .zw-palace:hover{
-      transform: translateY(-2px);
-      border-color: rgba(248,250,252,0.85);
-      box-shadow: 0 10px 30px rgba(15,23,42,0.7);
-    }
-
-    /* 宮位主題發光 */
-    .zw-palace::before{
-      content:'';
-      position:absolute;
-      top:50%; left:50%;
-      width:150%; height:150%;
-      transform: translate(-50%, -50%);
-      opacity:0;
-      transition: opacity 0.5s ease;
-      z-index:-1;
-      pointer-events:none;
-    }
-    [class*="palace-glow-"]::before{ opacity:1; }
-    .palace-glow-木::before { background: radial-gradient(circle, rgba(34,197,94,0.18) 0%, transparent 70%); }
-    .palace-glow-火::before { background: radial-gradient(circle, rgba(239,68,68,0.20) 0%, transparent 70%); }
-    .palace-glow-土::before { background: radial-gradient(circle, rgba(234,179,8,0.20) 0%, transparent 70%); }
-    .palace-glow-金::before { background: radial-gradient(circle, rgba(248,250,252,0.18) 0%, transparent 70%); }
-    .palace-glow-水::before { background: radial-gradient(circle, rgba(59,130,246,0.20) 0%, transparent 70%); }
-
-    .zw-palace-key{
-      border-color: rgba(251, 191, 36, 0.75);
-      box-shadow: inset 0 0 16px rgba(251,191,36,0.22);
-    }
-
-    /* 三方四正互動高亮 */
-    .zw-palace.is-active{
-      border-color:#fbbf24 !important;
-      box-shadow: 0 0 0 2px rgba(251,191,36,0.25), 0 16px 44px rgba(251,191,36,0.12);
-      transform: scale(1.03);
-      z-index: 30;
-    }
-    .zw-palace.is-related{
-      border-color: rgba(251,191,36,0.30);
-      background: rgba(251,191,36,0.06);
-    }
-
-    /* 小限命宮：金黃色發光邊框（作戰版科技感） */
-    .zw-palace.is-active-limit{
-      border-color: rgba(251,191,36,0.85);
-      box-shadow: 0 0 0 2px rgba(251,191,36,0.4), 0 0 24px rgba(251,191,36,0.25);
-    }
-    .zw-palace.is-active-limit::before{
-      opacity: 1;
-      background: radial-gradient(circle, rgba(251,191,36,0.18) 0%, transparent 70%);
-    }
-
-    /* 四化 Badge：祿紅 / 權紫 / 科綠 / 忌灰 */
-    .zw-badge{ display: inline-block; font-size: 10px; padding: 0 4px; border-radius: 4px; margin-left: 2px; font-weight: 700; }
-    .zw-badge-lu{ background: rgba(239,68,68,0.55); color: #fecaca; }
-    .zw-badge-quan{ background: rgba(147,51,234,0.55); color: #e9d5ff; }
-    .zw-badge-ke{ background: rgba(34,197,94,0.5); color: #bbf7d0; }
-    .zw-badge-ji{ background: rgba(100,116,139,0.6); color: #cbd5e1; }
-
-    .zw-center-block{
-      grid-area: 2 / 2 / 4 / 4;
-      background: radial-gradient(circle, #1e293b 35%, #020617 100%);
-      border: 1px dashed rgba(148, 163, 184, 0.5);
-      border-radius: 1.1rem;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-      align-items:center;
-      text-align:center;
-      padding: 12px;
-      z-index: 10;
-    }
-
-    /* 小圓點 */
-    .month-dot{ width:6px; height:6px; border-radius:999px; display:inline-block; margin-right:6px; }
-    .bg-red-light{ background:#ef4444; box-shadow:0 0 8px rgba(239,68,68,0.8); }
-    .bg-green-light{ background:#10b981; box-shadow:0 0 8px rgba(16,185,129,0.8); }
-
-    /* 讓 anchor 不被 sticky nav 遮到 */
-    section{ scroll-margin-top: 84px; }
-
-    @media (max-width: 420px){
-      .bazi-char{ font-size: 1.6rem; }
-      .zw-palace div{ font-size: 11px; }
-    }
-
-    /* ===== 手機版：宮位詳解 Bottom Sheet ===== */
-    .palace-sheet {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      max-height: 80vh;
-      max-height: 80svh;
-      max-height: calc(var(--vh, 1vh) * 80);
-      background: rgba(15,23,42,0.98);
-      border-radius: 1.25rem 1.25rem 0 0;
-      box-shadow: 0 -20px 40px rgba(0,0,0,0.7);
-      transform: translateY(100%);
-      opacity: 0;
-      pointer-events: none;
-      transition: transform 0.25s ease-out, opacity 0.2s ease-out;
-      padding: 12px 16px 24px;
-      z-index: 50;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-    .palace-sheet.open {
-      transform: translateY(0);
-      opacity: 1;
-      pointer-events: auto;
-    }
-    .palace-sheet-handle {
-      width: 40px;
-      height: 4px;
-      border-radius: 999px;
-      background: rgba(148,163,184,0.7);
-      margin: 0 auto 8px;
-    }
-    .palace-sheet-header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 8px;
-    }
-    .palace-sheet-close {
-      font-size: 11px;
-      color: #fbbf24;
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: 1.5px solid rgba(251,191,36,0.5);
-      background: rgba(251,191,36,0.15);
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    .palace-sheet-close:hover {
-      background: rgba(251,191,36,0.25);
-      border-color: rgba(251,191,36,0.7);
-      color: #fcd34d;
-    }
-    .palace-sheet-close:active {
-      transform: scale(0.95);
-    }
-
-    /* 右側面板快速定位高亮 */
-    .peek-highlight{
-      border-color: rgba(251,191,36,0.75) !important;
-      box-shadow: 0 0 0 2px rgba(251,191,36,0.18), 0 16px 44px rgba(251,191,36,0.10);
-      transition: box-shadow .2s ease, border-color .2s ease;
-    }
-
-    /* 手機限定顯示 Bottom Sheet（1280px 以上隱藏） */
-    @media (min-width: 1280px){
-      .palace-sheet,
-      #palaceSheetBackdrop {
-        display: none !important;
-      }
-    }
-
-    /* 座標鎖定儀式：全螢幕半透明遮罩 + 中央琥珀光擴張 */
-    #ceremonyBackdrop.ceremony-visible,
-    #ceremonyModal.ceremony-visible {
-      display: flex !important;
-    }
-    #ceremonyModal.ceremony-visible {
-      pointer-events: auto;
-    }
-    .ceremony-glow::before {
-      content: '';
-      position: absolute;
-      width: 20vmin;
-      height: 20vmin;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(255, 191, 0, 0.85) 0%, rgba(255, 191, 0, 0.4) 35%, rgba(255, 191, 0, 0.1) 55%, transparent 70%);
-      animation: ceremony-glow-expand 2.5s ease-out forwards;
-      pointer-events: none;
-    }
-    @keyframes ceremony-glow-expand {
-      0% {
-        transform: scale(0.3);
-        opacity: 0.6;
-      }
-      100% {
-        transform: scale(12);
-        opacity: 0.35;
-      }
-    }
-
-    /* LINE / 行動端：全頁與彈窗 SafeArea，避免被系統 UI 遮擋 */
-    .safe-area-top { padding-top: env(safe-area-inset-top); }
-    .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
-    #identifyBirthTimeModal .p-5 { padding-top: max(1.25rem, env(safe-area-inset-top)); padding-bottom: max(1.5rem, env(safe-area-inset-bottom)); }
-    #ceremonyModal.ceremony-visible { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
-    .palace-sheet { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
-
-    /* md 以下隱藏右側詳解欄，主內容不預留 margin */
-    @media (max-width: 767px) {
-      #detailPanel { display: none !important; }
-      #dashboardMainContent { grid-template-columns: 1fr; }
-    }
-
-    /* 行動端 BottomNav（md 以下顯示） */
-    .bottom-nav {
-      display: none;
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 45;
-      background: rgba(10,10,22,0.95);
-      border-top: 1px solid rgba(255,191,0,0.15);
-      padding: 8px 12px env(safe-area-inset-bottom) 12px;
-      padding-bottom: max(8px, env(safe-area-inset-bottom));
-    }
-    @media (max-width: 767px) {
-      body.dashboard-visible .bottom-nav { display: flex; align-items: center; justify-content: space-around; gap: 4px; }
-    }
-    .bottom-nav a {
-      flex: 1;
-      text-align: center;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .05em;
-      color: rgba(226,232,240,0.9);
-      padding: 8px 6px;
-      border-radius: 999px;
-      text-decoration: none;
-      transition: background 0.2s, color 0.2s;
-    }
-    .bottom-nav a:hover, .bottom-nav a:active { background: rgba(255,191,0,0.12); color: rgb(245,158,11); }
-    .bottom-nav .feedback-bottom-link {
-      flex: 0 0 auto;
-      min-width: 60px;
-    }
-
-    /* LINE 內建瀏覽器：停用 backdrop-blur 以維持 60fps */
-    body.line-browser .glass,
-    body.line-browser .glass-container,
-    body.line-browser .glass-hero,
-    body.line-browser .glass-input { backdrop-filter: none; -webkit-backdrop-filter: none; }
-
-    /* 統一字體系統（僅新增，不覆蓋既有樣式） */
-    .page-hero-title { font-size: clamp(24px, 5vw, 28px); }
-    .section-title-main { font-size: clamp(20px, 4vw, 22px); }
-    .section-caption { font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; }
-    .body-text { font-size: clamp(14px, 2vw, 15px); }
-    .body-caption { font-size: 12px; }
-
-    /* 手機版：全站字體基準放大，主要閱讀區塊字級往上調，方便不用放大即可閱讀 */
-    @media (max-width: 768px) {
-      html { font-size: 17px; }
-      .section-title-main { font-size: 1.25rem; }   /* 約 20px，區塊標題手機略大 */
-      .body-text { font-size: 0.9375rem; }         /* 約 15px */
-      .body-caption { font-size: 0.875rem; }       /* 約 14px */
-      .page-hero-title { font-size: 1.375rem; }    /* 約 22px，首頁大標 */
-      .section-caption { font-size: 0.8125rem; }    /* 約 13px，小標 */
-      .section-subtitle { font-size: 0.8125rem; }   /* 約 13px，區塊小標手機略大 */
-      .bottom-nav a { font-size: 13px; }
-    }
-  </style>
+  <!-- Google Analytics 4：替換 G-XXXXXXXXXX 為你的 Measurement ID，留空則不載入 -->
+  <script>
+    window.GA_MEASUREMENT_ID = 'G-S0JFD6CTDP';
+    if (window.GA_MEASUREMENT_ID && window.GA_MEASUREMENT_ID.indexOf('G-') === 0) {
+      (function(){
+        var s = document.createElement('script');
+        s.async = true;
+        s.src = 'https://www.googletagmanager.com/gtag/js?id=' + window.GA_MEASUREMENT_ID;
+        document.head.appendChild(s);
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        window.gtag = gtag;
+        gtag('js', new Date());
+        gtag('config', window.GA_MEASUREMENT_ID, { anonymize_ip: true });
+      })();
+    }
+  </script>
+
+  <link href="css/main.css" rel="stylesheet" />
+  <!-- JSON-LD: WebApplication -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "人生說明書",
+    "alternateName": "一起出來玩",
+    "description": "結合八字五行、紫微斗數與 2026 流年分析的個人戰略系統。",
+    "url": "https://www.17gonplay.com/",
+    "applicationCategory": "LifestyleApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "TWD"
+    }
+  }
+  </script>
+  <!-- JSON-LD: Organization -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "一起出來玩",
+    "url": "https://www.17gonplay.com",
+    "logo": "https://www.17gonplay.com/assets/logo-circle.png"
+  }
+  </script>
 </head>
 
 <body class="pb-20">
@@ -1625,23 +97,26 @@
   <!-- TOP NAV（桌機：完整品牌＋導覽；手機：短品牌＋漢堡選單） -->
   <div class="nav-bar relative flex items-center justify-between gap-3">
     <div class="flex items-center gap-2 min-w-0">
-      <div class="nav-brand text-sm md:text-base" aria-label="">
-        <span class="hidden md:inline" data-i18n="brand.navFull">一起出來玩｜人生說明書</span>
+      <div class="nav-brand text-sm md:text-base font-medium" aria-label="">
+        <span class="hidden md:inline" data-i18n="brand.navFull">人生說明書</span>
         <span class="md:hidden" data-i18n="brand.navShort">人生說明書</span>
       </div>
-      <a href="#" id="homeButton" class="hidden md:inline-flex nav-chip-icon" aria-label="回到首頁" title="回到首頁">
+      <a href="#" id="homeButton" class="hidden md:inline-flex nav-chip-icon" aria-label="回到首頁" title="回到首頁" data-i18n-title="ui.navHome" data-i18n-aria-label="ui.navHome">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
         </svg>
       </a>
-      <a href="consultation.html" class="hidden md:inline-flex nav-chip nav-chip-consult" aria-label="1:1 諮詢">1:1 諮詢</a>
+      <a href="articles.html" class="hidden md:inline-flex nav-chip" data-i18n="ui.navArticles" data-i18n-aria-label="ui.navArticles">文章</a>
+      <a href="divination.html" class="hidden md:inline-flex nav-chip">占卦</a>
     </div>
 
-    <!-- workspace nav（桌機，進入儀表板後顯示） -->
+    <!-- workspace nav（桌機，進入儀表板後顯示）進度導航：降低認知負荷 -->
     <div id="workspaceNav" class="hidden md:flex items-center gap-2">
-      <a class="nav-chip" href="#ws-ziwei" data-i18n="ui.navZiwei">紫微</a>
-      <a class="nav-chip" href="#ws-bazi" data-i18n="ui.navBazi">八字</a>
-      <a class="nav-chip" href="#ws-liuyue" data-i18n="ui.navLiuyue">流年</a>
+      <a class="nav-chip" href="#ws-dao">能量</a>
+      <a class="nav-chip" href="#ws-wux">五行</a>
+      <a class="nav-chip" href="#ws-pan">命盤</a>
+      <a class="nav-chip" href="#ws-liuyue">流月</a>
+      <a class="nav-chip nav-chip-consult" href="#ws-consult" data-i18n="ui.navConsult">諮詢</a>
     </div>
 
     <!-- 桌機：登入/登出 ＋ 語言切換 ＋ FB logo；手機：漢堡按鈕 -->
@@ -1658,7 +133,7 @@
          class="nav-chip-logo"
          aria-label="Facebook"
          title="Facebook">
-        <img src="assets/logo-circle.png" alt="17 Gon Play" class="logo-img">
+        <img src="assets/logo-circle.png" alt="17 Gon Play" class="logo-img" width="32" height="32" loading="lazy">
       </a>
     </div>
     <button type="button" id="mobileNavToggle" class="md:hidden flex items-center justify-center w-10 h-10 rounded-lg border border-amber-400/30 bg-white/5 text-amber-300 hover:bg-amber-500/20 transition" aria-label="開啟選單" aria-expanded="false">
@@ -1668,10 +143,13 @@
     </button>
     <div id="mobileNavMenu" class="mobile-nav-menu" aria-hidden="true">
       <a href="#" id="mobileHomeLink" class="mobile-nav-link" data-i18n="ui.navHome">回到首頁</a>
-      <a href="consultation.html" class="mobile-nav-link" data-i18n="ui.navConsult">1:1 諮詢</a>
-      <a href="#ws-ziwei" class="mobile-nav-link" data-i18n="ui.navZiwei">紫微</a>
-      <a href="#ws-bazi" class="mobile-nav-link" data-i18n="ui.navBazi">八字</a>
-      <a href="#ws-liuyue" class="mobile-nav-link" data-i18n="ui.navLiuyue">流年</a>
+      <a href="articles.html" class="mobile-nav-link" data-i18n="ui.navArticles">文章</a>
+      <a href="divination.html" class="mobile-nav-link">占卦</a>
+      <a href="#ws-dao" class="mobile-nav-link">能量</a>
+      <a href="#ws-wux" class="mobile-nav-link">五行</a>
+      <a href="#ws-pan" class="mobile-nav-link">命盤</a>
+      <a href="#ws-liuyue" class="mobile-nav-link">流月</a>
+      <a href="#ws-consult" class="mobile-nav-link" data-i18n="ui.navConsult">諮詢</a>
       <div id="langSwitcherMobile" class="flex items-center gap-2 py-2 border-t border-amber-400/20" data-i18n-title="ui.langSwitchHint" title="">
         <span class="text-slate-500 text-xs" data-i18n="ui.lang">語言</span>
         <button type="button" class="lang-btn-mobile" data-lang="zh-CN">简中</button>
@@ -1685,6 +163,17 @@
 
   <main class="max-w-7xl mx-auto px-4 pt-6 space-y-8">
 
+    <!-- 占卦入口（置頂） -->
+    <a id="divinationEntranceCard" href="divination.html?from=homepage" class="block mb-6 rounded-2xl border border-amber-400/20 bg-gradient-to-br from-slate-900/90 to-slate-950 overflow-hidden relative cursor-pointer group divination-entrance-card max-w-3xl mx-auto">
+      <div class="absolute inset-0 bg-amber-400/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+      <div class="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
+      <div class="relative p-4 md:p-5 flex items-center gap-4">
+        <div class="flex-shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-xl bg-amber-500/20 flex items-center justify-center text-xl animate-pulse">☰</div>
+        <span class="flex-1 text-base md:text-lg font-bold text-amber-300">易經之美占卦預測</span>
+        <span class="text-amber-400/80 group-hover:text-amber-300 transition-colors text-sm">開始</span>
+      </div>
+    </a>
+
     <!-- 我的命盤（僅登入時顯示） -->
     <section id="myChartsSection" class="hidden glass-container glass-input p-6 max-w-3xl mx-auto space-y-4 scroll-mt-24">
       <h2 class="page-hero-title text-amber-300 text-lg tracking-wider" data-i18n="ui.myChartsTitle">已儲存的命盤</h2>
@@ -1693,28 +182,11 @@
       <p id="myChartsEmpty" class="body-caption text-slate-500 hidden" data-i18n="ui.myChartsEmpty">尚無命盤。請在下方輸入出生資料後，點「儲存到我的命盤」；儲存後會出現在此處，點選即可載入。</p>
     </section>
 
-    <!-- 命運座標輸入（條狀排列 + 頂級玻璃擬態，保留原有 id 與邏輯） -->
+    <!-- 命運座標輸入（極簡結構） -->
     <section id="inputCard" class="glass-container glass-input p-8 md:p-12 max-w-3xl mx-auto space-y-8">
-      <div class="text-center mb-6">
-        <h2 class="page-hero-title text-amber-300 mb-2 tracking-wider" data-i18n="home.heroHeadline">命運座標輸入</h2>
-        <p class="body-text text-slate-400 italic" data-i18n="home.heroSubheadline">輸入你的出生資訊，開啟專屬的人生使用說明書</p>
-        <p id="heroSupporting" class="body-caption text-slate-500 mt-1 empty:hidden" data-i18n="home.heroSupporting"></p>
-      </div>
-
-      <!-- 首頁功能區塊（三張卡片） -->
-      <div id="homeFeatureBlocks" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div class="p-4 rounded-xl border border-white/10 bg-white/5">
-          <div class="font-black text-amber-300/90 text-sm mb-2" data-i18n="home.feature1Title">解讀你的結構</div>
-          <p class="text-xs text-slate-400 leading-relaxed" data-i18n="home.feature1Body">了解命宮與五行平衡如何形塑你的決策。</p>
-        </div>
-        <div class="p-4 rounded-xl border border-white/10 bg-white/5">
-          <div class="font-black text-amber-300/90 text-sm mb-2" data-i18n="home.feature2Title">掌握你的節奏</div>
-          <p class="text-xs text-slate-400 leading-relaxed" data-i18n="home.feature2Body">大限、小限、流月訊號。</p>
-        </div>
-        <div class="p-4 rounded-xl border border-white/10 bg-white/5">
-          <div class="font-black text-amber-300/90 text-sm mb-2" data-i18n="home.feature3Title">定位你的行動</div>
-          <p class="text-xs text-slate-400 leading-relaxed" data-i18n="home.feature3Body">順勢推進。必要時守成。</p>
-        </div>
+      <div class="text-center mb-8">
+        <h1 class="text-2xl md:text-3xl font-semibold text-amber-300 mb-2 tracking-tight" data-i18n="home.heroHeadline">輸入出生時間</h1>
+        <p class="text-sm md:text-base text-slate-400 italic" data-i18n="home.heroSubheadline">30 秒了解你的角色設定</p>
       </div>
 
       <!-- 第一行：年、月、日 -->
@@ -1723,44 +195,48 @@
         <div class="destiny-bar-wrap"><select id="birthMonth" class="destiny-select" aria-label="月"></select></div>
         <div class="destiny-bar-wrap"><select id="birthDay" class="destiny-select" aria-label="日"></select></div>
       </div>
-      <!-- 第二行：性別、粗略時間 -->
+      <!-- 第二行：時間模式（時分|時辰）、性別 -->
       <div class="destiny-bar-row grid-cols-2">
-        <div class="destiny-bar-wrap"><select id="timeMode" class="destiny-select" aria-label="時間模式"></select></div>
+        <div class="destiny-bar-wrap flex items-center">
+          <div id="timeModeToggle" class="time-mode-toggle inline-flex rounded-lg border border-amber-400/25 overflow-hidden" role="group" aria-label="時間模式">
+            <button type="button" class="time-mode-btn px-4 py-2.5 text-sm font-medium transition" data-value="exact" data-i18n="ui.timeExactShort">時分</button>
+            <span class="flex items-center px-2 text-amber-400/40 text-sm">|</span>
+            <button type="button" class="time-mode-btn px-4 py-2.5 text-sm font-medium transition" data-value="shichen" data-i18n="ui.timeShichenShort">時辰</button>
+          </div>
+          <select id="timeMode" class="sr-only" aria-hidden="true" tabindex="-1"></select>
+        </div>
         <div class="destiny-bar-wrap"><select id="gender" class="destiny-select" aria-label="性別"></select></div>
       </div>
-      <div class="flex flex-wrap items-center gap-3 pt-2">
-        <span class="text-base md:text-lg font-bold text-amber-300/90" data-i18n="home.helperUnsureTime">不確定出生時間？</span>
-        <button type="button" id="btnIdentifyBirthTimeGlobal" class="identify-time-btn" data-i18n="home.helperEstimateBtn">
-          點我推算時辰
-        </button>
-      </div>
-
       <!-- 第三行：精確時、分 -->
       <div id="exactTimeRow" class="destiny-bar-row grid-cols-2">
         <div class="destiny-bar-wrap"><select id="birthHour" class="destiny-select" aria-label="時"></select></div>
         <div class="destiny-bar-wrap"><select id="birthMinute" class="destiny-select" aria-label="分"></select></div>
       </div>
-
       <div id="shichenRow" class="hidden space-y-4">
         <div class="destiny-bar-row grid-cols-2">
           <div class="destiny-bar-wrap"><select id="birthShichen" class="destiny-select" aria-label="時辰"></select></div>
           <div class="destiny-bar-wrap"><select id="birthShichenHalf" class="destiny-select" aria-label="上半/下半"></select></div>
         </div>
-        <div class="flex justify-center">
-          <button id="btnIdentifyBirthTime" type="button" class="identify-time-btn-enhanced" data-i18n="home.helperEstimateBtn">
-            不確定時辰？點我推算時辰
-          </button>
-        </div>
         <p class="body-caption text-slate-500 text-center" data-i18n="ui.shichenNote">註：選「時辰」會換算成代表時刻（上半/下半時辰各取代表時間）送入系統計算。</p>
       </div>
+      <!-- 不確定出生時間：強化區塊 -->
+      <div class="unsure-time-block rounded-xl border border-amber-400/30 bg-amber-500/5 p-4 flex flex-wrap items-center justify-center gap-3 mb-6">
+        <span class="text-amber-400/90" aria-hidden="true">✨</span>
+        <span class="text-base md:text-lg font-bold text-amber-300" data-i18n="home.helperUnsureHighlight">不確定出生時間也能用</span>
+        <span class="text-slate-400">→</span>
+        <button type="button" id="btnIdentifyBirthTimeGlobal" class="identify-time-btn" data-i18n="home.helperEstimateShort">點我推算</button>
+      </div>
 
-      <div class="pt-4">
+      <!-- 主按鈕：Sticky CTA（固定底部、滿版、≥52px） -->
+      <div class="sticky bottom-4 pt-6 -mx-2 px-2 md:-mx-4 md:px-4">
         <button id="btnLaunch" type="button"
-          class="engine-button w-full py-5 rounded-2xl text-base md:text-lg font-black tracking-wider disabled:opacity-60 disabled:cursor-not-allowed"
+          class="engine-button w-full min-h-[52px] py-4 rounded-2xl text-base md:text-lg font-semibold tracking-wider disabled:opacity-60 disabled:cursor-not-allowed"
           data-i18n="home.heroPrimaryCta">
-          開啟 人生使用說明書
+          開始人生分析
       </button>
       </div>
+
+      <a href="#extendedReading" class="extended-reading-prompt block text-center py-4 text-sm text-amber-400/80 hover:text-amber-400/100 transition-colors" data-i18n="home.extendedReadingPrompt">↓ 延伸閱讀 ↓</a>
 
       <div id="hint" class="text-center text-sm md:text-base text-slate-400 italic min-h-[1.2em]"></div>
 
@@ -1786,25 +262,147 @@
       <div id="dashboardMainContent" class="grid xl:grid-cols-[1fr,440px] gap-8 dashboard-content-transition">
 
         <!-- LEFT WORKSPACES -->
-        <div class="space-y-8">
+        <div class="space-y-8" id="workspaceSections">
 
-          <!-- 紫微 -->
-          <section id="ws-ziwei" class="glass dashboard-card p-6 md:p-7 space-y-4">
+          <!-- 1) 能量結構分析 -->
+          <section id="ws-dao" class="workspace-section glass dashboard-card p-6 md:p-7 space-y-4" data-section="dao">
+            <div class="section-header flex items-center justify-between cursor-pointer md:cursor-default" data-section-toggle>
+              <div>
+                <h2 id="energyStructureTitle" class="section-title-main font-black tracking-tight">能量結構分析</h2>
+                <p class="body-text text-slate-400 mt-1 max-w-2xl">理解你的能量結構，才能安排今年的行動節奏。</p>
+              </div>
+              <span class="section-toggle-icon md:hidden text-amber-400/80">▼</span>
+            </div>
+            <div class="section-body">
+              <div class="space-y-4 mt-4">
+                <div class="glass rounded-xl p-4 border border-white/10">
+                  <div class="text-sm font-semibold text-amber-300/90 mb-2">陰陽比例</div>
+                  <div class="yin-yang-bar-wrap h-3 rounded-full bg-white/10 overflow-hidden">
+                    <div id="yinYangBar" class="h-full rounded-full bg-gradient-to-r from-amber-500/80 to-emerald-500/80 transition-all duration-500" style="width:50%"></div>
+                  </div>
+                  <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+                    <span id="yinYangYangLabel">陽比例：50%</span>
+                    <span id="yinYangYinLabel">陰比例：50%</span>
+                  </div>
+                  <p id="yinYangStructureLabel" class="text-xs text-amber-400/90 mt-2 font-medium">結構定位：計算完成後顯示</p>
+                </div>
+                <div class="glass rounded-xl p-4 border border-white/10">
+                  <div class="text-sm font-semibold text-amber-300/90 mb-2">結構定位</div>
+                  <p id="yinYangBaseText" class="text-sm text-slate-300 leading-relaxed">計算完成後顯示</p>
+                </div>
+                <div class="glass rounded-xl p-4 border border-white/10">
+                  <div class="text-sm font-semibold text-amber-300/90 mb-2">年度主軸</div>
+                  <p id="yinYangMainShishen" class="text-lg font-black text-amber-300 mb-1">—</p>
+                  <p id="yinYangMainShishenText" class="text-sm text-slate-300 leading-relaxed">計算完成後顯示</p>
+                </div>
+                <div class="glass rounded-xl p-4 border border-white/10">
+                  <div class="text-sm font-semibold text-amber-300/90 mb-2">交叉洞察</div>
+                  <p id="yinYangCrossInsight" class="text-sm text-slate-300 leading-relaxed">計算完成後顯示</p>
+                </div>
+              </div>
+              <!-- 太歲狀態 -->
+              <div class="mt-6 pt-6 border-t border-white/10">
+                <div>
+                  <div class="section-caption mb-1">Tai Sui</div>
+                  <h3 class="text-lg font-black tracking-tight">今年的天時（太歲狀態）</h3>
+                </div>
+                <div id="taisuiCard" class="space-y-4 mt-4">
+                  <div class="text-slate-500 italic">計算完成後顯示</div>
+                </div>
+                <p class="text-xs text-slate-500 mt-2"><a href="taisui-rules.html" class="text-amber-400/70 hover:text-amber-400">了解規則</a>：本服務依傳統地支「值、沖、刑、害、破」關係推算。</p>
+              </div>
+            </div>
+          </section>
+
+          <!-- 2) 五行動力學 -->
+          <section id="ws-wux" class="workspace-section glass dashboard-card p-6 md:p-7 space-y-4" data-section="wux">
+            <div class="section-header flex items-center justify-between cursor-pointer md:cursor-default" data-section-toggle>
+              <div>
+                <h2 class="section-title-main font-black tracking-tight" data-i18n="bazi.sectionTitle">五行動力學 · 八字戰力</h2>
+              </div>
+              <span class="section-toggle-icon md:hidden text-amber-400/80">▼</span>
+            </div>
+            <div class="section-body">
+              <div id="wuxingOneLiner" class="text-sm text-amber-200/90 italic mb-4 py-2 px-3 rounded-lg bg-amber-500/10 border border-amber-400/20 hidden"></div>
+              <!-- 五行戰力（預設展開） -->
+              <div class="wuxing-power-block space-y-6">
+                <div class="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <div class="body-caption text-slate-400 mb-2" data-i18n="bazi.surfaceStructure">表層結構（四柱天干）</div>
+                    <div class="space-y-3">
+                      <div class="wuxing-title-card surface-title mb-3">
+                        <div class="flex items-center gap-2">
+                          <div class="wuxing-logo-icon surface-logo">👁️</div>
+                          <div class="flex-1">
+                            <div class="body-text font-black text-amber-300 tracking-tight" data-i18n="bazi.surfaceTitle">角色名望（八字表層）</div>
+                            <div class="body-caption text-slate-400 italic mt-0.5" data-i18n="bazi.surfaceSub">看起來強嗎？</div>
+                          </div>
+                          <div class="wuxing-logo-icon surface-logo">✨</div>
+                        </div>
+                      </div>
+                      <div id="surfaceWxBars" class="space-y-2"></div>
+                      <div id="surfaceWxRadar" class="w-full max-w-[260px]"></div>
+                      <div id="surfaceWxComment" class="body-caption text-slate-300 leading-relaxed"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="body-caption text-slate-400 mb-2" data-i18n="bazi.strategicStructure">實戰結構（天干＋藏干＋月令加權）</div>
+                    <div class="space-y-3">
+                      <div class="wuxing-title-card strategic-title mb-3">
+                        <div class="flex items-center gap-2">
+                          <div class="wuxing-logo-icon strategic-logo">⚔️</div>
+                          <div class="flex-1">
+                            <div class="body-text font-black text-emerald-300 tracking-tight" data-i18n="bazi.strategicTitle">核心戰力（八字實戰）</div>
+                            <div class="body-caption text-slate-400 italic mt-0.5" data-i18n="bazi.strategicSub">真的能贏嗎？</div>
+                          </div>
+                          <div class="wuxing-logo-icon strategic-logo">🔥</div>
+                        </div>
+                      </div>
+                      <div id="strategicWxBars" class="space-y-2"></div>
+                      <div id="strategicWxRadar" class="w-full max-w-[260px]"></div>
+                      <div id="strategicWxComment" class="body-caption text-slate-300 leading-relaxed"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-white/10">
+                  <div id="wuxingFlowCaption" class="body-caption text-slate-400 mb-2" data-i18n="wuxing.title">五行生剋診斷</div>
+                  <div id="wuxingFlowCard" class="text-sm text-slate-300 space-y-2">
+                    <p id="wuxingFlowPlaceholder" class="text-slate-500 italic" data-i18n="wuxing.placeholder">（計算完成後，這裡會顯示五行生剋診斷報告。）</p>
+                  </div>
+                </div>
+              </div>
+              <!-- 四柱/藏干 accordion（手機預設收起，桌機展開） -->
+              <details id="pillarsAccordion" class="mt-6 border border-white/10 rounded-xl overflow-hidden">
+                <summary class="px-4 py-3 bg-white/5 cursor-pointer text-sm font-semibold text-slate-200 hover:bg-white/10 transition">
+                  <span data-i18n="bazi.pillarsCangganLabel">四柱與藏干</span>
+                </summary>
+                <div class="p-4 space-y-4 border-t border-white/10">
+                  <div class="grid grid-cols-4 gap-2 text-center" id="pillarsGrid"></div>
+                  <div class="space-y-3">
+                    <div class="body-caption text-slate-400">
+                      <span data-i18n="bazi.cangganLabel">地支藏干（權重顯示）：</span><span class="text-slate-500" data-i18n="bazi.cangganHint">（用來理解你「實戰五行」的來源）</span>
+                    </div>
+                    <div id="cangganGrid" class="grid md:grid-cols-2 gap-2"></div>
+                  </div>
+                </div>
+              </details>
+            </div>
+          </section>
+
+          <!-- 3) 命盤場域 -->
+          <section id="ws-pan" class="workspace-section glass dashboard-card p-6 md:p-7 space-y-4" data-section="pan">
+            <div class="section-header flex items-center justify-between cursor-pointer md:cursor-default" data-section-toggle>
+              <div>
+                <h2 class="section-title-main font-black tracking-tight">命盤場域 · 12 宮作戰地圖</h2>
+                <p class="body-caption text-slate-400 mt-1">點場域看耦合（本宮＋對宮＋三合）。</p>
+              </div>
+              <span class="section-toggle-icon md:hidden text-amber-400/80">▼</span>
+            </div>
+            <div class="section-body">
+          <div id="ws-ziwei" class="space-y-4">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <div class="section-caption mb-1">ZiWei DouShu</div>
-                <h2 class="section-title-main font-black tracking-tight" data-i18n="ziwei.boardTitle">紫微 12 宮 · 作戰版方盤</h2>
-                <p class="body-caption text-slate-400 mt-1" id="ziweiMeta" data-i18n="ziwei.boardSubtitle">
-                  命宮與身主會顯示在中央；外圈 12 宮固定佈局，與主流排盤方向一致。
-                </p>
-              </div>
-              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 min-w-0">
-                <label for="currentAgeSlider" class="text-[10px] font-black tracking-widest text-slate-500 uppercase" data-i18n="ziwei.minorLimitLabel">小限動態導覽</label>
-                <div class="flex items-center gap-3 flex-1">
-                  <input type="range" id="currentAgeSlider" min="1" max="120" value="38" class="flex-1 h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-amber-500" title="虛歲，拖曳可即時更新小限宮位與四化" />
-                  <output id="currentAgeDisplay" class="text-sm font-mono font-black text-amber-400 tabular-nums w-10 text-right">38</output>
-                  <span class="text-sm text-slate-500">歲</span>
-                </div>
+                <h2 class="section-title-main font-black tracking-tight" data-i18n="ziwei.boardTitle">紫微 12 宮</h2>
               </div>
             </div>
 
@@ -1833,110 +431,35 @@
                 </div>
               </div>
             </section>
+          </div>
+            </div>
           </section>
 
-          <!-- 八字五行 -->
-          <section id="ws-bazi" class="glass dashboard-card p-6 md:p-7 space-y-6">
-            <div>
-              <div class="section-caption mb-1">BaZi + Elements</div>
-              <h2 class="section-title-main font-black tracking-tight" data-i18n="bazi.sectionTitle">八字 · 四柱＋五行戰力</h2>
-              <p class="body-text text-slate-400 mt-1" data-i18n="bazi.sectionDesc">
-                上方顯示「四柱」，下方顯示「表層（天干）」與「實戰（天干＋藏干＋月令加權）」。
-                右側會附上五行意義（資料庫：wuxing_meanings）。
-              </p>
-            </div>
-
-            <!-- 四柱 -->
-            <div class="grid grid-cols-4 gap-2 text-center" id="pillarsGrid"></div>
-
-            <!-- 藏干 -->
-            <div class="space-y-3">
-              <div class="body-caption text-slate-400">
-                <span data-i18n="bazi.cangganLabel">地支藏干（權重顯示）：</span><span class="text-slate-500" data-i18n="bazi.cangganHint">（用來理解你「實戰五行」的來源）</span>
-              </div>
-              <div id="cangganGrid" class="grid md:grid-cols-2 gap-2"></div>
-            </div>
-
-            <!-- 五行 bar -->
-            <div class="grid md:grid-cols-2 gap-6">
+          <!-- 4) 行動策略（流月 + 戰術） -->
+          <section id="ws-act" class="workspace-section glass dashboard-card p-6 md:p-7 space-y-4" data-section="act">
+            <div class="section-header flex items-center justify-between cursor-pointer md:cursor-default" data-section-toggle>
               <div>
-                <div class="body-caption text-slate-400 mb-2" data-i18n="bazi.surfaceStructure">表層結構（四柱天干）</div>
-                <div class="space-y-3">
-                  <!-- 特色標題：角色名望 -->
-                  <div class="wuxing-title-card surface-title mb-3">
-                    <div class="flex items-center gap-2">
-                      <div class="wuxing-logo-icon surface-logo">👁️</div>
-                      <div class="flex-1">
-                        <div class="body-text font-black text-amber-300 tracking-tight" data-i18n="bazi.surfaceTitle">
-                          角色名望（八字表層）
-                  </div>
-                        <div class="body-caption text-slate-400 italic mt-0.5" data-i18n="bazi.surfaceSub">
-                          看起來強嗎？
-                        </div>
-                      </div>
-                      <div class="wuxing-logo-icon surface-logo">✨</div>
-                    </div>
-                  </div>
-                  <div id="surfaceWxBars" class="space-y-2"></div>
-                  <div id="surfaceWxRadar" class="w-full max-w-[260px]"></div>
-                  <div id="surfaceWxComment" class="body-caption text-slate-300 leading-relaxed"></div>
-                </div>
+                <h2 class="section-title-main font-black tracking-tight" data-i18n="flow.monthlyStrategyTitle">行動策略 · 流月與戰術</h2>
               </div>
-              <div>
-                <div class="body-caption text-slate-400 mb-2" data-i18n="bazi.strategicStructure">實戰結構（天干＋藏干＋月令加權）</div>
-                <div class="space-y-3">
-                  <!-- 特色標題：核心戰力 -->
-                  <div class="wuxing-title-card strategic-title mb-3">
-                    <div class="flex items-center gap-2">
-                      <div class="wuxing-logo-icon strategic-logo">⚔️</div>
-                      <div class="flex-1">
-                        <div class="body-text font-black text-emerald-300 tracking-tight" data-i18n="bazi.strategicTitle">
-                          核心戰力（八字實戰）
-                  </div>
-                        <div class="body-caption text-slate-400 italic mt-0.5" data-i18n="bazi.strategicSub">
-                          真的能贏嗎？
-                        </div>
-                      </div>
-                      <div class="wuxing-logo-icon strategic-logo">🔥</div>
-                    </div>
-                  </div>
-                  <div id="strategicWxBars" class="space-y-2"></div>
-                  <div id="strategicWxRadar" class="w-full max-w-[260px]"></div>
-                  <div id="strategicWxComment" class="body-caption text-slate-300 leading-relaxed"></div>
-                </div>
-              </div>
+              <span class="section-toggle-icon md:hidden text-amber-400/80">▼</span>
             </div>
-
-            <!-- 五行生剋診斷卡片（標題與預設說明可由 i18n 更新） -->
-            <div class="mt-4 pt-4 border-t border-white/10">
-              <div id="wuxingFlowCaption" class="body-caption text-slate-400 mb-2" data-i18n="wuxing.title">五行生剋診斷</div>
-              <div id="wuxingFlowCard" class="text-sm text-slate-300 space-y-2">
-                <p id="wuxingFlowPlaceholder" class="text-slate-500 italic" data-i18n="wuxing.placeholder">（計算完成後，這裡會顯示五行生剋診斷報告。）</p>
-              </div>
-            </div>
-
-            <!-- 十神指令（已移除：避免與上方 Summary 的「十神主軸」重複） -->
-          </section>
-
-          <!-- 流月：年度賽季導航（單一垂直列表，可展開詳情） -->
-          <section id="ws-liuyue" class="glass dashboard-card p-6 md:p-7 space-y-4">
+            <div class="section-body">
+          <div id="ws-liuyue" class="space-y-4">
             <div>
               <div class="section-subtitle mb-1" data-i18n="flow.yearStrategyNav">2026 戰略導航</div>
               <h2 class="text-xl md:text-2xl font-black text-amber-400 tracking-tight" data-i18n="flow.monthlyStrategyTitle">流月戰略（12）</h2>
               <p class="text-sm md:text-base text-slate-400 mt-1" data-i18n="flow.monthlyHint">點月份卡片展開十神參數與李伯彥助推建議</p>
+              <p class="text-xs text-amber-400/70 mt-2">進階：<a href="expert-admin.html" class="underline hover:text-amber-300">大限／小限／流年詳表</a>（點擊「載入大限／小限／流年」取得各宮位小限年份）</p>
             </div>
             <div id="monthGrid" class="space-y-2 max-h-[70vh] overflow-y-auto liuyue-nav"></div>
             <div id="liuyueConsultCta" class="pt-4 border-t border-white/10"></div>
-          </section>
-
-          <!-- 戰略面板、諮詢 CTA -->
-          <!-- ... 保持不變 ... -->
-
-          <section id="ws-strategy" class="glass dashboard-card p-6 md:p-7 space-y-4">
+          </div>
+          <div id="monthDetailBox" class="hidden mt-4"></div>
+          <div id="ws-strategy" class="mt-6 pt-6 border-t border-white/10 space-y-4">
             <div>
               <div class="text-sm md:text-base font-semibold text-slate-200 mb-2" data-i18n="strategy.tacticalTitle">2026 戰術建議（動態決策）</div>
               <p class="body-caption text-slate-400 leading-relaxed mt-1" data-i18n="strategy.tacticalDesc">
-                依「五行佔比」＋「十神主軸」給你今年的戰術提示（前端即時計算；解釋文字優先吃資料庫）。
+                依「五行佔比」＋「十神主軸」給你今年的戰術提示。
               </p>
             </div>
 
@@ -1944,6 +467,8 @@
 
             <div class="body-caption text-slate-500" data-i18n="strategy.tacticalNote">
               註：這段是「指揮中心的戰術提示」，宮位詳解請點紫微方盤。
+            </div>
+          </div>
             </div>
           </section>
 
@@ -1987,7 +512,6 @@
             <div id="wuxingMeaningSection" class="glass dashboard-card p-6 border border-white/10">
             <div class="section-subtitle mb-2">Five Elements Meanings</div>
             <div class="text-xl md:text-2xl font-black text-emerald-400" data-i18n="wuxing.sectionTitle">金木水火土 · 基本意義</div>
-            <div class="text-sm md:text-base text-slate-400 mt-1">（內容優先來自資料庫：wuxing_meanings；若無則顯示預設）</div>
             <div id="wuxingMeaningBox" class="mt-4 space-y-3"></div>
           </div>
 
@@ -1995,6 +519,208 @@
       </div>
     </section>
   </main>
+
+  <!-- 精選文章：錨點供主按鈕下方提示連結 -->
+  <section id="extendedReading" class="max-w-3xl mx-auto px-4 py-10 border-t border-white/10 scroll-mt-24">
+    <h2 class="text-lg font-bold text-amber-400/90 mb-4">延伸閱讀</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <a href="articles/no-winner-no-loser-regret-free-life.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">一個沒有輸贏的世界</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">易經動悔、有悔、悔亡。不是為了贏，是為了不後悔。成就你的無悔人生。</p>
+      </a>
+      <a href="articles/estimate-hour-feature.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">基本介紹</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">出生時辰推算功能</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">不知道何時出生？結合五行與紫微的時辰推算，歡迎測試回饋。</p>
+      </a>
+      <a href="articles/2026-liunian-guide.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">基本介紹</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">2026 流年運勢完整解析</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">八字、紫微斗數與年度布局指南。個人化命盤分析遠比生肖運勢更精準。</p>
+      </a>
+      <a href="articles/worldview-universe.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">世界到底是什麼？</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">太極與陰陽、河圖洛書、易經四化、八字紫微——五環由內向外推演的世界觀。</p>
+      </a>
+      <a href="articles/life-blueprint-design.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">生命藍圖與靈魂任務</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">氣勢、能量、波動、結構、組成、任務。紫微宮位、五行生剋與靈魂任務的拆解。</p>
+      </a>
+      <a href="articles/life-script-reclaim.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">拿回自己人生的劇本</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">導演是你、觀眾是你，演員也是你。理解人生這場遊戲、如何改變終局。</p>
+      </a>
+      <a href="articles/meaning-of-suffering.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">挫折與痛苦的意義</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">挫折本身沒有意義，意義是我們賦予的。在痛苦中向內挖掘，突破才開始可能。</p>
+      </a>
+      <a href="articles/what-is-life-1.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">人生到底是什麼？（一）</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">人生是一場 RPG。遊戲引擎、初始參數、主場與考場。</p>
+      </a>
+      <a href="articles/what-is-life-2.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">人生到底是什麼？（二）你的靈魂任務</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">魔王與天使、提款區雷區舞台破財區、副本與主線、玩家分級。</p>
+      </a>
+      <a href="articles/what-is-life-3.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">人生到底是什麼？（三）怎麼玩？</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">三條規則、痛的意義、遊戲的目的、紫微與人生使用說明書。完結篇。</p>
+      </a>
+      <a href="articles/letter-for-metaphysics-enthusiasts.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">如果你對命理有興趣，這是給你的信</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">紫微與易經的底層邏輯不同。分享研究心得與感謝。</p>
+      </a>
+      <a href="articles/which-star-are-you.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">你是天上的哪顆星？</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">諮詢訪談的深度、同理心的功課。人生如戲，從 NPC 到導演到觀眾。</p>
+      </a>
+      <a href="articles/nothing-happened-life-as-play.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">哪有什麼事？人生這場戲</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">從不良少年到知天命。人生如戲，演的深刻也要看得出離。</p>
+      </a>
+      <a href="articles/nothing-of-the-sort-invisible-dialogue.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">根本沒有那回事 #無形對話錄</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">與菩薩的對話。自我是解讀器、我們會帶走什麼體驗。人生要自己扛。</p>
+      </a>
+      <a href="articles/invisible-dialogue-slap-from-heaven.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">無形對話錄 #來自天外的打臉全記錄</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">遇到瓶頸挫折是壞事嗎？菩薩說，意義可大了。</p>
+      </a>
+      <a href="articles/if-life-is-a-game-where-is-your-manual.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">如果人生是一場遊戲 ＃說明書在哪裡？</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">八字流月工程化、紫微合盤、易經普惠。破解人間遊戲的免費攻略。</p>
+      </a>
+      <a href="articles/ai-exoskeleton-ladder-or-replacement.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">AI 是你的外骨骼，登天梯，還是替代品？</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">想用 AI 代替流汗的人會被 AI 取代。架構師 vs 傳話筒。</p>
+      </a>
+      <a href="articles/chinese-wisdom-illuminate-world.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">讓中華的智慧普照大地</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">紫微八字合盤、鐵板回歸校正。改命造命，開源神算系統。</p>
+      </a>
+      <a href="articles/2026-ziwei-chart-free-beta.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">基本介紹</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">2026 紫微命盤免費公測</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">命格摘要、年度戰略、12 宮、流月任務、匯出 CSV。免費試算。</p>
+      </a>
+      <a href="articles/ai-cannot-replace-the-dedicated.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">AI 永遠無法取代真正用心的人</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">紫微開發心得。解讀者的經驗與智慧無可取代。</p>
+      </a>
+      <a href="articles/why-life-is-a-game-spirit-interpreter.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">為什麼人生是一場遊戲？靈界通譯者告訴你</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">天魂人魂地魂、自己選的遊戲、影響力才是能留下的。</p>
+      </a>
+      <a href="articles/bazi-five-elements-not-about-prediction.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">八字五行分析，從來不是預測</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">五行是行為邏輯、能量結構。理解自己，是最高級的布局。</p>
+      </a>
+      <a href="articles/ziwei-not-fortune-telling.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">紫微斗數：不是算命，而是人生結構學</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">十二宮位是人生維度分區。主場在哪、該把力氣放在哪。</p>
+      </a>
+      <a href="articles/how-iching-helps-life.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">易經哲學如何幫助我們的人生？</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">易經處理變化，不是預測。64 卦是局勢，局勢判讀是第四層。</p>
+      </a>
+      <a href="articles/flow-year-five-elements-life-layout.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">流年 × 五行：年度節奏做人生布局</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">流年是放大鏡。補強型、放大型、壓力型。今年適合進攻還是布局？</p>
+      </a>
+      <a href="articles/is-tieban-fortune-telling-real.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">鐵板神算真的嗎？</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">預測精度 vs 策略精度。一個給答案，一個給方法。</p>
+      </a>
+      <a href="articles/fortune-telling-as-business-decision-tool.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">命理如何成為商業決策工具？</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">創業者視角。風險、槓桿、時機。結構×節奏×決策。</p>
+      </a>
+      <a href="articles/task-purpose-karma-soul-mission.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">任務、目的、業力：靈魂使命</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">任務是能量傾向、業力是未完成課題。先不違背自己。</p>
+      </a>
+      <a href="articles/why-you-repeat-same-relationship.html" class="glass p-4 rounded-xl border border-white/10 hover:border-amber-400/30 hover:bg-amber-500/5 transition">
+        <span class="text-xs text-amber-400/80 uppercase tracking-wider">深度分析</span>
+        <h3 class="text-base font-bold text-slate-100 mt-1">為什麼你總在重複同一種關係？</h3>
+        <p class="text-slate-400 text-xs mt-1 line-clamp-2">感情結構真相。不是運氣，是結構。理解模式才有自由。</p>
+      </a>
+    </div>
+    <p class="mt-4 text-center">
+      <a href="articles.html" class="text-amber-400/90 hover:text-amber-300 text-sm font-medium">看更多文章 →</a>
+    </p>
+  </section>
+
+  <!-- SEO 內容區塊（靜態 HTML，供搜尋引擎索引） -->
+  <section class="seo-content max-w-3xl mx-auto px-4 py-12 text-slate-400 text-sm leading-relaxed space-y-10" aria-label="關於人生說明書">
+    <div lang="zh-TW">
+      <h2 class="text-lg font-bold text-amber-400/90 mb-4">什麼是人生說明書？</h2>
+      <p class="mb-3">人生說明書是一套結合 <strong class="text-slate-300">八字、紫微斗數、五行與流年分析</strong> 的個人命盤解析系統，透過你的出生時間，整理出專屬的人生藍圖與角色設定。它不是單純的算命工具，而是一種幫助你理解自己、做出更清晰選擇的參考地圖。</p>
+      <p class="mb-3">八字以出生年、月、日、時為基礎，分析五行能量分佈，了解你的性格特質、優勢與潛在課題；紫微斗數則透過十二宮位，觀察事業、感情、財運與人生方向的發展結構。當八字與紫微交叉解讀，能更立體地呈現你的命盤樣貌。</p>
+      <p class="mb-3">流年與流月則提供時間維度的觀察，幫助你掌握 2026 流年運勢與關鍵節奏，看清哪些時期適合行動、哪些階段需要調整。五行平衡的狀態，也能提醒你如何補強能量，讓決策更穩定。</p>
+      <p>透過人生說明書，你可以重新認識自己的角色設定，理解天賦與限制，找到屬於你的主線任務。當方向清晰，人生就不再只是被動等待，而是主動參與的一場旅程。了解自己，是走向無悔人生的第一步。</p>
+    </div>
+    <div lang="en" class="pt-8 border-t border-white/10">
+      <h2 class="text-lg font-bold text-amber-400/90 mb-4">What Is the Life Manual?</h2>
+      <p class="mb-3">The Life Manual is a personalized life analysis system that integrates BaZi (Four Pillars of Destiny), Zi Wei Dou Shu, the Five Elements, and annual forecasts to create a structured view of your unique life blueprint. Based on your birth date and time, it generates a comprehensive birth chart and translates it into a clear character profile and life direction guide.</p>
+      <p class="mb-3">BaZi analyzes your year, month, day, and hour of birth to understand the balance of the Five Elements—Wood, Fire, Earth, Metal, and Water. This elemental structure reveals core personality traits, natural strengths, decision-making patterns, and potential life challenges. Rather than predicting fate, BaZi provides insight into your inherent energy design.</p>
+      <p class="mb-3">Zi Wei Dou Shu complements this system by mapping your life across twelve key life domains, including career, relationships, wealth, health, and long-term development. It offers a structural perspective on how different areas of your life interact and evolve over time. When BaZi and Zi Wei Dou Shu are interpreted together, they form a multidimensional view of your birth chart.</p>
+      <p class="mb-3">Annual and monthly forecasts add a time-based layer to this analysis. By examining your 2026 annual forecast and life cycles, you can better understand when to advance, when to consolidate, and when to adjust direction. This timing awareness helps you align your actions with favorable periods and navigate challenges with greater clarity.</p>
+      <p class="mb-3">The Five Elements framework also highlights energetic imbalances. Understanding which elements are strong or lacking allows you to make more grounded decisions in career, relationships, and personal growth.</p>
+      <p>The Life Manual is not about superstition or rigid destiny. It is a strategic self-understanding tool. By recognizing your character settings, talents, and life path patterns, you gain perspective on your main life themes and long-term trajectory. When you understand your design, life becomes less reactive and more intentional. The Life Manual helps you participate actively in your journey—so you can move forward with clarity, direction, and fewer regrets.</p>
+    </div>
+  </section>
+
+  <!-- SEO FAQ 區塊（長尾流量） -->
+  <section class="seo-faq max-w-3xl mx-auto px-4 py-12 border-t border-white/10" aria-label="常見問題">
+    <h2 class="text-lg font-bold text-amber-400/90 mb-6">常見問題</h2>
+    <dl class="space-y-6 text-sm">
+      <div>
+        <dt class="font-bold text-slate-200 mb-1"><a href="articles.html#ziwei-vs-bazi" class="text-amber-400/90 hover:text-amber-300">為什麼紫微斗數比八字更立體？</a></dt>
+        <dd class="text-slate-400 leading-relaxed">紫微斗數以十二宮位呈現人生維度，八字則以四柱五行看能量結構。兩者交叉解讀，能更立體地呈現命盤樣貌。</dd>
+      </div>
+      <div>
+        <dt class="font-bold text-slate-200 mb-1"><a href="articles.html#life-manual-vs-fortune" class="text-amber-400/90 hover:text-amber-300">李伯彥的人生說明書和傳統算命差在哪？</a></dt>
+        <dd class="text-slate-400 leading-relaxed">人生說明書不是預測吉凶，而是提供結構與節奏的參考地圖，幫助你做決策、找主場，而非被動等待命運。</dd>
+      </div>
+      <div>
+        <dt class="font-bold text-slate-200 mb-1"><a href="articles.html#wuxing-ratio" class="text-amber-400/90 hover:text-amber-300">五行比例高低代表什麼？</a></dt>
+        <dd class="text-slate-400 leading-relaxed">五行比例反映你的能量結構：木火偏旺者行動力強，金水偏旺者思考與收斂較強。了解比例有助補強弱項、發揮優勢。</dd>
+      </div>
+      <div>
+        <dt class="font-bold text-slate-200 mb-1"><a href="taisui-rules.html" class="text-amber-400/90 hover:text-amber-300">太歲真的會影響運勢嗎？</a></dt>
+        <dd class="text-slate-400 leading-relaxed">太歲依地支關係（值、沖、刑、害、破）影響當年節奏。本服務依傳統規則推算，供你參考年度天時。</dd>
+      </div>
+      <div>
+        <dt class="font-bold text-slate-200 mb-1"><a href="articles.html#xiaoxian-vs-liunian" class="text-amber-400/90 hover:text-amber-300">小限與流年差別是什麼？</a></dt>
+        <dd class="text-slate-400 leading-relaxed">小限依年齡走宮，流年依當年地支。小限看個人節奏，流年看大環境。兩者結合可更精準掌握時機。</dd>
+      </div>
+    </dl>
+  </section>
 
   <!-- Footer -->
   <footer class="text-center py-8 px-4 border-t border-white/10 mt-12">
@@ -2005,11 +731,42 @@
 
   <!-- 行動端 BottomNav（md 以下且已進入儀表板時顯示） -->
   <nav class="bottom-nav" aria-label="戰略導航">
-    <a href="#ws-ziwei" data-i18n="ui.navZiwei">紫微</a>
-    <a href="#ws-bazi" data-i18n="ui.navBazi">八字</a>
-    <a href="#ws-liuyue" data-i18n="ui.navLiuyue">流年</a>
-    <a href="#ws-consult">1:1 諮詢</a>
+    <a href="#ws-dao">能量</a>
+    <a href="#ws-wux">五行</a>
+    <a href="#ws-pan">命盤</a>
+    <a href="#ws-liuyue">流月</a>
   </nav>
+
+  <!-- 五行超載預警 Modal（點擊黃色三角形彈出） -->
+  <div id="overloadModalBackdrop" class="fixed inset-0 bg-black/70 hidden z-[54]" aria-hidden="true"></div>
+  <div id="overloadModal" class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-lg rounded-2xl border border-amber-400/30 bg-[var(--bg-mid)] shadow-2xl hidden z-[54] overflow-hidden" role="dialog" aria-labelledby="overloadModalTitle" aria-modal="true">
+    <div class="p-6 md:p-8">
+      <h2 id="overloadModalTitle" class="text-lg font-black text-amber-400 mb-4">五行超載預警</h2>
+      <div id="overloadModalBody" class="text-sm text-slate-200 leading-relaxed whitespace-pre-line"></div>
+      <button type="button" id="overloadModalClose" class="mt-6 px-6 py-3 rounded-xl border border-white/20 text-slate-300 text-sm hover:bg-white/5 transition">關閉</button>
+    </div>
+  </div>
+
+  <!-- 光明燈 Modal（點燈動畫 + 守護語） -->
+  <div id="lampModalBackdrop" class="fixed inset-0 bg-black/70 hidden z-[55]" aria-hidden="true"></div>
+  <div id="lampModal" class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-md rounded-2xl border border-amber-400/30 bg-[var(--bg-mid)] shadow-2xl hidden z-[55] overflow-hidden" role="dialog" aria-labelledby="lampModalTitle" aria-modal="true">
+    <div class="p-6 md:p-8 text-center">
+      <h2 id="lampModalTitle" class="text-lg font-black text-amber-400 mb-4">點亮年度光明燈</h2>
+      <div id="lampModalLamp" class="lamp-icon-wrap mb-4">
+        <span class="lamp-icon text-5xl opacity-30" aria-hidden="true">🏮</span>
+      </div>
+      <div id="lampModalPhrase" class="hidden text-amber-300/90 font-medium text-sm md:text-base leading-relaxed mb-4"></div>
+      <div id="lampModalActions" class="hidden flex flex-col gap-2 items-center">
+        <div class="flex flex-wrap gap-2 justify-center">
+          <button type="button" id="lampModalShare" class="px-6 py-3 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold text-sm hover:bg-amber-500/30 transition">分享年度圖片</button>
+          <button type="button" id="lampModalShareFb" class="px-4 py-2 rounded-lg border border-blue-400/40 text-blue-300 text-xs font-medium hover:bg-blue-500/20 transition">Facebook</button>
+          <button type="button" id="lampModalShareDl" class="px-4 py-2 rounded-lg border border-amber-400/40 text-amber-300 text-xs font-medium hover:bg-amber-500/20 transition">下載圖片</button>
+        </div>
+        <p id="lampModalShareHint" class="text-[10px] text-slate-500">FB／IG：圖片請下載後從相簿選擇貼文</p>
+        <button type="button" id="lampModalClose" class="px-6 py-3 rounded-xl border border-white/20 text-slate-300 text-sm hover:bg-white/5 transition">關閉</button>
+      </div>
+    </div>
+  </div>
 
   <!-- 不確定時辰？問卷 Modal（一題一題顯示 + 進度條） -->
   <div id="identifyBirthTimeBackdrop" class="fixed inset-0 bg-black/70 hidden z-50" aria-hidden="true"></div>
@@ -2089,192 +846,19 @@
     </div>
   </div>
 
-  <!-- 動態 VH Fallback + LINE 環境偵測 -->
-  <script>
-    (function () {
-      function setVh() {
-        var vh = window.innerHeight * 0.01;
-        document.documentElement.style.setProperty("--vh", vh + "px");
-      }
-      setVh();
-      window.addEventListener("resize", setVh);
-      window.addEventListener("orientationchange", function () { setTimeout(setVh, 100); });
-      if (/Line\//i.test(navigator.userAgent) || /LIFF/i.test(navigator.userAgent)) {
-        document.body.classList.add("line-browser");
-      }
-    })();
-  </script>
-  <!-- 主應用程式 bundle（執行 npm run build:main 產生 dist/app.js） -->
-  <script src="dist/app.js"></script>
-  <!-- 國際化：優先載入語系，供後續 I18n.t('key') 使用；語系由 ?lang= 或 localStorage 決定 -->
-  <script>
-    (function() {
-      function applyDataI18n() {
-        if (!window.I18n || typeof window.I18n.t !== "function") return;
-        var t = window.I18n.t.bind(window.I18n);
-        document.querySelectorAll("[data-i18n]").forEach(function (el) {
-          var key = el.getAttribute("data-i18n");
-          if (!key) return;
-          var val = t(key);
-          if (val === key) return;
-          el.textContent = val;
-          if (key === "brand.tagline") {
-            el.classList.toggle("hidden", !val || val.trim() === "");
-          }
-        });
-        document.querySelectorAll("[data-i18n-title]").forEach(function (el) {
-          var key = el.getAttribute("data-i18n-title");
-          if (key && t(key) !== key) el.title = t(key);
-        });
-        var titleEl = document.getElementById("pageTitle");
-        var metaEl = document.getElementById("metaDescription");
-        if (titleEl && t("meta.title") !== "meta.title") document.title = titleEl.textContent = t("meta.title");
-        if (metaEl && t("meta.description") !== "meta.description") metaEl.setAttribute("content", t("meta.description"));
-      }
-      function saveFormForLocaleSwitch() {
-        var y = document.getElementById("birthYear"), m = document.getElementById("birthMonth"), d = document.getElementById("birthDay");
-        if (!y || !m || !d) return false;
-        var vy = parseInt(y.value, 10), vm = parseInt(m.value, 10), vd = parseInt(d.value, 10);
-        if (!vy || !vm || !vd) return false;
-        var data = {
-          year: vy, month: vm, day: vd,
-          hour: parseInt(document.getElementById("birthHour")?.value || "0", 10),
-          minute: parseInt(document.getElementById("birthMinute")?.value || "0", 10),
-          gender: (document.getElementById("gender")?.value || "").trim(),
-          timeMode: (document.getElementById("timeMode")?.value || "exact").trim(),
-          shichen: (document.getElementById("birthShichen")?.value || "").trim(),
-          shichenHalf: (document.getElementById("birthShichenHalf")?.value || "").trim()
-        };
-        try { sessionStorage.setItem("localeSwitchFormData", JSON.stringify(data)); } catch (e) { return false; }
-        return true;
-      }
-      function restoreFormAndRecalc() {
-        try {
-          var raw = sessionStorage.getItem("localeSwitchFormData");
-          if (!raw) return;
-          var data = JSON.parse(raw);
-          if (!data.year || !data.month || !data.day) return;
-          sessionStorage.removeItem("localeSwitchFormData");
-          var setVal = function (id, v) { var el = document.getElementById(id); if (el) el.value = String(v || ""); };
-          setVal("birthYear", data.year);
-          setVal("birthMonth", data.month);
-          setVal("birthDay", data.day);
-          setVal("birthHour", data.hour ?? 0);
-          setVal("birthMinute", data.minute ?? 0);
-          setVal("gender", data.gender || "M");
-          setVal("timeMode", data.timeMode || "exact");
-          setVal("birthShichen", data.shichen || "子");
-          setVal("birthShichenHalf", data.shichenHalf || "upper");
-          var tm = document.getElementById("timeMode");
-          if (tm) tm.dispatchEvent(new Event("change", { bubbles: true }));
-          setTimeout(function () {
-            if (typeof window.reloadContentAndRecalc === "function") {
-              window.reloadContentAndRecalc();
-            } else if (typeof window.runCalculation === "function") {
-              window.runCalculation();
-            }
-          }, 500);
-        } catch (e) { if (window.console) window.console.warn("[i18n] restoreFormAndRecalc failed:", e); }
-      }
-      function bindLangSwitcher() {
-        document.querySelectorAll(".lang-btn, .lang-btn-mobile").forEach(function (btn) {
-          var lang = btn.getAttribute("data-lang");
-          if (!lang) return;
-          btn.addEventListener("click", function () {
-            saveFormForLocaleSwitch();
-            if (window.I18n && typeof window.I18n.setLocale === "function") {
-              window.I18n.setLocale(lang, { reload: true });
-            }
-          });
-        });
-      }
-      bindLangSwitcher();
-      if (window.I18n && typeof window.I18n.init === "function") {
-        window.I18n.init().then(function (locale) {
-          if (window.console && window.console.log) window.console.log("[i18n] locale:", locale);
-          applyDataI18n();
-          restoreFormAndRecalc();
-        }).catch(function (e) {
-          if (window.console && window.console.warn) window.console.warn("[i18n] init failed, using fallback:", e);
-        });
-      }
-    })();
-  </script>
-  <!-- 登入服務：渲染導覽列登入/登出、綁定 Google 登入 -->
-  <script>
-    if (window.AuthService && typeof window.AuthService.init === "function") {
-      window.AuthService.init();
-    }
-  </script>
-  <!-- 手機版漢堡選單：開關與關閉邏輯 -->
-  <script>
-    (function() {
-      var toggle = document.getElementById("mobileNavToggle");
-      var menu = document.getElementById("mobileNavMenu");
-      function openMenu() {
-        if (menu) {
-          menu.classList.add("mobile-nav-menu-open");
-          menu.setAttribute("aria-hidden", "false");
-        }
-        if (toggle) toggle.setAttribute("aria-expanded", "true");
-      }
-      function closeMenu() {
-        if (menu) {
-          menu.classList.remove("mobile-nav-menu-open");
-          menu.setAttribute("aria-hidden", "true");
-        }
-        if (toggle) toggle.setAttribute("aria-expanded", "false");
-      }
-      if (toggle && menu) {
-        toggle.addEventListener("click", function() {
-          if (menu.classList.contains("mobile-nav-menu-open")) closeMenu();
-          else openMenu();
-        });
-      }
-      document.querySelectorAll("#mobileNavMenu .mobile-nav-link").forEach(function(a) {
-        a.addEventListener("click", function() { closeMenu(); });
-      });
-    })();
-  </script>
-  <!-- 啟動序列掛載點與 bundle（可選：npm run build:startup 後載入，點擊「啟動人生戰略引擎」會先播 4.5s 啟動動畫） -->
+  <!-- 占卦 Drawer Overlay（首頁雙入口） -->
+  <div id="divinationOverlayBackdrop" class="fixed inset-0 bg-black/70 z-[200] hidden opacity-0 transition-opacity duration-300 divination-overlay-backdrop"></div>
+  <div id="divinationOverlay" class="fixed inset-y-0 right-0 w-full max-w-2xl bg-[#0a0a16] shadow-2xl z-[201] transform translate-x-full transition-transform duration-300 ease-out divination-overlay-drawer flex flex-col">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-slate-900/50">
+      <span class="text-amber-400 font-semibold">易經占卦</span>
+      <button type="button" id="divinationOverlayClose" class="p-2 rounded-lg text-slate-400 hover:text-amber-300 hover:bg-white/5 transition" aria-label="關閉">✕</button>
+    </div>
+    <iframe id="divinationOverlayIframe" class="w-full flex-1 border-0" style="height: calc(100vh - 52px);" title="易經占卦"></iframe>
+  </div>
+
+  <script src="js/bootstrap.js"></script>
+  <script type="module" src="dist/app.js"></script>
   <div id="startup-root"></div>
-  <script>
-    // 為 startup-sequence.js 提供 process 對象（如果不存在）
-    if (typeof process === "undefined") {
-      window.process = { env: { NODE_ENV: "production" } };
-    }
-  </script>
-  <!-- startup-sequence.js 是可选的，如果文件不存在会显示警告但不影响功能 -->
-  <!-- startup-sequence.js 是可选的，如果文件不存在会显示警告但不影响功能 -->
-  <script>
-    // 動態載入 startup-sequence.js，避免 MIME type 錯誤
-    (function() {
-      // 使用 fetch 檢查文件是否存在且是 JavaScript 類型
-      fetch('dist/startup-sequence.js', { method: 'HEAD' })
-        .then(function(response) {
-          // 檢查響應狀態和 Content-Type
-          if (response.ok) {
-            const contentType = response.headers.get('content-type') || '';
-            // 確認是 JavaScript 文件（不是 HTML 404 頁面）
-            if (contentType.includes('javascript') || contentType.includes('application/javascript') || contentType.includes('text/javascript')) {
-              const script = document.createElement('script');
-              script.src = 'dist/startup-sequence.js';
-              script.type = 'text/javascript';
-              script.defer = true;
-              script.onerror = function() {
-                console.warn('startup-sequence.js 載入失敗，啟動動畫將不可用（這是正常的，如果沒有構建此文件）');
-              };
-              document.head.appendChild(script);
-            } else {
-              // Content-Type 不是 JavaScript，可能是 404 HTML 頁面，靜默忽略
-            }
-          }
-        })
-        .catch(function() {
-          // 文件不存在或網絡錯誤，靜默忽略（這是正常的）
-        });
-    })();
-  </script>
 
 </body>
 </html>

@@ -24,6 +24,7 @@
     BRANCH_RING,
     STAR_NAME_TRAD_MAP,
     STAR_WUXING_MAP,
+    EN_STAR_TO_ZH_FOR_WUXING,
     STAR_NAME_TO_ID_MAP,
     SHICHEN_ORDER,
     SHICHEN_START_HOUR,
@@ -39,9 +40,9 @@
     GENERATION_POST_STYLE,
     OVERCOMING_POST_STYLE,
     ELEMENT_TYPE,
-    BOYAN_CONVERSION_ONE,
-    BOYAN_RISK_ONE,
-    BOYAN_PUSH,
+    POYEN_CONVERSION_ONE,
+    POYEN_RISK_ONE,
+    POYEN_PUSH,
     STEMS,
     BRANCH_ORDER,
     YIN_STEM_FROM_YEAR,
@@ -76,7 +77,7 @@
     toEnergyLevelsFromWx,
     generateFiveElementDiagnosis,
     buildStrategistNote,
-    getBoyanBoard,
+    getPoYenBoard,
     computeRelatedPalaces,
     getMutagenStars,
     getSiHuaWeights,
@@ -361,7 +362,7 @@
    * 同時將完整的 L9 語義輸出存儲到 window.ziweiPalaceMetadata
    */
   async function computeAllPalaceScores(ziwei, horoscope, options = {}) {
-    if (!ziwei) return {};
+    if (!ziwei) return { scores: {}, elementRatios: {} };
     
     // 處理參數（向後兼容：如果第三個參數是對象，則作為 options）
     let bazi, age, currentYear;
@@ -397,6 +398,43 @@
           currentYear: currentYear,
           gender: gender
         });
+        // 若 API 有回傳 decadal/yearly，優先使用（iztro 計算較可靠）
+        const apiDecadal = horoscope?.decadal;
+        const apiYearly = horoscope?.yearly;
+        if (apiDecadal && apiDecadal.palace && fourTransformations) {
+          const dalimitMutagen = apiDecadal.mutagenStars && Object.keys(apiDecadal.mutagenStars).length
+            ? apiDecadal.mutagenStars
+            : (window.CalcHelpers?.getMutagenStars?.(apiDecadal.stem) || {});
+          const dalimitWeights = window.CalcHelpers?.getSiHuaWeights?.(apiDecadal.stem) || {};
+          fourTransformations.dalimit = {
+            stem: apiDecadal.stem,
+            mutagenStars: dalimitMutagen,
+            weights: dalimitWeights,
+            palace: apiDecadal.palace,
+            type: 'dalimit'
+          };
+          if (fourTransformations.summary) fourTransformations.summary.dalimitPalace = apiDecadal.palace;
+          if (fourTransformations.summary) fourTransformations.summary.dalimitStem = apiDecadal.stem;
+          console.log('[calc.js] 大限已從 API horoscope 覆寫:', apiDecadal.palace);
+        }
+        if (apiYearly && apiYearly.palace && fourTransformations) {
+          const liunianMutagen = apiYearly.mutagenStars && Object.keys(apiYearly.mutagenStars).length
+            ? apiYearly.mutagenStars
+            : (window.CalcHelpers?.getMutagenStars?.(apiYearly.stem) || {});
+          const liunianWeights = window.CalcHelpers?.getSiHuaWeights?.(apiYearly.stem) || {};
+          fourTransformations.liunian = {
+            stem: apiYearly.stem,
+            branch: apiYearly.branch,
+            mutagenStars: liunianMutagen,
+            weights: liunianWeights,
+            palace: apiYearly.palace,
+            type: 'liunian'
+          };
+          if (fourTransformations.summary) fourTransformations.summary.liunianPalace = apiYearly.palace;
+          if (fourTransformations.summary) fourTransformations.summary.liunianStem = apiYearly.stem;
+          if (fourTransformations.summary) fourTransformations.summary.liunianBranch = apiYearly.branch;
+          console.log('[calc.js] 流年已從 API horoscope 覆寫:', apiYearly.palace);
+        }
         console.log('[calc.js] 完整四化系統計算成功:', fourTransformations.summary);
         
         // 計算疊宮與引爆分析
@@ -695,7 +733,88 @@
       }
     }
     
-    return scores;
+    // 計算紫微五行比例（從 12 宮星曜彙總，供前端五行條與雷達圖使用）
+    const elementRatios = computeZiweiElementRatios(ziwei);
+
+    // 向後兼容：回傳 { scores, elementRatios }，caller 可解構
+    return { scores, elementRatios };
+  }
+
+  /**
+   * 從紫微命盤計算五行比例（依 12 宮星曜的五行屬性彙總）
+   * @param {Object} ziwei 紫微命盤資料
+   * @returns {Object} { 木, 火, 土, 金, 水 } 各為 0–1 的比例
+   */
+  function computeZiweiElementRatios(ziwei) {
+    const ratios = { 木: 0, 火: 0, 土: 0, 金: 0, 水: 0 };
+    if (!ziwei || !getStarsForPalace) return ratios;
+    let total = 0;
+    PALACE_DEFAULT.forEach((palaceName) => {
+      const rawStars = getStarsForPalace(ziwei, palaceName);
+      const stars = rawStars.map(toTraditionalStarName);
+      stars.forEach((s) => {
+        const zhName = STAR_WUXING_MAP[s] ? s : (EN_STAR_TO_ZH_FOR_WUXING[s] || s);
+        const wx = STAR_WUXING_MAP[zhName];
+        if (wx && ratios.hasOwnProperty(wx)) {
+          ratios[wx] += 1;
+          total += 1;
+        }
+      });
+    });
+    if (total > 0) {
+      ["木", "火", "土", "金", "水"].forEach((k) => (ratios[k] = ratios[k] / total));
+    }
+    return ratios;
+  }
+
+  /**
+   * 2026 年農曆月份對應月支（正月寅、二月卯…十二月丑）
+   */
+  const LUNAR_MONTH_BRANCHES = ["寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥", "子", "丑"];
+
+  /**
+   * 當 bazi.liuyue2026 不存在時，依十神與五行生成 12 月 fallback 資料
+   * @param {Object} bazi 八字資料
+   * @returns {Object} { bounds: [...], redMonths: [...] }
+   */
+  function buildLiuyue2026Fallback(bazi) {
+    const bounds = [];
+    const dominant = (bazi?.tenGod?.dominant || "").trim();
+    const wx = bazi?.wuxing?.strategic || bazi?.wuxing?.surface || {};
+    const firePct = Number(wx["火"]) || 0;
+    const total = Object.values(wx).reduce((s, v) => s + (Number(v) || 0), 0) || 1;
+    const fireRatio = total > 0 ? firePct / total : 0.2;
+    // 2026 丙午年：五虎遁 丙年起寅月=庚寅
+    const year2026Stem = "丙";
+    const yinStem = YIN_STEM_FROM_YEAR[year2026Stem] || "丙";
+    const yinStemIdx = STEMS.indexOf(yinStem);
+    // 2026 農曆月份對應國曆起迄（正月≈2/4-3/4，二月≈3/5-4/3…）
+    const LUNAR_RANGES_2026 = ["01.04-02.04", "02.04-03.05", "03.05-04.04", "04.04-05.05", "05.05-06.02", "06.02-07.03", "07.03-08.02", "08.02-09.01", "09.01-09.30", "09.30-10.30", "10.30-11.28", "11.28-12.28"];
+    for (let m = 1; m <= 12; m++) {
+      const branch = LUNAR_MONTH_BRANCHES[m - 1];
+      const stemIdx = (yinStemIdx + m - 1) % 10;
+      const stem = STEMS[stemIdx < 0 ? stemIdx + 10 : stemIdx];
+      const gz = stem + branch;
+      const range = LUNAR_RANGES_2026[m - 1] || `${String(m).padStart(2, "0")}.04-${String(m + 1).padStart(2, "0")}.04`;
+      let riskScore = 40 + Math.sin(m * 0.5) * 15 + (fireRatio > 0.3 ? 10 : 0);
+      if (/官|殺|七殺|正官|偏官/.test(dominant)) riskScore += 5;
+      riskScore = Math.max(20, Math.min(80, Math.round(riskScore)));
+      const LiuyueStrategy = window.UiUtils?.LiuyueStrategy;
+      const strategy = LiuyueStrategy && typeof LiuyueStrategy.getStrategy === "function"
+        ? LiuyueStrategy.getStrategy(gz, dominant, riskScore)
+        : (LiuyueStrategy?.FALLBACK_STRATEGY || "本月宜依個人命盤調整節奏。");
+      bounds.push({
+        range,
+        riskScore,
+        gz,
+        ssStem: stem,
+        ssBranch: branch,
+        reasonTags: [],
+        strategy,
+      });
+    }
+    const redMonths = bounds.filter((b) => (Number(b.riskScore) || 0) >= 60).map((b) => parseMonthFromRange(b.range)).filter(Boolean);
+    return { bounds, redMonths };
   }
 
   // ====== 八字核心計算 ======
@@ -755,7 +874,8 @@
     }
 
     const palaceOrder = PALACE_DEFAULT;
-    const activeLimitPalace = horoscope?.activeLimitPalaceName ?? (horoscope != null && Number.isInteger(horoscope.yearlyIndex) ? palaceOrder[horoscope.yearlyIndex] : null);
+    const rawActiveLimit = horoscope?.activeLimitPalaceName ?? (horoscope != null && Number.isInteger(horoscope.yearlyIndex) ? palaceOrder[horoscope.yearlyIndex] : null);
+    const activeLimitPalace = (window.CalcHelpers?.normalizePalaceName && rawActiveLimit) ? window.CalcHelpers.normalizePalaceName(rawActiveLimit) : rawActiveLimit;
     
     // 獲取命宮索引（mingBranch 已在上面声明）
     const mingPalaceIndex = 0; // 命宮在 PALACE_DEFAULT 中的索引固定為 0
@@ -771,8 +891,11 @@
     let decadalLimits = new Array(12).fill(null).map(() => ({ start: 0, end: 9 }));
     
     if (gender) {
-      // 獲取大限行進方向（+1 順行，-1 逆行）
-      const directionSign = getMajorLuckDirection(gender, mingBranch);
+      // 獲取大限行進方向（+1 順行，-1 逆行）；getMajorLuckDirection 需傳 branchYinYang（"yang"/"yin"），非地支
+      const yangBranches = ["寅", "午", "戌", "申", "子", "辰"];
+      const yinBranches = ["巳", "酉", "丑", "亥", "卯", "未"];
+      const branchYinYang = yangBranches.includes(mingBranch) ? "yang" : (yinBranches.includes(mingBranch) ? "yin" : "yang");
+      const directionSign = getMajorLuckDirection(gender, branchYinYang);
       
       // 為每個大限（k = 0..11）計算對應的宮位索引和年齡區間
       for (let k = 0; k < 12; k++) {
@@ -787,9 +910,15 @@
         decadalLimits[palaceIndex] = { start: startAge, end: endAge };
       }
     } else {
-      // 如果沒有性別，使用基礎順序（順行，從命宮開始）
-      const baseDecadalLimits = getDecadalLimits(wuxingju);
-      decadalLimits = baseDecadalLimits;
+      // 如果沒有性別，預設順行（與多數陽男一致，避免大限年與局數錯位）
+      const directionSign = 1; // 預設順行
+      for (let k = 0; k < 12; k++) {
+        const startAge = baseStartAge + k * span;
+        const endAge = startAge + span - 1;
+        const N = 12;
+        const palaceIndex = (mingPalaceIndex + directionSign * k + N * 10) % N;
+        decadalLimits[palaceIndex] = { start: startAge, end: endAge };
+      }
     }
 
     return BRANCH_RING.map((branch, idx) => {
@@ -844,7 +973,7 @@
     normalizeWxByMax,
     generateFiveElementComment,
     generateFiveElementDiagnosis,
-    getBoyanBoard,
+    getPoYenBoard,
     toEnergyLevelsFromWx,
     computeRelatedPalaces,
     getHoroscopeFromAge,
@@ -864,6 +993,10 @@
     // 流月星等計算
     computeMonthlyStarRating,
     parseMonthFromRange,
+    // 流月 fallback
+    buildLiuyue2026Fallback,
+    // 五行比例（供 fallback 使用）
+    computeZiweiElementRatios,
   });
 
   if (typeof window !== "undefined") {

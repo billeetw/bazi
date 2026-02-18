@@ -54,7 +54,7 @@
     return out;
   }
 
-  /** 橫向五行能量條，可標記 [最強] [最弱]；數值使用 AnimatedNumber 緩動 */
+  /** 橫向五行能量條，可標記 [最強] [最弱]、超載三角形；數值使用 AnimatedNumber 緩動 */
   function renderBar(targetId, data, max, opts) {
     const box = document.getElementById(targetId);
     if (!box) return;
@@ -71,16 +71,24 @@
     const weakest = hasVariation ? (opts?.weakest ?? null) : null;
     const strongestLabel = t("wuxing.strongest");
     const weakestLabel = t("wuxing.weakest");
+    const overloadAdvice = opts?.overloadAdvice || null;
+    const overloadSet = overloadAdvice?.overloadElement ? overloadAdvice.overloadElement.split("") : [];
+    const adviceText = overloadAdvice?.adviceText || "";
+    if (overloadAdvice) box.dataset.overloadAdvice = adviceText;
     box.innerHTML = "";
     keys.forEach((e) => {
       const v = Number(data?.[e] || 0);
       const w = max ? Math.max(3, (v / max) * 100) : 0;
       const tag = e === strongest ? ` <span class="text-amber-400 text-[10px] font-black">[ ${strongestLabel} ]</span>` : e === weakest ? ` <span class="text-slate-400 text-[10px] font-black">[ ${weakestLabel} ]</span>` : "";
       const label = t(zhToKey[e]) || e;
+      const isOverloaded = overloadSet.includes(e);
+      const overloadBtn = isOverloaded
+        ? `<button type="button" class="wx-overload-trigger inline-flex items-center justify-center w-4 h-4 rounded bg-amber-400/90 text-amber-900 text-[10px] font-black ml-1 cursor-pointer hover:bg-amber-300 transition" title="超載預警" aria-label="查看超載建議">▲</button>`
+        : "";
       box.innerHTML += `
         <div class="mb-1 wx-row">
-          <div class="flex justify-between text-xs text-slate-300">
-            <span class="font-bold">${label}${tag}</span>
+          <div class="flex justify-between items-center text-xs text-slate-300">
+            <span class="font-bold flex items-center">${label}${tag}${overloadBtn}</span>
             <span class="font-mono wx-value" data-value="${v}">0</span>
           </div>
           <div class="h-2 bg-white/10 rounded overflow-hidden">
@@ -220,7 +228,7 @@
     const t = (k) => (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(k) : k;
     const fallbackTpl = t("wuxing.fallbackStrongWeak") || "本局五行：最強【{{s}}】、最弱【{{w}}】。";
 
-    if (typeof window.Calc?.getBoyanBoard !== "function") {
+    if (typeof window.Calc?.getPoYenBoard !== "function") {
       const c = generateFiveElementComment(wx || {}, kind);
       const label = fallbackTpl.replace("{{s}}", c.strongest).replace("{{w}}", c.weakest);
       el.innerHTML = `<div class="text-slate-100">${label}</div><div class="text-slate-300 mt-1">${c.strongComment} ${c.weakComment}</div>`;
@@ -229,9 +237,9 @@
 
     let board;
     try {
-      board = window.Calc.getBoyanBoard(wx || {}, kind);
+      board = window.Calc.getPoYenBoard(wx || {}, kind);
     } catch (err) {
-      console.warn("getBoyanBoard error:", err);
+      console.warn("getPoYenBoard error:", err);
       const c = generateFiveElementComment(wx || {}, kind);
       const label = fallbackTpl.replace("{{s}}", c.strongest).replace("{{w}}", c.weakest);
       el.innerHTML = `<div class="text-slate-100">${label}</div><div class="text-slate-300 mt-1">${c.strongComment} ${c.weakComment}</div>`;
@@ -243,11 +251,11 @@
     }
 
     el.innerHTML = `
-      <div class="boyan-board text-[11px] text-slate-200 space-y-2 leading-relaxed">
-        <div class="boyan-attr">${escapeHtml(board.本局屬性 || "")}</div>
-        <div class="boyan-highlight">${escapeHtml(board.戰略亮點 || "")}</div>
-        <div class="boyan-risk">${escapeHtml(board.系統風險 || "")}</div>
-        <div class="boyan-push text-amber-200/95 font-semibold">${escapeHtml(board.伯彥助推 || "")}</div>
+      <div class="poyen-board text-[11px] text-slate-200 space-y-2 leading-relaxed">
+        <div class="poyen-attr">${escapeHtml(board.本局屬性 || "")}</div>
+        <div class="poyen-highlight">${escapeHtml(board.戰略亮點 || "")}</div>
+        <div class="poyen-risk">${escapeHtml(board.系統風險 || "")}</div>
+        <div class="poyen-push text-amber-200/95 font-semibold">${escapeHtml(board.伯彥助推 || "")}</div>
       </div>
     `;
   }

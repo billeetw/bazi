@@ -35,8 +35,7 @@
       });
       openPalaceSheet();
     } else {
-      // 桌面端：滚动到对应区域并闪烁提示
-      meaningSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+      // 桌面端：僅閃爍提示，不自動捲動（避免跳回能量結構區塊）
       flashPeek(meaningSection);
     }
   }

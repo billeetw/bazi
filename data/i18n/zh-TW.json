@@ -1,40 +1,50 @@
 {
   "meta": {
-    "title": "人生說明書｜一起出來玩",
-    "description": "人生說明書是一套融合易經、紫微斗數與八字的古老智慧系統。\n它幫助你理解自身結構、人生課題與時運節奏，\n看見命運的脈絡，\n並在關鍵時刻做出清醒而有力量的選擇。"
+    "title": "人生說明書｜八字紫微 2026 戰略｜一起出來玩",
+    "description": "輸入出生時間，免費取得八字五行、紫微斗數 12 宮與 2026 流年分析。了解你的角色設定，迎向無悔人生。"
   },
   "brand": {
-    "navFull": "一起出來玩｜人生說明書",
+    "navFull": "人生說明書",
     "navShort": "人生說明書",
     "footerBrand": "一起出來玩",
     "footerHandle": "17gonplay",
     "tagline": "古老智慧，\n為現代人生而設計。"
   },
   "home": {
-    "heroHeadline": "命運座標輸入",
-    "heroSubheadline": "輸入你的出生資訊，開啟專屬的人生使用說明書",
+    "heroHeadline": "輸入出生時間",
+    "heroSubheadline": "30 秒了解你的角色設定",
+    "extendedReadingPrompt": "↓ 延伸閱讀 ↓",
     "heroSupporting": "",
-    "heroPrimaryCta": "開啟 人生使用說明書",
-    "heroTitle": "命運座標輸入",
-    "heroSubtitle": "輸入你的出生資訊，開啟專屬的人生使用說明書",
-    "heroCtaPrimary": "開啟 人生使用說明書",
+    "heroPrimaryCta": "開始人生分析",
+    "heroTitle": "輸入出生時間",
+    "heroSubtitle": "人生是一場遊戲，發現天賦與主線任務，現在就開始。",
+    "heroCtaPrimary": "開始人生分析",
+    "arrivalDate": "出生日期",
+    "genderLabel": "性別",
+    "genderMale": "男",
+    "genderFemale": "女",
     "helperUnsureTime": "不確定出生時間？",
+    "helperUnsureHighlight": "不確定出生時間也能用",
     "helperEstimateBtn": "點我推算時辰",
+    "helperEstimateShort": "點我推算",
+    "helperEstimateBtnShichen": "不確定時辰？點我推算時辰",
+    "loadingPhrase1": "正在載入你的角色屬性…",
+    "loadingPhrase2": "計算人生主線任務…",
+    "loadingPhrase3": "整理你的潛能與志願…",
     "saveChart": "儲存到我的命盤",
-    "feature1Title": "解讀你的結構",
-    "feature1Body": "了解命宮與五行平衡如何形塑你的決策。",
-    "feature2Title": "掌握你的節奏",
-    "feature2Body": "大限、小限、流月訊號。",
-    "feature3Title": "定位你的行動",
-    "feature3Body": "順勢推進。必要時守成。"
+    "feature1Title": "結構與原型",
+    "feature1Body": "解碼天賦配置，定義你的核心競爭力。",
+    "feature2Title": "週期與勢能",
+    "feature2Body": "預判人生運勢起伏，極大化你的成就影響力。",
+    "feature3Title": "意志與未來",
+    "feature3Body": "掌握命運原始碼，主宰你的人生軌跡。"
   },
   "ziwei": {
-    "boardTitle": "紫微12宮・作戰版方盤",
-    "boardSubtitle": "命宮與身主會顯示在中央；外圈12宮固定佈局，與主流排盤方向一致。",
-    "strategyPanelTitle": "2026 {{name}} · 作戰面板",
-    "strategyPanelSub": "三方四正已標示：本宮＋對宮＋三合（共四宮）。",
-    "palaceDatabaseTitle": "資料庫宮位解釋",
-    "starDatabaseTitle": "星曜解釋（資料庫）",
+    "boardTitle": "紫微 12 宮",
+    "strategyPanelTitle": "2026 {{name}}",
+    "strategyPanelSub": "",
+    "palaceDatabaseTitle": "宮位解釋",
+    "starDatabaseTitle": "星曜解釋",
     "minorLimitLabel": "小限動態導覽",
     "minorLimitPalace": "小限命宮",
     "majorLimitLabel": "大限 {{start}}–{{end}}",
@@ -107,6 +117,12 @@
       "父母": "父母"
     }
   },
+  "share": {
+    "title": "分享",
+    "toLine": "分享到 LINE",
+    "toFb": "分享到 Facebook",
+    "text": "我剛用人生說明書看了我的 2026 流年，免費取得八字五行與紫微 12 宮分析，你也來試試！"
+  },
   "ui": {
     "appTitle": "一起出來玩",
     "submit": "送出",
@@ -126,7 +142,9 @@
     "genderMale": "性別：男",
     "genderFemale": "性別：女",
     "timeExact": "時間：時分（精確）",
+    "timeExactShort": "時分",
     "timeShichen": "時間：時辰（子丑寅…）",
+    "timeShichenShort": "時辰",
     "shichenLabel": "時辰：",
     "shichenUpper": "上半時辰",
     "shichenLower": "下半時辰",
@@ -135,16 +153,22 @@
     "daySuffix": " 日",
     "hourSuffix": " 時",
     "minuteSuffix": " 分",
+    "hourPlaceholder": "請選擇時",
+    "minutePlaceholder": "請選擇分",
+    "shichenPlaceholder": "請選擇時辰",
     "unsureTime": "不確定出生時間？",
     "estimateBtn": "點我推算時辰",
     "shichenNote": "註：選「時辰」會換算成代表時刻（上半/下半時辰各取代表時間）送入系統計算。",
-    "launchBtn": "開啟 人生使用說明書",
+    "advancedExactTime": "知道精確時分？改填",
+    "backToShichen": "改回時辰",
+    "launchBtn": "開始人生分析",
     "saveChart": "儲存到我的命盤",
     "navZiwei": "紫微",
     "navBazi": "八字",
     "navLiuyue": "流年",
     "navHome": "回到首頁",
-    "navConsult": "1:1 諮詢",
+    "navArticles": "文章",
+    "navConsult": "諮詢",
     "myChartsTitle": "已儲存的命盤",
     "myChartsHint": "點選下方命盤名稱可帶入表單並重新計算；最多 5 筆。",
     "myChartsEmpty": "尚無命盤。請在下方輸入出生資料後，點「儲存到我的命盤」；儲存後會出現在此處，點選即可載入。",
@@ -154,6 +178,7 @@
     "loadErrorDetail": "系統載入失敗，請刷新頁面重試（錯誤：calc.js 未載入）",
     "launchFailed": "啟動失敗",
     "unknownError": "未知錯誤",
+    "retry": "重試",
     "langSwitchHint": "切換語言後頁面會重新載入，請重新輸入生日並計算以更新星盤顯示。",
     "statusExcellent": "極佳",
     "statusStrong": "強勁",
@@ -173,6 +198,7 @@
     "ziweiQuestion": "紫微 —— 這關好過嗎？",
     "sectionTitle": "八字 · 四柱＋五行戰力",
     "sectionDesc": "上方顯示「四柱」，下方顯示「表層（天干）」與「實戰（天干＋藏干＋月令加權）」。右側會附上五行意義（資料庫：wuxing_meanings）。",
+    "pillarsCangganLabel": "四柱與藏干",
     "cangganLabel": "地支藏干（權重顯示）：",
     "cangganHint": "（用來理解你「實戰五行」的來源）",
     "surfaceStructure": "表層結構（四柱天干）",
@@ -197,9 +223,9 @@
     "wuxingUnavailable": "（五行數據暫不可用）",
     "tenGodUnavailable": "（十神主軸數據暫不可用）",
     "tenGodDbMissing": "（資料庫尚未填入「{{name}}」的十神指令）",
-    "actionChecklist": "行動清單",
-    "tabooChecklist": "禁忌清單",
-    "capture20": "採集 (20%)",
+    "actionChecklist": "下一步",
+    "tabooChecklist": "風險提醒",
+    "capture20": "可累積的資產",
     "annualTheme": "年度主旋律",
     "lifeGeneSection": "本命基因（命主）",
     "acquiredToolSection": "後天工具（身主）",
@@ -212,6 +238,82 @@
     "capturePlaceholder": "你對今年的「{{name}}模式」有什麼想法？有什麼具體的計劃或擔憂？",
     "savedStatus": "✓ 已保存"
   },
+  "tenGods": {
+    "sectionTitle": "你的行動原型",
+    "actionTitle": "下一步",
+    "riskTitle": "風險提醒",
+    "captureTitle": "可累積的資產",
+    "比肩": {
+      "archetype": "同行者",
+      "archetypeEn": "Peer Drive",
+      "core": "You strengthen through consistency, repetition, and shared standards.",
+      "risk": "Stagnation from staying \"too equal\" and avoiding differentiation.",
+      "nextMove": "Pick one domain to differentiate: skill, taste, or responsibility."
+    },
+    "劫財": {
+      "archetype": "競合者",
+      "archetypeEn": "Rival Drive",
+      "core": "You grow through competition, pressure, and fast adaptation.",
+      "risk": "Impulsive decisions and resource leakage under comparison pressure.",
+      "nextMove": "Set one boundary: time, money, or attention — then defend it for 30 days."
+    },
+    "偏印": {
+      "archetype": "轉化者",
+      "archetypeEn": "Catalyst Drive",
+      "core": "You learn by reframing, remixing, and turning chaos into insight.",
+      "risk": "Overthinking and detachment from real execution.",
+      "nextMove": "Convert one insight into one deliverable within 48 hours."
+    },
+    "正印": {
+      "archetype": "支援者",
+      "archetypeEn": "Support Drive",
+      "core": "You stabilize through knowledge, mentorship, and proper grounding.",
+      "risk": "Dependence on preparation; slow start.",
+      "nextMove": "Start imperfectly: 20 minutes of action before more research."
+    },
+    "食神": {
+      "archetype": "建造者",
+      "archetypeEn": "Builder Drive",
+      "core": "You win through quality, craft, and steady output.",
+      "risk": "Comfort traps: polishing instead of shipping.",
+      "nextMove": "Ship one \"good enough\" version; refine after feedback."
+    },
+    "傷官": {
+      "archetype": "突破者",
+      "archetypeEn": "Breaker Drive",
+      "core": "You create advantage by challenging norms and improving systems.",
+      "risk": "Friction with authority; cutting too hard, too fast.",
+      "nextMove": "Challenge one rule, but propose one replacement system."
+    },
+    "偏財": {
+      "archetype": "機會者",
+      "archetypeEn": "Opportunity Drive",
+      "core": "You spot opportunities via networks, timing, and flexible strategy.",
+      "risk": "Chasing too many signals; unstable focus.",
+      "nextMove": "Choose one bet; define entry, exit, and risk cap."
+    },
+    "正財": {
+      "archetype": "積累者",
+      "archetypeEn": "Accumulator Drive",
+      "core": "You build power through reliability, compounding, and discipline.",
+      "risk": "Over-conservatism; missing windows.",
+      "nextMove": "Allocate a small \"exploration budget\" to keep growth alive."
+    },
+    "七殺": {
+      "archetype": "壓力者",
+      "archetypeEn": "Pressure Drive",
+      "core": "You move when stakes are real; decisive under constraint.",
+      "risk": "Burnout and conflict escalation.",
+      "nextMove": "Define one non-negotiable recovery block each week."
+    },
+    "正官": {
+      "archetype": "秩序者",
+      "archetypeEn": "Order Drive",
+      "core": "You operate best with structure, responsibility, and clear rules.",
+      "risk": "Rigidity; fear of making \"wrong\" moves.",
+      "nextMove": "Write a simple decision policy: what you will/won't do this season."
+    }
+  },
   "consult": {
     "ctaHeadline": "別讓你的初始設定，限制了你的一生。",
     "ctaSupport": "李伯彥老師 深度諮詢：帶你看清雷區、找回主場、實現自己的志願。諮詢後提供保用一生的 50 頁個人戰略手冊，照亮眼前的路。",
@@ -221,7 +323,7 @@
   },
   "strategy": {
     "tacticalTitle": "2026 戰術建議（動態決策）",
-    "tacticalDesc": "依「五行佔比」＋「十神主軸」給你今年的戰術提示（前端即時計算；解釋文字優先吃資料庫）。",
+    "tacticalDesc": "依「五行佔比」＋「十神主軸」給你今年的戰術提示。",
     "tacticalNote": "註：此區塊提供來自指揮中心的戰術指引。"
   },
   "chartLangMismatch": {
@@ -278,7 +380,9 @@
     "q16": { "text": "你的靈感通常來自？", "options": { "A": "舊方式被打破", "B": "看到新可能", "C": "放空或夢境", "D": "情緒飽滿時", "E": "穩定進行中突然想到" } },
     "q17": { "text": "第一次面對陌生情境／陌生人時你的傾向是？", "options": { "A": "越互動越順", "B": "先找共同點", "C": "先感受對方氣氛", "D": "很快帶動互動", "E": "放輕鬆、慢慢來" } },
     "q18": { "text": "最直覺地說，你認為自己更像哪種類型？", "options": { "A": "執行型", "B": "觀察型／軍師型", "C": "推動者／領導型", "D": "穩定可靠型", "E": "連結協調型", "F": "改變與創新型" } },
-    "q19": { "text": "你一天的精神高峰通常比別人來得早還是晚？", "options": { "A": "偏早", "B": "偏晚" } }
+    "q19": { "text": "你一天的精神高峰通常比別人來得早還是晚？", "options": { "A": "偏早", "B": "偏晚" } },
+    "qx1": { "text": "你目前作息主要由什麼決定？", "options": { "A": "自然", "B": "工作／育兒／輪班" } },
+    "qx2": { "text": "你現在作息和 18–25 歲相比是否差很多？", "options": { "A": "差不多", "B": "差很多" } }
   },
   "ceremony": {
     "resultTemplate": "推算結果：你是{{hour}}",

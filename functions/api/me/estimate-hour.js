@@ -100,6 +100,8 @@ export async function onRequestPost(context) {
       delta,
       flags,
       contributions,
+      candidates,
+      lowConfidence,
     } = result;
 
     const logId = crypto.randomUUID();
@@ -159,6 +161,8 @@ export async function onRequestPost(context) {
     if (score != null) responseBody.score = score;
     if (debug) responseBody.debug = debug;
     if (uiHint) responseBody.uiHint = uiHint;
+    if (lowConfidence) responseBody.lowConfidence = true;
+    if (candidates && Array.isArray(candidates)) responseBody.candidates = candidates;
     return jsonResponse(responseBody, 201);
   } catch (err) {
     console.error('[me/estimate-hour] POST Error:', err);

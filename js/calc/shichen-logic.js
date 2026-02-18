@@ -103,12 +103,12 @@ export function estimateHourFromAnswers(answers, options = {}) {
   }
 
   const DUEL_MAP = {
-    q9: { A: { 申: 2, 寅: -2 }, B: { 寅: 2, 申: -2 } },
-    q10: { A: { 酉: 2, 卯: -2 }, B: { 卯: 2, 酉: -2 } },
-    q11: { A: { 辰: 2, 戌: -2 }, B: { 戌: 2, 辰: -2 } },
-    q12: { A: { 巳: 2, 亥: -2 }, B: { 亥: 2, 巳: -2 } },
-    q13: { A: { 午: 2, 子: -2 }, B: { 子: 2, 午: -2 } },
-    q14: { A: { 未: 2, 丑: -2 }, B: { 丑: 2, 未: -2 } },
+    q9: { A: { 申: 1, 寅: -1 }, B: { 寅: 1, 申: -1 } },
+    q10: { A: { 酉: 1, 卯: -1 }, B: { 卯: 1, 酉: -1 } },
+    q11: { A: { 辰: 1, 戌: -1 }, B: { 戌: 1, 辰: -1 } },
+    q12: { A: { 巳: 1, 亥: -1 }, B: { 亥: 1, 巳: -1 } },
+    q13: { A: { 午: 1, 子: -1 }, B: { 子: 1, 午: -1 } },
+    q14: { A: { 未: 1, 丑: -1 }, B: { 丑: 1, 未: -1 } },
   };
   const Q18_MAP = { A: ['申', '午'], B: ['子', '亥'], C: ['寅', '辰'], D: ['戌', '丑'], E: ['卯', '未'], F: ['巳', '酉'] };
 
@@ -116,6 +116,11 @@ export function estimateHourFromAnswers(answers, options = {}) {
   const timeSubtotal = {};
   const duelSubtotal = {};
   BRANCHES.forEach((b) => { score[b] = 0; timeSubtotal[b] = 0; duelSubtotal[b] = 0; });
+
+  // 作息污染校正：Qx1=B 或 Qx2=B 時，Q1~Q3 權重乘以 0.35
+  const POLLUTION_MULTIPLIER = 0.35;
+  const hasPollution = answers.qx1 === 'B' || answers.qx2 === 'B';
+  const timeWeightMultiplier = hasPollution ? POLLUTION_MULTIPLIER : 1;
 
   function addQ1Q2Q3Score(mapVal, scoreObj, timeSubtotalObj, weight, qLabel) {
     if (!mapVal) return;
@@ -138,11 +143,12 @@ export function estimateHourFromAnswers(answers, options = {}) {
     recordContribution(qLabel, adds);
   }
 
+  const q1q2q3Weight = 3 * timeWeightMultiplier;
   const q1Arr = Array.isArray(answers.q1) ? answers.q1.slice(0, 2) : (answers.q1 ? [answers.q1] : []);
-  q1Arr.forEach((key) => addQ1Q2Q3Score(Q1Q2_MAP[key], score, timeSubtotal, 3, 'Q1'));
+  q1Arr.forEach((key) => addQ1Q2Q3Score(Q1Q2_MAP[key], score, timeSubtotal, q1q2q3Weight, 'Q1'));
   const q2Arr = Array.isArray(answers.q2) ? answers.q2.slice(0, 2) : (answers.q2 ? [answers.q2] : []);
-  q2Arr.forEach((key) => addQ1Q2Q3Score(Q1Q2_MAP[key], score, timeSubtotal, 3, 'Q2'));
-  if (answers.q3 && Q3_MAP[answers.q3]) addQ1Q2Q3Score(Q3_MAP[answers.q3], score, timeSubtotal, 3, 'Q3');
+  q2Arr.forEach((key) => addQ1Q2Q3Score(Q1Q2_MAP[key], score, timeSubtotal, q1q2q3Weight, 'Q2'));
+  if (answers.q3 && Q3_MAP[answers.q3]) addQ1Q2Q3Score(Q3_MAP[answers.q3], score, timeSubtotal, q1q2q3Weight, 'Q3');
   applyNightRefineFromQ1toQ3(answers, score);
 
   [4, 5, 6].forEach((n) => {
@@ -241,6 +247,72 @@ export function estimateHourFromAnswers(answers, options = {}) {
   applyRhythmConsistencyCheck(answers, score);
   applyZiDampener(score);
 
+  function computeChronotypeScore(ans) {
+    const ct = { morning: 0, midday: 0, evening: 0, night: 0 };
+    ['q1', 'q2'].forEach((q) => {
+      const a = ans[q];
+      if (!a) return;
+      (Array.isArray(a) ? a : [a]).slice(0, q === 'q3' ? 1 : 2).forEach((opt) => {
+        if (['A', 'B'].includes(opt)) ct.morning++;
+        else if (opt === 'C') ct.midday++;
+        else if (opt === 'D') ct.evening++;
+        else if (['E', 'F'].includes(opt)) ct.night++;
+      });
+    });
+    if (ans.q3) {
+      if (['A', 'B'].includes(ans.q3)) ct.morning++;
+      else if (ans.q3 === 'C') ct.midday++;
+      else if (ans.q3 === 'D') ct.evening++;
+      else if (ans.q3 === 'E') ct.night++;
+    }
+    return ct;
+  }
+  const chronotypeScore = computeChronotypeScore(answers);
+
+  function applyChronotypeConstraint(branchScores, ct) {
+    const CHRONOTYPE_PENALTY = 4;
+    if (ct.morning >= ct.night + 2) {
+      ['亥', '子', '丑'].forEach((b) => {
+        branchScores[b] = (branchScores[b] ?? 0) - CHRONOTYPE_PENALTY;
+      });
+    } else if (ct.night >= ct.morning + 2) {
+      ['卯', '辰', '巳'].forEach((b) => {
+        branchScores[b] = (branchScores[b] ?? 0) - CHRONOTYPE_PENALTY;
+      });
+    }
+  }
+  applyChronotypeConstraint(score, chronotypeScore);
+
+  function getAnchorBranchesFromChronotype(ct) {
+    const maxKey = Object.entries(ct).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1])[0]?.[0];
+    if (maxKey === 'morning') return ['卯', '辰', '巳'];
+    if (maxKey === 'midday') return ['巳', '午', '未'];
+    if (maxKey === 'evening') return ['申', '酉', '戌'];
+    if (maxKey === 'night') return ['亥', '子', '丑'];
+    return [];
+  }
+  const anchorBranches = getAnchorBranchesFromChronotype(chronotypeScore);
+
+  function cyclicDistance(i, j) {
+    const d = Math.abs(i - j);
+    return Math.min(d, 12 - d);
+  }
+  function applyDistancePenalty(branchScores, anchors) {
+    if (anchors.length === 0) return {};
+    const branchToIdx = {};
+    BRANCHES.forEach((b, i) => { branchToIdx[b] = i; });
+    const anchorIndices = anchors.map((b) => branchToIdx[b]).filter((i) => i !== undefined);
+    const penaltyByBranch = {};
+    BRANCHES.forEach((b) => {
+      const idx = branchToIdx[b];
+      const minDist = Math.min(...anchorIndices.map((ai) => cyclicDistance(idx, ai)));
+      penaltyByBranch[b] = Math.min(3, minDist * 0.5);
+      branchScores[b] = (branchScores[b] ?? 0) - penaltyByBranch[b];
+    });
+    return penaltyByBranch;
+  }
+  const distancePenalty = applyDistancePenalty(score, anchorBranches);
+
   const rawBranchScores = {};
   BRANCHES.forEach((b) => { rawBranchScores[b] = score[b]; });
 
@@ -281,7 +353,7 @@ export function estimateHourFromAnswers(answers, options = {}) {
     ['q1', 'q2', 'q3'].forEach((qKey) => {
       const ans = answers[qKey];
       if (!ans) return;
-      const selected = Array.isArray(ans) ? ans.slice(0, qKey === 'q3' ? 1 : 2) : [ans];
+      const selected = Array.isArray(ans) ? ans : [ans];
       selected.forEach((option) => {
         switch (option) {
           case 'E': nightTypeScore['亥'] += 2; nightTypeScore['子'] += 1; break;
@@ -306,7 +378,37 @@ export function estimateHourFromAnswers(answers, options = {}) {
     }
   }
 
-  const winningScore = score[bestBranch] ?? 0;
+  const sortedForSelect = Object.entries(score).sort((a, b) => (b[1] || 0) - (a[1] || 0));
+  const top1 = sortedForSelect[0]?.[0] || bestBranch;
+  const top2 = sortedForSelect[1]?.[0] || secondBranch;
+  const top1ScoreVal = score[top1] ?? 0;
+  const top2ScoreVal = score[top2] ?? 0;
+  const margin = top1ScoreVal - top2ScoreVal;
+  const deltaForSelect = margin;
+  const CLOSE_THRESHOLD = Math.max(3, (top1ScoreVal || 0) * 0.05);
+  let lowConfidence = margin <= 3;
+  let finalCandidates = [top1, top2].filter(Boolean);
+
+  if (deltaForSelect < CLOSE_THRESHOLD) {
+    const t1 = timeSubtotal[top1] ?? 0;
+    const t2 = timeSubtotal[top2] ?? 0;
+    const d1 = duelSubtotal[top1] ?? 0;
+    const d2 = duelSubtotal[top2] ?? 0;
+    if (t1 > t2) {
+      finalCandidates = [top1, top2];
+    } else if (t1 < t2) {
+      finalCandidates = [top2, top1];
+    } else if (d1 > d2) {
+      finalCandidates = [top1, top2];
+    } else if (d1 < d2) {
+      finalCandidates = [top2, top1];
+    } else {
+      finalCandidates = [top1, top2];
+      lowConfidence = true;
+    }
+  }
+
+  const winningScore = score[finalCandidates[0]] ?? 0;
   let candidates = BRANCHES.filter((b) => (score[b] || 0) === winningScore);
   if (candidates.length > 1) {
     const maxTime = Math.max(...candidates.map((b) => timeSubtotal[b]));
@@ -316,20 +418,29 @@ export function estimateHourFromAnswers(answers, options = {}) {
     const maxDuel = Math.max(...candidates.map((b) => duelSubtotal[b]));
     candidates = candidates.filter((b) => duelSubtotal[b] === maxDuel);
   }
-  if (candidates.length > 1) {
+  if (candidates.length > 1 && !lowConfidence) {
     const first = TIE_ORDER.find((b) => candidates.includes(b));
     candidates = first ? [first] : [candidates[0]];
+  } else if (lowConfidence) {
+    candidates = finalCandidates.slice(0, 2);
   }
-  const branch = candidates[0] || bestBranch || '子';
+  const branch = candidates[0] || finalCandidates[0] || bestBranch || '子';
   const half = answers.q19 === 'B' ? 'lower' : 'upper';
 
   const sorted = Object.entries(score).sort((a, b) => (b[1] || 0) - (a[1] || 0));
   const finalBest = sorted[0]?.[0] || bestBranch;
   const finalSecond = sorted[1]?.[0] || secondBranch;
+  const finalThird = sorted[2]?.[0];
   const finalBestScore = sorted[0]?.[1] ?? bestScoreVal;
   const finalSecondScore = sorted[1]?.[1] ?? secondScoreVal;
+  const finalThirdScore = sorted[2]?.[1] ?? 0;
   const delta = finalBestScore - finalSecondScore;
   const top2Branches = [finalBest, finalSecond].filter(Boolean);
+  const topCandidates = [
+    { branch: finalBest, score: finalBestScore, diff: 0 },
+    { branch: finalSecond, score: finalSecondScore, diff: finalBestScore - finalSecondScore },
+    ...(finalThird ? [{ branch: finalThird, score: finalThirdScore, diff: finalBestScore - finalThirdScore }] : []),
+  ];
 
   function computeCircadianConflict(ans) {
     let early = 0, late = 0;
@@ -421,6 +532,17 @@ export function estimateHourFromAnswers(answers, options = {}) {
     finalBranchScores: { ...score },
     contributions,
     scores_by_branch: { ...score },
+    scores: { ...score },
+    timeSubtotal: { ...timeSubtotal },
+    duelSubtotal: { ...duelSubtotal },
+    timeWeightMultiplier,
+    chronotypeScore,
+    anchorBranches,
+    distancePenalty,
+    lowConfidence,
+    top2Branch: finalSecond,
+    top2Score: finalSecondScore,
+    topCandidates,
     top2: top2Branches,
     best: finalBest,
     second: finalSecond,
@@ -433,6 +555,8 @@ export function estimateHourFromAnswers(answers, options = {}) {
 
   return {
     branch,
+    ...(lowConfidence ? { lowConfidence: true } : {}),
+    ...(lowConfidence && candidates.length >= 2 ? { candidates: candidates.slice(0, 2) } : {}),
     hour_label: branch + '時',
     hour_range: HOUR_RANGES[branch] || '',
     half,

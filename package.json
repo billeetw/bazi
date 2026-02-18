@@ -4,12 +4,21 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && npm run build:main",
+    "build:tailwind": "npx tailwindcss -i ./css/tailwind-input.css -o ./dist/tailwind.css --minify",
+    "dev:tailwind": "npx tailwindcss -i ./css/tailwind-input.css -o ./dist/tailwind.css --watch",
     "build:startup": "vite build --config vite.startup.config.ts",
-    "build:main": "vite build --config vite.main.config.ts",
-    "deploy:worker": "cd worker && npm run deploy",
-    "deploy:pages": "wrangler pages deploy .",
-    "deploy": "npm run deploy:worker && npm run deploy:pages"
+    "build:main": "vite build --config vite.main.config.ts && npm run build:tailwind",
+    "build:expert-admin": "vite build --config vite.expert-admin.config.ts",
+    "build:star-registry": "node scripts/build-star-registry.js",
+    "prebuild": "npm run build:star-registry",
+    "deploy:worker": "npm run build:star-registry && cd worker && npm run deploy",
+    "deploy:pages": "npx wrangler pages deploy .",
+    "deploy": "npm run deploy:worker && npm run deploy:pages",
+    "test:e2e": "npm run build:main && npx playwright test --config=playwright.config.cjs",
+    "test:e2e:ui": "npm run build:main && npx playwright test --config=playwright.config.cjs --ui",
+    "test:wuxing": "node scripts/test-wuxing-pipeline.js",
+    "build:divination": "vite build --config vite.divination.config.ts"
   },
   "dependencies": {
     "framer-motion": "^11.11.17",
@@ -18,10 +27,16 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.24",
+    "postcss": "^8.5.6",
+    "serve": "^14.2.5",
+    "tailwindcss": "^3.4.19",
     "typescript": "^5.6.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "wrangler": "^4.65.0"
   }
 }

@@ -109,13 +109,19 @@
           body: JSON.stringify(baseBody),
         });
       } else {
-        throw new Error(`API HTTP ${resp.status} ${t}`.trim());
+        const msg = resp.status === 503 || /Worker exceeded resource limits|1102/i.test(t)
+          ? "伺服器暫時忙碌（資源已滿），請稍後再試。"
+          : `API HTTP ${resp.status} ${t}`.trim();
+        throw new Error(msg);
       }
     }
 
     if (!resp.ok) {
       const t2 = await resp.text().catch(() => "");
-      throw new Error(`API HTTP ${resp.status} ${t2}`.trim());
+      const msg = resp.status === 503 || /Worker exceeded resource limits|1102/i.test(t2)
+        ? "伺服器暫時忙碌（資源已滿），請稍後再試。"
+        : `API HTTP ${resp.status} ${t2}`.trim();
+      throw new Error(msg);
     }
 
     const payload = await resp.json();
@@ -127,13 +133,38 @@
   }
 
   /**
+   * 延遲載入大限／小限／流年（horoscopeByYear），降低 compute/all CPU
+   * @param {Object} params - 同 computeAll
+   * @param {number} [params.horoscopeYear] - 目標年份，預設當年
+   * @returns {Promise<{ horoscope: Object }>}
+   */
+  async function fetchHoroscope(params) {
+    const { year, month, day, hour, minute, gender, horoscopeYear } = params;
+    const body = { year, month, day, hour: hour ?? 0, minute: minute ?? 0, gender, horoscopeYear: horoscopeYear ?? new Date().getFullYear() };
+    const resp = await fetchWithFallback(`${API_BASE}/compute/horoscope`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!resp.ok) {
+      const t = await resp.text().catch(() => "");
+      const msg = resp.status === 503 || /Worker exceeded resource limits|1102/i.test(t)
+        ? "伺服器暫時忙碌（資源已滿），請稍後再試。"
+        : `API HTTP ${resp.status} ${t}`.trim();
+      throw new Error(msg);
+    }
+    const data = await resp.json();
+    if (!data?.ok || !data?.horoscope) throw new Error(data?.error || "horoscope 載入失敗");
+    return data;
+  }
+
+  /**
    * 获取宫位分数
    * @param {string} chartId - 图表ID
    * @returns {Promise<Object|null>} 宫位分数数据
    */
   async function getPalaceScores(chartId) {
-    if (!chartId) {
-      console.warn("No chartId provided, scores API 無法呼叫");
+    if (!chartId || !(window.Config?.SUPPORTS_CHARTS_SCORES)) {
       return null;
     }
 
@@ -187,6 +218,7 @@
     API_BASE,
     loadDbContent,
     computeAll,
+    fetchHoroscope,
     getPalaceScores,
     getStrategyNote,
   };

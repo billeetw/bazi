@@ -106,9 +106,9 @@
   // 宮位環（以命宮為起點的 12 宮順序）
   let PALACE_RING = PALACE_DEFAULT.slice();
 
-  /** 取得當前年齡（虛歲）：從 #currentAgeSlider 或依出生年推算 */
+  /** 取得當前年齡（虛歲）：一律由出生年月日推算，無預設值 */
   function getCurrentAge() {
-    return getCurrentAgeHelper ? getCurrentAgeHelper(lastBirthYear) : 38;
+    return getCurrentAgeHelper ? getCurrentAgeHelper(lastBirthYear) : null;
   }
 
   // animateValue, syncAgeSliderDisplay, renderBar, toneClass 已移至工具模块
@@ -181,10 +181,16 @@
       // 传递宫位点击回调和选项（包含 bazi 和 gender 用于大限旋转方向计算）
       return renderZiweiFromComponent(ziwei, horoscope, (palaceName) => {
         selectPalace(palaceName);
-        if (window.innerWidth < 1280) {
+        // 與 detailPanel 隱藏斷點一致：md 以下 (768px) 用 Bottom Sheet，否則滾動至右側詳解
+        if (window.innerWidth < 768) {
           openPalaceSheet();
         } else {
-          document.getElementById("detailPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          const Scroll = window.UiServices?.Scroll;
+          if (Scroll && typeof Scroll.scrollToSection === "function") {
+            Scroll.scrollToSection("detailPanel", { behavior: "smooth", block: "nearest", allowOnMobile: false });
+          } else {
+            document.getElementById("detailPanel")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
         }
       }, options);
     } else {
@@ -212,7 +218,7 @@
       return selectPalaceFromComponent(name, {
         ziwei: contract?.ziwei,
         bazi: contract?.bazi,
-        horoscope: contract?.ziwei?.horoscope || getHoroscopeFromAge(getCurrentAge(), lastGender, contract?.ziwei, contract?.bazi),
+        horoscope: contract?.ziwei?.horoscope || getHoroscopeFromAge(getCurrentAge(), contract?.ziwei, contract?.bazi, lastGender),
         dbContent,
         palaceRing: PALACE_RING,
         lastGender,
@@ -233,8 +239,10 @@
   const WuxingPanel = window.UiComponents?.WuxingPanel || {};
   const openWuxingMeaningLikePalace = WuxingPanel.openWuxingMeaningLikePalace || function() {
     console.warn("[ui.js] WuxingPanel component not available, using fallback");
-    const meaningSection = document.getElementById("wuxingMeaningSection");
-    meaningSection?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const Scroll = window.UiServices?.Scroll;
+    if (Scroll && Scroll.isDesktop && Scroll.isDesktop()) {
+      Scroll.scrollToSection("wuxingMeaningSection", { behavior: "smooth", block: "start", allowOnMobile: false });
+    }
   };
 
   // getMutagenBadgeHtml, starWithBadgeHtml 已移至 render-helpers.js
@@ -290,7 +298,7 @@
   // syncNavChipActive, initDashboardContentTransition 已移至 navigation.js 服务模块
   const Navigation = window.UiServices?.Navigation || {};
   const syncNavChipActive = Navigation.syncNavChipActive || function() {
-    const hash = (window.location.hash || "").trim() || "#ws-ziwei";
+    const hash = (window.location.hash || "").trim();
     document.querySelectorAll(".nav-chip[href^=\"#\"]").forEach((a) => {
       const href = (a.getAttribute("href") || "").trim();
       if (href === hash) a.setAttribute("aria-current", "page");
@@ -323,6 +331,13 @@
     }
   }
 
+  /** 儀式感：資料渲染完成後捲至頁面最上方，跨瀏覽器穩定 */
+  function scheduleScrollToTop() {
+    setTimeout(function () {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }, 80);
+  }
+
   // ====== Calculate ======
   async function calculate(skipStartupSequence) {
     console.log("[ui.js] calculate 函數開始執行, skipStartupSequence:", skipStartupSequence);
@@ -353,7 +368,8 @@
     
     console.log("[ui.js] calculate: 輸入參數:", { vy, vm, vd, gender, timeMode, vh, vmin, shichen, shichenHalf });
 
-    if (!skipStartupSequence && typeof window.showStartupSequence === "function" && timeMode === "shichen" && shichen) {
+    const PLACEHOLDER_VAL = "__";
+    if (!skipStartupSequence && typeof window.showStartupSequence === "function" && timeMode === "shichen" && shichen && shichen !== PLACEHOLDER_VAL) {
       console.log("[ui.js] calculate: 顯示啟動動畫");
       window.showStartupSequence({
         branchLabel: shichen + "時",
@@ -381,16 +397,26 @@
           ? validation.errors[0] 
           : (validation.error || "輸入驗證失敗");
         console.error("[ui.js] calculate: 驗證失敗:", errorMsg);
+        btn.disabled = false;
+        btn.textContent = original;
         if (hint) {
           hint.textContent = errorMsg;
           hint.className = "text-center text-xs text-red-400 italic min-h-[1.2em]";
         }
-        throw new Error(errorMsg);
+        return;
       }
       
       console.log("[ui.js] calculate: 驗證通過，開始解析時間");
 
-      const resolved = resolveBirthTime({ mode: timeMode, hour: vh, minute: vmin, shichen, shichenHalf });
+      let hourForResolve = vh;
+      let minForResolve = vmin;
+      if (timeMode === "exact") {
+        const hVal = (document.getElementById("birthHour")?.value || "").trim();
+        const minVal = (document.getElementById("birthMinute")?.value || "").trim();
+        if (hVal === PLACEHOLDER_VAL || hVal === "" || !Number.isFinite(vh)) hourForResolve = 12;
+        if (minVal === PLACEHOLDER_VAL || minVal === "" || !Number.isFinite(vmin)) minForResolve = 0;
+      }
+      const resolved = resolveBirthTime({ mode: timeMode, hour: hourForResolve, minute: minForResolve, shichen, shichenHalf });
       console.log("[ui.js] calculate: 時間解析結果:", resolved);
 
       btn.disabled = true;
@@ -400,54 +426,19 @@
       }
       console.log("[ui.js] calculate: 按鈕狀態已更新為「計算中」");
 
-      // 使用 API 服务模块
+      // 統一使用 ApiService（entry.js 已載入，無 fallback）
       const apiService = window.UiServices?.ApiService;
-      console.log("[ui.js] calculate: ApiService 可用:", !!apiService);
-      console.log("[ui.js] calculate: API_BASE:", API_BASE);
-      
-      let payload;
-      if (apiService) {
-        console.log("[ui.js] calculate: 使用 ApiService.computeAll");
-        payload = await apiService.computeAll({
-          year: vy,
-          month: vm,
-          day: vd,
-          hour: resolved.hour,
-          minute: resolved.minute,
-          gender: gender || undefined,
-        });
-        console.log("[ui.js] calculate: ApiService.computeAll 完成");
-      } else {
-        console.log("[ui.js] calculate: 使用 fallback fetch");
-        // Fallback to direct fetch
-        const i18nLocale = (window.I18n && typeof window.I18n.getLocale === "function") ? window.I18n.getLocale() : "zh-TW";
-        const language =
-          typeof getIzTroLanguage === "function"
-            ? getIzTroLanguage(i18nLocale)
-            : (i18nLocale === "en" ? "en-US" : i18nLocale === "zh-CN" ? "zh-CN" : "zh-TW");
-        const baseBody = { year: vy, month: vm, day: vd, hour: resolved.hour, minute: resolved.minute, language };
-        const bodyWithGender = gender ? { ...baseBody, gender } : baseBody;
-        const apiUrl = `${API_BASE}/compute/all`;
-        console.log("[ui.js] calculate: 發送 API 請求到:", apiUrl);
-        console.log("[ui.js] calculate: 請求體:", bodyWithGender);
-        
-        const resp = await fetchWithFallback(apiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(bodyWithGender),
-        });
-        
-        console.log("[ui.js] calculate: API 響應狀態:", resp.status, resp.statusText);
-        
-        if (!resp.ok) {
-          const t = await resp.text().catch(() => "");
-          console.error("[ui.js] calculate: API 錯誤響應:", t);
-          throw new Error(`API HTTP ${resp.status} ${t}`.trim());
-        }
-        payload = await resp.json();
-        console.log("[ui.js] calculate: API 響應數據:", payload);
-        if (!payload?.ok) throw new Error(payload?.error || "API error");
+      if (!apiService || typeof apiService.computeAll !== "function") {
+        throw new Error("ApiService 未載入，請重新整理頁面");
       }
+      const payload = await apiService.computeAll({
+        year: vy,
+        month: vm,
+        day: vd,
+        hour: resolved.hour,
+        minute: resolved.minute,
+        gender: gender || undefined,
+      });
 
       console.log("compute/all payload:", payload);
       console.log("chartId from payload:", payload.chartId);
@@ -476,48 +467,125 @@
 
       if (!bazi) throw new Error("後端未回傳 bazi");
 
+      // 使用統計：fire-and-forget 紀錄（年齡、性別、語言）
+      try {
+        const logPayload = {
+          birth_year: vy,
+          gender: (gender === "F" || String(gender).toLowerCase() === "female") ? "female" : "male",
+          language: payload.language || (window.I18n?.getLocale?.() || "zh-TW"),
+        };
+        fetch(`${API_BASE}/api/log-usage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(logPayload),
+          keepalive: true,
+        }).catch(() => {});
+      } catch (_) {}
+
+      // GA4 自訂事件：calculation_complete
+      try {
+        const gaId = window.Config?.GA_MEASUREMENT_ID;
+        if (gaId && typeof window.gtag === "function") {
+          const genderVal = (gender === "F" || String(gender).toLowerCase() === "female") ? "female" : "male";
+          const lang = payload.language || (window.I18n?.getLocale?.() || "zh-TW");
+          const yearRange = vy ? (vy >= 2000 ? "2000s" : vy >= 1990 ? "1990s" : vy >= 1980 ? "1980s" : "pre-1980") : "unknown";
+          window.gtag("event", "calculation_complete", {
+            birth_year_range: yearRange,
+            gender: genderVal,
+            language: lang,
+          });
+        }
+      } catch (_) {}
+
+      // 若後端未回傳 liuyue2026，使用前端 fallback 生成 12 月資料
+      if (!bazi.liuyue2026 || !bazi.liuyue2026.bounds?.length) {
+        const buildFallback = window.Calc?.buildLiuyue2026Fallback;
+        if (buildFallback && typeof buildFallback === "function") {
+          contract.bazi.liuyue2026 = buildFallback(bazi);
+          console.log("[ui.js] 使用 fallback 生成流月 2026 資料");
+        }
+      }
+
       // ===== 五行生剋管線（四柱 → 向量 → 生剋報告） =====
-      if (window.WuxingFlowPipeline && bazi) {
-        try {
-          // 簡單快取 KB，避免每次重載
-          if (!window.__wuxingFlowKB) {
-            window.__wuxingFlowKB = await window.WuxingFlowPipeline.loadKB("/data/wuxing");
-          }
-          const kb = window.__wuxingFlowKB;
-          const pillars = window.WuxingFlowPipeline.buildPillarsFromBazi(bazi);
-          if (!pillars) {
-            console.warn("[WuxingFlowPipeline] 無法從 bazi 組出 pillars，五行將為 0。請確認 API 回傳 bazi.display（yG,yZ,mG,mZ,dG,dZ,hG,hZ）或 bazi.year/month/day/hour。當前 bazi:", bazi);
-          }
-          if (pillars) {
-            const locale = (window.I18n && typeof window.I18n.getLocale === "function") ? window.I18n.getLocale() : "zh-TW";
-            const out = window.WuxingFlowPipeline.runPipeline(pillars, kb, { stem_w: 1.0, branch_w: 1.0, locale });
-            // 將報告掛到 contract.bazi 與全域，供戰略看板或其他模組使用
-            contract.bazi.wuxingFlowReport = out.report;
-            window.wuxingFlowReport = out.report;
-            // 從管線結果填充 surface/strategic，供五行條與雷達圖顯示
-            const toZh = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
-            const vRaw = out.v_raw || {};
-            const vSeason = out.v_season || {};
-            contract.bazi.wuxing = contract.bazi.wuxing || {};
-            contract.bazi.wuxing.surface = Object.fromEntries(Object.entries(toZh).map(([en, zh]) => [zh, Number(vRaw[en]) || 0]));
-            contract.bazi.wuxing.strategic = Object.fromEntries(Object.entries(toZh).map(([en, zh]) => [zh, Number(vSeason[en]) || 0]));
-            contract.bazi.wuxing.maxStrategic = Math.max(0.01, ...Object.values(contract.bazi.wuxing.strategic));
-            // 計算十神主軸（日干 vs 月干，月令影響最大）
-            const dayStem = (pillars.day && pillars.day.stem) || "";
-            const monthStem = (pillars.month && pillars.month.stem) || "";
-            if (dayStem && monthStem) {
-              const tengod = (window.CalcHelpers && window.CalcHelpers.tenGodFromStems) ? window.CalcHelpers.tenGodFromStems(dayStem, monthStem) : null;
-              if (tengod) {
-                contract.bazi.tenGod = contract.bazi.tenGod || {};
-                contract.bazi.tenGod.dominant = tengod;
-              }
+      if (bazi) {
+        let wuxingSet = false;
+        if (window.WuxingFlowPipeline) {
+          try {
+            // 簡單快取 KB，避免每次重載
+            if (!window.__wuxingFlowKB) {
+              window.__wuxingFlowKB = await window.WuxingFlowPipeline.loadKB("/data/wuxing");
             }
-            console.log("[WuxingFlowPipeline] report:", out.report);
-          } else {
-            console.warn("[WuxingFlowPipeline] 無法從 bazi.display 組出 pillars");
+            const kb = window.__wuxingFlowKB;
+            const pillars = window.WuxingFlowPipeline.buildPillarsFromBazi(bazi);
+            if (!pillars) {
+              console.warn("[WuxingFlowPipeline] 無法從 bazi 組出 pillars，改用天干 fallback。當前 bazi:", bazi);
+            }
+            if (pillars) {
+              const locale = (window.I18n && typeof window.I18n.getLocale === "function") ? window.I18n.getLocale() : "zh-TW";
+              const out = window.WuxingFlowPipeline.runPipeline(pillars, kb, { stem_w: 1.0, branch_w: 1.0, locale });
+              // 將報告掛到 contract.bazi 與全域，供戰略看板或其他模組使用
+              contract.bazi.wuxingFlowReport = out.report;
+              window.wuxingFlowReport = out.report;
+              // 從管線結果填充 surface/strategic，供五行條與雷達圖顯示
+              const toZh = { wood: "木", fire: "火", earth: "土", metal: "金", water: "水" };
+              const vRaw = out.v_raw || {};
+              const vSeason = out.v_season || {};
+              contract.bazi.wuxing = contract.bazi.wuxing || {};
+              contract.bazi.wuxing.surface = Object.fromEntries(Object.entries(toZh).map(([en, zh]) => [zh, Number(vRaw[en]) || 0]));
+              contract.bazi.wuxing.strategic = Object.fromEntries(Object.entries(toZh).map(([en, zh]) => [zh, Number(vSeason[en]) || 0]));
+              contract.bazi.wuxing.maxStrategic = Math.max(0.01, ...Object.values(contract.bazi.wuxing.strategic));
+              // 計算十神主軸（日干 vs 月干，月令影響最大）
+              const dayStem = (pillars.day && pillars.day.stem) || "";
+              const monthStem = (pillars.month && pillars.month.stem) || "";
+              if (dayStem && monthStem) {
+                const tengod = (window.CalcHelpers && window.CalcHelpers.tenGodFromStems) ? window.CalcHelpers.tenGodFromStems(dayStem, monthStem) : null;
+                if (tengod) {
+                  contract.bazi.tenGod = contract.bazi.tenGod || {};
+                  contract.bazi.tenGod.dominant = tengod;
+                }
+              }
+              console.log("[WuxingFlowPipeline] report:", out.report);
+              window.__wuxingFlowUsedFallback = false; // 診斷：Pipeline 成功
+              wuxingSet = true;
+            }
+          } catch (e) {
+            console.warn("[WuxingFlowPipeline] 執行失敗，改用天干 fallback：", e);
+            delete window.__wuxingFlowKB; // 清除快取以便下次重試
           }
-        } catch (e) {
-          console.warn("[WuxingFlowPipeline] 執行失敗：", e);
+        }
+        // Fallback：從 bazi.display 或 bazi.year/month/day/hour 天干計數，確保五行條至少有數值（loadKB 404 或 pillars null 時）
+        if (!wuxingSet) {
+          window.__wuxingFlowUsedFallback = true; // 正式站診斷：在 Console 打 __wuxingFlowUsedFallback 可檢查是否走 fallback
+          const stemToElem = { "甲": "木", "乙": "木", "丙": "火", "丁": "火", "戊": "土", "己": "土", "庚": "金", "辛": "金", "壬": "水", "癸": "水" };
+          const toZh = ["木", "火", "土", "金", "水"];
+          const counts = { "木": 0, "火": 0, "土": 0, "金": 0, "水": 0 };
+          let stems = [];
+          const d = bazi.display;
+          if (d && (d.yG || d.mG || d.dG)) {
+            stems = [d.yG, d.mG, d.dG, d.hG].filter(Boolean);
+          } else if (bazi.year || bazi.month || bazi.day) {
+            stems = [bazi.year?.stem, bazi.month?.stem, bazi.day?.stem, bazi.hour?.stem].filter(Boolean);
+          }
+          stems.forEach(function (s) {
+            const zh = stemToElem[s];
+            if (zh) counts[zh]++;
+          });
+          const raw = counts;
+          const maxCount = Math.max(0.01, ...Object.values(counts));
+          contract.bazi.wuxing = contract.bazi.wuxing || {};
+          contract.bazi.wuxing.surface = Object.fromEntries(toZh.map(function (zh) { return [zh, raw[zh] || 0]; }));
+          contract.bazi.wuxing.strategic = Object.fromEntries(toZh.map(function (zh) { return [zh, maxCount > 0 ? (raw[zh] || 0) / maxCount : 0]; }));
+          contract.bazi.wuxing.maxStrategic = 1; // strategic 為 0–1  normalized，renderBar 以 v/max 縮放
+          // fallback 也計算十神（日干 vs 月干），供年度主軸與交叉洞察使用
+          const dayStem = (d && d.dG) || bazi.day?.stem;
+          const monthStem = (d && d.mG) || bazi.month?.stem;
+          if (dayStem && monthStem && window.CalcHelpers?.tenGodFromStems) {
+            const tengod = window.CalcHelpers.tenGodFromStems(dayStem, monthStem);
+            if (tengod) {
+              contract.bazi.tenGod = contract.bazi.tenGod || {};
+              contract.bazi.tenGod.dominant = tengod;
+            }
+          }
         }
       }
 
@@ -530,8 +598,8 @@
           console.log("ziweiScores from API:", ziweiScores);
         }
       } else {
-        // Fallback to direct fetch
-        if (chartId) {
+        // Fallback to direct fetch（bazi-api 未實作，跳過）
+        if (chartId && window.Config?.SUPPORTS_CHARTS_SCORES) {
           try {
             const scoreResp = await fetchWithFallback(`${API_BASE}/charts/${encodeURIComponent(chartId)}/scores`, { method: "GET" });
             if (scoreResp.ok) {
@@ -583,6 +651,11 @@
       syncNavChipActive();
       initDashboardContentTransition();
 
+      // 手機章節折疊、桌機全部展開
+      if (window.UiServices?.SectionCollapse?.initSectionCollapse) {
+        window.UiServices.SectionCollapse.initSectionCollapse();
+      }
+
       // Chart language mismatch banner (EN mode + chart in Chinese)
       updateChartLangMismatchBanner();
       
@@ -618,7 +691,7 @@
       // 使用数据渲染服务模块
       const DataRenderer = window.UiServices?.DataRenderer || {};
       
-      // 渲染八字和五行数据
+      // 渲染八字和五行数据（含道家宇宙區塊、五行一句話）
       if (DataRenderer.renderBaziData) {
         DataRenderer.renderBaziData({
           bazi,
@@ -665,6 +738,40 @@
             flowCardEl.innerHTML = cardLines.join("");
           }
         }
+        // Fallback：能量結構分析區塊 + 五行一句話
+        const yinYangBarEl = document.getElementById("yinYangBar");
+        const yangLabelEl = document.getElementById("yinYangYangLabel");
+        const yinLabelEl = document.getElementById("yinYangYinLabel");
+        const structureLabelEl = document.getElementById("yinYangStructureLabel");
+        const baseTextEl = document.getElementById("yinYangBaseText");
+        const mainShishenEl = document.getElementById("yinYangMainShishen");
+        const mainShishenTextEl = document.getElementById("yinYangMainShishenText");
+        const crossInsightEl = document.getElementById("yinYangCrossInsight");
+        const wuxingOneLinerEl = document.getElementById("wuxingOneLiner");
+        const WuxingOneLiner = window.UiUtils?.WuxingOneLiner;
+        const YinyangAdvanced = window.UiUtils?.YinyangAdvanced;
+        const dominant = (bazi.tenGod?.dominant || "").trim() || "—";
+        if (WuxingOneLiner && bazi.wuxing?.strategic) {
+          const { yangPct, yinPct } = WuxingOneLiner.computeYinYangFromWuxing(bazi.wuxing.strategic);
+          if (yinYangBarEl) yinYangBarEl.style.width = yangPct + "%";
+          if (yangLabelEl) yangLabelEl.textContent = "陽比例：" + yangPct + "%";
+          if (yinLabelEl) yinLabelEl.textContent = "陰比例：" + yinPct + "%";
+          const oneLiner = WuxingOneLiner.generateWuxingOneLiner(bazi.wuxing.strategic);
+          if (wuxingOneLinerEl) { wuxingOneLinerEl.textContent = oneLiner; wuxingOneLinerEl.classList.remove("hidden"); }
+          if (YinyangAdvanced && YinyangAdvanced.buildAdvancedAnalysis) {
+            const analysis = YinyangAdvanced.buildAdvancedAnalysis(yangPct, dominant);
+            if (structureLabelEl) structureLabelEl.textContent = "結構定位：" + ((analysis.structureLabel || "").replace(/型+$/, "") || "—") + "型";
+            if (baseTextEl) baseTextEl.textContent = analysis.baseText;
+            if (mainShishenEl) mainShishenEl.textContent = analysis.mainShishen;
+            if (mainShishenTextEl) mainShishenTextEl.textContent = analysis.mainShishenText;
+            if (crossInsightEl) crossInsightEl.textContent = analysis.crossInsight;
+          }
+        }
+      }
+
+      // 渲染太歲狀態卡
+      if (window.UiComponents?.TaisuiCard?.renderTaisuiCard) {
+        window.UiComponents.TaisuiCard.renderTaisuiCard(vy, 2026);
       }
 
       // 渲染十神指令
@@ -686,7 +793,7 @@
       }
 
       // 小限／四化（可與後端 iztro horoscope 並用）
-      const horoscope = ziwei?.horoscope || getHoroscopeFromAge(getCurrentAge(), lastGender, ziwei, bazi);
+      const horoscope = ziwei?.horoscope || getHoroscopeFromAge(getCurrentAge(), ziwei, bazi, lastGender);
 
       // 渲染紫微和流月数据（异步）
       if (DataRenderer.renderZiweiAndLiuyue) {
@@ -709,21 +816,34 @@
           if (ziwei) {
             selectPalace("命宮");
           }
+          var sysEl = document.getElementById("system");
+          if (sysEl) sysEl.classList.remove("dashboard-skeleton");
+          scheduleScrollToTop();
+        }).catch(() => {
+          var sysEl = document.getElementById("system");
+          if (sysEl) sysEl.classList.remove("dashboard-skeleton");
+          scheduleScrollToTop();
         });
       } else {
         // Fallback
         renderZiwei(ziwei, horoscope, { bazi, gender: lastGender });
         const age = getCurrentAge();
-        computeAllPalaceScores(ziwei, horoscope, { bazi, age }).then(function (computedScores) {
+        computeAllPalaceScores(ziwei, horoscope, { bazi, age }).then(function (result) {
+          const { scores: computedScores, elementRatios: computedRatios } = (result && typeof result === "object" && result.scores != null)
+            ? result
+            : { scores: result, elementRatios: {} };
           const scores = {
             palaceScores: computedScores,
-            elementRatios: ziweiScores?.elementRatios || {},
+            elementRatios: computedRatios || ziweiScores?.elementRatios || {},
           };
           window.ziweiScores = scores;
           renderZiweiScores(scores, horoscope, ziwei);
           renderLiuyue(bazi);
           updateAnnualTactics(bazi, horoscope, ziwei);
           if (ziwei) selectPalace("命宮");
+          var sysEl = document.getElementById("system");
+          if (sysEl) sysEl.classList.remove("dashboard-skeleton");
+          scheduleScrollToTop();
         }).catch(function (err) {
           console.error("計算宮位分數失敗:", err);
           if (ziweiScores?.palaceScores) {
@@ -732,6 +852,9 @@
           renderLiuyue(bazi);
           updateAnnualTactics(bazi, horoscope, ziwei);
           if (ziwei) selectPalace("命宮");
+          var sysEl = document.getElementById("system");
+          if (sysEl) sysEl.classList.remove("dashboard-skeleton");
+          scheduleScrollToTop();
         });
       }
 
@@ -811,39 +934,55 @@
         // Fallback 情况下，selectPalace 会在 Promise 回调中调用
       }
 
-      document.getElementById("ws-summary")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      // 移除計算後自動跳至 ws-summary，避免打斷使用者閱讀位置
 
       // 整合反馈系统到界面
       if (chartId && window.UiComponents?.FeedbackIntegration) {
         try {
-          // 使用整合模块，自动添加到多个位置
           window.UiComponents.FeedbackIntegration.integrateFeedback(chartId, {
-            showInSummary: true,      // 在摘要区域添加反馈链接
-            showInNav: true,          // 在导航栏添加反馈链接
-            showInBottomNav: true,    // 在移动端底部导航添加
-            showPrompts: false,       // 不在各个section添加提示（可选）
-            showDelayedPrompt: false, // 不显示延迟提示（可选）
+            showInSummary: true,
+            showInNav: true,
+            showInBottomNav: true,
+            showPrompts: false,
+            showDelayedPrompt: false,
           });
-          console.log("[ui.js] 反馈系统整合成功");
         } catch (err) {
           console.error("[ui.js] 反馈系统整合失败:", err);
-          // Fallback: 只创建浮动按钮
           if (window.UiComponents?.FeedbackWidget) {
             window.UiComponents.FeedbackWidget.createFeedbackButton({ chartId });
           }
         }
       } else if (chartId && window.UiComponents?.FeedbackWidget) {
-        // Fallback: 只创建浮动按钮
         try {
           window.UiComponents.FeedbackWidget.createFeedbackButton({ chartId });
-          console.log("[ui.js] 反馈按钮创建成功（仅浮动按钮）");
         } catch (err) {
           console.error("[ui.js] Failed to create feedback button:", err);
         }
       }
+
+      // 整合分享按鈕到導覽與底部導覽
+      if (window.UiComponents?.ShareButtons) {
+        try {
+          window.UiComponents.ShareButtons.integrateShare({
+            showInNav: true,
+            showInBottomNav: true,
+            showInSummary: true,
+          });
+        } catch (err) {
+          console.error("[ui.js] 分享按鈕整合失敗:", err);
+        }
+      }
     } catch (e) {
       console.error(e);
-      alert("系統忙碌中或資料有誤，請稍後再試。\n\n詳細：" + (e?.message || e));
+      const msg = String(e?.message || e);
+      const isNetworkError = /failed to fetch|network|load failed|connection refused|timeout/i.test(msg) || e?.name === "TypeError";
+      const isServerBusy = /伺服器暫時忙碌|資源已滿|503|Worker exceeded resource limits/i.test(msg);
+      const userMsg = isNetworkError
+        ? "無法連線至伺服器，請檢查網路後再試。"
+        : isServerBusy
+          ? msg
+          : "系統忙碌中或資料有誤，請稍後再試。\n\n詳細：" + msg;
+      alert(userMsg);
     } finally {
       btn.disabled = false;
       btn.textContent = original;
@@ -971,12 +1110,85 @@
     // Fallback: 静默失败
   };
 
-  // ====== 不確定時辰？問卷 Modal（一題一題顯示 + 進度條）======
-  // initIdentifyBirthTime 已移至 birth-time-identifier.js 组件
+  // ====== 不確定時辰？問卷 Modal ======
   const BirthTimeIdentifier = window.UiComponents?.BirthTimeIdentifier || {};
   const initIdentifyBirthTime = BirthTimeIdentifier.initIdentifyBirthTime || function() {
     console.warn("[ui.js] BirthTimeIdentifier component not available");
   };
+
+  function saveFormForLocaleSwitch() {
+    const y = document.getElementById("birthYear");
+    const m = document.getElementById("birthMonth");
+    const d = document.getElementById("birthDay");
+    if (!y || !m || !d) return false;
+    const vy = parseInt(y.value, 10);
+    const vm = parseInt(m.value, 10);
+    const vd = parseInt(d.value, 10);
+    if (!vy || !vm || !vd) return false;
+    const data = {
+      year: vy, month: vm, day: vd,
+      hour: parseInt(document.getElementById("birthHour")?.value || "0", 10),
+      minute: parseInt(document.getElementById("birthMinute")?.value || "0", 10),
+      gender: (document.getElementById("gender")?.value || "").trim(),
+      timeMode: (document.getElementById("timeMode")?.value || "exact").trim(),
+      shichen: (document.getElementById("birthShichen")?.value || "").trim(),
+      shichenHalf: (document.getElementById("birthShichenHalf")?.value || "upper").trim(),
+    };
+    try {
+      sessionStorage.setItem("localeSwitchFormData", JSON.stringify(data));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function restoreFormAfterLocaleSwitch() {
+    try {
+      const raw = sessionStorage.getItem("localeSwitchFormData");
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (!data.year || !data.month || !data.day) return;
+      sessionStorage.removeItem("localeSwitchFormData");
+      const setVal = (id, v) => {
+        const el = document.getElementById(id);
+        if (el) el.value = String(v ?? "");
+      };
+      setVal("birthYear", data.year);
+      setVal("birthMonth", data.month);
+      setVal("birthDay", data.day);
+      setVal("birthHour", data.hour ?? 0);
+      setVal("birthMinute", data.minute ?? 0);
+      setVal("gender", data.gender || "M");
+      setVal("timeMode", data.timeMode || "exact");
+      setVal("birthShichen", data.shichen || "子");
+      setVal("birthShichenHalf", data.shichenHalf || "upper");
+      const tm = document.getElementById("timeMode");
+      if (tm) tm.dispatchEvent(new Event("change", { bubbles: true }));
+      setTimeout(() => {
+        if (typeof window.reloadContentAndRecalc === "function") {
+          window.reloadContentAndRecalc();
+        } else if (typeof window.runCalculation === "function") {
+          window.runCalculation();
+        }
+      }, 500);
+    } catch (e) {
+      if (window.console) window.console.warn("[ui.js] restoreFormAfterLocaleSwitch failed:", e);
+    }
+  }
+
+  function bindLangSwitcher() {
+    document.querySelectorAll(".lang-btn, .lang-btn-mobile").forEach((btn) => {
+      const lang = btn.getAttribute("data-lang");
+      if (!lang) return;
+      btn.addEventListener("click", () => {
+        saveFormForLocaleSwitch();
+        if (window.I18n && typeof window.I18n.setLocale === "function") {
+          window.I18n.setLocale(lang, { reload: true });
+        }
+      });
+    });
+  }
+
   // ====== BOOT ======
   document.addEventListener("DOMContentLoaded", async () => {
     // 檢查必要依賴
@@ -1012,12 +1224,20 @@
     }
     
     try {
+      if (window.AuthService && typeof window.AuthService.init === "function") {
+        window.AuthService.init();
+      }
       if (window.I18n && typeof window.I18n.init === "function") {
         await window.I18n.init();
+      }
+      if (window.I18n && typeof window.I18n.applyToDom === "function") {
+        window.I18n.applyToDom();
       }
       initSelectors();
       initIdentifyBirthTime();
       syncNavChipActive();
+      restoreFormAfterLocaleSwitch();
+      bindLangSwitcher();
       
       // 使用事件绑定服务模块
       const EventBindings = window.UiServices?.EventBindings || {};
@@ -1063,7 +1283,11 @@
       // 绑定五行雷达图和条形图点击事件
       if (EventBindings.bindWuxingClickEvents) {
         EventBindings.bindWuxingClickEvents(openWuxingMeaningLikePalace);
-      } else {
+      }
+      if (EventBindings.bindOverloadAdviceModal) {
+        EventBindings.bindOverloadAdviceModal();
+      }
+      if (!EventBindings.bindWuxingClickEvents) {
         // Fallback
         ["ziweiWxRadar", "surfaceWxRadar", "strategicWxRadar", "ziweiWxBars", "surfaceWxBars", "strategicWxBars"].forEach((id) => {
           const el = document.getElementById(id);
@@ -1077,6 +1301,7 @@
       // 绑定年龄滑块事件
       if (EventBindings.bindAgeSlider) {
         EventBindings.bindAgeSlider({
+          getContract: () => (window.contract || contract),
           contract,
           getCurrentAge,
           lastGender,
@@ -1093,25 +1318,28 @@
         const currentAgeSlider = document.getElementById("currentAgeSlider");
         if (currentAgeSlider) {
           currentAgeSlider.addEventListener("input", () => {
+            const c = window.contract || contract;
             const age = Math.max(1, Math.min(120, Number(currentAgeSlider.value) || 38));
             syncAgeSliderDisplay(age);
-            if (!contract?.ziwei) return;
-            const bazi = contract.bazi;
-            const horoscope = contract.ziwei.horoscope || getHoroscopeFromAge(age, lastGender, contract.ziwei, bazi);
-            renderZiwei(contract.ziwei, horoscope, { bazi, gender: lastGender });
-            // 傳遞 bazi 和 age 以啟用完整四化系統
-            computeAllPalaceScores(contract.ziwei, horoscope, { bazi: contract.bazi, age }).then(function (computedScores) {
+            if (!c?.ziwei) return;
+            const bazi = c.bazi;
+            const horoscope = c.ziwei.horoscope || getHoroscopeFromAge(age, c.ziwei, bazi, lastGender);
+            renderZiwei(c.ziwei, horoscope, { bazi, gender: lastGender });
+            computeAllPalaceScores(c.ziwei, horoscope, { bazi: c.bazi, age }).then(function (result) {
+              const { scores: computedScores, elementRatios: computedRatios } = (result && typeof result === "object" && result.scores != null)
+                ? result
+                : { scores: result, elementRatios: {} };
               const scores = {
                 palaceScores: computedScores,
-                elementRatios: window.ziweiScores?.elementRatios || {},
+                elementRatios: computedRatios || window.ziweiScores?.elementRatios || {},
               };
               window.ziweiScores = scores;
-              renderZiweiScores(scores, horoscope, contract.ziwei);
+              renderZiweiScores(scores, horoscope, c.ziwei);
               selectPalace(selectedPalace);
             }).catch(function (err) {
               console.error("重新計算宮位分數失敗:", err);
               if (window.ziweiScores?.palaceScores) {
-                renderZiweiScores(window.ziweiScores, horoscope, contract.ziwei);
+                renderZiweiScores(window.ziweiScores, horoscope, c.ziwei);
               }
               selectPalace(selectedPalace);
             });

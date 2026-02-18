@@ -2,6 +2,10 @@
  * 紫微斗數計算相關的常數定義
  * 從 calc.js 中提取，用於模組化架構
  */
+import {
+  STAR_WUXING_MAP as REGISTRY_WUXING,
+  EN_STAR_TO_ZH_FOR_WUXING as REGISTRY_EN_TO_ZH,
+} from "./star-registry-generated.js";
 
 (function () {
   "use strict";
@@ -28,7 +32,7 @@
     "財帛": ["財帛", "财帛", "財帛宮", "财帛宫"],
     "疾厄": ["疾厄", "疾厄宮"],
     "遷移": ["遷移", "迁移", "遷移宮", "迁移宫"],
-    "僕役": ["僕役", "仆役", "僕役宮", "仆役宫"],
+    "僕役": ["僕役", "仆役", "奴僕", "僕役宮", "仆役宫"],
     "官祿": ["官祿", "官禄", "官祿宮", "官禄宫"],
     "田宅": ["田宅", "田宅宮"],
     "福德": ["福德", "福德宮"],
@@ -204,14 +208,11 @@
     "祿存與天馬": "祿存與天馬",
   };
 
-  /**
-   * 五行 map 用「繁體星名」
-   */
-  const STAR_WUXING_MAP = {
-    "紫微": "土", "天機": "木", "太陽": "火", "武曲": "金", "天同": "水",
-    "廉貞": "火", "天府": "土", "太陰": "水", "貪狼": "木", "巨門": "水",
-    "天相": "水", "天梁": "土", "七殺": "金", "破軍": "水",
-  };
+  /** 五行 map 用「繁體星名」（來自 star-registry） */
+  const STAR_WUXING_MAP = REGISTRY_WUXING;
+
+  /** en-US 星曜 key → 繁體（用於五行計算，當 mainStars 為 en 時轉換，來自 star-registry） */
+  const EN_STAR_TO_ZH_FOR_WUXING = REGISTRY_EN_TO_ZH;
 
   /**
    * 星曜繁體名稱 → JSON ID 映射表
@@ -435,22 +436,22 @@
    * 全域相生（深度貼文風格）
    */
   const GENERATION_POST_STYLE = Object.freeze({
-    "木->火": { headline: "策略引燃市場", text: "你的執行力（木）正精準轉化為市場名聲（火），品牌能量正處於上升期。" },
-    "火->土": { headline: "流量沉澱資產", text: "目前的高關注度（火）應迅速轉化為品牌信用與基礎建設（土），避免熱度流失。" },
-    "土->金": { headline: "資源轉化效率", text: "厚實的根基（土）是為了萃取更高效率的 SOP 與規則（金），讓組織自動運轉。" },
-    "金->水": { headline: "決斷催生智慧", text: "你的紀律與邊界（金）正在為深度的思考與策略（水）提供乾淨的環境。" },
-    "水->木": { headline: "智謀驅動執行", text: "充沛的智慧（水）正高效轉化為具體的執行管道（木），這是最強的變現路徑。" },
+    "木->火": { headline: "策略引導行動。", text: "結構正在把潛能轉化為影響力。" },
+    "火->土": { headline: "高強度輸出正在沉澱為穩定基礎。", text: "" },
+    "土->金": { headline: "基礎結構正在提煉為決斷標準。", text: "" },
+    "金->水": { headline: "紀律形成洞察。", text: "" },
+    "水->木": { headline: "洞察轉化為新一輪啟動。", text: "" },
   });
 
   /**
    * 全域相剋（深度貼文風格）
    */
   const OVERCOMING_POST_STYLE = Object.freeze({
-    "木->土": { headline: "擴張動搖根基", text: "過度的擴張慾望（木）正在損害你的信用與穩定性（土），請注意步調。" },
-    "土->水": { headline: "體制限制創意", text: "僵化的制度或過度追求穩健（土），正在扼殺你原本靈活的智慧流動（水）。" },
-    "水->火": { headline: "理性壓制熱情", text: "絕對的冷靜理性（水）雖然能避險，但也可能讓你的事業缺乏感性紅利（火）。" },
-    "火->金": { headline: "情緒破壞規則", text: "突發的情緒衝動或追求曝光（火），正在挑戰你辛苦建立的決斷邊界（金）。" },
-    "金->木": { headline: "規則扼殺執行", text: "嚴苛的管理與自我設限（金），正在剪除你應有的執行活力與成長空間（木）。" },
+    "木->土": { headline: "擴張壓力正在動搖基礎。", text: "" },
+    "土->水": { headline: "過度穩定限制流動。", text: "" },
+    "水->火": { headline: "理性過度壓抑行動。", text: "" },
+    "火->金": { headline: "衝動削弱決斷力。", text: "" },
+    "金->木": { headline: "過嚴標準阻礙成長。", text: "" },
   });
 
   /**
@@ -461,29 +462,29 @@
   /**
    * 伯彥戰略看板：最優路徑（表層：角色名望）
    */
-  const BOYAN_CONVERSION_ONE_SURFACE = {
-    "木->火": "將外在成長感（木）轉成能見度與影響力（火），這才是你能拿走的資產。",
-    "火->土": "將高關注度（火）沉澱為可靠形象與長期信用（土），這才是你能拿走的資產。",
-    "土->金": "將穩定基礎（土）萃成專業標準與執行規則（金），這才是你能拿走的資產。",
-    "金->水": "將專業界線（金）催生有效溝通與資訊網絡（水），這才是你能拿走的資產。",
-    "水->木": "將溝通連結（水）轉成成長網絡與人際開展（木），這才是你能拿走的資產。",
+  const POYEN_CONVERSION_ONE_SURFACE = {
+    "木->火": "結構轉換建議：將木轉化為火。此為可累積之長期資產。",
+    "火->土": "結構轉換建議：將火轉化為土。此為可累積之長期資產。",
+    "土->金": "結構轉換建議：將土轉化為金。此為可累積之長期資產。",
+    "金->水": "結構轉換建議：將金轉化為水。此為可累積之長期資產。",
+    "水->木": "結構轉換建議：將水轉化為木。此為可累積之長期資產。",
   };
 
   /**
    * 伯彥戰略看板：最優路徑（實戰：核心戰力）
    */
-  const BOYAN_CONVERSION_ONE_STRATEGIC = {
-    "木->火": "將策略規劃（木）轉成執行推進（火），這才是你能拿走的資產。",
-    "火->土": "將推進動能（火）沉澱為系統累積與長期資產（土），這才是你能拿走的資產。",
-    "土->金": "將穩定基礎（土）萃成流程效率與決斷標準（金），這才是你能拿走的資產。",
-    "金->水": "將決斷流程（金）催生深度洞察與資訊整合（水），這才是你能拿走的資產。",
-    "水->木": "將洞察分析（水）轉成策略展開與執行啟動（木），這才是你能拿走的資產。",
+  const POYEN_CONVERSION_ONE_STRATEGIC = {
+    "木->火": "結構轉換建議：將木轉化為火。此為可累積之長期資產。",
+    "火->土": "結構轉換建議：將火轉化為土。此為可累積之長期資產。",
+    "土->金": "結構轉換建議：將土轉化為金。此為可累積之長期資產。",
+    "金->水": "結構轉換建議：將金轉化為水。此為可累積之長期資產。",
+    "水->木": "結構轉換建議：將水轉化為木。此為可累積之長期資產。",
   };
 
   /**
    * 伯彥戰略看板：系統風險（表層：角色名望）
    */
-  const BOYAN_RISK_ONE_SURFACE = {
+  const POYEN_RISK_ONE_SURFACE = {
     "木->土": "過度擴張（木）正在損害你的可靠形象與信任基礎（土）。",
     "土->水": "過於保守（土）正在限制你的溝通流動與資訊連結（水）。",
     "水->火": "過度變動（水）壓制你的表達熱情（火），讓你的影響力難以聚焦。",
@@ -494,7 +495,7 @@
   /**
    * 伯彥戰略看板：系統風險（實戰：核心戰力）
    */
-  const BOYAN_RISK_ONE_STRATEGIC = {
+  const POYEN_RISK_ONE_STRATEGIC = {
     "木->土": "規劃過多（木）正在損害你的系統穩定與成果累積（土）。",
     "土->水": "過於保守（土）正在限制你的洞察流動與資訊處理（水）。",
     "水->火": "過度思考（水）壓制你的執行推進（火），讓你的行動力難以發揮。",
@@ -505,34 +506,34 @@
   /**
    * 伯彥戰略看板：助推建議（表層：角色名望）
    */
-  const BOYAN_PUSH_SURFACE = {
-    "木": "今年，你需要練習在成長與收斂之間找到平衡，讓每一次的連結都有明確的目的。",
-    "火": "今年，你需要練習控制輸出節奏，讓每一次的表達都更有份量。",
-    "土": "今年，你需要練習在穩定與創新之間找到平衡，讓你的可靠成為優勢而非限制。",
-    "金": "今年，你需要練習在原則與人情之間找到平衡，讓你的界線成為保護而非阻礙。",
-    "水": "今年，你需要練習在流動與穩定之間找到平衡，讓你的溝通成為橋樑而非消耗。",
+  const POYEN_PUSH_SURFACE = {
+    "木": "優先補強【木】後，再擴張。",
+    "火": "優先補強【火】後，再擴張。",
+    "土": "優先補強【土】後，再擴張。",
+    "金": "優先補強【金】後，再擴張。",
+    "水": "優先補強【水】後，再擴張。",
   };
 
   /**
    * 伯彥戰略看板：助推建議（實戰：核心戰力）
    */
-  const BOYAN_PUSH_STRATEGIC = {
-    "木": "今年，你需要練習直接啟動，讓策略成為行動的指南而非拖延的藉口。",
-    "火": "今年，你需要練習管理輸出節奏，讓每一次的推進都更有續航力。",
-    "土": "今年，你需要練習在累積與創新之間找到平衡，讓你的穩定成為基礎而非限制。",
-    "金": "今年，你需要練習在效率與人性之間找到平衡，讓你的決斷成為助力而非阻力。",
-    "水": "今年，你需要練習在思考與行動之間找到平衡，讓你的洞察成為決策的基礎而非拖延的理由。",
+  const POYEN_PUSH_STRATEGIC = {
+    "木": "優先補強【木】後，再擴張。",
+    "火": "優先補強【火】後，再擴張。",
+    "土": "優先補強【土】後，再擴張。",
+    "金": "優先補強【金】後，再擴張。",
+    "水": "優先補強【水】後，再擴張。",
   };
 
   /**
    * 伯彥戰略看板（向後兼容，預設為實戰）
    */
-  const BOYAN_CONVERSION_ONE = BOYAN_CONVERSION_ONE_STRATEGIC;
-  const BOYAN_RISK_ONE = BOYAN_RISK_ONE_STRATEGIC;
-  const BOYAN_PUSH = BOYAN_PUSH_STRATEGIC;
+  const POYEN_CONVERSION_ONE = POYEN_CONVERSION_ONE_STRATEGIC;
+  const POYEN_RISK_ONE = POYEN_RISK_ONE_STRATEGIC;
+  const POYEN_PUSH = POYEN_PUSH_STRATEGIC;
 
   // ==============================
-  // EN: Five-Phase / Boyan texts
+  // EN: Five-Phase / PoYen texts
   // ==============================
   const ELEMENT_TYPE_EN = { "木": "Execution-Type", "火": "Amplification-Type", "土": "Integration-Type", "金": "Decision-Type", "水": "Flow-Type" };
   const ELEMENT_TYPE_EN_FALLBACK = "Balanced-Type";
@@ -552,61 +553,61 @@
     "金": { core: "Decisiveness Module", low01: "Decision friction; blurry boundaries", level2: "Cuts cleanly; decides decisively; builds clear processes", level3: "Too harsh; lacks flexibility", remedy: "This year, practice balancing efficiency with humanity—let decisiveness help, not harden." },
     "水": { core: "Insight Module", low01: "Mental dryness; narrowed perspective", level2: "Thinks deeply; discerns well; handles complexity", level3: "Overthinking; underacting", remedy: "This year, practice balancing thought with action—make insight a base for decisions, not a reason to stall." },
   };
-  const BOYAN_CONVERSION_ONE_SURFACE_EN = {
-    "木->火": "Convert growth presence (Wood) into visibility and influence (Fire)—that's the asset you can actually take with you.",
-    "火->土": "Settle high attention (Fire) into a reliable image and long-term credit (Earth)—that's the asset you can actually take with you.",
-    "土->金": "Refine a stable base (Earth) into professional standards and execution rules (Metal)—that's the asset you can actually take with you.",
-    "金->水": "Turn professional boundaries (Metal) into effective communication and an information network (Water)—that's the asset you can actually take with you.",
-    "水->木": "Convert communication links (Water) into growth networks and relationship expansion (Wood)—that's the asset you can actually take with you.",
+  const POYEN_CONVERSION_ONE_SURFACE_EN = {
+    "木->火": "Structural conversion: transform Wood into Fire. This becomes a compounding long-term asset.",
+    "火->土": "Structural conversion: transform Fire into Earth. This becomes a compounding long-term asset.",
+    "土->金": "Structural conversion: transform Earth into Metal. This becomes a compounding long-term asset.",
+    "金->水": "Structural conversion: transform Metal into Water. This becomes a compounding long-term asset.",
+    "水->木": "Structural conversion: transform Water into Wood. This becomes a compounding long-term asset.",
   };
-  const BOYAN_CONVERSION_ONE_STRATEGIC_EN = {
-    "木->火": "Convert strategy planning (Wood) into execution momentum (Fire)—that's the asset you can actually take with you.",
-    "火->土": "Settle momentum (Fire) into system accumulation and long-term assets (Earth)—that's the asset you can actually take with you.",
-    "土->金": "Refine a stable base (Earth) into process efficiency and decision standards (Metal)—that's the asset you can actually take with you.",
-    "金->水": "Turn decision processes (Metal) into deep insight and information synthesis (Water)—that's the asset you can actually take with you.",
-    "水->木": "Convert insight analysis (Water) into strategy expansion and initiation (Wood)—that's the asset you can actually take with you.",
+  const POYEN_CONVERSION_ONE_STRATEGIC_EN = {
+    "木->火": "Structural conversion: transform Wood into Fire. This becomes a compounding long-term asset.",
+    "火->土": "Structural conversion: transform Fire into Earth. This becomes a compounding long-term asset.",
+    "土->金": "Structural conversion: transform Earth into Metal. This becomes a compounding long-term asset.",
+    "金->水": "Structural conversion: transform Metal into Water. This becomes a compounding long-term asset.",
+    "水->木": "Structural conversion: transform Water into Wood. This becomes a compounding long-term asset.",
   };
-  const BOYAN_RISK_ONE_SURFACE_EN = {
+  const POYEN_RISK_ONE_SURFACE_EN = {
     "木->土": "Over-expansion (Wood) is damaging your reliability and trust foundation (Earth).",
     "土->水": "Over-conservatism (Earth) is limiting communication flow and information links (Water).",
     "水->火": "Over-shifting (Water) suppresses expressive heat (Fire), making influence hard to focus.",
     "火->金": "Emotion-led decisions (Fire) are burning down your professional boundaries and execution standards (Metal).",
     "金->木": "Over-strictness (Metal) is choking growth momentum and relationship expansion (Wood).",
   };
-  const BOYAN_RISK_ONE_STRATEGIC_EN = {
+  const POYEN_RISK_ONE_STRATEGIC_EN = {
     "木->土": "Over-planning (Wood) is damaging system stability and result accumulation (Earth).",
     "土->水": "Over-conservatism (Earth) is limiting insight flow and information processing (Water).",
     "水->火": "Overthinking (Water) suppresses execution momentum (Fire), making action hard to land.",
     "火->金": "Over-consumption (Fire) is burning down your decision process and execution standards (Metal).",
     "金->木": "Over-strictness (Metal) is choking strategy expansion and initiation (Wood).",
   };
-  const BOYAN_PUSH_SURFACE_EN = {
-    "木": "This year, practice balancing expansion with restraint—make every connection serve a clear purpose.",
-    "火": "This year, practice controlling your output rhythm—make each expression carry more weight.",
-    "土": "This year, practice balancing stability with innovation—let reliability be an advantage, not a limit.",
-    "金": "This year, practice balancing principles with human context—make boundaries protective, not obstructive.",
-    "水": "This year, practice balancing flow with stability—let communication become a bridge, not a drain.",
+  const POYEN_PUSH_SURFACE_EN = {
+    "木": "Reinforce Wood before expansion.",
+    "火": "Reinforce Fire before expansion.",
+    "土": "Reinforce Earth before expansion.",
+    "金": "Reinforce Metal before expansion.",
+    "水": "Reinforce Water before expansion.",
   };
-  const BOYAN_PUSH_STRATEGIC_EN = {
-    "木": "This year, practice starting directly—let strategy guide action, not justify delay.",
-    "火": "This year, practice managing output rhythm—make each push more sustainable.",
-    "土": "This year, practice balancing accumulation with innovation—make stability a base, not a ceiling.",
-    "金": "This year, practice balancing efficiency with humanity—let decisiveness help, not harden.",
-    "水": "This year, practice balancing thought with action—make insight a base for decisions, not a reason to stall.",
+  const POYEN_PUSH_STRATEGIC_EN = {
+    "木": "Reinforce Wood before expansion.",
+    "火": "Reinforce Fire before expansion.",
+    "土": "Reinforce Earth before expansion.",
+    "金": "Reinforce Metal before expansion.",
+    "水": "Reinforce Water before expansion.",
   };
   const GENERATION_POST_STYLE_EN = {
-    "木->火": { headline: "Strategy Ignites the Market", text: "Your execution channel (Wood) is converting precisely into visibility and reputation (Fire). Brand energy is rising." },
-    "火->土": { headline: "Attention Settles Into Assets", text: "High attention (Fire) should quickly convert into brand credit and infrastructure (Earth) before heat leaks away." },
-    "土->金": { headline: "Resources Become Efficiency", text: "A thick base (Earth) is here to refine higher-efficiency SOPs and rules (Metal) so the system can run itself." },
-    "金->水": { headline: "Discipline Generates Wisdom", text: "Your discipline and boundaries (Metal) are creating a clean environment for deeper thinking and strategy (Water)." },
-    "水->木": { headline: "Insight Drives Execution", text: "Abundant insight (Water) is converting efficiently into concrete execution channels (Wood)—a high-leverage monetization path." },
+    "木->火": { headline: "Strategy ignites execution.", text: "Potential is converting into visible impact." },
+    "火->土": { headline: "High intensity output consolidates into stability.", text: "" },
+    "土->金": { headline: "Foundation refines into decision precision.", text: "" },
+    "金->水": { headline: "Discipline generates insight.", text: "" },
+    "水->木": { headline: "Insight catalyzes renewed initiation.", text: "" },
   };
   const OVERCOMING_POST_STYLE_EN = {
-    "木->土": { headline: "Expansion Shakes the Base", text: "Excess expansion drive (Wood) is damaging your trust and stability (Earth). Slow the pace and secure the base." },
-    "土->水": { headline: "Structure Restricts Creativity", text: "Rigid systems or over-seeking stability (Earth) can choke your flexible insight flow (Water)." },
-    "水->火": { headline: "Rationality Suppresses Heat", text: "Absolute cool rationality (Water) reduces risk—but may also drain the emotional upside and expression (Fire)." },
-    "火->金": { headline: "Emotion Breaks the Rules", text: "Sudden impulses or chasing exposure (Fire) can challenge the decision boundaries and standards (Metal) you built." },
-    "金->木": { headline: "Rules Cut Off Growth", text: "Harsh control and self-limits (Metal) can prune the execution vitality and growth space (Wood) you need." },
+    "木->土": { headline: "Expansion pressure destabilizes foundation.", text: "" },
+    "土->水": { headline: "Excess stability restricts flow.", text: "" },
+    "水->火": { headline: "Over-analysis suppresses execution.", text: "" },
+    "火->金": { headline: "Impulse erodes decision discipline.", text: "" },
+    "金->木": { headline: "Rigid standards inhibit growth.", text: "" },
   };
   const STRONG_COMMENTS_SURFACE_EN = {
     "木": "You come across as proactive and growth-oriented—willing to expand your circle.",
@@ -679,20 +680,20 @@
    * 蘊含溫和鼓勵性質，但保持不同級別的差異性
    */
   const STRATEGIC_ADVICE_BY_STARS = {
-    5: "全速推進。能量通道完全開啟，適合執行高槓桿計畫，把握優勢時機。",
-    4: "穩健擴張。系統運轉順暢，可適度增加資源投入與執行強度，持續優化流程。",
-    3: "維持節奏。當前狀態平穩，建議保持現有策略，在穩定中尋找微調機會。",
-    2: "聚焦優化。系統運作正常，建議優先處理核心任務，逐步建立更穩健的運作模式。",
-    1: "穩步調整。系統基礎穩固，建議從關鍵環節開始優化，為後續發展打好基礎。"
+    5: "結構高度對齊。適合放大行動與承擔關鍵責任，把握窗口。",
+    4: "動能穩定增強。可逐步擴張，但仍需保持節奏與邊界。",
+    3: "結構穩定運行。維持現有策略，優化細節而非大幅擴張。",
+    2: "關鍵節點待修正。優先補強薄弱環節，再考慮放大行動。",
+    1: "結構基礎需重建。避免擴張，專注於修復與整合。"
   };
 
   /** EN: Decision Structure tone — strategic analytical, no fate/emotional language */
   const STRATEGIC_ADVICE_BY_STARS_EN = {
-    5: "Strategic Window Open. Conditions support high-leverage execution. Move decisively while structural support is strong.",
-    4: "Expansion Supported. System flow is smooth. Increase resource allocation gradually and optimize process depth.",
-    3: "Maintain Rhythm. Stability is present. Refine rather than expand.",
-    2: "Focus Optimization. System operates normally. Prioritize core tasks and build steadier operational patterns.",
-    1: "Structural Consolidation Phase. Strengthen core mechanics before scaling. Focus on critical nodes first."
+    5: "Structural alignment peak. Expand actions and take decisive responsibility while the window is open.",
+    4: "Momentum strengthening. Scale gradually while maintaining rhythm and boundaries.",
+    3: "Stable structural flow. Maintain current direction and refine rather than expand.",
+    2: "Critical nodes require adjustment. Reinforce weak points before acceleration.",
+    1: "Structural foundation requires reinforcement. Avoid expansion and focus on rebuilding core integrity."
   };
 
   // ====== 導出 ======
@@ -713,6 +714,7 @@
       // 星曜相關
       STAR_NAME_TRAD_MAP,
       STAR_WUXING_MAP,
+      EN_STAR_TO_ZH_FOR_WUXING,
       STAR_NAME_TO_ID_MAP,
       
       // 時辰相關
@@ -738,15 +740,15 @@
       GENERATION_POST_STYLE,
       OVERCOMING_POST_STYLE,
       ELEMENT_TYPE,
-      BOYAN_CONVERSION_ONE,
-      BOYAN_CONVERSION_ONE_SURFACE,
-      BOYAN_CONVERSION_ONE_STRATEGIC,
-      BOYAN_RISK_ONE,
-      BOYAN_RISK_ONE_SURFACE,
-      BOYAN_RISK_ONE_STRATEGIC,
-      BOYAN_PUSH,
-      BOYAN_PUSH_SURFACE,
-      BOYAN_PUSH_STRATEGIC,
+      POYEN_CONVERSION_ONE,
+      POYEN_CONVERSION_ONE_SURFACE,
+      POYEN_CONVERSION_ONE_STRATEGIC,
+      POYEN_RISK_ONE,
+      POYEN_RISK_ONE_SURFACE,
+      POYEN_RISK_ONE_STRATEGIC,
+      POYEN_PUSH,
+      POYEN_PUSH_SURFACE,
+      POYEN_PUSH_STRATEGIC,
 
       // EN variants
       ELEMENT_TYPE_EN,
@@ -755,12 +757,12 @@
       RELATION_BADGE_EN,
       ELEMENT_CORE_MEANING_SURFACE_EN,
       ELEMENT_CORE_MEANING_STRATEGIC_EN,
-      BOYAN_CONVERSION_ONE_SURFACE_EN,
-      BOYAN_CONVERSION_ONE_STRATEGIC_EN,
-      BOYAN_RISK_ONE_SURFACE_EN,
-      BOYAN_RISK_ONE_STRATEGIC_EN,
-      BOYAN_PUSH_SURFACE_EN,
-      BOYAN_PUSH_STRATEGIC_EN,
+      POYEN_CONVERSION_ONE_SURFACE_EN,
+      POYEN_CONVERSION_ONE_STRATEGIC_EN,
+      POYEN_RISK_ONE_SURFACE_EN,
+      POYEN_RISK_ONE_STRATEGIC_EN,
+      POYEN_PUSH_SURFACE_EN,
+      POYEN_PUSH_STRATEGIC_EN,
       GENERATION_POST_STYLE_EN,
       OVERCOMING_POST_STYLE_EN,
       STRONG_COMMENTS_SURFACE_EN,
@@ -810,27 +812,27 @@
       GENERATION_POST_STYLE,
       OVERCOMING_POST_STYLE,
       ELEMENT_TYPE,
-      BOYAN_CONVERSION_ONE,
-      BOYAN_CONVERSION_ONE_SURFACE,
-      BOYAN_CONVERSION_ONE_STRATEGIC,
-      BOYAN_RISK_ONE,
-      BOYAN_RISK_ONE_SURFACE,
-      BOYAN_RISK_ONE_STRATEGIC,
-      BOYAN_PUSH,
-      BOYAN_PUSH_SURFACE,
-      BOYAN_PUSH_STRATEGIC,
+      POYEN_CONVERSION_ONE,
+      POYEN_CONVERSION_ONE_SURFACE,
+      POYEN_CONVERSION_ONE_STRATEGIC,
+      POYEN_RISK_ONE,
+      POYEN_RISK_ONE_SURFACE,
+      POYEN_RISK_ONE_STRATEGIC,
+      POYEN_PUSH,
+      POYEN_PUSH_SURFACE,
+      POYEN_PUSH_STRATEGIC,
       ELEMENT_TYPE_EN,
       ELEMENT_TYPE_EN_FALLBACK,
       ENERGY_LABEL_EN,
       RELATION_BADGE_EN,
       ELEMENT_CORE_MEANING_SURFACE_EN,
       ELEMENT_CORE_MEANING_STRATEGIC_EN,
-      BOYAN_CONVERSION_ONE_SURFACE_EN,
-      BOYAN_CONVERSION_ONE_STRATEGIC_EN,
-      BOYAN_RISK_ONE_SURFACE_EN,
-      BOYAN_RISK_ONE_STRATEGIC_EN,
-      BOYAN_PUSH_SURFACE_EN,
-      BOYAN_PUSH_STRATEGIC_EN,
+      POYEN_CONVERSION_ONE_SURFACE_EN,
+      POYEN_CONVERSION_ONE_STRATEGIC_EN,
+      POYEN_RISK_ONE_SURFACE_EN,
+      POYEN_RISK_ONE_STRATEGIC_EN,
+      POYEN_PUSH_SURFACE_EN,
+      POYEN_PUSH_STRATEGIC_EN,
       GENERATION_POST_STYLE_EN,
       OVERCOMING_POST_STYLE_EN,
       STRONG_COMMENTS_SURFACE_EN,

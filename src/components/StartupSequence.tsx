@@ -49,7 +49,7 @@ export function StartupSequence({
   onFinished,
   branchLabel = "",
   personaLine = "",
-  enableSound = true,
+  enableSound: _enableSound = true,
 }: StartupSequenceProps) {
   const particleCount = useMemo(() => (isLineBrowser() ? Math.floor(PARTICLE_COUNT / 2) : PARTICLE_COUNT), []);
   const particles = useParticles(particleCount);

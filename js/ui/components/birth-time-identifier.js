@@ -96,12 +96,26 @@
       return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     }
 
-    function openModal() {
+    async function openModal() {
       var auth = window.AuthService;
       if (!auth || !auth.isLoggedIn || !auth.isLoggedIn()) {
         try { sessionStorage.setItem("openEstimateHourAfterLogin", "1"); } catch (_) {}
         if (auth && auth.triggerLogin) auth.triggerLogin();
         return;
+      }
+      if (typeof window.IdentifyBirthTime === "undefined") {
+        var btn = document.getElementById("btnIdentifyBirthTimeGlobal") || document.getElementById("btnIdentifyBirthTime");
+        if (btn) btn.disabled = true;
+        try {
+          await import("../../identifyBirthTime.js");
+        } catch (e) {
+          console.error("[BirthTimeIdentifier] 載入推算時辰模組失敗:", e);
+          var Toast = window.UiServices?.Toast;
+          if (Toast && Toast.show) Toast.show("無法載入推算時辰功能，請稍後再試。", { type: "error" });
+          if (btn) btn.disabled = false;
+          return;
+        }
+        if (btn) btn.disabled = false;
       }
       currentIndex = 0;
       answers = {};
@@ -272,6 +286,7 @@
     function hasCurrentAnswer() {
       var q = questions[currentIndex];
       if (!q) return false;
+      if (q.optional) return true;
       if (q.multiSelect && q.maxSelect) {
         var checked = form.querySelectorAll('input[name="' + q.id + '"]:checked');
         return checked.length > 0;

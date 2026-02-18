@@ -97,19 +97,22 @@
 
   /**
    * 載入 KB（瀏覽器可傳 baseUrl 用 fetch；或直接傳入已載好的 kb 物件）
-   * @param {string} [baseUrl] - 例如 '' 或 '/data/wuxing'
+   * @param {string} [baseUrl] - 例如 '' 或 '/data/wuxing'；會以當前 origin 解析確保正式站路徑正確
    * @returns {Promise<Object>} kb
    */
   async function loadKB(baseUrl) {
     baseUrl = baseUrl || "/data/wuxing";
+    const base = (typeof globalThis !== "undefined" && globalThis.location)
+      ? new URL(baseUrl, globalThis.location.origin).href
+      : baseUrl;
     const [elements, stems, branches, monthBranches, flowDesc] = await Promise.all([
-      fetch(baseUrl + "/elements.json").then((r) => r.json()),
-      fetch(baseUrl + "/stems.json").then((r) => r.json()),
-      fetch(baseUrl + "/branches.json").then((r) => r.json()),
-      fetch(baseUrl + "/month_branches.json").then((r) => r.json()),
-      fetch(baseUrl + "/flow_descriptions.json").then((r) => r.json()),
+      fetch(base + "/elements.json").then((r) => { if (!r.ok) throw new Error("elements.json " + r.status); return r.json(); }),
+      fetch(base + "/stems.json").then((r) => { if (!r.ok) throw new Error("stems.json " + r.status); return r.json(); }),
+      fetch(base + "/branches.json").then((r) => { if (!r.ok) throw new Error("branches.json " + r.status); return r.json(); }),
+      fetch(base + "/month_branches.json").then((r) => { if (!r.ok) throw new Error("month_branches.json " + r.status); return r.json(); }),
+      fetch(base + "/flow_descriptions.json").then((r) => { if (!r.ok) throw new Error("flow_descriptions.json " + r.status); return r.json(); }),
     ]);
-    return {
+    const kb = {
       elements: elements.elements || [],
       gen_edges: elements.gen_edges || [],
       ctl_edges: elements.ctl_edges || [],
@@ -118,6 +121,10 @@
       month_branches: monthBranches.month_branches || [],
       flow_descriptions: flowDesc,
     };
+    if (typeof globalThis !== "undefined" && globalThis.console && globalThis.console.info) {
+      globalThis.console.info("[WuxingFlowPipeline] KB 載入成功，base:", base);
+    }
+    return kb;
   }
 
   function buildStemToElem(stems) {
@@ -187,18 +194,40 @@
    * @param {string} monthBranchZh - 月柱地支中文（如 "寅"）
    * @param {Object} v_raw - 原始向量
    * @param {Object} kb
+   * @param {Object} [override] - 覆寫乘數，如 { wood: 1.4, fire: 1 }，會覆蓋 kb 內該月支的對應值
    */
-  function applySeason(monthBranchZh, v_raw, kb) {
+  function applySeason(monthBranchZh, v_raw, kb, override) {
     const { zhToId } = buildBranchLookup(kb.branches);
     const multipliers = buildMonthMultipliers(kb.month_branches);
     const branchId = zhToId[monthBranchZh] || monthBranchZh;
-    const m = multipliers[branchId];
+    let m = multipliers[branchId];
     if (!m) return copyVector(v_raw);
+    if (override && typeof override === "object") {
+      m = { ...m };
+      ELEMENT_IDS.forEach((e) => { if (override[e] != null) m[e] = override[e]; });
+    }
     const v_season = {};
     ELEMENT_IDS.forEach((e) => {
       v_season[e] = (Number(v_raw[e]) || 0) * (m[e] != null ? m[e] : 1);
     });
     return v_season;
+  }
+
+  /**
+   * 日主加權：對日干所屬五行額外乘數，凸顯「日主為我」
+   * @param {Object} v - 向量（通常為 v_season）
+   * @param {string} dayStemZh - 日干中文（如 "甲"）
+   * @param {Object} kb
+   * @param {number} boost - 乘數，預設 1.2（日主元素 ×1.2）
+   */
+  function applyDayStemBoost(v, dayStemZh, kb, boost) {
+    if (boost == null || boost <= 1) return copyVector(v);
+    const stemToElem = buildStemToElem(kb.stems);
+    const elem = stemToElem[dayStemZh];
+    if (!elem) return copyVector(v);
+    const out = copyVector(v);
+    out[elem] = (Number(out[elem]) || 0) * boost;
+    return out;
   }
 
   /**
@@ -424,14 +453,19 @@
       predictionText = isEn ? "To turn five-phase insights into practical decisions, consider a consultation for a full birth chart and annual fortune analysis." : "若希望把五行生剋的訊息落實到實際決策與未來規劃，可以透過與李伯彥老師的諮詢，拿到完整個人命書與流年運勢解析，整理成真正能用的行動指引。";
     }
 
-    // ---- 五段式全文（純中文標題、無英文與數值）----
+    // ---- 五段式全文（標題依語系）----
+    const section1 = isEn ? "Overall Momentum" : "一、整體勢能";
+    const section2 = isEn ? "Smoothest Generative Path" : "二、最順暢的生成路徑";
+    const section3 = isEn ? "Primary Structural Bottleneck" : "三、主要結構瓶頸";
+    const section4 = isEn ? "Strongest Control Pressure" : "四、最大制衡壓力";
+    const section5 = isEn ? "Strategic Recommendation" : "五、行動建議";
     const fullReportText =
       "【五行生剋診斷】\n\n" +
-      "一、氣勢\n" + momentumText + "\n\n" +
-      "二、相生優勢\n" + genPositiveText + "\n\n" +
-      "三、相生瓶頸\n" + bottleneckText + "\n\n" +
-      "四、最大制衡壓力\n" + controlText + "\n\n" +
-      "五、下一步我們能為你做什麼？\n" + predictionText;
+      section1 + "\n" + momentumText + "\n\n" +
+      section2 + "\n" + genPositiveText + "\n\n" +
+      section3 + "\n" + bottleneckText + "\n\n" +
+      section4 + "\n" + controlText + "\n\n" +
+      section5 + "\n" + predictionText;
 
     // 向後相容：卡片用欄位（純中文、無數值）
     const chief_complaint = momentumText;
@@ -501,7 +535,14 @@
     const locale = opts.locale || (typeof global !== "undefined" && global.I18n?.getLocale?.()) || (typeof window !== "undefined" && window.I18n?.getLocale?.()) || "zh-TW";
     const v_raw = vectorize(pillars, kb, opts.stem_w, opts.branch_w);
     const monthBranch = (pillars.month && pillars.month.branch) || "寅";
-    const v_season = applySeason(monthBranch, v_raw, kb);
+    const { zhToId } = buildBranchLookup(kb.branches);
+    const branchId = zhToId[monthBranch] || monthBranch;
+    const multiOverride = opts.month_multipliers_override?.[branchId];
+    let v_season = applySeason(monthBranch, v_raw, kb, multiOverride);
+    const dayStem = (pillars.day && pillars.day.stem) || "";
+    if (dayStem && opts.day_stem_boost != null && opts.day_stem_boost > 1) {
+      v_season = applyDayStemBoost(v_season, dayStem, kb, opts.day_stem_boost);
+    }
     const flows = computeFlows(v_season, kb, opts.alpha, opts.beta);
     const bottleneckResult = analyzeBottlenecks(v_season, kb);
     const controlResult = analyzeControl(v_season, kb);
@@ -517,13 +558,32 @@
     };
   }
 
+  /** 正式站診斷：在 Console 執行 checkWuxingKB() 可測試 KB 是否載入成功 */
+  async function checkWuxingKB() {
+    try {
+      const kb = await loadKB("/data/wuxing");
+      const ok = kb && kb.stems?.length > 0 && kb.branches?.length > 0;
+      if (typeof globalThis.console !== "undefined") {
+        globalThis.console.info("[WuxingFlowPipeline] checkWuxingKB:", ok ? "OK" : "FAIL", "stems:", kb?.stems?.length, "branches:", kb?.branches?.length);
+      }
+      return { ok, kb };
+    } catch (e) {
+      if (typeof globalThis.console !== "undefined") {
+        globalThis.console.error("[WuxingFlowPipeline] checkWuxingKB FAIL:", e?.message || e);
+      }
+      return { ok: false, error: String(e?.message || e) };
+    }
+  }
+
   const api = {
     ELEMENT_IDS,
     zeroVector,
     loadKB,
+    checkWuxingKB,
     buildPillarsFromBazi,
     vectorize,
     applySeason,
+    applyDayStemBoost,
     computeFlows,
     analyzeBottlenecks,
     analyzeControl,

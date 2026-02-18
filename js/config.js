@@ -8,18 +8,38 @@
 
   /**
    * API 基底 URL
-   * 依 hostname 自動切換：localhost → 本地 Worker；否則 → 遠端
+   * - 8788（wrangler pages dev）：用同源，由 Pages Function 代理到遠端 Worker
+   * - 5173（vite dev）：直接用遠端 Worker
+   * - ?api=local：用本地 Worker 8787
    */
   const REMOTE_API_BASE = "https://bazi-api.billeetw.workers.dev";
-  const API_BASE =
-    typeof window !== "undefined" && /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname)
-      ? "http://localhost:8787"
+  const useLocalApi =
+    typeof window !== "undefined" &&
+    /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname) &&
+    (window.location.search.includes("api=local") || false);
+  const usePagesProxy =
+    typeof window !== "undefined" &&
+    /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname) &&
+    ["8788", "8789", "3000"].includes(window.location.port);
+  const API_BASE = useLocalApi
+    ? "http://localhost:8787"
+    : usePagesProxy
+      ? (window.location.origin || REMOTE_API_BASE)
       : REMOTE_API_BASE;
+
+  /** bazi-api Worker 未實作 /charts/:id/scores，跳過該請求改由前端本地計算 */
+  const SUPPORTS_CHARTS_SCORES = false;
 
   /**
    * 站點主網址（用於諮詢連結等）
    */
   const SITE_URL = "https://www.17gonplay.com";
+
+  /**
+   * GA4 Measurement ID（與 index.html 的 window.GA_MEASUREMENT_ID 同步）
+   * 用於自訂事件；留空或無效則不發送。
+   */
+  const GA_MEASUREMENT_ID = (typeof window !== "undefined" && window.GA_MEASUREMENT_ID) || "";
 
   /**
    * 狀態標籤映射表（根據內部等級 1-5）
@@ -29,7 +49,7 @@
     const t = (typeof window !== "undefined" && window.I18n && typeof window.I18n.t === "function")
       ? window.I18n.t.bind(window.I18n)
       : null;
-    const fallback = { 5: "極佳", 4: "強勁", 3: "平穩", 2: "穩健", 1: "基礎" };
+    const fallback = { 5: "結構高度對齊", 4: "動能穩定增強", 3: "結構穩定運行", 2: "關鍵節點待修正", 1: "結構基礎需重建" };
     if (!t) return fallback;
     return {
       5: t("ui.statusExcellent") || fallback[5],
@@ -142,7 +162,9 @@
     window.Config = {
       API_BASE,
       REMOTE_API_BASE,
+      SUPPORTS_CHARTS_SCORES,
       SITE_URL,
+      GA_MEASUREMENT_ID,
       get STATUS_LABELS() { return getStatusLabels(); },
       COLOR_CODES,
       RGB_COLORS,
@@ -158,7 +180,9 @@
     globalThis.Config = {
       API_BASE,
       REMOTE_API_BASE,
+      SUPPORTS_CHARTS_SCORES,
       SITE_URL,
+      GA_MEASUREMENT_ID,
       get STATUS_LABELS() { return getStatusLabels(); },
       COLOR_CODES,
       RGB_COLORS,

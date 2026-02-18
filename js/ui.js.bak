@@ -429,8 +429,8 @@
 
       // bazi + canggan + bars
       renderPillars(bazi);
-      const surfaceBoard = typeof window.Calc?.getBoyanBoard === "function" ? (() => { try { return window.Calc.getBoyanBoard(bazi.wuxing?.surface || {}); } catch (_) { return null; } })() : null;
-      const strategicBoard = typeof window.Calc?.getBoyanBoard === "function" ? (() => { try { return window.Calc.getBoyanBoard(bazi.wuxing?.strategic || {}); } catch (_) { return null; } })() : null;
+      const surfaceBoard = typeof window.Calc?.getPoYenBoard === "function" ? (() => { try { return window.Calc.getPoYenBoard(bazi.wuxing?.surface || {}); } catch (_) { return null; } })() : null;
+      const strategicBoard = typeof window.Calc?.getPoYenBoard === "function" ? (() => { try { return window.Calc.getPoYenBoard(bazi.wuxing?.strategic || {}); } catch (_) { return null; } })() : null;
       renderBar("surfaceWxBars", bazi.wuxing?.surface, 4, surfaceBoard ? { strongest: surfaceBoard.strongest, weakest: surfaceBoard.weakest } : undefined);
       renderRadarChart("surfaceWxRadar", bazi.wuxing?.surface);
       renderFiveElementComment("surfaceWxComment", bazi.wuxing?.surface, "surface");

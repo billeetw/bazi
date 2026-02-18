@@ -222,7 +222,7 @@
     const t = (typeof window !== "undefined" && window.I18n && typeof window.I18n.t === "function")
       ? window.I18n.t.bind(window.I18n)
       : null;
-    const fallback = { 5: "能量通道完全開啟", 4: "系統運轉順暢", 3: "當前狀態平穩", 2: "運作正常", 1: "基礎穩固" };
+    const fallback = { 5: "結構高度對齊", 4: "動能穩定增強", 3: "結構穩定運行", 2: "關鍵節點待修正", 1: "結構基礎需重建" };
     const levelNotes = t ? {
       5: t("ui.levelNoteExcellent") || fallback[5],
       4: t("ui.levelNoteStrong") || fallback[4],

@@ -119,12 +119,16 @@
 
   /**
    * 將當前語系套用到所有 [data-i18n] 元素；可選 [data-i18n-placeholder]、[data-i18n-title]
+   * 並更新 document.title 與 meta description（若有 meta.title、meta.description）
    */
   function applyToDom() {
     if (typeof document === "undefined" || !document.querySelectorAll) return;
     document.querySelectorAll("[data-i18n]").forEach(function (el) {
       var key = el.getAttribute("data-i18n");
       if (key && t(key) !== key) el.textContent = t(key);
+      if (key === "brand.tagline" && el.classList) {
+        el.classList.toggle("hidden", !t(key) || String(t(key)).trim() === "");
+      }
     });
     document.querySelectorAll("[data-i18n-placeholder]").forEach(function (el) {
       var key = el.getAttribute("data-i18n-placeholder");
@@ -134,6 +138,21 @@
       var key = el.getAttribute("data-i18n-title");
       if (key && t(key) !== key) el.title = t(key);
     });
+    document.querySelectorAll("[data-i18n-aria-label]").forEach(function (el) {
+      var key = el.getAttribute("data-i18n-aria-label");
+      if (key && t(key) !== key) el.setAttribute("aria-label", t(key));
+    });
+    var titleVal = t("meta.title");
+    if (titleVal !== "meta.title") {
+      document.title = titleVal;
+      var titleEl = document.getElementById("pageTitle");
+      if (titleEl) titleEl.textContent = titleVal;
+    }
+    var descVal = t("meta.description");
+    if (descVal !== "meta.description") {
+      var metaEl = document.getElementById("metaDescription");
+      if (metaEl) metaEl.setAttribute("content", descVal);
+    }
   }
 
   /**

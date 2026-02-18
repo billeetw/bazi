@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="大衍之數占卦：易經 64 卦。寫下你的問題，以 18 次點擊模擬揲蓍，取得本卦、之卦、互卦與卦辭爻辭。" />
+  <title>易經學習＋占卦服務｜大衍之數｜人生說明書</title>
+  <link rel="canonical" href="https://www.17gonplay.com/divination.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.17gonplay.com/divination.html" />
+  <meta property="og:title" content="易經學習＋占卦服務｜大衍之數｜人生說明書" />
+  <meta property="og:description" content="大衍之數占卦，取得本卦、之卦、互卦與卦辭爻辭。" />
+  <script>
+    window.GA_MEASUREMENT_ID = 'G-S0JFD6CTDP';
+    if (window.GA_MEASUREMENT_ID && window.GA_MEASUREMENT_ID.indexOf('G-') === 0) {
+      (function(){ var s = document.createElement('script'); s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id=' + window.GA_MEASUREMENT_ID; document.head.appendChild(s); window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} window.gtag = gtag; gtag('js', new Date()); gtag('config', window.GA_MEASUREMENT_ID, { anonymize_ip: true }); })();
+    }
+  </script>
+  <link href="dist/tailwind.css" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    body { font-family: 'Noto Serif TC', system-ui, serif; background: #0a0a16; color: #e2e8f0; min-height: 100vh; transition: background 0.8s ease; }
+    body.wuxing-金 { background: radial-gradient(ellipse at 50% 30%, #1e1a0f 0%, #0a0a16 60%); }
+    body.wuxing-木 { background: radial-gradient(ellipse at 50% 30%, #0f1a12 0%, #0a0a16 60%); }
+    body.wuxing-水 { background: radial-gradient(ellipse at 50% 30%, #0a1620 0%, #0a0a16 60%); box-shadow: inset 0 0 80px rgba(59,130,246,0.08); }
+    body.wuxing-火 { background: radial-gradient(ellipse at 50% 30%, #1a0f0a 0%, #0a0a16 60%); box-shadow: inset 0 0 100px rgba(239,68,68,0.12); }
+    body.wuxing-土 { background: radial-gradient(ellipse at 50% 30%, #16120a 0%, #0a0a16 60%); }
+    .glass { background: rgba(15,23,42,0.88); backdrop-filter: blur(18px); border: 1px solid rgba(148,163,184,0.2); border-radius: 1rem; }
+    .line-yang { height: 4px; width: 4rem; min-width: 4rem; background: #e2e8f0; }
+    .line-yin { height: 4px; width: 4rem; min-width: 4rem; background: linear-gradient(90deg, #e2e8f0 0%, #e2e8f0 38%, transparent 38%, transparent 62%, #e2e8f0 62%, #e2e8f0 100%); margin: 2px 0; }
+    .line-changing { box-shadow: 0 0 8px rgba(248,113,113,0.8); background: #f87171 !important; }
+    .line-changing.line-yin { background: linear-gradient(90deg, #f87171 0%, #f87171 38%, transparent 38%, transparent 62%, #f87171 62%, #f87171 100%) !important; }
+    .line-label-changing { color: #f87171 !important; font-weight: 600; }
+    .stalk { width: 2px; height: 24px; background: linear-gradient(180deg,#fcd34d 0%,#b45309 100%); border-radius: 1px; animation: stalk-pulse 0.4s ease-in-out infinite alternate; }
+    @keyframes stalk-pulse { from { opacity: 0.6; transform: scaleY(0.9); } to { opacity: 1; transform: scaleY(1); } }
+    .stalk:nth-child(odd) { animation-delay: 0.1s; }
+    .stalk:nth-child(3n) { animation-delay: 0.2s; }
+    .divination-hold-zone { touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+    .line-with-tooltip { position: relative; }
+    .line-tooltip { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); margin-bottom: 4px; padding: 4px 8px; background: rgba(15,23,42,0.95); border: 1px solid rgba(248,250,252,0.2); border-radius: 6px; font-size: 11px; white-space: nowrap; opacity: 0; pointer-events: none; transition: opacity 0.2s; z-index: 10; }
+    @media (min-width: 768px) { .line-with-tooltip:hover .line-tooltip { opacity: 1; } }
+    @media (max-width: 768px) { .divination-step2 { min-height: 70vh; display: flex; flex-direction: column; justify-content: center; } }
+    .result-card { animation: result-card-in 0.5s ease-out forwards; opacity: 0; }
+    .result-card:nth-child(1) { animation-delay: 0.1s; }
+    .result-card:nth-child(2) { animation-delay: 0.25s; }
+    .result-card:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes result-card-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .line-enter { animation: line-enter 0.4s ease-out forwards; opacity: 0; }
+    @keyframes line-enter { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+    .lines-complete { animation: lines-complete 0.6s ease-out; }
+    @keyframes lines-complete { 0% { filter: brightness(1); } 50% { filter: brightness(1.15); } 100% { filter: brightness(1); } }
+    .divination-save-prompt { opacity: 0; animation: divination-prompt-fadein 0.6s ease-out forwards; }
+    @keyframes divination-prompt-fadein { from { opacity: 0; } to { opacity: 1; } }
+    /* Vortex 旋轉圓圈（長按時） */
+    .divination-hold-ring { position: absolute; inset: -16px; border-radius: 50%; border: 1px dashed rgba(251, 191, 36, 0.15); transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; }
+    .divination-holding .divination-hold-ring { animation: divination-vortex-rotate 1.2s linear infinite; border-color: rgba(251, 191, 36, 0.5); box-shadow: inset 0 0 40px rgba(251, 191, 36, 0.08); }
+    @keyframes divination-vortex-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    /* 進度圓點 */
+    .divination-progress-dots { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+    .divination-progress-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(148, 163, 184, 0.4); transition: all 0.4s; }
+    .divination-progress-dot.active { background: rgba(251, 191, 36, 0.9); box-shadow: 0 0 10px rgba(251, 191, 36, 0.6); transform: scale(1.3); }
+  </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+  <div class="max-w-2xl mx-auto space-y-6">
+    <div id="divinationNavLinks" class="divination-nav-links">
+      <a href="index.html" class="inline-flex items-center gap-2 text-amber-400/90 hover:text-amber-300 text-sm">← 回首頁</a>
+      <a href="articles.html" class="ml-4 inline-flex items-center gap-2 text-amber-400/90 hover:text-amber-300 text-sm">文章</a>
+    </div>
+
+    <header class="text-center">
+      <h1 class="text-2xl md:text-3xl font-black text-amber-400">易經學習＋占卦服務</h1>
+      <p class="text-slate-400 text-sm mt-2">大衍之數五十，其用四十有九。不動不占，心誠則靈。</p>
+    </header>
+
+    <div id="divinationHistorySection" class="glass p-4 hidden">
+      <button type="button" id="btnToggleHistory" class="w-full flex items-center justify-between text-left text-amber-300 font-semibold hover:text-amber-200 transition">
+        <span>我的占卦紀錄</span>
+        <span id="historyChevron" class="text-slate-400">▼</span>
+      </button>
+      <div id="divinationHistoryList" class="mt-4 space-y-2 hidden"></div>
+      <p id="divinationHistoryEmpty" class="mt-4 text-slate-500 text-sm hidden">尚無占卦紀錄。</p>
+      <p id="divinationHistoryLoading" class="mt-4 text-slate-500 text-sm hidden">載入中…</p>
+    </div>
+
+    <div id="step1" class="glass p-6 space-y-6">
+      <h2 class="text-lg font-bold text-amber-300">1. 寫下你的問題</h2>
+      <p class="text-slate-400 text-sm">請具體描述你正在考慮的事。例如：「我正在考慮今年 3 月轉換跑道去科技業，未來的發展如何？」</p>
+      <textarea id="question" rows="4" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500" placeholder="請具體寫下你的問題…" maxlength="500"></textarea>
+
+      <div>
+        <label class="block text-sm text-slate-400 mb-2">當下的心情</label>
+        <div class="flex flex-wrap gap-2">
+          <label class="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/20 cursor-pointer hover:border-amber-400/40 transition">
+            <input type="radio" name="mood" value="anxious" class="rounded-full" />
+            <span>焦慮</span>
+          </label>
+          <label class="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/20 cursor-pointer hover:border-amber-400/40 transition">
+            <input type="radio" name="mood" value="expectant" class="rounded-full" />
+            <span>期待</span>
+          </label>
+          <label class="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/20 cursor-pointer hover:border-amber-400/40 transition">
+            <input type="radio" name="mood" value="calm" class="rounded-full" checked />
+            <span>平靜</span>
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-sm text-slate-400 mb-2">問事時間範圍</label>
+        <p class="text-slate-500 text-xs mb-2">動爻將依此標注為月份、年份或人生階段</p>
+        <div class="flex flex-wrap gap-2">
+          <label class="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/20 cursor-pointer hover:border-amber-400/40 transition">
+            <input type="radio" name="timePeriod" value="6months" class="rounded-full" checked />
+            <span>六個月</span>
+          </label>
+          <label class="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/20 cursor-pointer hover:border-amber-400/40 transition">
+            <input type="radio" name="timePeriod" value="1year" class="rounded-full" />
+            <span>一年</span>
+          </label>
+          <label class="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/20 cursor-pointer hover:border-amber-400/40 transition">
+            <input type="radio" name="timePeriod" value="6years" class="rounded-full" />
+            <span>六年</span>
+          </label>
+          <label class="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/20 cursor-pointer hover:border-amber-400/40 transition">
+            <input type="radio" name="timePeriod" value="stages" class="rounded-full" />
+            <span>無特定區間</span>
+          </label>
+        </div>
+      </div>
+
+      <p id="divinationAuthHint" class="text-slate-500 text-sm">
+        <a href="index.html" class="text-amber-400/90 hover:text-amber-300 underline">登入</a> 可儲存占卦紀錄，之後可在「我的占卦紀錄」查看。
+      </p>
+      <p id="divinationAuthLoggedIn" class="text-emerald-400/90 text-sm hidden">已登入，本次占卦將儲存至你的紀錄。</p>
+      <button type="button" id="btnStart" class="w-full py-4 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold hover:bg-amber-500/30 transition">
+        進入占卦
+      </button>
+    </div>
+
+    <div id="ritualReminder" class="glass p-6 space-y-6 hidden">
+      <h2 class="text-lg font-bold text-amber-300">占卦前提醒</h2>
+      <div class="space-y-4 text-slate-300 text-sm leading-relaxed">
+        <div>
+          <p class="font-semibold text-amber-400/90 mb-1">① 不動不占</p>
+          <p>若心未動，請勿占問。卦為觀變之器，只為真正的抉擇而設；沒有需要承擔的問題，就沒有值得請示的卦象。</p>
+        </div>
+        <div>
+          <p class="font-semibold text-amber-400/90 mb-1">② 心誠則靈</p>
+          <p>請收斂心念，專注此刻。卦象回應的不是慌亂，而是你的真實提問；一念專一，天地之變自會映現。</p>
+        </div>
+        <div>
+          <p class="font-semibold text-amber-400/90 mb-1">③ 卦為鏡，不為命</p>
+          <p>卦示趨勢，不定生死。它映照時勢與位置，如何行動，仍在你手中。</p>
+        </div>
+      </div>
+      <button type="button" id="btnRitualOk" class="w-full py-3 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold hover:bg-amber-500/30 transition">
+        我明白了，開始揲蓍
+      </button>
+    </div>
+
+    <div id="step2" class="glass p-6 space-y-6 hidden divination-step2">
+      <h2 class="text-lg font-bold text-amber-300">2. 揲蓍（長按蓄力）</h2>
+      <p class="text-slate-400 text-sm">長按中央區域，蓍草將自動分合運算。三變一爻，六爻完成後自動顯示結果。</p>
+      <div id="holdZone" class="divination-hold-zone flex flex-col items-center justify-center py-8 md:py-12 min-h-[280px] md:min-h-[320px]">
+        <!-- 六爻依序出現（上方，方便閱讀） -->
+        <div id="linesPreview" class="flex flex-col items-center gap-1 min-h-[120px] mb-4 justify-end"></div>
+        <p id="changeProgress" class="text-amber-400 font-medium mb-2 text-sm">長按開始</p>
+        <div class="divination-progress-dots" id="progressDots">
+          <span class="divination-progress-dot" data-dot="0"></span>
+          <span class="divination-progress-dot" data-dot="1"></span>
+          <span class="divination-progress-dot" data-dot="2"></span>
+          <span class="divination-progress-dot" data-dot="3"></span>
+          <span class="divination-progress-dot" data-dot="4"></span>
+          <span class="divination-progress-dot" data-dot="5"></span>
+        </div>
+        <div class="relative flex items-center justify-center mt-4 mb-2">
+          <div class="divination-hold-ring" aria-hidden="true"></div>
+          <div id="btnHold" class="relative z-10 w-28 h-28 md:w-36 md:h-36 rounded-full bg-amber-500/20 border-2 border-amber-400/50 text-amber-300 flex items-center justify-center text-base md:text-lg font-bold cursor-pointer select-none transition active:scale-95 hover:bg-amber-500/30">
+            <span id="holdLabel">長按</span>
+          </div>
+        </div>
+        <!-- 蓍草圖形（按鍵下方） -->
+        <div id="stalksContainer" class="flex flex-wrap justify-center gap-0.5 w-32 h-24 mt-4 opacity-60">
+          <!-- 49 根蓍草，由 JS 動態生成 -->
+        </div>
+        <p class="text-slate-500 text-xs mt-3">支援滑鼠與觸控</p>
+      </div>
+    </div>
+
+    <div id="step3" class="glass p-6 space-y-6 hidden">
+      <h2 class="text-lg font-bold text-amber-300">占卦結果</h2>
+      <p class="text-slate-500 text-sm" id="resultTimestamp"></p>
+      <p id="resultSavedHint" class="text-emerald-400/90 text-sm hidden">已儲存至你的紀錄。</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="result-card result-card-primary p-4 rounded-xl border border-slate-600/50 bg-slate-800/30">
+          <p class="text-xs text-slate-500 mb-2">本卦（現狀）</p>
+          <p class="text-xl font-bold text-amber-300" id="primaryName"></p>
+          <div id="primaryLines" class="mt-2 space-y-1"></div>
+        </div>
+        <div class="result-card result-card-mutual p-4 rounded-xl border border-slate-600/50 bg-slate-800/30">
+          <p class="text-xs text-slate-500 mb-2">互卦（過程）</p>
+          <p class="text-xl font-bold text-sky-300" id="mutualName"></p>
+          <div id="mutualLines" class="mt-2 space-y-1"></div>
+        </div>
+        <div class="result-card result-card-transformed p-4 rounded-xl border border-slate-600/50 bg-slate-800/30">
+          <p class="text-xs text-slate-500 mb-2">之卦（發展）</p>
+          <p class="text-xl font-bold text-emerald-300" id="transformedName"></p>
+          <div id="transformedLines" class="mt-2 space-y-1"></div>
+        </div>
+      </div>
+
+      <div id="contextToggleWrap" class="hidden flex flex-wrap gap-2 mb-4 items-center">
+        <span class="text-slate-500 text-sm">解讀情境：</span>
+        <button type="button" class="context-btn px-3 py-1.5 rounded-lg text-sm border transition border-slate-600 text-slate-400 hover:border-amber-400/50 hover:text-amber-300" data-context="career">事業</button>
+        <button type="button" class="context-btn px-3 py-1.5 rounded-lg text-sm border transition border-slate-600 text-slate-400 hover:border-amber-400/50 hover:text-amber-300" data-context="wealth">財運</button>
+        <button type="button" class="context-btn px-3 py-1.5 rounded-lg text-sm border transition border-slate-600 text-slate-400 hover:border-amber-400/50 hover:text-amber-300" data-context="love">感情</button>
+        <button type="button" class="context-btn px-3 py-1.5 rounded-lg text-sm border transition border-slate-600 text-slate-400 hover:border-amber-400/50 hover:text-amber-300" data-context="neutral">無特定</button>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <h3 class="text-amber-400 font-semibold mb-2">卦辭</h3>
+          <p id="judgment" class="text-slate-300 text-sm leading-relaxed"></p>
+          <div id="openingWisdomBlock" class="mt-3 p-3 rounded-lg border border-amber-400/20 bg-amber-500/5 hidden">
+            <p id="openingWisdomText" class="text-slate-300 text-sm leading-relaxed"></p>
+            <p id="cultivationCoreText" class="text-amber-400/90 text-sm mt-2 font-medium"></p>
+          </div>
+          <div id="structureLearningCard" class="mt-3 p-4 rounded-xl border border-sky-400/20 bg-sky-500/5 hidden">
+            <h4 class="text-sky-300 font-semibold text-sm mb-2">【卦象學習卡】</h4>
+            <p id="structureUpperLower" class="text-slate-300 text-sm mb-1"></p>
+            <p id="structureDesc" class="text-slate-400 text-sm mb-2"></p>
+            <p id="structureContradiction" class="text-slate-300 text-sm mb-2"></p>
+            <p id="structureLearningHint" class="text-amber-400/90 text-sm">💡 <span id="structureLearningHintText"></span></p>
+          </div>
+          <div id="commentariesSection" class="mt-3 space-y-2">
+            <p id="tuanText" class="text-slate-400 text-sm leading-relaxed hidden"><span class="text-slate-500 text-xs">彖傳：</span><span id="tuanContent"></span></p>
+            <p id="daxiangText" class="text-slate-400 text-sm leading-relaxed hidden"><span class="text-slate-500 text-xs">大象傳：</span><span id="daxiangContent"></span></p>
+          </div>
+          <p id="primaryInterpretation" class="text-slate-400 text-sm leading-relaxed mt-2 pt-2 border-t border-slate-700/50"><span class="text-slate-500 text-xs">大局：</span><span id="primaryInterpretationText"></span></p>
+          <p id="spaceGuideBlock" class="text-slate-500 text-sm leading-relaxed mt-3 hidden"><span class="text-slate-500 text-xs">2026 空間指南：</span><span id="spaceGuideText"></span></p>
+        </div>
+        <div id="changingLinesSection" class="p-4 rounded-xl border border-amber-400/20 bg-amber-500/5">
+          <h3 class="text-amber-400 font-semibold mb-2">動爻深度解析</h3>
+          <p id="changingLinesPeriodHint" class="text-slate-500 text-xs mb-2"></p>
+          <div id="changingLinesContent" class="text-slate-300 text-sm space-y-2"></div>
+        </div>
+        <div id="mutualInterpretationSection" class="hidden p-4 rounded-xl border border-slate-600/50 bg-slate-800/30">
+          <h3 class="text-amber-400 font-semibold mb-2">互卦（過程）— 隱藏的因果</h3>
+          <p id="mutualInterpretationHint" class="text-slate-500 text-xs mb-2">由本卦二三四、三四五爻重組，代表第 3–4 月的轉型期。</p>
+          <p id="mutualInterpretation" class="text-slate-300 text-sm leading-relaxed"></p>
+          <div id="mutualLearningTasks" class="mt-3 pt-3 border-t border-slate-600/50 hidden">
+            <p class="text-slate-500 text-xs mb-2">【本月學習任務】</p>
+            <ul id="mutualLearningTasksList" class="text-slate-300 text-sm space-y-1 list-disc list-inside"></ul>
+          </div>
+        </div>
+        <div id="transformedInterpretationSection" class="hidden p-4 rounded-xl border border-slate-600/50 bg-slate-800/30">
+          <h3 class="text-amber-400 font-semibold mb-2">之卦（發展）— 最終歸宿</h3>
+          <p id="transformedInterpretationHint" class="text-slate-500 text-xs mb-2">由動爻變換產生，代表第 6 月後的定調。</p>
+          <p id="transformedInterpretation" class="text-slate-300 text-sm leading-relaxed"></p>
+        </div>
+        <div id="flowYearSection" class="hidden p-4 rounded-xl border border-amber-400/20 bg-amber-500/5">
+          <h3 class="text-amber-400 font-semibold mb-2">2026 丙午年流年提示</h3>
+          <p id="flowYearAdvice" class="text-slate-300 text-sm leading-relaxed"></p>
+        </div>
+        <div id="directionsSection" class="hidden p-4 rounded-xl border border-slate-600/50 bg-slate-800/30">
+          <h3 class="text-amber-400 font-semibold mb-2">2026 方位參考</h3>
+          <ul id="directionsContent" class="text-slate-300 text-sm space-y-1"></ul>
+        </div>
+        <div id="trendSection" class="hidden p-4 rounded-xl border border-slate-600/50 bg-slate-800/30">
+          <h3 id="trendSectionTitle" class="text-amber-400 font-semibold mb-2">半年趨勢（1–6 月）</h3>
+          <p id="trendSectionHint" class="text-slate-500 text-xs mb-3">依當位、應與、流年加權運算。動爻為轉折點。</p>
+          <div id="trendMonths" class="space-y-2"></div>
+          <p id="trendSummary" class="text-slate-400 text-sm mt-2"></p>
+          <p id="trendLowestExplain" class="text-slate-500 text-xs mt-2 italic hidden"></p>
+        </div>
+        <div id="alertSection" class="hidden p-4 rounded-xl border border-amber-400/30 bg-amber-500/5">
+          <h3 class="text-amber-400 font-semibold mb-2">⚠️ 轉折預警</h3>
+          <p id="alertSectionHint" class="text-slate-500 text-xs mb-3">以下分數偏低，卦象提醒宜守不宜進。</p>
+          <div id="alertContent" class="space-y-3"></div>
+          <a id="alertConsultCta" href="consultation.html?from=divination_alert" class="hidden mt-3 block w-full py-3 rounded-lg bg-amber-500/30 border border-amber-400/40 text-amber-300 text-center text-sm font-semibold hover:bg-amber-500/40 transition">轉折期需要深度指引？預約 1:1 諮詢</a>
+        </div>
+        <div id="shareSection" class="hidden">
+          <h3 class="text-amber-400 font-semibold mb-2">分享此卦</h3>
+          <div class="flex flex-wrap gap-3">
+            <button type="button" id="btnCopyShare" class="min-h-[44px] px-5 py-3 rounded-lg border border-amber-400/40 text-amber-300 text-sm hover:bg-amber-500/20 transition active:scale-[0.98]">複製分享文案</button>
+            <button type="button" id="btnShareNative" class="min-h-[44px] px-5 py-3 rounded-lg border border-amber-400/40 text-amber-300 text-sm hover:bg-amber-500/20 transition hidden active:scale-[0.98]">分享到…</button>
+            <a id="btnShareLine" href="#" target="_blank" rel="noopener" class="min-h-[44px] px-5 py-3 rounded-lg border border-[#06C755]/60 text-[#06C755] text-sm hover:bg-[#06C755]/10 transition hidden inline-flex items-center justify-center active:scale-[0.98]">分享到 LINE</a>
+          </div>
+        </div>
+        <div id="resultLoginPrompt" class="hidden p-4 rounded-xl border border-amber-400/30 bg-amber-500/5 divination-save-prompt">
+          <p class="text-slate-200 text-sm leading-relaxed mb-3">🔮 想保留這份天機嗎？登入後可儲存你的占卦紀錄方便後續檢視，並結合個人命盤進行深度解析。</p>
+          <button type="button" id="btnResultSaveLogin" class="w-full py-3 rounded-xl bg-amber-500/90 text-slate-900 font-bold text-sm hover:bg-amber-400 transition">立即儲存</button>
+        </div>
+        <div id="feedbackSection" class="p-4 rounded-xl border border-slate-600/50 bg-slate-800/30">
+          <h3 class="text-amber-400 font-semibold mb-2">這卦對你有幫助嗎？</h3>
+          <p class="text-slate-500 text-xs mb-3">你的回饋能幫助我們優化解讀。</p>
+          <div id="feedbackButtons" class="flex flex-wrap gap-2 mb-3">
+            <button type="button" class="feedback-btn px-4 py-2 rounded-lg border border-green-500/40 bg-green-500/10 text-green-300 text-sm hover:bg-green-500/20 transition active:scale-[0.98]" data-rating="accurate">覺得準</button>
+            <button type="button" class="feedback-btn px-4 py-2 rounded-lg border border-red-500/40 bg-red-500/10 text-red-300 text-sm hover:bg-red-500/20 transition active:scale-[0.98]" data-rating="inaccurate">不準</button>
+            <button type="button" class="feedback-btn px-4 py-2 rounded-lg border border-slate-500/40 bg-slate-500/10 text-slate-300 text-sm hover:bg-slate-500/20 transition active:scale-[0.98]" data-rating="pending">尚待驗證</button>
+          </div>
+          <div id="feedbackSuggestionWrap" class="hidden mb-3">
+            <label class="block text-slate-500 text-xs mb-1">建議或補充說明（選填）</label>
+            <textarea id="feedbackSuggestion" rows="2" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-200 text-sm placeholder-slate-500" placeholder="例如：哪部分特別準確、或希望加強的面向…" maxlength="500"></textarea>
+            <button type="button" id="btnFeedbackSubmit" class="mt-2 px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-400/40 text-amber-300 text-sm font-medium hover:bg-amber-500/30 transition">送出回饋</button>
+          </div>
+          <div id="feedbackSuggestionStandalone" class="mb-3 pt-3 border-t border-slate-600/50">
+            <label class="block text-slate-500 text-xs mb-1">建議或意見（選填，可不選準確度直接填寫）</label>
+            <textarea id="feedbackSuggestionOnly" rows="2" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-200 text-sm placeholder-slate-500" placeholder="例如：希望增加的功能、解讀方式、介面改進…" maxlength="500"></textarea>
+            <button type="button" id="btnSuggestionOnlySubmit" class="mt-2 px-4 py-2 rounded-lg border border-slate-500/40 text-slate-300 text-sm hover:bg-slate-500/20 transition">送出建議</button>
+          </div>
+          <div id="feedbackThankYou" class="hidden">
+            <p class="text-emerald-400/90 text-sm">感謝你的回饋！</p>
+            <p class="text-slate-500 text-xs mt-1"><a href="index.html" class="text-amber-400/90 hover:text-amber-300 underline">登入</a> 後可在「我的占卦紀錄」查看此回饋與後續驗證。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap gap-4">
+        <button type="button" id="btnAgain" class="min-h-[48px] px-6 py-3 rounded-xl border border-amber-400/40 text-amber-300 hover:bg-amber-500/20 transition active:scale-[0.98]">再占一卦</button>
+        <a id="btnToChart" href="index.html" class="min-h-[48px] px-6 py-3 rounded-xl bg-amber-500/20 border border-amber-400/40 text-amber-300 font-bold hover:bg-amber-500/30 transition inline-flex items-center justify-center active:scale-[0.98]">查看命盤</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="dist/divination.js"></script>
+</body>
+</html>

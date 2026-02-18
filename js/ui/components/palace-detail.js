@@ -102,11 +102,14 @@
     });
 
     const currentAge = getCurrentAge ? getCurrentAge() : (getCurrentAgeHelper ? getCurrentAgeHelper() : null);
-    const horoscope = providedHoroscope || (ziwei && currentAge !== null && lastGender ? getHoroscopeFromAge(currentAge, lastGender, ziwei, bazi) : null);
+    const horoscope = providedHoroscope || (ziwei && currentAge !== null && lastGender ? getHoroscopeFromAge(currentAge, ziwei, bazi, lastGender) : null);
     const mutagenStars = horoscope?.mutagenStars || {};
 
     const rawStars = ziwei ? getStarsForPalace(ziwei, name) : [];
-    const stars = rawStars.map(toTraditionalStarName);
+    const stars = rawStars.map(function (s) {
+      var name = (typeof s === "string" ? s : (s && (s.name || s.id || s))) || "";
+      return toTraditionalStarName(name);
+    }).filter(Boolean);
 
     const t = (key, opts) => (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(key, opts) : key;
     const palaceDisplayMap = (window.I18n && typeof window.I18n.tObject === "function") ? window.I18n.tObject("ziwei.palaceDisplay") : null;
@@ -115,7 +118,11 @@
     const subText = t("ziwei.strategyPanelSub");
 
     document.getElementById("palaceTitle").textContent = titleText;
-    document.getElementById("palaceSub").textContent = subText;
+    var subEl = document.getElementById("palaceSub");
+    if (subEl) {
+      subEl.textContent = subText;
+      subEl.style.display = subText ? "" : "none";
+    }
 
     var ContentUtils = window.UiUtils?.ContentUtils;
     var palaceRaw = ContentUtils && typeof ContentUtils.getContentValue === "function"
@@ -191,6 +198,7 @@
             ? ContentUtils.getContentValue(dbContent, "stars", s, null)
             : (dbContent?.stars && dbContent.stars[s]);
           if (starRaw && starRaw.startsWith("(missing:")) starRaw = null;
+          if (!starRaw || String(starRaw).trim() === "") starRaw = null;
           var explain = starRaw || t("ziwei.starNoData");
           const badgeHtml = getMutagenBadgeHtml(s, mutagenStars);
           const titleDisplay = badgeHtml ? `【${s}】 ${badgeHtml}` : `【${s}】`;
@@ -200,7 +208,7 @@
                 <div class="body-text font-black ${wx ? "star-wx-" + wx : "text-slate-200"}">${titleDisplay}</div>
                 <div class="body-caption text-slate-500">${wx ? t("ziwei.wuxingLabel") + wx : ""}</div>
               </div>
-              <div class="body-text text-slate-300 mt-2 leading-relaxed">${explain}</div>
+              <div class="body-text text-slate-300 mt-2 leading-relaxed whitespace-pre-line">${explain}</div>
             </div>
           `;
         })
@@ -234,7 +242,10 @@
     const mSub = document.getElementById("mobilePalaceSub");
     const mBody = document.getElementById("mobilePalaceBody");
     if (mTitle) mTitle.textContent = titleText;
-    if (mSub) mSub.textContent = subText;
+    if (mSub) {
+      mSub.textContent = subText;
+      mSub.style.display = subText ? "" : "none";
+    }
     if (mBody) mBody.innerHTML = detailHtml;
   }
 

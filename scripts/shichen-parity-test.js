@@ -82,11 +82,86 @@ const TEST_CASES = [
       q19: 'A',
     },
   },
+  {
+    name: '混合型-可能 lowConfidence（寅卯辰均分）',
+    answers: {
+      q1: ['A', 'B'],
+      q2: ['A', 'B'],
+      q3: 'A',
+      q4: 'B',
+      q5: 'B',
+      q6: 'B',
+      q7: 'B',
+      q8: 'B',
+      q9: 'B',
+      q10: 'B',
+      q11: 'A',
+      q12: 'A',
+      q13: 'A',
+      q14: 'A',
+      q15: 'B',
+      q16: 'B',
+      q17: 'B',
+      q18: 'C',
+      q19: 'A',
+    },
+  },
+  {
+    name: '作息污染校正 qx1=B qx2=B',
+    answers: {
+      q1: ['A'],
+      q2: ['B'],
+      q3: 'A',
+      q4: 'A',
+      q5: 'A',
+      q6: 'A',
+      q7: 'A',
+      q8: 'A',
+      q9: 'A',
+      q10: 'A',
+      q11: 'A',
+      q12: 'A',
+      q13: 'A',
+      q14: 'A',
+      q15: 'A',
+      q16: 'A',
+      q17: 'A',
+      q18: 'A',
+      q19: 'A',
+      qx1: 'B',
+      qx2: 'B',
+    },
+  },
+  {
+    name: '夜型混合 E+F',
+    answers: {
+      q1: ['E', 'F'],
+      q2: ['E'],
+      q3: 'D',
+      q4: 'C',
+      q5: 'C',
+      q6: 'C',
+      q7: 'C',
+      q8: 'C',
+      q9: 'B',
+      q10: 'B',
+      q11: 'B',
+      q12: 'B',
+      q13: 'B',
+      q14: 'B',
+      q15: 'C',
+      q16: 'C',
+      q17: 'C',
+      q18: 'B',
+      q19: 'B',
+    },
+  },
 ];
 
 function runTest() {
   let passed = 0;
   let failed = 0;
+  let lowConfidenceCount = 0;
   for (const tc of TEST_CASES) {
     const fe = estimateFrontend(tc.answers, {});
     const be = estimateBackend(tc.answers, {});
@@ -97,7 +172,10 @@ function runTest() {
     const deltaOk = Math.abs((fe.delta || 0) - (be.delta || 0)) < 0.001;
 
     if (branchOk && top2Ok && deltaOk) {
-      console.log('✅', tc.name, '| branch:', fe.branch, '| top2:', fe.top2Branches, '| delta:', fe.delta?.toFixed(2));
+      const lc = fe.lowConfidence ? ' [lowConfidence]' : '';
+      const cand = fe.candidates ? ` candidates=${JSON.stringify(fe.candidates)}` : '';
+      console.log('✅', tc.name, '| branch:', fe.branch, '| top2:', fe.top2Branches, '| delta:', fe.delta?.toFixed(2), lc, cand);
+      if (fe.lowConfidence) lowConfidenceCount++;
       passed++;
     } else {
       console.error('❌', tc.name);
@@ -109,6 +187,28 @@ function runTest() {
   }
   console.log('\n---');
   console.log('Passed:', passed, '/', passed + failed);
+  if (lowConfidenceCount > 0) {
+    console.log('lowConfidence triggered:', lowConfidenceCount, 'case(s)');
+  }
+
+  // 驗證 debug 擴充欄位存在
+  const sample = estimateBackend(TEST_CASES[0].answers, {});
+  const debugOk =
+    sample.debug?.scores != null && typeof sample.debug.scores === 'object' &&
+    sample.debug.timeSubtotal != null &&
+    (sample.debug.timeWeightMultiplier === 1 || sample.debug.timeWeightMultiplier === 0.35) &&
+    sample.debug.duelSubtotal != null &&
+    sample.debug.chronotypeScore != null &&
+    Array.isArray(sample.debug.anchorBranches) &&
+    sample.debug.distancePenalty != null &&
+    typeof sample.debug.lowConfidence === 'boolean' &&
+    Array.isArray(sample.debug.topCandidates);
+  if (!debugOk) {
+    console.error('❌ debug 擴充欄位不完整');
+    process.exit(1);
+  }
+  console.log('✅ debug 擴充欄位齊全');
+
   process.exit(failed > 0 ? 1 : 0);
 }
 

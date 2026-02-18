@@ -3,8 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>深度諮詢報名</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="description" content="專業命理師一對一深度諮詢，結合八字紫微命盤與流年分析，協助你做出關鍵決策。預約 1:1 諮詢。" />
+  <title>1:1 深度諮詢｜人生說明書</title>
+  <link rel="canonical" href="https://www.17gonplay.com/consultation.html" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.17gonplay.com/consultation.html" />
+  <meta property="og:title" content="1:1 深度諮詢｜人生說明書" />
+  <meta property="og:description" content="專業命理師一對一深度諮詢，結合八字紫微命盤與流年分析，協助你做出關鍵決策。" />
+  <meta property="og:image" content="https://www.17gonplay.com/assets/og-image.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:locale" content="zh_TW" />
+  <meta property="og:site_name" content="一起出來玩" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="1:1 深度諮詢｜人生說明書" />
+  <meta name="twitter:description" content="專業命理師一對一深度諮詢，結合八字紫微命盤與流年分析。" />
+  <meta name="twitter:image" content="https://www.17gonplay.com/assets/og-image.jpg" />
+  <link href="dist/tailwind.css" rel="stylesheet" />
   <style>
     body { background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%); color: #e2e8f0; font-family: system-ui, sans-serif; }
     .glass { background: rgba(15,23,42,0.88); backdrop-filter: blur(18px); border: 1px solid rgba(148,163,184,0.35); border-radius: 1.25rem; }
@@ -29,7 +44,7 @@
       <p class="font-bold text-amber-300">活動詳情</p>
       <p><span class="text-slate-500">諮詢費用：</span> NT$ 3,600</p>
       <p><span class="text-slate-500">預約時段：</span> 平日下午 13:30–17:30｜晚上 20:00–21:30</p>
-      <p class="text-slate-400 text-xs mt-2">流程說明：填寫報名表 → 匯款並回傳後五碼 → 我們將與您聯繫確認時段 → 伯彥老師開始前置研讀。</p>
+      <p class="text-slate-400 text-xs mt-2">流程說明：填寫報名表 → 匯款並回傳後五碼 → 我們將在 1–2 工作天內與您聯繫確認時段 → 伯彥老師開始前置研讀。</p>
     </div>
 
     <form id="consultForm" class="glass p-6 space-y-4" novalidate>
@@ -313,12 +328,14 @@
             '<div class="mt-4 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-400/25">' +
               '<div class="text-emerald-200 font-black text-base md:text-lg">報名已送出，我們已收到您的資料。</div>' +
               '<div class="text-slate-100 mt-2">接下來請到以下 Calendly 連結選擇第一次線上訪談時間。</div>' +
+              '<div class="text-slate-300 mt-3 text-sm">我們將在 <strong>1–2 個工作天內</strong> 與您聯繫確認時段。</div>' +
             '</div>';
         }
 
         // Also keep inline message for accessibility/scrolling
         msgEl.innerHTML =
           '<span class="font-black text-emerald-300">報名已送出，我們已收到您的資料。</span><br>' +
+          '<span class="text-slate-300">我們將在 1–2 個工作天內與您聯繫確認時段。</span><br>' +
           '稍後將自動開啟預約頁面；若未自動開啟，請點：' +
           '<a href="' + calendlyUrl + '" target="_blank" rel="noopener noreferrer" class="text-amber-300 underline font-black ml-1">立即預約 Calendly</a>';
         msgEl.className = 'mt-6 text-base text-center';

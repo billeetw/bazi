@@ -112,25 +112,42 @@
   }
 
   /**
-   * 獲取星曜核心價值描述
+   * 從星曜完整解釋中擷取可讀摘要（供描述句使用，不直接顯示星名）
+   * 格式範例：「核心本質：語言與分析\n成熟時洞察清晰；\n你的力量在精準溝通。」
+   * @param {boolean} shortForm - 身主用：僅取前兩段，避免「用 XXX 的方式」過長
+   */
+  function getStarSummary(starName, dbContent, shortForm) {
+    const ContentUtils = window.UiUtils?.ContentUtils;
+    const raw = ContentUtils && typeof ContentUtils.getContentValue === "function"
+      ? ContentUtils.getContentValue(dbContent, "stars", starName, null)
+      : (dbContent?.stars?.[starName] || null);
+    if (!raw || typeof raw !== "string" || raw.startsWith("(missing:")) {
+      return getStarCoreValue(starName); // fallback
+    }
+    const parts = [];
+    const coreMatch = raw.match(/核心本質[：:]\s*([^\n]+)/);
+    if (coreMatch) parts.push(coreMatch[1].trim());
+    const matureMatch = raw.match(/成熟時[是為]?([^；\n]+)/);
+    if (matureMatch) parts.push(matureMatch[1].trim());
+    const powerMatch = raw.match(/你的力量在([^。\n]+)/);
+    const workMatch = raw.match(/你的功課是([^。\n]+)/);
+    if (powerMatch) parts.push(powerMatch[1].trim() + "是你的力量");
+    else if (workMatch) parts.push(workMatch[1].trim() + "是你的功課");
+    if (parts.length === 0) return getStarCoreValue(starName);
+    if (shortForm) return parts.slice(0, 2).join("、") || getStarCoreValue(starName);
+    return parts.slice(0, 2).join("、") + (parts[2] ? "，" + parts[2] : "");
+  }
+
+  /**
+   * 獲取星曜核心價值描述（fallback 用）
    */
   function getStarCoreValue(starName) {
-    // 簡化的星曜核心價值映射（可以擴展）
     const coreValues = {
-      "紫微": "權威與領導",
-      "天機": "智慧與變通",
-      "太陽": "光明與熱情",
-      "武曲": "效率與執行",
-      "天同": "和諧與享受",
-      "廉貞": "複雜與多變",
-      "天府": "穩定與包容",
-      "太陰": "溫柔與內斂",
-      "貪狼": "慾望與創造",
-      "巨門": "溝通與分析",
-      "天相": "協調與服務",
-      "天梁": "穩重與保護",
-      "七殺": "果斷與變革",
-      "破軍": "破壞與重建",
+      "紫微": "權威與領導", "天機": "智慧與變通", "太陽": "光明與熱情",
+      "武曲": "效率與執行", "天同": "和諧與享受", "廉貞": "複雜與多變",
+      "天府": "穩定與包容", "太陰": "溫柔與內斂", "貪狼": "慾望與創造",
+      "巨門": "溝通與分析", "天相": "協調與服務", "天梁": "穩重與保護",
+      "七殺": "果斷與變革", "破軍": "破壞與重建",
     };
     return coreValues[starName] || "獨特個性";
   }
@@ -346,14 +363,14 @@
     
     // 命主
     if (mingzhu) {
-      const coreValue = getStarCoreValue(mingzhu);
+      const mingzhuDesc = getStarSummary(mingzhu, dbContent);
       html += `
         <div class="p-4 md:p-4 rounded-xl border border-amber-400/40 bg-white/5">
           <div class="text-xs font-semibold text-slate-200 mb-2">${t("strategic.lifeGeneSection")}</div>
           <div class="text-xs font-bold text-amber-400 mb-2">${mingzhu}</div>
           <div class="text-[11px] text-slate-400 leading-relaxed">
             🎯 ${t("strategic.direct50")}<br>
-            「你骨子裡是個 ${mingzhu} 的人，追求的是 ${coreValue}。」
+            「你骨子裡追求的是 ${mingzhuDesc}。」
           </div>
         </div>
       `;
@@ -369,14 +386,15 @@
     
     // 身主
     if (shengong) {
-      const mingzhuCoreValue = mingzhu ? getStarCoreValue(mingzhu) : "核心價值";
+      const mingzhuDesc = mingzhu ? getStarSummary(mingzhu, dbContent) : "核心價值";
+      const shengongDesc = getStarSummary(shengong, dbContent, true); // shortForm：用於「習慣用 XXX 的方式」
       html += `
         <div class="p-4 md:p-4 rounded-xl border border-blue-400/40 bg-white/5 mt-3">
           <div class="text-xs font-semibold text-slate-200 mb-2">${t("strategic.acquiredToolSection")}</div>
           <div class="text-xs font-bold text-blue-400 mb-2">${shengong}</div>
           <div class="text-[11px] text-slate-400 leading-relaxed">
             💭 ${t("strategic.inspire30")}<br>
-            「雖然你靈魂追求 ${mingzhuCoreValue}，但你這幾年越來越習慣用 ${shengong} 的方式來應對世界，這讓你感到更安全還是更疲累？」
+            「雖然你靈魂追求 ${mingzhuDesc}，但你這幾年越來越習慣用 ${shengongDesc} 的方式來應對世界，這讓你感到更安全還是更疲累？」
           </div>
         </div>
       `;

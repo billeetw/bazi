@@ -103,11 +103,12 @@
   function getDecadalLimits(wuxingjuOrParams, mingBranch, mingPalaceIndex, gender) {
     // 處理參數：支持舊的調用方式（只傳五行局）和新的調用方式（傳參數對象）
     let params;
+    let wuxingjuStr = "金四局";
     if (typeof wuxingjuOrParams === 'object' && wuxingjuOrParams !== null && !Array.isArray(wuxingjuOrParams)) {
-      // 新方式：傳參數對象
       params = wuxingjuOrParams;
+      wuxingjuStr = params.wuxingju || (params.core?.wuxingju) || wuxingjuStr;
     } else {
-      // 舊方式：只傳五行局，使用默認值
+      wuxingjuStr = typeof wuxingjuOrParams === 'string' ? wuxingjuOrParams : wuxingjuStr;
       params = {
         mingBranch: mingBranch || "寅",
         mingPalaceIndex: mingPalaceIndex !== undefined ? mingPalaceIndex : 0,
@@ -117,7 +118,7 @@
     
     const { mingBranch: mb, mingPalaceIndex: mpi, gender: g } = params;
     const N = 12;
-    const baseStartAge = 2;
+    const baseStartAge = getStartAgeFromWuxingju(wuxingjuStr);
     const span = 10;
     
     // 判斷命宮陰陽
@@ -155,7 +156,7 @@
    * @returns {number} +1 順行, -1 逆行
    */
   function getMajorLuckDirection(gender, branchYinYang) {
-    const isMale = gender === "male" || gender === "M";
+    const isMale = gender === "male" || gender === "M" || gender === "男";
     if ((isMale && branchYinYang === "yang") || (!isMale && branchYinYang === "yin")) {
       return +1; // 順行
     }
@@ -164,17 +165,20 @@
 
   /**
    * 從五行局獲取起始年齡
+   * 水二局=2, 木三局=3, 金四局=4, 土五局=5, 火六局=6
    * @param {string|Object} wuxingju - 五行局字符串（如 "金四局"）或紫微數據
    * @returns {number} 起始年齡
    */
   function getStartAgeFromWuxingju(wuxingju) {
-    // 簡化實現：默認從 2 歲開始
-    // 如果 wuxingju 是對象，嘗試從中提取
     if (typeof wuxingju === 'object' && wuxingju?.core?.wuxingju) {
       wuxingju = wuxingju.core.wuxingju;
     }
-    // 根據五行局計算起始年齡（簡化版）
-    // 實際應該根據五行局計算，這裡先返回默認值
+    const s = String(wuxingju || "");
+    const m = s.match(/[水木金土火]([二三四五六])局/);
+    if (m) {
+      const map = { "二": 2, "三": 3, "四": 4, "五": 5, "六": 6 };
+      return map[m[1]] ?? 2;
+    }
     return 2;
   }
 
@@ -191,6 +195,7 @@
 
   /**
    * 根據年齡獲取小限資料
+   * 小限：1歲在命宮，陽男陰女順行、陰男陽女逆行，每年一宮
    * @param {number} age - 年齡
    * @param {Object} ziwei - 紫微數據
    * @param {Object} bazi - 八字數據
@@ -198,16 +203,38 @@
    * @returns {Object|null} 小限資料
    */
   function getHoroscopeFromAge(age, ziwei, bazi, gender) {
-    // 簡化實現：返回基本結構
-    if (!ziwei || !bazi) return null;
+    if (!ziwei || !bazi || age == null || !Number.isFinite(Number(age))) return null;
     
     const mingBranch = ziwei?.core?.minggongBranch || "寅";
-    const yearlyIndex = getYearlyIndexFromAge(age, ziwei?.core?.wuxingju || "金四局");
+    const wuxingju = ziwei?.core?.wuxingju || "金四局";
+    const yearlyIndex = getYearlyIndexFromAge(Number(age), wuxingju);
+    const palaceOrder = PALACE_DEFAULT;
+    
+    // 小限宮位：1歲在命宮，依性別與命宮陰陽順/逆行
+    const yangBranches = ["寅", "午", "戌", "申", "子", "辰"];
+    const yinBranches = ["巳", "酉", "丑", "亥", "卯", "未"];
+    const branchYinYang = yangBranches.includes(mingBranch) ? "yang" : 
+                          yinBranches.includes(mingBranch) ? "yin" : "yang";
+    const isMale = gender === "male" || gender === "M" || gender === "男";
+    const directionSign = ((isMale && branchYinYang === "yang") || 
+                          (!isMale && branchYinYang === "yin")) ? 1 : -1;
+    const minorLimitIndex = (directionSign * (Number(age) - 1) + 120) % 12;
+    const activeLimitPalaceName = palaceOrder[minorLimitIndex] || null;
+    
+    // 小限天干（該宮位天干）與四化
+    const yearStem = (bazi?.display?.yG || "").toString().trim();
+    const mingStem = getMinggongStem(mingBranch, yearStem);
+    const yearlyStem = mingStem ? getPalaceStem(mingStem, minorLimitIndex) : null;
+    const getMutagenStarsFn = window.CalcHelpers?.getMutagenStars;
+    const mutagenStars = yearlyStem && getMutagenStarsFn ? getMutagenStarsFn(yearlyStem) : {};
     
     return {
       age,
       yearlyIndex,
-      activeLimitPalaceName: null, // 需要根據大限計算
+      activeLimitPalaceName,
+      yearlyStem,
+      mutagenStars,
+      gender,
     };
   }
 

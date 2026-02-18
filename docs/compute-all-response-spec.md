@@ -28,6 +28,55 @@
 | features.version | string | ✅ | 固定 `strategic_features_v1` |
 | features.bazi | object | ✅ | 八字資料 |
 | features.ziwei | object | ✅ | 紫微資料 |
+| features.ziwei.horoscope | object \| null | 建議 | 小限（運限）資料，供專家系統算每年重點 |
+
+---
+
+## ziwei.horoscope（小限）
+
+當 Worker 呼叫 iztro `astrolabe.horoscope(targetDate, timeIndex)` 取得運限後，會回傳此物件。若無法取得則為 `null`。
+
+### 請求參數（可選）
+
+| 參數 | 類型 | 說明 |
+|------|------|------|
+| horoscopeYear | number | 欲查詢小限的年份，預設為當前西元年 |
+
+### 回傳欄位
+
+| 欄位 | 類型 | 說明 |
+|------|------|------|
+| year | number | 目標西元年 |
+| nominalAge | number \| null | 該年虛歲 |
+| yearlyStem | string \| null | 小限天干 |
+| yearlyBranch | string \| null | 小限地支 |
+| yearlyIndex | number | 小限所在宮位索引（0–11） |
+| activeLimitPalaceName | string \| null | 小限所在宮位名稱（繁體，如 `命宮`） |
+| mutagenStars | object \| null | 小限四化 `{ 祿, 權, 科, 忌 }` 對應星名 |
+| decadal | object \| null | 大限（十年運限）含 stem, branch, palace, mutagenStars |
+| yearly | object \| null | 流年含 stem, branch, palace, mutagenStars |
+| horoscopeByYear | object \| null | 每年小限 `{ [西元年]: { nominalAge, palace, stem } }` |
+
+### 範例
+
+```json
+{
+  "horoscope": {
+    "year": 2026,
+    "nominalAge": 37,
+    "yearlyStem": "丙",
+    "yearlyBranch": "午",
+    "yearlyIndex": 4,
+    "activeLimitPalaceName": "財帛",
+    "mutagenStars": {
+      "祿": "廉貞",
+      "權": "破軍",
+      "科": "武曲",
+      "忌": "太陽"
+    }
+  }
+}
+```
 
 ---
 
@@ -58,6 +107,15 @@
       "田宅": [],
       "福德": ["破軍", "祿存"],
       "父母": []
+    },
+    "horoscope": {
+      "year": 2026,
+      "nominalAge": 37,
+      "yearlyStem": "丙",
+      "yearlyBranch": "午",
+      "yearlyIndex": 4,
+      "activeLimitPalaceName": "財帛",
+      "mutagenStars": { "祿": "廉貞", "權": "破軍", "科": "武曲", "忌": "太陽" }
     }
   }
 }

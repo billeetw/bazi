@@ -14,7 +14,7 @@
    * 依當前 hash 同步導航／戰略標籤的 aria-current，並套用 amber 強調樣式
    */
   function syncNavChipActive() {
-    const hash = (window.location.hash || "").trim() || "#ws-ziwei";
+    const hash = (window.location.hash || "").trim();
     document.querySelectorAll(".nav-chip[href^=\"#\"]").forEach((a) => {
       const href = (a.getAttribute("href") || "").trim();
       if (href === hash) a.setAttribute("aria-current", "page");
@@ -34,10 +34,16 @@
       systemEl.classList.add("hidden");
     }
     
-    // 顯示輸入表單
+    // 顯示輸入表單，並重啟主按鈕
     const inputCardEl = document.getElementById("inputCard");
     if (inputCardEl) {
       inputCardEl.classList.remove("hidden");
+    }
+    const btnLaunch = document.getElementById("btnLaunch");
+    if (btnLaunch) {
+      btnLaunch.disabled = false;
+      var lbl = (window.I18n && typeof window.I18n.t === "function") ? window.I18n.t("ui.launchBtn") : "開始人生分析";
+      btnLaunch.textContent = lbl || "開始人生分析";
     }
     
     // 隱藏活動報名區域（如果存在）
@@ -59,9 +65,6 @@
     if (window.location.hash) {
       window.history.replaceState(null, "", window.location.pathname);
     }
-    
-    // 滾動到頁面頂部
-    window.scrollTo({ top: 0, behavior: "smooth" });
     
     console.log("[navigation.js] 首頁重置完成");
   }
@@ -94,6 +97,7 @@
     if (!content || content.hasAttribute("data-transition-bound")) return;
     content.setAttribute("data-transition-bound", "1");
     
+    const Scroll = window.UiServices?.Scroll;
     function bindHashLink(a) {
       a.addEventListener("click", function (e) {
         const href = (this.getAttribute("href") || "").trim();
@@ -104,8 +108,12 @@
         content.classList.add("dashboard-content-fade");
         const dur = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 50 : 180;
         setTimeout(() => {
-          window.location.hash = href;
-          document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+          if (Scroll && typeof Scroll.scrollToSection === "function") {
+            Scroll.scrollToSection(id, { behavior: "smooth", block: "start", updateHash: true, allowOnMobile: true });
+          } else {
+            window.location.hash = href;
+            document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
           setTimeout(() => {
             content.classList.remove("dashboard-content-fade");
           }, dur);
