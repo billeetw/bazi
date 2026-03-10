@@ -65,7 +65,6 @@
 6. **event-bindings.js** - 事件绑定服务
    - `bindLaunchButton()` - 绑定启动按钮
    - `bindWuxingClickEvents()` - 绑定五行点击事件
-   - `bindAgeSlider()` - 绑定年龄滑块事件
    - `bindMobileSheetCloseEvents()` - 绑定移动端面板关闭事件
 
 7. **data-renderer.js** - 数据渲染服务
@@ -78,8 +77,7 @@
 
 1. **dom-helpers.js** - DOM 操作工具
    - `animateValue()` - 数值动画
-   - `getCurrentAge()` - 获取当前年龄
-   - `syncAgeSliderDisplay()` - 同步年龄滑块显示
+   - `getCurrentAge()` - 获取当前年龄（由出生年推算）
    - `flashPeek()` - 闪烁提示
    - `openPalaceSheet()` / `closePalaceSheet()` - 移动端底部面板控制
    - `setMobileSheetContent()` - 设置移动端面板内容

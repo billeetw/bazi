@@ -3,6 +3,11 @@
  * Per docs/iztro-en-us-keys.md
  */
 
+/** 地支環順序（與前端 BRANCH_RING、gridAreas 一致）：寅=0, 卯=1, ..., 丑=11 */
+export const BRANCH_RING = [
+  "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥", "子", "丑",
+] as const;
+
 /** Fixed zh-TW palace keys (matches frontend PALACE_DEFAULT) */
 export const FIXED_PALACES_ZH_TW = [
   "命宮",
@@ -69,4 +74,27 @@ export function palaceNameToZhTW(raw: string | undefined | null): string | null 
   // Already zh-TW key
   if ((FIXED_PALACES_ZH_TW as readonly string[]).includes(key)) return key;
   return null;
+}
+
+/** 寅起地支環索引（與前端 BRANCH_RING 一致） */
+const BRANCH_RING_INDEX: Record<string, number> = {
+  寅: 0, 卯: 1, 辰: 2, 巳: 3, 午: 4, 未: 5, 申: 6, 酉: 7, 戌: 8, 亥: 9, 子: 10, 丑: 11,
+};
+
+/** 流年命宮依「命宮地支旋轉」：offset = (mingIndex - liunianIndex + 12) % 12，非 palaceOrder[branchIndex]。 */
+const PALACE_BY_OFFSET = [
+  "命宮", "兄弟宮", "夫妻宮", "子女宮", "財帛宮", "疾厄宮",
+  "遷移宮", "僕役宮", "官祿宮", "田宅宮", "福德宮", "父母宮",
+] as const;
+
+/**
+ * 依流年地支與命宮地支計算流年命宮（紫微斗數：以命宮地支旋轉）。
+ * 驗證：1972-08-02 申時男、命宮亥、2026 丙午 → 疾厄宮。
+ */
+export function computeFlowYearPalaceFromBranch(yearlyBranch: string, mingBranch: string): string | null {
+  const mingIndex = BRANCH_RING_INDEX[mingBranch ?? ""];
+  const liunianIndex = BRANCH_RING_INDEX[yearlyBranch ?? ""];
+  if (mingIndex == null || mingIndex === undefined || liunianIndex == null || liunianIndex === undefined) return null;
+  const offset = (mingIndex - liunianIndex + 12) % 12;
+  return PALACE_BY_OFFSET[offset] ?? null;
 }

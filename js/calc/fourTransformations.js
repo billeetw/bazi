@@ -4,15 +4,14 @@
  * 依賴: calc/constants.js, calc/helpers.js, calc/baziCore.js
  */
 
+import { CalcConstants } from "./constants.js";
+
 (function () {
   "use strict";
 
   // 檢查依賴
   if (typeof window === "undefined") {
     throw new Error("calc/fourTransformations.js requires browser environment (window object)");
-  }
-  if (!window.CalcConstants) {
-    throw new Error("calc/fourTransformations.js requires calc/constants.js to be loaded first. Please ensure constants.js is loaded before fourTransformations.js.");
   }
   if (!window.CalcHelpers) {
     throw new Error("calc/fourTransformations.js requires calc/helpers.js to be loaded first. Please ensure helpers.js is loaded before fourTransformations.js.");
@@ -21,12 +20,12 @@
     throw new Error("calc/fourTransformations.js requires calc/baziCore.js to be loaded first. Please ensure baziCore.js is loaded before fourTransformations.js.");
   }
 
-  // 從 constants.js 解構需要的常數
+  // 從 constants.js 解構需要的常數（使用 import 確保載入順序）
   const {
     STEMS,
     BRANCH_ORDER,
     YIN_STEM_FROM_YEAR,
-  } = window.CalcConstants;
+  } = CalcConstants;
 
   // 從 helpers.js 解構需要的函數
   const {
@@ -446,7 +445,10 @@
         totalWeight: 0,  // 總權重
         riskLevel: 'normal', // 'normal' | 'warning' | 'critical'
         opportunityLevel: 'normal', // 'normal' | 'good' | 'max'
-        resonance: []    // 共振描述
+        resonanceDescriptions: [],  // 共振描述（原 resonance 陣列）
+        hasDoubleJi: false,  // Mini C：忌 >= 2
+        hasDoubleLu: false,  // Mini C：祿 >= 2
+        resonance: null     // Mini C: 'double_ji' | 'double_lu' | null
       });
     });
 
@@ -581,6 +583,11 @@
       const hasCriticalRisk = palaceData.jiCount >= 2;
       // 檢測化祿疊加（MAX_OPPORTUNITY）
       const hasMaxOpportunity = palaceData.luCount >= 2;
+
+      // Mini C：每宮共振標記（忌/祿 統計沿用上方 jiCount/luCount，不另算）
+      palaceData.hasDoubleJi = palaceData.jiCount >= 2;
+      palaceData.hasDoubleLu = palaceData.luCount >= 2;
+      palaceData.resonance = palaceData.hasDoubleJi ? 'double_ji' : (palaceData.hasDoubleLu ? 'double_lu' : null);
       
       // 優先檢測：同時有化忌疊加和化祿疊加 → VOLATILE_AMBIVALENCE（劇烈震盪）
       if (hasCriticalRisk && hasMaxOpportunity) {
@@ -624,14 +631,99 @@
       }
 
       // 生成共振描述
-      palaceData.resonance = generateResonanceDescription(palaceData, palaceName);
+      palaceData.resonanceDescriptions = generateResonanceDescription(palaceData, palaceName);
     });
+
+    // Mini C：依共振標記補充 criticalRisks / maxOpportunities（不刪除既有項目）
+    palaceMap.forEach((palaceData, palaceName) => {
+      if (palaceData.hasDoubleJi && !criticalRisks.some(function (r) { return r.palace === palaceName; })) {
+        criticalRisks.push({ palace: palaceName, reason: 'double_ji', source: 'resonance', jiCount: palaceData.jiCount, luCount: palaceData.luCount || 0, transformations: palaceData.transformations });
+      }
+      if (palaceData.hasDoubleLu && !maxOpportunities.some(function (o) { return o.palace === palaceName; })) {
+        maxOpportunities.push({ palace: palaceName, reason: 'double_lu', source: 'resonance', luCount: palaceData.luCount, transformations: palaceData.transformations });
+      }
+    });
+
+    // 建 items：每筆含 tag、palaceKey、palaceName、jiCount、luCount、transformations（祿從何來、忌往哪裡）
+    const OPPOSITE_PALACE_MAP = window.CalcConstants?.OPPOSITE_PALACE_MAP || {
+      "命宮": "遷移", "遷移": "命宮", "兄弟": "僕役", "僕役": "兄弟",
+      "夫妻": "官祿", "官祿": "夫妻", "子女": "田宅", "田宅": "子女",
+      "財帛": "福德", "福德": "財帛", "疾厄": "父母", "父母": "疾厄"
+    };
+    const LAYER_MAP = [
+      { key: "benming", label: "本命", dataKey: "benming" },
+      { key: "decadal", label: "大限", dataKey: "dalimit" },
+      { key: "flowYear", label: "流年", dataKey: "liunian" },
+      { key: "xiaoXian", label: "小限", dataKey: "xiaoxian" }
+    ];
+    const TYPE_MAP = { "祿": { key: "lu", label: "化祿" }, "權": { key: "quan", label: "化權" }, "科": { key: "ke", label: "化科" }, "忌": { key: "ji", label: "化忌" } };
+    function ensureGong(n) { return n && (n.endsWith("宮") ? n : n + "宮"); }
+    const toPalaceToItem = new Map();
+    const riskPalaceSet = new Set(criticalRisks.map(r => r.palace));
+    const oppPalaceSet = new Set(maxOpportunities.map(o => o.palace));
+    const volatilePalaceSet = new Set(volatileAmbivalences.map(v => v.palace));
+
+    palaceMap.forEach((palaceData, fromPalaceName) => {
+      const toPalaceRaw = OPPOSITE_PALACE_MAP[fromPalaceName] || OPPOSITE_PALACE_MAP[fromPalaceName.replace(/宮$/, "")];
+      if (!toPalaceRaw) return;
+      const toPalaceName = ensureGong(toPalaceRaw);
+      const fromDisplay = ensureGong(fromPalaceName.replace(/宮$/, "") || fromPalaceName);
+      const toDisplay = toPalaceName;
+      const transformations = [];
+      LAYER_MAP.forEach(({ key: layerKey, label: layerLabel, dataKey }) => {
+        const t = palaceData.transformations && palaceData.transformations[dataKey];
+        if (!t || !t.star || !t.type) return;
+        const typeInfo = TYPE_MAP[t.type];
+        if (!typeInfo) return;
+        transformations.push({
+          layer: layerKey,
+          layerLabel: layerLabel,
+          starName: t.star,
+          type: typeInfo.key,
+          typeLabel: typeInfo.label,
+          fromPalaceKey: fromPalaceName.replace(/宮$/, "") || fromPalaceName,
+          fromPalaceName: fromDisplay,
+          toPalaceKey: toPalaceRaw,
+          toPalaceName: toDisplay
+        });
+      });
+      if (transformations.length === 0) return;
+      let item = toPalaceToItem.get(toPalaceName);
+      if (!item) {
+        const fromInRisk = riskPalaceSet.has(fromPalaceName) || riskPalaceSet.has(fromPalaceName.replace(/宮$/, ""));
+        const fromInVolatile = volatilePalaceSet.has(fromPalaceName) || volatilePalaceSet.has(fromPalaceName.replace(/宮$/, ""));
+        const fromInOpp = oppPalaceSet.has(fromPalaceName) || oppPalaceSet.has(fromPalaceName.replace(/宮$/, ""));
+        let tag = "normal";
+        let tagLabel = "";
+        if (fromInVolatile) { tag = "shock"; tagLabel = "劇烈震盪/吉凶並見（成敗一線間）"; }
+        else if (fromInRisk) { tag = "mine"; tagLabel = "超級地雷區（必須絕對避開）"; }
+        else if (fromInOpp) { tag = "wealth"; tagLabel = "大發財機會（建議積極把握）"; }
+        item = {
+          tag,
+          tagLabel,
+          palaceKey: toPalaceRaw,
+          palaceName: toPalaceName,
+          jiCount: 0,
+          luCount: 0,
+          transformations: []
+        };
+        toPalaceToItem.set(toPalaceName, item);
+      }
+      item.transformations.push(...transformations);
+      transformations.forEach(tr => {
+        if (tr.type === "ji") item.jiCount += 1;
+        if (tr.type === "lu") item.luCount += 1;
+      });
+    });
+
+    const items = Array.from(toPalaceToItem.values()).filter(it => it.tag !== "normal");
 
     return {
       palaceMap: palaceMap,
       criticalRisks: criticalRisks,
       maxOpportunities: maxOpportunities,
-      volatileAmbivalences: volatileAmbivalences, // 劇烈震盪/吉凶並見
+      volatileAmbivalences: volatileAmbivalences,
+      items: items,
       summary: {
         totalCriticalRisks: criticalRisks.length,
         totalMaxOpportunities: maxOpportunities.length,

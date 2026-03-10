@@ -1,0 +1,230 @@
+{
+  "ok": true,
+  "chart_json": {
+    "ziwei": {
+      "core": {
+        "minggongBranch": "寅",
+        "shengongBranch": "寅",
+        "wuxingju": "金四局"
+      },
+      "mainStars": {
+        "命宮": ["紫微", "天府"],
+        "兄弟": ["天機"],
+        "夫妻": ["太陽", "巨門"],
+        "子女": ["天同"],
+        "財帛": ["武曲", "天相"],
+        "疾厄": ["天梁"],
+        "遷移": ["七殺"],
+        "僕役": [],
+        "官祿": ["廉貞", "破軍"],
+        "田宅": [],
+        "福德": [],
+        "父母": ["天同"]
+      },
+      "horoscope": null
+    },
+    "bazi": {
+      "wuxing": {
+        "surface": { "木": 1.2, "火": 2.0, "土": 1.5, "金": 1.8, "水": 1.0 },
+        "strategic": { "木": 1.4, "火": 2.2, "土": 1.3, "金": 1.6, "水": 1.2 },
+        "maxStrategic": 2.2
+      }
+    }
+  },
+  "meta": {
+    "schema_version": "1.0",
+    "generator_version": "gpt-4.1",
+    "client_name": "示範用命書",
+    "birth_info": "1990年1月1日 子時"
+  },
+  "weight_analysis": {
+    "top_focus_palaces": ["命宮", "財帛", "官祿"],
+    "risk_palaces": ["疾厄", "遷移"],
+    "stable_palaces": ["田宅", "福德"]
+  },
+  "sections": {
+    "s03": {
+      "section_key": "s03",
+      "title": "五行氣勢與生剋",
+      "importance_level": "medium",
+      "structure_analysis": "本示範命書中，五行能量分布呈現木火較旺、土金水相對平穩的態勢。這會影響你在決策時的節奏與對資源的運用方式。",
+      "behavior_pattern": "你容易在「想要快速推進」與「需要穩扎穩打」之間擺盪，建議透過小目標累積，讓五行流動更順暢。",
+      "blind_spots": "過度聚焦單一面向時，容易忽略整體平衡，偶爾抽離視角有助於看見盲點。",
+      "strategic_advice": "可依季節與大運調整生活重心，補強弱項、善用強項，不必一次到位。"
+    },
+    "s02": {
+      "section_key": "s02",
+      "title": "命宮綜合分析",
+      "importance_level": "high",
+      "structure_analysis": "命宮為整張盤的核心，代表你對外展現的主軸與人格基調。本示範中命宮結構顯示你傾向以責任感與自我要求作為人生主旋律。",
+      "behavior_pattern": "你習慣把標準設高，對自己與他人都有一定期待，這會驅動你前進，也容易造成內在壓力。",
+      "blind_spots": "若只以「做得到多少」定義自我價值，可能忽略過程中的學習與彈性。",
+      "strategic_advice": "區分「必須」與「想要」，保留空間給休息與人際連結，命宮能量才能可長可久。",
+      "star_palace_quotes": {
+        "紫微_命宮": "你習慣把責任扛在自己身上，對自己有很高標準。"
+      }
+    },
+    "s10": {
+      "section_key": "s10",
+      "title": "財帛宮綜合分析",
+      "importance_level": "medium",
+      "structure_analysis": "財帛宮反映你的賺錢模式、用錢習慣與對金錢的態度。本示範中財帛與命宮形成呼應，顯示財務行為與自我認同高度相關。",
+      "behavior_pattern": "你傾向用「實績」與「可控的成果」來建立安全感，理財上較為謹慎，不喜冒進。",
+      "blind_spots": "過度保守可能錯失階段性機會；過度緊抓則可能忽略人際與健康等無形資產。",
+      "strategic_advice": "設定階段性財務目標，同時保留一部分預算給學習與人脈，有助長期穩定。"
+    },
+    "s01": {
+      "section_key": "s01",
+      "title": "福德宮綜合分析",
+      "importance_level": "medium",
+      "structure_analysis": "福德宮關乎精神世界、私下真實樣貌與晚年質地。本示範中福德與命宮的搭配，顯示你在獨處時更需要清晰的價值感與意義感。",
+      "behavior_pattern": "你會在「付出」與「回收」之間尋求平衡，內在的公平感會影響你的情緒與選擇。",
+      "blind_spots": "若只以外在成就衡量福德，可能忽略內在的平靜與自我接納。",
+      "strategic_advice": "定期留時間給自己沉澱，培養與金錢無關的興趣，有助於福德宮能量的滋養。"
+    },
+    "s05": {
+      "section_key": "s05",
+      "title": "父母宮綜合分析",
+      "importance_level": "low",
+      "structure_analysis": "父母宮與原生家庭、權威關係、長輩緣分有關。本示範中此宮顯示你與長輩或制度的互動會影響你在外的表現與安全感。",
+      "behavior_pattern": "你容易在「遵循規則」與「想要自主」之間取得平衡，有時會透過成就來獲得認可。",
+      "blind_spots": "過度在意權威的評價時，可能壓縮自己的真實想法。",
+      "strategic_advice": "區分「別人的期待」與「自己的目標」，在尊重與自決之間找到中道。"
+    },
+    "s06": {
+      "section_key": "s06",
+      "title": "兄弟宮綜合分析",
+      "importance_level": "medium",
+      "structure_analysis": "兄弟宮涉及手足、同輩、戰友與私庫（財庫）意象。本示範中顯示你在人際與資源共享上傾向有來有往、界限分明。",
+      "behavior_pattern": "你習慣在關係中保持一定的對等感，不喜單方面付出或依賴。",
+      "blind_spots": "過度強調公平可能讓關係顯得計較；適度柔軟有助深化連結。",
+      "strategic_advice": "在重要關係中保留「不計較」的空間，有助長期信任與合作。"
+    },
+    "s07": {
+      "section_key": "s07",
+      "title": "交友宮綜合分析",
+      "importance_level": "medium",
+      "structure_analysis": "交友宮反映社交磁場、你吸引的對象與團隊合作運勢。本示範中顯示你在群體中容易扮演穩定或協調的角色。",
+      "behavior_pattern": "你傾向在團體中貢獻具體能力，較少純粹以情感或玩樂為主的互動。",
+      "blind_spots": "若只以「有用」定義關係，可能忽略單純陪伴的價值。",
+      "strategic_advice": "主動安排不帶目的的聚會，有助擴展人際的多元性與彈性。"
+    },
+    "s08": {
+      "section_key": "s08",
+      "title": "官祿宮綜合分析",
+      "importance_level": "high",
+      "structure_analysis": "官祿宮與職涯方向、職場強項與可達成的階位有關。本示範中顯示你適合在制度清晰、可累積成果的領域發展。",
+      "behavior_pattern": "你習慣用專業與責任感建立職場信用，不喜空談或短期投機。",
+      "blind_spots": "過度聚焦升遷或頭銜時，可能忽略工作與生活的整合。",
+      "strategic_advice": "設定 3～5 年的職涯節奏，同時保留彈性給健康與家庭，避免單線衝刺。"
+    },
+    "s04": {
+      "section_key": "s04",
+      "title": "命主・身主・身宮・福德",
+      "importance_level": "medium",
+      "structure_analysis": "命主、身主與身宮反映顯意識與潛意識的配置，以及中年後內在驅動的轉向。本示範中顯示你的人生重心會隨大運逐漸從外在成就轉向內在安定。",
+      "behavior_pattern": "你會在「衝刺」與「收斂」之間依大運調整步調，後半生更重視意義與歸屬。",
+      "blind_spots": "若前半生只累積成就而忽略關係與健康，後半生補課成本較高。",
+      "strategic_advice": "現在就開始培養與身宮、福德相關的習慣，例如固定運動、深度關係、興趣培養。"
+    },
+    "s09": {
+      "section_key": "s09",
+      "title": "田宅宮綜合分析",
+      "importance_level": "low",
+      "structure_analysis": "田宅宮與資產、房產、土地緣與穩定度有關。本示範中顯示你對「有一個自己的窩」有潛在需求，但會以務實方式逐步達成。",
+      "behavior_pattern": "你傾向用儲蓄與計畫來累積不動產，不喜高槓桿或投機。",
+      "blind_spots": "過度延遲購屋或過度執著於特定標的，可能錯失階段性機會。",
+      "strategic_advice": "設定可達成的階段目標，並留意政策與利率變化，保持彈性。"
+    },
+    "s11": {
+      "section_key": "s11",
+      "title": "疾厄宮綜合分析 + 五行",
+      "importance_level": "medium",
+      "structure_analysis": "疾厄宮與健康體質、五行弱項及中晚年風險有關。本示範中建議特別留意循環與壓力相關的面向，並以預防為重。",
+      "behavior_pattern": "你容易在忙碌時忽略身體訊號，習慣「做完再說」。",
+      "blind_spots": "小症狀的累積可能演變成慢性負擔，定期檢查與休息是投資而非浪費。",
+      "strategic_advice": "建立固定運動與睡眠節奏，並依五行弱項適度調整飲食與環境。"
+    },
+    "s12": {
+      "section_key": "s12",
+      "title": "遷移宮綜合分析",
+      "importance_level": "medium",
+      "structure_analysis": "遷移宮反映異地發展、外界磁場與對外的表現方式。本示範中顯示你在陌生環境中會以專業與穩重建立信任。",
+      "behavior_pattern": "你傾向在準備充足後再行動，不喜貿然冒險或過度張揚。",
+      "blind_spots": "過度保守可能限制跨域發展；適度嘗試小範圍的「走出去」有助擴展。",
+      "strategic_advice": "可透過短期出差、進修或線上連結，逐步擴大遷移宮的影響半徑。"
+    },
+    "s13": {
+      "section_key": "s13",
+      "title": "夫妻宮綜合分析",
+      "importance_level": "medium",
+      "structure_analysis": "夫妻宮與婚姻結構、伴侶特質與關係模式有關。本示範中顯示你在親密關係中重視責任與共識，也容易把工作習慣帶入關係。",
+      "behavior_pattern": "你傾向以「一起解決問題」來定義親密，有時會忽略純粹的情感表達。",
+      "blind_spots": "過度理性可能讓伴侶感到疏離；保留時間給傾聽與陪伴很重要。",
+      "strategic_advice": "定期安排不談正事的相處時間，並練習表達感受而非只談做法。"
+    },
+    "s14": {
+      "section_key": "s14",
+      "title": "子女宮綜合分析",
+      "importance_level": "low",
+      "structure_analysis": "子女宮涉及下一代緣分、創造力與投資合作運。本示範中顯示你在「傳承」或「創造」面向會隨人生階段逐漸發酵。",
+      "behavior_pattern": "你傾向用具體行動（例如教育、專案、投資）來表達對未來的期待。",
+      "blind_spots": "若只以成果論成敗，可能忽略過程中的關係與學習。",
+      "strategic_advice": "在子女或創造相關的選擇上，保留彈性與溝通空間，避免單一標準。"
+    },
+    "s15": {
+      "section_key": "s15",
+      "title": "十年大限",
+      "importance_level": "high",
+      "structure_analysis": "大限每十年一換，反映階段性的人生主題與資源配置。本示範中建議依當前大限調整重心，該衝刺時衝刺、該收斂時收斂。",
+      "behavior_pattern": "你容易在每個大限內設定明確目標，並以成果檢視自己。",
+      "blind_spots": "若只盯住單一大限而忽略連續性，可能在大限交接時感到斷層。",
+      "strategic_advice": "在大限前 1～2 年開始醞釀下一階段的主題，有助平滑過渡。"
+    },
+    "s16": {
+      "section_key": "s16",
+      "title": "流年（2026）",
+      "importance_level": "medium",
+      "structure_analysis": "流年反映當年度的主題與強月份。本示範中 2026 年建議把握上半年規劃、下半年執行，並留意健康與人際的節奏。",
+      "behavior_pattern": "你傾向在年初訂計畫，並在年終檢視達成率。",
+      "blind_spots": "過度依賴計畫可能忽略流年帶來的意外機會或考驗。",
+      "strategic_advice": "保留 20% 的彈性給流年帶來的變化，並在關鍵月份前後預留緩衝。"
+    },
+    "s17": {
+      "section_key": "s17",
+      "title": "靈魂使命",
+      "importance_level": "high",
+      "structure_analysis": "靈魂使命關乎此生為何而來、需補強的能量與大方向。本示範中顯示你的人生主軸與「責任、價值、傳承」高度相關。",
+      "behavior_pattern": "你會在達成目標與意義感之間尋求平衡，不喜虛耗或無方向感。",
+      "blind_spots": "若只以社會標準定義使命，可能壓抑內在真正的呼喚。",
+      "strategic_advice": "定期回顧「什麼事讓你感到有意義」，並把這些線索納入長期規劃。"
+    },
+    "s18": {
+      "section_key": "s18",
+      "title": "業力議題：忌・空・煞",
+      "importance_level": "medium",
+      "structure_analysis": "業力議題涉及化忌、空宮、煞曜等結構帶來的深層提醒與重複課題。本示範中建議留意「過度承擔」與「界限模糊」的循環。",
+      "behavior_pattern": "你容易在相同類型的人事上反覆投入，直到學會設定界限或放下執著。",
+      "blind_spots": "若只以「再努力一點」面對課題，可能忽略結構性調整的必要。",
+      "strategic_advice": "辨識重複模式，並在關鍵節點選擇不同的回應方式，打破循環。"
+    },
+    "s19": {
+      "section_key": "s19",
+      "title": "行動建議（整合版）",
+      "importance_level": "high",
+      "structure_analysis": "整合前述各章，短期可先從「健康節奏」與「人際品質」兩條線著手；中期鞏固職涯與財務；長期則朝向意義感與傳承。",
+      "behavior_pattern": "你適合用清單與階段目標來推進，同時保留彈性給意外與靈感。",
+      "blind_spots": "執行力強時容易忽略休息與關係；建議每季檢視生活平衡。",
+      "strategic_advice": "每半年回顧本命書的重點章節，並依大限與流年微調優先順序。"
+    },
+    "s20": {
+      "section_key": "s20",
+      "title": "三盤疊加：紅綠燈演算法",
+      "importance_level": "medium",
+      "structure_analysis": "原命、大運、流年與小限疊加後，可看出某時段的「綠燈機會」「黃燈留意」「紅燈避險」。本示範中建議養成每季檢視三盤的習慣。",
+      "behavior_pattern": "你傾向在關鍵決策前蒐集資訊，三盤視角可作為輔助而非唯一依據。",
+      "blind_spots": "過度依賴命盤可能削弱當下判斷；命盤是地圖，你仍是開車的人。",
+      "strategic_advice": "在重大變動前後對照三盤，有助於理解「為什麼是現在」，並做出更從容的選擇。"
+    }
+  }
+}

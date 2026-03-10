@@ -47,13 +47,15 @@ export async function onRequestPost(context) {
       .bind(userId)
       .first();
 
-    const birthDate = chartRow?.birth_date || '';
-    const birthYear = birthDate ? parseInt(String(birthDate).slice(0, 4), 10) : null;
+    const birthDate = chartRow?.birth_date ? String(chartRow.birth_date).trim() : '';
+    const birthYear = birthDate && /^\d{4}-\d{2}-\d{2}$/.test(birthDate)
+      ? parseInt(birthDate.slice(0, 4), 10)
+      : (birthDate ? parseInt(String(birthDate).slice(0, 4), 10) : null);
     if (!birthYear || isNaN(birthYear)) {
       return jsonResponse({ error: '請先建立命盤資料' }, 400);
     }
 
-    const status = getTaisuiStatus({ birthYear, year });
+    const status = getTaisuiStatus({ birthYear, birthDate: /^\d{4}-\d{2}-\d{2}$/.test(birthDate) ? birthDate : undefined, year });
     const flowBranch = status.flowBranch;
     const userBranch = status.userBranch;
     const statusType = status.type;

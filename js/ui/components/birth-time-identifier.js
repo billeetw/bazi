@@ -15,8 +15,6 @@
    * 初始化出生时间识别功能
    */
   function initIdentifyBirthTime() {
-    if (typeof window.IdentifyBirthTime === "undefined") return;
-
     const btn = document.getElementById("btnIdentifyBirthTime");
     const modal = document.getElementById("identifyBirthTimeModal");
     const backdrop = document.getElementById("identifyBirthTimeBackdrop");
@@ -47,7 +45,7 @@
 
     if (!modal || !backdrop || !form || !questionsEl) return;
 
-    var questions = (window.IdentifyBirthTime.getQuestions && window.IdentifyBirthTime.getQuestions()) || window.IdentifyBirthTime.questions;
+    var questions = (window.IdentifyBirthTime && ((window.IdentifyBirthTime.getQuestions && window.IdentifyBirthTime.getQuestions()) || window.IdentifyBirthTime.questions)) || [];
     var total = questions.length;
     var currentIndex = 0;
     var answers = {};
@@ -116,6 +114,8 @@
           return;
         }
         if (btn) btn.disabled = false;
+        questions = (window.IdentifyBirthTime.getQuestions && window.IdentifyBirthTime.getQuestions()) || window.IdentifyBirthTime.questions;
+        total = questions.length;
       }
       currentIndex = 0;
       answers = {};
@@ -402,10 +402,12 @@
       var submitBtnEl = document.getElementById("identifyBirthTimeSubmit");
       if (submitBtnEl) submitBtnEl.disabled = true;
       var origin = (typeof window !== "undefined" && window.location && window.location.origin) ? window.location.origin : "";
+      var estPayload = { answers: answers };
+      console.log("📡 API REQUEST", origin + "/api/me/estimate-hour", JSON.stringify(estPayload, null, 2));
       fetch(origin + "/api/me/estimate-hour", {
         method: "POST",
         headers: Object.assign({ "Content-Type": "application/json" }, headers),
-        body: JSON.stringify({ answers: answers }),
+        body: JSON.stringify(estPayload),
       })
         .then(function (res) {
           return res.text().then(function (text) {
@@ -446,7 +448,9 @@
       var body = { correct: correct };
       if (correct === false && actualBranch) body.actual_branch = actualBranch;
       if (correct === false && actualHalf) body.actual_half = actualHalf;
-      fetch(origin + "/api/me/estimate-hour/logs/" + encodeURIComponent(pendingCeremonyResult.log_id), {
+      var logUrl = origin + "/api/me/estimate-hour/logs/" + encodeURIComponent(pendingCeremonyResult.log_id);
+      console.log("📡 API REQUEST", logUrl, JSON.stringify(body, null, 2));
+      fetch(logUrl, {
         method: "PATCH",
         headers: Object.assign({ "Content-Type": "application/json" }, headers),
         body: JSON.stringify(body),

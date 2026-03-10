@@ -15,7 +15,7 @@
  */
 
 import { readFileSync } from 'fs';
-import { estimateHourFromAnswers } from '../functions/utils/shichen-logic.js';
+import { estimateHourFromAnswers } from '../shared/shichen-logic.js';
 
 function parseCsv(content) {
   const lines = content.trim().split(/\r?\n/);

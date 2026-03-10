@@ -21,6 +21,8 @@ import "./calc/ziweiOutput.js";
 import "./calc/baziCore.js";
 import "./calc/fourTransformations.js";
 import "./calc/overlapAnalysis.js";
+import "./calc/bodyPalaceEngine.js";
+import "./calc/strategicLinkEngine.js";
 import "./calc/luckIndex.js";
 import "./calc/healthAnalysis.js";
 import "./calc/monthlyDetailedAnalysis.js";

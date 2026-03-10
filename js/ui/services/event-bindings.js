@@ -148,66 +148,6 @@
   }
 
   /**
-   * 绑定年龄滑块事件
-   * @param {Object} params - 参数对象
-   * @param {Object} params.contract - 合约数据
-   * @param {Function} params.getCurrentAge - 获取当前年龄函数
-   * @param {string} params.lastGender - 最后性别
-   * @param {Function} params.renderZiwei - 渲染紫微函数
-   * @param {Function} params.renderZiweiScores - 渲染紫微分数函数
-   * @param {Function} params.selectPalace - 选择宫位函数
-   * @param {Function} params.computeAllPalaceScores - 计算所有宫位分数函数
-   * @param {Function} params.getHoroscopeFromAge - 从年龄获取小限函数
-   * @param {Function} params.syncAgeSliderDisplay - 同步年龄滑块显示函数
-   */
-  function bindAgeSlider(params) {
-    const {
-      getContract,
-      contract: contractParam,
-      getCurrentAge,
-      lastGender,
-      renderZiwei,
-      renderZiweiScores,
-      selectPalace,
-      computeAllPalaceScores,
-      getHoroscopeFromAge,
-      syncAgeSliderDisplay,
-    } = params;
-
-    const currentAgeSlider = document.getElementById("currentAgeSlider");
-    if (currentAgeSlider) {
-      currentAgeSlider.addEventListener("input", () => {
-        const contract = (getContract && typeof getContract === "function" ? getContract() : null) || contractParam || window.contract;
-        const age = Math.max(1, Math.min(120, Number(currentAgeSlider.value) || 38));
-        syncAgeSliderDisplay(age);
-        if (!contract?.ziwei) return;
-        const bazi = contract.bazi;
-        const horoscope = contract.ziwei.horoscope || getHoroscopeFromAge(age, contract.ziwei, bazi, lastGender);
-        renderZiwei(contract.ziwei, horoscope);
-        // 使用新算法重新計算宮位強度（年齡變化會影響小限四化）
-        computeAllPalaceScores(contract.ziwei, horoscope, { bazi: contract.bazi, age }).then(function (result) {
-          const { scores: computedScores, elementRatios: computedRatios } = (result && typeof result === "object" && result.scores != null)
-            ? result
-            : { scores: result, elementRatios: {} };
-          const scores = {
-            palaceScores: computedScores,
-            elementRatios: computedRatios || window.ziweiScores?.elementRatios || {},
-          };
-          window.ziweiScores = scores;
-          renderZiweiScores(scores, horoscope, contract.ziwei);
-          selectPalace(params.selectedPalace || "命宮");
-        }).catch(function (err) {
-          console.error("重新計算宮位分數失敗:", err);
-          if (window.ziweiScores?.palaceScores) {
-            renderZiweiScores(window.ziweiScores, horoscope, contract.ziwei);
-          }
-          selectPalace(params.selectedPalace || "命宮");
-        });
-      });
-    }
-  }
-
-  /**
    * 绑定移动端底部面板关闭事件
    * @param {Function} closePalaceSheetFn - 关闭宫位面板函数
    */
@@ -264,7 +204,6 @@
     bindLaunchButton,
     bindWuxingClickEvents,
     bindOverloadAdviceModal,
-    bindAgeSlider,
     bindMobileSheetCloseEvents,
   };
 })();

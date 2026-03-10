@@ -38,7 +38,7 @@
     if (!primary || !primary.ok) return fallback || primary;
     if (!fallback || !fallback.ok) return primary;
     var merged = Object.assign({}, primary);
-    ["palaces", "stars", "tenGods", "wuxing"].forEach(function (k) {
+    ["palaces", "stars", "starPalaces", "tenGods", "wuxing"].forEach(function (k) {
       if (fallback[k] && typeof fallback[k] === "object") {
         merged[k] = Object.assign({}, fallback[k], primary[k] || {});
       }
@@ -54,13 +54,17 @@
     try {
       var i18nLocale = (typeof inferI18nLocale === "function") ? inferI18nLocale() : "zh-TW";
       var locale = (typeof inferContentLocale === "function") ? inferContentLocale(i18nLocale) : (i18nLocale === "en" ? "en" : i18nLocale === "zh-CN" ? "zh-CN" : "zh-TW");
-      var r = await fetchWithFallback(`${API_BASE}/content/2026?locale=${encodeURIComponent(locale)}`, {
+      const urlContent = `${API_BASE}/content/2026?locale=${encodeURIComponent(locale)}`;
+      console.log("📡 API REQUEST", urlContent, JSON.stringify({ locale }, null, 2));
+      var r = await fetchWithFallback(urlContent, {
         method: "GET",
       });
       var j = await r.json();
       // Fallback to zh-TW for en and zh-CN (requested locale first, zh-TW fills missing keys)
       if ((locale === "en" || locale === "zh-CN") && j?.ok) {
-        var r2 = await fetchWithFallback(`${API_BASE}/content/2026?locale=zh-TW`, { method: "GET" });
+        const urlContentZhTw = `${API_BASE}/content/2026?locale=zh-TW`;
+        console.log("📡 API REQUEST", urlContentZhTw, JSON.stringify({ locale: "zh-TW" }, null, 2));
+        var r2 = await fetchWithFallback(urlContentZhTw, { method: "GET" });
         var j2 = await r2.json();
         j = mergeContent(j, j2);
       }
@@ -93,7 +97,9 @@
     const baseBody = { year, month, day, hour, minute, language };
     const bodyWithGender = gender ? { ...baseBody, gender } : baseBody;
 
-    let resp = await fetchWithFallback(`${API_BASE}/compute/all`, {
+    const urlComputeAll = `${API_BASE}/compute/all`;
+    console.log("📡 API REQUEST", urlComputeAll, JSON.stringify(bodyWithGender, null, 2));
+    let resp = await fetchWithFallback(urlComputeAll, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(bodyWithGender),
@@ -103,6 +109,7 @@
       const t = await resp.text().catch(() => "");
       // 若後端不支援 gender 欄位，做一次降級重試（避免整個系統卡死）
       if (gender && resp.status === 400 && /gender|sex/i.test(t)) {
+        console.log("📡 API REQUEST", `${API_BASE}/compute/all`, "(retry without gender)", JSON.stringify(baseBody, null, 2));
         resp = await fetchWithFallback(`${API_BASE}/compute/all`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -141,7 +148,9 @@
   async function fetchHoroscope(params) {
     const { year, month, day, hour, minute, gender, horoscopeYear } = params;
     const body = { year, month, day, hour: hour ?? 0, minute: minute ?? 0, gender, horoscopeYear: horoscopeYear ?? new Date().getFullYear() };
-    const resp = await fetchWithFallback(`${API_BASE}/compute/horoscope`, {
+    const urlHoroscope = `${API_BASE}/compute/horoscope`;
+    console.log("📡 API REQUEST", urlHoroscope, JSON.stringify(body, null, 2));
+    const resp = await fetchWithFallback(urlHoroscope, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -169,7 +178,9 @@
     }
 
     try {
-      const scoreResp = await fetchWithFallback(`${API_BASE}/charts/${encodeURIComponent(chartId)}/scores`, {
+      const urlScores = `${API_BASE}/charts/${encodeURIComponent(chartId)}/scores`;
+      console.log("📡 API REQUEST", urlScores, JSON.stringify({ chartId }, null, 2));
+      const scoreResp = await fetchWithFallback(urlScores, {
         method: "GET",
       });
       if (scoreResp.ok) {
@@ -195,10 +206,9 @@
     if (!chartId || !palaceName) return null;
 
     try {
-      const resp = await fetchWithFallback(
-        `${API_BASE}/charts/${encodeURIComponent(chartId)}/strategy/${encodeURIComponent(palaceName)}`,
-        { method: "GET" }
-      );
+      const urlStrategy = `${API_BASE}/charts/${encodeURIComponent(chartId)}/strategy/${encodeURIComponent(palaceName)}`;
+      console.log("📡 API REQUEST", urlStrategy, JSON.stringify({ chartId, palaceName }, null, 2));
+      const resp = await fetchWithFallback(urlStrategy, { method: "GET" });
       if (resp.ok) {
         return await resp.json();
       }

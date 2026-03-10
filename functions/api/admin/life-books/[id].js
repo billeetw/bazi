@@ -22,7 +22,7 @@ export async function onRequestGet(context) {
 
     const row = await db
       .prepare(
-        `SELECT id, created_at, consultation_id, user_id, email, birth_info, sections_json, html_content
+        `SELECT id, created_at, consultation_id, user_id, email, client_name, birth_info, sections_json, html_content, document_json
          FROM life_books WHERE id = ?`
       )
       .bind(id)
@@ -35,6 +35,6 @@ export async function onRequestGet(context) {
     return jsonResponse(row);
   } catch (err) {
     console.error('Error in GET /api/admin/life-books/:id:', err);
-    return jsonResponse({ error: '讀取失敗' }, 500);
+    return jsonResponse({ error: '讀取失敗', details: err?.message || String(err) }, 500);
   }
 }

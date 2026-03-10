@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>命書詳情（獨立頁）</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    .top { padding: 0.75rem 1rem; background: #1e293b; border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .top a { color: #fbbf24; text-decoration: none; }
+    .top a:hover { text-decoration: underline; }
+    .layout { display: flex; flex-1; min-height: calc(100vh - 52px); }
+    .viewer-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .viewer-wrap iframe { flex: 1; width: 100%; border: none; background: #0f172a; }
+    .side { width: 320px; padding: 1rem; background: #1e293b; border-left: 1px solid #334155; overflow-y: auto; font-size: 0.875rem; }
+    .side h4 { color: #fbbf24; margin: 0 0 0.5rem 0; font-size: 0.9rem; }
+    .side ul { margin: 0; padding-left: 1.25rem; color: #94a3b8; }
+    .side p { margin: 0.5rem 0; color: #94a3b8; }
+    .debug { margin-top: 1rem; padding: 0.75rem; background: #0f172a; border-radius: 8px; border: 1px solid #334155; }
+    .debug pre { margin: 0; font-size: 0.75rem; color: #64748b; white-space: pre-wrap; word-break: break-all; }
+    .error { color: #f87171; }
+    .login-wrap { padding: 2rem; max-width: 360px; margin: 2rem auto; }
+    .login-wrap input { width: 100%; padding: 0.5rem; margin-bottom: 0.5rem; background: #1e293b; border: 1px solid #475569; color: #e2e8f0; border-radius: 6px; }
+    .login-wrap button { padding: 0.5rem 1rem; background: #f59e0b; color: #0f172a; border: none; border-radius: 6px; cursor: pointer; }
+    .empty { padding: 2rem; text-align: center; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <a href="expert-admin.html">← 回專家後台</a>
+    <span id="pageTitle">命書詳情</span>
+  </div>
+
+  <div id="loginWrap" class="login-wrap" style="display: none;">
+    <p class="text-sm text-slate-400 mb-2">此頁與專家後台共用登入，請輸入相同帳密（僅存於此分頁 session）。</p>
+    <input type="text" id="loginUser" placeholder="帳號" />
+    <input type="password" id="loginPass" placeholder="密碼" />
+    <button type="button" id="loginBtn">登入並載入命書</button>
+  </div>
+
+  <div id="mainWrap" class="layout" style="display: none;">
+    <div class="viewer-wrap">
+      <iframe id="viewerFrame" title="命書 Viewer" src="about:blank"></iframe>
+    </div>
+    <div class="side">
+      <h4>Meta</h4>
+      <div id="metaPanel"></div>
+      <div class="debug">
+        <h4>除錯</h4>
+        <pre id="debugLog"></pre>
+      </div>
+    </div>
+  </div>
+
+  <div id="emptyWrap" class="empty" style="display: none;">
+    <p>請在網址加上命書 ID，例如：<code>lifebook-detail.html?id=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx</code></p>
+    <p class="text-sm mt-2">或從專家後台命書列表點「詳情」後，改開此獨立頁以排查 viewer 問題。</p>
+  </div>
+
+  <script>
+    var AUTH_KEY = 'expertAdminAuth';
+    var STORAGE_KEY = 'lifebook_doc';
+
+    function getStoredAuth() {
+      try { return sessionStorage.getItem(AUTH_KEY); } catch { return null; }
+    }
+    function setStoredAuth(value) {
+      try { if (value) sessionStorage.setItem(AUTH_KEY, value); else sessionStorage.removeItem(AUTH_KEY); } catch (_) {}
+    }
+
+    function escapeHtml(s) {
+      if (s == null) return '';
+      var div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function debugLog(msg, obj) {
+      var el = document.getElementById('debugLog');
+      if (!el) return;
+      var line = (new Date().toISOString()) + ' ' + msg + (obj != null ? '\n' + JSON.stringify(obj, null, 2) : '');
+      el.textContent = (el.textContent || '') + line + '\n';
+    }
+
+    function buildDocFromRow(d) {
+      var doc;
+      if (d.document_json && typeof d.document_json === 'string') {
+        try { doc = JSON.parse(d.document_json); } catch (e) { doc = null; }
+      }
+      if (!doc || !doc.sections) {
+        var sections = {};
+        try {
+          if (d.sections_json && typeof d.sections_json === 'string') {
+            var parsed = JSON.parse(d.sections_json);
+            if (parsed && typeof parsed === 'object') sections = parsed;
+          }
+        } catch (e) {}
+        doc = {
+          meta: {
+            schema_version: '1.0',
+            id: d.id,
+            created_at: d.created_at,
+            client_name: d.client_name,
+            birth_info: d.birth_info
+          },
+          sections: sections,
+          weight_analysis: null,
+          chart_json: null
+        };
+      }
+      return doc;
+    }
+
+    function renderMeta(doc) {
+      var meta = doc.meta || {};
+      var html = '<ul class="space-y-1">';
+      ['generator_version', 'schema_version', 'client_name', 'birth_info', 'id', 'created_at'].forEach(function (k) {
+        if (meta[k] != null) html += '<li><span class="text-slate-500">' + escapeHtml(k) + '</span>: ' + escapeHtml(String(meta[k])) + '</li>';
+      });
+      html += '</ul>';
+      var sectionCount = doc.sections ? Object.keys(doc.sections).length : 0;
+      html += '<p class="mt-2">sections: ' + sectionCount + ' 章</p>';
+      document.getElementById('metaPanel').innerHTML = html;
+    }
+
+    function loadLifeBook(id) {
+      var auth = getStoredAuth();
+      if (!auth) {
+        document.getElementById('loginWrap').style.display = 'block';
+        document.getElementById('mainWrap').style.display = 'none';
+        document.getElementById('emptyWrap').style.display = 'none';
+        return;
+      }
+      var url = '/api/admin/life-books/' + encodeURIComponent(id);
+      debugLog('GET ' + url);
+      fetch(url, { headers: { Authorization: 'Basic ' + auth } })
+        .then(function (res) {
+          return res.text().then(function (text) {
+            if (res.status === 401) {
+              setStoredAuth(null);
+              document.getElementById('loginWrap').style.display = 'block';
+              document.getElementById('mainWrap').style.display = 'none';
+              throw new Error('請重新登入');
+            }
+            if (text.trim().startsWith('<')) throw new Error('後台 API 未就緒');
+            try { return JSON.parse(text); } catch (e) { throw new Error('回傳格式錯誤'); }
+          });
+        })
+        .then(function (d) {
+          if (d && d.error) throw new Error(d.error + (d.details ? ': ' + d.details : ''));
+          var doc = buildDocFromRow(d);
+          var docStr = JSON.stringify(doc);
+          try {
+            sessionStorage.setItem(STORAGE_KEY, docStr);
+            localStorage.setItem(STORAGE_KEY, docStr);
+            debugLog('storage 已寫入 lifebook_doc', { sectionsCount: Object.keys(doc.sections || {}).length });
+          } catch (e) {
+            debugLog('storage 寫入失敗', { err: e.message });
+          }
+          document.getElementById('pageTitle').textContent = '命書詳情：' + (doc.meta && doc.meta.client_name ? doc.meta.client_name : id);
+          renderMeta(doc);
+          document.getElementById('loginWrap').style.display = 'none';
+          document.getElementById('emptyWrap').style.display = 'none';
+          document.getElementById('mainWrap').style.display = 'flex';
+          var base = window.location.pathname.replace(/[^/]+$/, '') || '/';
+          var viewerPath = (base + (base.endsWith('/') ? '' : '') + 'dist/lifebook-viewer.html').replace(/\/+/g, '/');
+          var hasExpert = window.location.search.indexOf('mode=expert') !== -1;
+          if (hasExpert) viewerPath += (viewerPath.indexOf('?') !== -1 ? '&' : '?') + 'mode=expert';
+          debugLog('viewer iframe src', { viewerPath: viewerPath });
+          var iframe = document.getElementById('viewerFrame');
+          iframe.src = viewerPath;
+        })
+        .catch(function (err) {
+          debugLog('載入失敗', { error: err.message });
+          document.getElementById('metaPanel').innerHTML = '<p class="error">' + escapeHtml(err.message) + '</p>';
+          document.getElementById('mainWrap').style.display = 'flex';
+          document.getElementById('loginWrap').style.display = 'none';
+          document.getElementById('emptyWrap').style.display = 'none';
+        });
+    }
+
+    document.getElementById('loginBtn').addEventListener('click', function () {
+      var user = document.getElementById('loginUser').value.trim();
+      var pass = document.getElementById('loginPass').value;
+      if (!user || !pass) { alert('請輸入帳號與密碼'); return; }
+      setStoredAuth(btoa(user + ':' + pass));
+      var id = new URLSearchParams(window.location.search).get('id');
+      if (id) loadLifeBook(id);
+      else document.getElementById('loginWrap').style.display = 'none';
+    });
+
+    (function init() {
+      var params = new URLSearchParams(window.location.search);
+      var id = params.get('id');
+      if (!id) {
+        document.getElementById('emptyWrap').style.display = 'block';
+        document.getElementById('mainWrap').style.display = 'none';
+        document.getElementById('loginWrap').style.display = 'none';
+        return;
+      }
+      loadLifeBook(id);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "meta": { "version": "1.1", "description": "CCL3 star_stress_patterns：星曜壓力模式（P1.5），供疾厄/福德/s18 壓力體感與身體訊號" },
+  "items": [
+    { "star": "鈴星", "patternName": "內火焦慮", "innerState": "表面冷靜但內在焦慮", "outerState": "突然情緒爆發", "bodySignals": ["腸胃不適", "焦躁", "失眠"] },
+    { "star": "火星", "patternName": "瞬間爆衝", "innerState": "壓力累積後突然爆發", "outerState": "衝動行動", "bodySignals": ["血壓升高", "外傷", "肌肉緊繃"] },
+    { "star": "天機", "patternName": "思緒過載", "innerState": "腦袋停不下來", "outerState": "猶豫與拖延", "bodySignals": ["失眠", "肩頸緊繃"] },
+    { "star": "巨門", "patternName": "語言壓力", "innerState": "內心懷疑", "outerState": "言語衝突", "bodySignals": ["喉嚨", "胃酸"] },
+    { "star": "廉貞", "patternName": "情緒燃燒", "innerState": "壓力轉為憤怒", "outerState": "衝突升級", "bodySignals": ["肝火", "頭痛"] },
+    { "star": "七殺", "patternName": "極端壓力", "innerState": "要嘛贏要嘛輸", "outerState": "突然翻臉", "bodySignals": ["神經緊繃", "意外受傷"] },
+    { "star": "破軍", "patternName": "崩解重建", "innerState": "舊秩序無法忍受", "outerState": "突然改變", "bodySignals": ["疲勞", "免疫下降"] },
+    { "star": "地空", "patternName": "虛無耗能", "innerState": "失去動力", "outerState": "拖延停滯", "bodySignals": ["疲勞", "精神渙散"] },
+    { "star": "地劫", "patternName": "能量流失", "innerState": "覺得努力沒有回報", "outerState": "突然放棄", "bodySignals": ["疲憊", "免疫下降"] },
+    { "star": "擎羊", "patternName": "衝突爆發", "innerState": "壓力轉為對抗", "outerState": "衝突升級", "bodySignals": ["外傷", "血壓升高"] },
+    { "star": "陀羅", "patternName": "壓力沉積", "innerState": "壓力持續累積", "outerState": "拖延停滯", "bodySignals": ["慢性疲勞"] },
+    { "star": "咸池", "patternName": "情感誘惑", "innerState": "情感渴望", "outerState": "感情糾葛", "bodySignals": ["荷爾蒙波動"] }
+  ]
+}

@@ -4,18 +4,66 @@
  * content/2026: 優先從 D1 ui_copy_texts 讀取，DB 無資料時用靜態 JSON fallback。
  */
 import { astro } from "iztro";
-import { palaceNameToZhTW, FIXED_PALACES_ZH_TW } from "./palace-map.js";
-import { toEnStarKey } from "./star-map.js";
-import { buildContentFromRows, mergeContent, type DbContent } from "./content-from-d1.js";
+import { palaceNameToZhTW, FIXED_PALACES_ZH_TW, BRANCH_RING, computeFlowYearPalaceFromBranch } from "./palace-map.js";
+import { toEnStarKey, toZhStarKey } from "./star-map.js";
+import { buildContentFromRows, mergeContent, emptyDbContent, type DbContent } from "./content-from-d1.js";
 
 import contentZhTw from "../content/content-zh-TW.json";
+import tenGodPalacesByIdZhTw from "../content/tenGodPalacesById-zh-TW.json";
+import neuralLoopsZhTw from "../content/neuralLoops-zh-TW.json";
+import highPressureZhTw from "../content/highPressure-zh-TW.json";
+import starBaseCoreZhTw from "../content/starBaseCore-zh-TW.json";
+import starBaseShadowZhTw from "../content/starBaseShadow-zh-TW.json";
+import wuxingEnergyZhTw from "../content/wuxingEnergy-zh-TW.json";
+import consciousPalaceZhTw from "../content/consciousPalace-zh-TW.json";
+import archetypeElementZhTw from "../content/archetypeElement-zh-TW.json";
+import archetypeStarZhTw from "../content/archetypeStar-zh-TW.json";
+import lifebookSectionZhTw from "../content/lifebookSection-zh-TW.json";
+import lifeLordBodyLordZhTw from "../content/lifeLord-bodyLord-zh-TW.json";
+import lifeBodyRelationZhTw from "../content/lifeBodyRelation-zh-TW.json";
+import starPalacesMainZhTw from "../content/starPalacesMain-zh-TW.json";
+import starPalacesAuxZhTw from "../content/starPalacesAux-zh-TW.json";
+import starSanfangFamiliesZhTw from "../content/starSanfangFamilies-zh-TW.json";
+import starMetadataJson from "../content/starMetadata.json";
+import palaceRiskCorpusZhTw from "../content/palaceRiskCorpus-zh-TW.json";
+import narrativeCorpusZhTw from "../content/narrativeCorpus-zh-TW.json";
+import decisionMatrixJson from "../content/decisionMatrix.json";
+import starBaseMeaningZhTw from "../content/starBaseMeaning-zh-TW.json";
+import palaceContextsZhTw from "../content/palaceContexts-zh-TW.json";
 import contentEn from "../content/content-en.json";
-import { SYSTEM_PROMPT, buildSectionUserPrompt, SECTION_ORDER } from "./life-book-prompts";
+import starCombinationsTable from "../content/ccl3/star-combinations.json";
+import crossChartRulesJson from "../content/ccl3/cross-chart-rules.json";
+import palaceAxisLinksJson from "../content/ccl3/palace-axis-links.json";
+import palaceMatrixJson from "../content/ccl3/patterns/palace-transform-star-matrix.json";
+import mainStarHintsJson from "../content/ccl3/patterns/main-star-inference-hints.json";
+import {
+  getSystemPrompt,
+  buildSectionUserPrompt,
+  getDefaultConfig,
+  getChartSlice,
+  getSectionTechnicalBlocks,
+  getPalaceSectionReaderOverrides,
+  injectTimeModuleDataIntoSection,
+  validateModuleOneOutput,
+  filterStablePalacesByDominant,
+  dedupeParagraphsAcrossBlocks,
+  normalizePunctuation,
+  PALACE_SECTION_KEYS,
+  SECTION_ORDER,
+  MODEL_CONFIG,
+  type LifeBookConfig,
+} from "./lifeBookPrompts.js";
+import { buildLifebookFindingsFromChartAndContent, type LifebookContentLookup } from "./lifebook/index.js";
+import { SECTION_TEMPLATES } from "./lifeBookTemplates.js";
+import { INFER_SYSTEM_PROMPT, buildInferUserPrompt, type InferOutput, type SectionInsight } from "./lifeBookInfer.js";
+import { NARRATE_MODEL, buildNarrateSystemPrompt, buildNarrateUserPrompt } from "./lifeBookNarrate.js";
 
 interface Env {
   CONSULT_DB?: D1Database;
   CACHE?: KVNamespace;
   OPENAI_API_KEY?: string;
+  /** 設為 "1" 或 "true" 時，generate-section 對 s18 會印出完整 prompt（僅供 dev 除錯） */
+  LIFEBOOK_DEBUG?: string;
 }
 
 type Lang = "zh-TW" | "zh-CN" | "en-US";
@@ -28,6 +76,104 @@ const CORS_HEADERS: Record<string, string> = {
   "access-control-max-age": "86400",
 };
 
+/** 嘗試修復 JSON 字串值內的未轉義換行（模型常回傳實際換行導致 parse 失敗） */
+function trySanitizeJsonString(jsonStr: string): string {
+  const parts = jsonStr.split('"');
+  for (let i = 1; i < parts.length; i += 2) {
+    parts[i] = parts[i].replace(/\r\n/g, "\\n").replace(/\n/g, "\\n").replace(/\r/g, "\\n");
+  }
+  return parts.join('"');
+}
+
+/** 從 OpenAI 回傳內容擷取命書章節 JSON（支援 ```json ... ``` 或裸 {...}） */
+function parseSectionJson(content: string): Record<string, unknown> | null {
+  const raw = content.trim();
+  const codeBlock = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const toParse = codeBlock ? codeBlock[1].trim() : raw;
+  const jsonMatch = toParse.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return null;
+  const jsonStr = jsonMatch[0];
+  try {
+    return JSON.parse(jsonStr) as Record<string, unknown>;
+  } catch {
+    try {
+      return JSON.parse(trySanitizeJsonString(jsonStr)) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  }
+}
+
+/** 命書版用：移除 rule id、驗收訊息、資料不足／未提供提示（用於 structure_analysis 及其他欄位） */
+function sanitizeForReader(text: string): string {
+  if (!text || typeof text !== "string") return text;
+  return text
+    .split("\n")
+    .filter(
+      (line) =>
+        !/^\[R\d+_.*\]$/.test(line.trim()) &&
+        !/^（模組一驗收未通過：.*）$/.test(line.trim()) &&
+        !line.includes("未知宮位") &&
+        !line.includes("本題底層參數解析")
+    )
+    .join("\n")
+    .replace(/\s*\[R\d+_[^\]]*\]/g, "")
+    .replace(/（此欄位資料不足）|（此處無資料）/g, "")
+    .replace(/（模組一驗收未通過[^）]*）/g, "")
+    .replace(/\(未提供\)/g, "");
+}
+
+/** P2 contentLookup：CCL3 表與 chart 無關，可重複使用；組裝後由 Findings Orchestrator 只讀。 */
+const P2_CONTENT = {
+  ccl3: {
+    starCombinationsTable,
+    crossChartRules: (crossChartRulesJson as { items?: unknown[] }).items ?? [],
+    palaceAxisLinks: (palaceAxisLinksJson as { items?: unknown[] }).items ?? [],
+    palaceMatrixPatterns: (palaceMatrixJson as { patterns?: unknown[] }).patterns ?? [],
+    mainStarHints: (mainStarHintsJson as { items?: unknown[] }).items ?? [],
+  },
+} as LifebookContentLookup;
+
+/** P2：只吃 chartJson + contentLookup，產出 LifebookFindings + timeContext；模組二只讀 findings。 */
+function buildP2FindingsAndContext(chartJson: Record<string, unknown> | undefined): {
+  findings: import("./lifebook/index.js").LifebookFindings | null;
+  timeContext: { currentDecadePalace?: string; shenGong?: string; year?: number; nominalAge?: number };
+  timelineValidationIssues?: import("./lifebook/index.js").TimelineValidationIssue[];
+} {
+  if (!chartJson || typeof chartJson !== "object") return { findings: null, timeContext: {} };
+  const result = buildLifebookFindingsFromChartAndContent({ chartJson, content: P2_CONTENT });
+  if (!result) return { findings: null, timeContext: {} };
+  return {
+    findings: result.findings,
+    timeContext: result.timeContext,
+    timelineValidationIssues: result.timelineValidationIssues,
+  };
+}
+
+/** G6：production 清洗 — structure_analysis 專用，等同 sanitizeForReader */
+function sanitizeStructureAnalysis(text: string): string {
+  return sanitizeForReader(text);
+}
+
+/** 從已解析物件取出四欄位字串，缺的補空字串；若至少有一欄有內容則回傳可用 section */
+function toSectionFourFields(
+  parsed: Record<string, unknown>,
+  sectionKey: string,
+  sectionTitle: string
+): { structure_analysis: string; behavior_pattern: string; blind_spots: string; strategic_advice: string } | null {
+  const sa = typeof parsed.structure_analysis === "string" ? parsed.structure_analysis : "";
+  const bp = typeof parsed.behavior_pattern === "string" ? parsed.behavior_pattern : "";
+  const bl = typeof parsed.blind_spots === "string" ? parsed.blind_spots : "";
+  const st = typeof parsed.strategic_advice === "string" ? parsed.strategic_advice : "";
+  if (!sa && !bp && !bl && !st) return null;
+  return {
+    structure_analysis: sa || "(未提供)",
+    behavior_pattern: bp || "(未提供)",
+    blind_spots: bl || "(未提供)",
+    strategic_advice: st || "(未提供)",
+  };
+}
+
 function json(body: unknown, init: ResponseInit = {}) {
   return new Response(JSON.stringify(body), {
     ...init,
@@ -39,6 +185,67 @@ function json(body: unknown, init: ResponseInit = {}) {
   });
 }
 
+const LIFEBOOK_OPENAI_DEBUG_MAX_CONTENT = 2000;
+
+/** Debug: 命書 → OpenAI 實際送出的 payload（含 strategicLinks / starPalaces 是否在 prompt 內） */
+function logLifeBookOpenAIPayload(
+  endpoint: string,
+  opts: {
+    model: string;
+    messages: Array<{ role: string; content: string }>;
+    chartJson?: Record<string, unknown> | null;
+    contentOrDbContent?: { starPalaces?: Record<string, unknown> } | null;
+  }
+) {
+  const chart = opts.chartJson ?? null;
+  const strategicLinks = chart?.strategicLinks ?? null;
+  const dbContent = (chart as Record<string, unknown>)?.dbContent as { starPalaces?: unknown } | undefined;
+  const starPalaces =
+    chart?.starPalaces ??
+    dbContent?.starPalaces ??
+    opts.contentOrDbContent?.starPalaces ??
+    null;
+  const truncate = (s: string, max: number) =>
+    s.length <= max ? s : s.slice(0, max) + "…";
+  const summary = {
+    model: opts.model,
+    messages: opts.messages.map((m) => ({
+      role: m.role,
+      contentLength: typeof m.content === "string" ? m.content.length : 0,
+      contentPreview:
+        typeof m.content === "string"
+          ? truncate(m.content, 300)
+          : "",
+    })),
+    chart_json_keys: chart ? Object.keys(chart) : null,
+    strategicLinks:
+      strategicLinks != null
+        ? Array.isArray(strategicLinks)
+          ? strategicLinks.length
+          : strategicLinks
+        : null,
+    starPalaces_keys:
+      starPalaces && typeof starPalaces === "object"
+        ? Object.keys(starPalaces)
+        : null,
+  };
+  console.log(
+    "🧾 OPENAI REQUEST PAYLOAD [" + endpoint + "]",
+    JSON.stringify(summary, null, 2)
+  );
+  const fullMessages = opts.messages.map((m) => ({
+    role: m.role,
+    content:
+      typeof m.content === "string"
+        ? truncate(m.content, LIFEBOOK_OPENAI_DEBUG_MAX_CONTENT)
+        : m.content,
+  }));
+  console.log(
+    "🧾 OPENAI REQUEST MESSAGES [" + endpoint + "]",
+    JSON.stringify({ model: opts.model, messages: fullMessages }, null, 2)
+  );
+}
+
 function corsPreflight() {
   return new Response(null, {
     status: 204,
@@ -48,6 +255,14 @@ function corsPreflight() {
 
 function badRequest(message: string) {
   return json({ ok: false, error: message }, { status: 400 });
+}
+
+/**
+ * Model-based options merge: gpt-3.x / gpt-4.x 傳 temperature；gpt-5.x 不傳（API 不接受）
+ */
+function getGenerationOptions(model: string, temperature: number): { model: string; temperature?: number } {
+  const isLegacy = model.startsWith("gpt-3") || model.startsWith("gpt-4");
+  return isLegacy ? { model, temperature } : { model };
 }
 
 function stableChartId(input: unknown): string {
@@ -68,16 +283,89 @@ function hourToTimeIndex(hour: number): number {
   return Math.floor((h + 1) / 2);
 }
 
+/** 地支 → bodyPalaceByHour 的 key（時辰組） */
+const HOUR_BRANCH_TO_GROUP: Record<string, string> = {
+  子: "子午", 午: "子午", 丑: "丑未", 未: "丑未", 寅: "寅申", 申: "寅申",
+  卯: "卯酉", 酉: "卯酉", 辰: "辰戌", 戌: "辰戌", 巳: "巳亥", 亥: "巳亥",
+};
+
+/** 從 chart 取得生時（0–23），優先 birthInfo.hour、ziwei.basic.hour、bazi 等。 */
+function getBirthHourFromChart(chart: Record<string, unknown> | null | undefined): number | undefined {
+  if (!chart || typeof chart !== "object") return undefined;
+  const birthInfo = chart.birthInfo as Record<string, unknown> | undefined;
+  if (birthInfo && typeof birthInfo.hour === "number" && Number.isFinite(birthInfo.hour))
+    return birthInfo.hour;
+  const ziwei = chart.ziwei as Record<string, unknown> | undefined;
+  const basic = ziwei?.basic as Record<string, unknown> | undefined;
+  if (basic && typeof basic.hour === "number" && Number.isFinite(basic.hour))
+    return basic.hour;
+  const bazi = chart.bazi as Record<string, unknown> | undefined;
+  if (bazi && typeof bazi.hour === "number" && Number.isFinite(bazi.hour))
+    return bazi.hour;
+  if (typeof (chart as Record<string, unknown>).hour === "number")
+    return (chart as Record<string, unknown>).hour as number;
+  return undefined;
+}
+
+/** 依生時與 bodyPalaceByHour 取得身宮解讀；命宮固定為「命宮」。 */
+function getBodyPalaceInfo(
+  chart: Record<string, unknown> | null | undefined,
+  bodyPalaceByHour: Record<string, { palace: string; tagline: string; interpretation: string }> | undefined
+): { palace: string; tagline: string; interpretation: string } | undefined {
+  if (!bodyPalaceByHour || typeof bodyPalaceByHour !== "object") return undefined;
+  const hour = getBirthHourFromChart(chart);
+  if (hour === undefined) return undefined;
+  const timeIndex = hourToTimeIndex(hour);
+  const branch = BRANCH_RING[timeIndex];
+  const group = branch ? HOUR_BRANCH_TO_GROUP[branch] : undefined;
+  if (!group || !bodyPalaceByHour[group]) return undefined;
+  return bodyPalaceByHour[group];
+}
+
+/** 命宮名正規化為與 FIXED_PALACES 可比對（遷移宮→遷移、命宮→命宮）。 */
+function normalizePalaceName(palace: string): string {
+  const s = (palace || "").replace(/宮$/, "").trim();
+  return s === "命" ? "命宮" : s || palace;
+}
+
+/** 組出命身關係與身宮的注意事項片段，供 s04 注入。 */
+function getLifeBodyRelationSnippet(
+  bodyPalaceInfo: { palace: string; tagline: string; interpretation: string } | undefined,
+  lifeBodyRelation: Record<string, { tagline: string; interpretation: string; strategy_tone: string }> | undefined,
+  masterStars: { 命主?: { name: string; text: string }; 身主?: { name: string; text: string } } | undefined
+): string[] {
+  const lines: string[] = [];
+  if (bodyPalaceInfo?.interpretation) {
+    lines.push("【身宮】" + bodyPalaceInfo.interpretation);
+  }
+  if (!lifeBodyRelation || typeof lifeBodyRelation !== "object") return lines;
+  const bodyPalaceNorm = bodyPalaceInfo ? normalizePalaceName(bodyPalaceInfo.palace) : "";
+  const isSamePalace = bodyPalaceNorm === "命宮";
+  if (isSamePalace && lifeBodyRelation.lifeBodySamePalace) {
+    const r = lifeBodyRelation.lifeBodySamePalace;
+    if (r.interpretation) lines.push("【命身同宮】" + r.interpretation);
+  } else if (!isSamePalace && bodyPalaceNorm && lifeBodyRelation.lifeBodyPivot) {
+    const r = lifeBodyRelation.lifeBodyPivot;
+    if (r.interpretation) lines.push("【命身錯位】" + r.interpretation);
+  }
+  if (masterStars?.命主 && masterStars?.身主 && lifeBodyRelation.lifeLordBodyLordDialogue) {
+    const r = lifeBodyRelation.lifeLordBodyLordDialogue;
+    if (r.interpretation) lines.push("【命主與身主的內外對話】" + r.interpretation);
+  }
+  return lines;
+}
+
 /**
  * Extract mainStars from iztro astrolabe.
- * iztro structure: astrolabe.palaces[] with { name, majorStars[], minorStars[] }
- * Each star is { name: string } (FunctionalStar).
+ * iztro palaces[i] = 地支位置 i（寅=0, 卯=1, ...）。用「命宮地支→索引」與 FIXED_PALACES_ZH_TW 對應，
+ * 不依賴 palace.name，避免 i18n/名稱錯位導致某一宮顯示上一宮星曜。
  */
 function extractZiweiMainStars(astrolabe: unknown, language: Lang): Record<string, string[]> {
   const out: Record<string, string[]> = {};
   for (const p of FIXED_PALACES_ZH_TW) out[p] = [];
 
   const a = astrolabe as {
+    earthlyBranchOfSoulPalace?: string;
     palaces?: Array<{
       name?: string;
       majorStars?: Array<{ name?: string }>;
@@ -87,10 +375,15 @@ function extractZiweiMainStars(astrolabe: unknown, language: Lang): Record<strin
   };
 
   const palaces = a?.palaces ?? [];
-  for (const palace of palaces) {
-    const rawPalaceName = palace?.name ?? "";
-    const zhTWKey = palaceNameToZhTW(rawPalaceName);
-    if (!zhTWKey || !(FIXED_PALACES_ZH_TW as readonly string[]).includes(zhTWKey)) continue;
+  const soulBranch = (a?.earthlyBranchOfSoulPalace ?? "").trim();
+  const mingIdx = BRANCH_RING.indexOf(soulBranch as (typeof BRANCH_RING)[number]);
+  const soulIndex = mingIdx >= 0 ? mingIdx : 0;
+
+  const keys = FIXED_PALACES_ZH_TW as readonly string[];
+  for (let i = 0; i < palaces.length && i < 12; i++) {
+    const palace = palaces[i];
+    const palaceIndex = (soulIndex - i + 12) % 12;
+    const zhTWKey = keys[palaceIndex];
 
     const starNames: string[] = [];
     const addStars = (arr: Array<{ name?: string }> | undefined) => {
@@ -112,6 +405,307 @@ function extractZiweiMainStars(astrolabe: unknown, language: Lang): Record<strin
   return out;
 }
 
+/** 命書亮度區塊用：依 FIXED_ORDER（命宮、兄弟宮…）回傳 12 宮，每宮含 majorStars/minorStars 的 name + brightness（iztro 鍵名如 miao, wang）。 */
+function extractZiweiPalacesWithBrightness(astrolabe: unknown): Array<{
+  majorStars: Array<{ name: string; brightness?: string }>;
+  minorStars: Array<{ name: string; brightness?: string }>;
+}> {
+  const FIXED_ORDER_LEN = 12;
+  const out: Array<{ majorStars: Array<{ name: string; brightness?: string }>; minorStars: Array<{ name: string; brightness?: string }> }> = [];
+  for (let j = 0; j < FIXED_ORDER_LEN; j++) {
+    out.push({ majorStars: [], minorStars: [] });
+  }
+
+  const a = astrolabe as {
+    earthlyBranchOfSoulPalace?: string;
+    palaces?: Array<{
+      majorStars?: Array<{ name?: string; brightness?: string }>;
+      minorStars?: Array<{ name?: string; brightness?: string }>;
+    }>;
+  };
+  const palaces = a?.palaces ?? [];
+  const soulBranch = (a?.earthlyBranchOfSoulPalace ?? "").trim();
+  const mingIdx = BRANCH_RING.indexOf(soulBranch as (typeof BRANCH_RING)[number]);
+  const soulIndex = mingIdx >= 0 ? mingIdx : 0;
+
+  const toStar = (s: { name?: string; brightness?: string }): { name: string; brightness?: string } | null => {
+    const name = (s?.name ?? "").trim();
+    if (!name) return null;
+    const brightness = typeof s?.brightness === "string" && s.brightness.trim() ? s.brightness.trim() : undefined;
+    return { name, brightness };
+  };
+
+  for (let i = 0; i < palaces.length && i < FIXED_ORDER_LEN; i++) {
+    const j = (soulIndex - i + FIXED_ORDER_LEN) % FIXED_ORDER_LEN;
+    const palace = palaces[i];
+    const majorStars = (palace?.majorStars ?? [])
+      .map(toStar)
+      .filter((x): x is { name: string; brightness?: string } => x != null);
+    const minorStars = (palace?.minorStars ?? [])
+      .map(toStar)
+      .filter((x): x is { name: string; brightness?: string } => x != null);
+    out[j] = { majorStars, minorStars };
+  }
+  return out;
+}
+
+/**
+ * 從命盤 ziwei 解析出「星曜_宮位」key set，用於只送用得到的 starPalaces subset。
+ * content 為 zh-TW/zh-CN 時 key 格式為「紫微_命宮」；en 時宮位仍為 zh（content-en 可能無 starPalaces）。
+ * 支援前端 compute 回傳格式 ziwei.mainStars（宮名 -> 星名陣列）。
+ */
+function getUsedStarPalaceKeys(astrolabe: unknown, contentLocale: Locale): string[] {
+  if (!astrolabe || typeof astrolabe !== "object") return [];
+  const lang: Lang = contentLocale === "en" ? "en-US" : contentLocale === "zh-CN" ? "zh-CN" : "zh-TW";
+  let palaceToStars = extractZiweiMainStars(astrolabe, lang);
+  const hasAnyStars = Object.values(palaceToStars).some((arr) => Array.isArray(arr) && arr.length > 0);
+  if (!hasAnyStars) {
+    const z = astrolabe as Record<string, unknown>;
+    const mainStars = z?.mainStars as Record<string, string[]> | undefined;
+    if (mainStars && typeof mainStars === "object" && !Array.isArray(mainStars)) {
+      palaceToStars = mainStars;
+    }
+  }
+  const keys: string[] = [];
+  for (const [palace, stars] of Object.entries(palaceToStars)) {
+    if (!Array.isArray(stars)) continue;
+    for (const star of stars) {
+      if (!star || typeof star !== "string") continue;
+      const starForKey = contentLocale === "zh-TW" || contentLocale === "zh-CN" ? (toZhStarKey(star) || star) : star;
+      keys.push(`${starForKey}_${palace}`);
+    }
+  }
+  return keys;
+}
+
+/** 依 key set 過濾出只含用得到的 starPalaces 條目。 */
+function filterUsedStarPalaces(
+  full: Record<string, string> | undefined | null,
+  usedKeys: string[]
+): Record<string, string> {
+  if (!full || typeof full !== "object") return {};
+  const set = new Set(usedKeys);
+  const out: Record<string, string> = {};
+  for (const k of set) {
+    if (typeof full[k] === "string") out[k] = full[k];
+  }
+  return out;
+}
+
+/** 依 key set 過濾出只含用得到的 starPalacesAuxRisk 條目（風險等級 1～5）。 */
+function filterUsedStarPalacesAuxRisk(
+  full: Record<string, number> | undefined | null,
+  usedKeys: string[]
+): Record<string, number> {
+  if (!full || typeof full !== "object") return {};
+  const set = new Set(usedKeys);
+  const out: Record<string, number> = {};
+  for (const k of set) {
+    const v = full[k];
+    if (typeof v === "number" && Number.isFinite(v) && v >= 1 && v <= 5) out[k] = Math.round(v);
+  }
+  return out;
+}
+
+/** 合併 usedKeys 對應的 starPalaces：優先 starPalacesMain，否則 starPalaces，否則 starPalacesAux（輔星／煞星／雜曜 解釋）。 */
+function buildEffectiveUsedStarPalaces(
+  starPalacesMain: Record<string, string> | undefined | null,
+  starPalaces: Record<string, string> | undefined | null,
+  usedKeys: string[],
+  starPalacesAux?: Record<string, string> | undefined | null
+): Record<string, string> {
+  const set = new Set(usedKeys);
+  const out: Record<string, string> = {};
+  for (const k of set) {
+    const v =
+      (starPalacesMain && typeof starPalacesMain[k] === "string" ? starPalacesMain[k] : null) ??
+      (starPalaces && typeof starPalaces[k] === "string" ? starPalaces[k] : null) ??
+      (starPalacesAux && typeof starPalacesAux[k] === "string" ? starPalacesAux[k] : null);
+    if (v) out[k] = v;
+  }
+  return out;
+}
+
+/** 從 ziwei 取出命主、身主星名（正規化為 content 用繁體 key）。 */
+function getMasterStarsFromZiwei(ziwei: unknown): { 命主?: string; 身主?: string } {
+  if (!ziwei || typeof ziwei !== "object") return {};
+  const z = ziwei as Record<string, unknown>;
+  const basic = z?.basic as Record<string, unknown> | undefined;
+  const core = z?.core as Record<string, unknown> | undefined;
+  const rawSoul =
+    (basic?.masterStar as string) ??
+    (z?.soul as string) ??
+    (core?.命主 as string) ??
+    (core?.mingzhu as string) ??
+    "";
+  const rawBody =
+    (basic?.bodyStar as string) ??
+    (z?.body as string) ??
+    (core?.身主 as string) ??
+    (core?.shengong as string) ??
+    "";
+  const 命主 = rawSoul ? (toZhStarKey(rawSoul) || String(rawSoul).trim()) || undefined : undefined;
+  const 身主 = rawBody ? (toZhStarKey(rawBody) || String(rawBody).trim()) || undefined : undefined;
+  return { 命主: 命主 || undefined, 身主: 身主 || undefined };
+}
+
+/** 依命主/身主星名取說明：優先 lifeLordDecode/bodyLordDecode（靈魂解碼、工具箱解碼），否則 content.stars。回傳 { 命主: { name, text }, 身主: { name, text } } 供 prompt 使用。 */
+function getMasterStarsWithDefs(
+  masterStars: { 命主?: string; 身主?: string },
+  starsContent: Record<string, string> | undefined | null,
+  decodes?: { lifeLordDecode?: Record<string, string>; bodyLordDecode?: Record<string, string> } | null
+): { 命主?: { name: string; text: string }; 身主?: { name: string; text: string } } {
+  const out: { 命主?: { name: string; text: string }; 身主?: { name: string; text: string } } = {};
+  const soulText =
+    masterStars.命主 &&
+    (decodes?.lifeLordDecode?.[masterStars.命主] ?? (starsContent && typeof starsContent[masterStars.命主] === "string" ? starsContent[masterStars.命主] : undefined));
+  if (masterStars.命主 && soulText) out.命主 = { name: masterStars.命主, text: soulText };
+  const bodyText =
+    masterStars.身主 &&
+    (decodes?.bodyLordDecode?.[masterStars.身主] ?? (starsContent && typeof starsContent[masterStars.身主] === "string" ? starsContent[masterStars.身主] : undefined));
+  if (masterStars.身主 && bodyText) out.身主 = { name: masterStars.身主, text: bodyText };
+  return out;
+}
+
+const CONTENT_CACHE_TTL = 3600; // 1 小時，content 更新頻率不高
+
+/** 單一來源：KV → D1 → 靜態 JSON；所有用到 content 的 API 共用此層，改快取策略只動此處。 */
+async function getContentForLocale(
+  env: Env | undefined,
+  locale: string
+): Promise<{ content: DbContent; source: "kv" | "d1" | "static" }> {
+  const dbLocale = ["en", "zh-CN", "zh-TW"].includes(locale) ? locale : "zh-TW";
+  const cacheKey = `content:${dbLocale}`;
+  const staticContent: DbContent =
+    dbLocale === "en"
+      ? ({ ...(contentEn as unknown as DbContent), decisionMatrix: decisionMatrixJson as DbContent["decisionMatrix"] })
+      : {
+          ...(contentZhTw as DbContent),
+          tenGodPalacesById: {
+            ...((contentZhTw as Record<string, unknown>).tenGodPalacesById as Record<string, string> | undefined),
+            ...(tenGodPalacesByIdZhTw as Record<string, string>),
+          },
+          neuralLoops: {
+            ...((contentZhTw as Record<string, unknown>).neuralLoops as Record<string, string> | undefined),
+            ...(neuralLoopsZhTw as Record<string, string>),
+          },
+          highPressure: {
+            ...((contentZhTw as Record<string, unknown>).highPressure as Record<string, string> | undefined),
+            ...(highPressureZhTw as Record<string, string>),
+          },
+          starBaseCore: {
+            ...((contentZhTw as Record<string, unknown>).starBaseCore as Record<string, string> | undefined),
+            ...(starBaseCoreZhTw as Record<string, string>),
+          },
+          starBaseShadow: {
+            ...((contentZhTw as Record<string, unknown>).starBaseShadow as Record<string, string> | undefined),
+            ...(starBaseShadowZhTw as Record<string, string>),
+          },
+          wuxingEnergy: {
+            ...((contentZhTw as Record<string, unknown>).wuxingEnergy as Record<string, string> | undefined),
+            ...(wuxingEnergyZhTw as Record<string, string>),
+          },
+          consciousPalace: {
+            ...((contentZhTw as Record<string, unknown>).consciousPalace as Record<string, string> | undefined),
+            ...(consciousPalaceZhTw as Record<string, string>),
+          },
+          archetypeElement: {
+            ...((contentZhTw as Record<string, unknown>).archetypeElement as Record<string, { label: string; title: string; description: string }> | undefined),
+            ...(archetypeElementZhTw as Record<string, { label: string; title: string; description: string }>),
+          },
+          archetypeStar: {
+            ...((contentZhTw as Record<string, unknown>).archetypeStar as Record<string, { label: string; title: string; description: string }> | undefined),
+            ...(archetypeStarZhTw as Record<string, { label: string; title: string; description: string }>),
+          },
+          lifebookSection: {
+            ...((contentZhTw as Record<string, unknown>).lifebookSection as Record<string, { structure_analysis?: string; behavior_pattern?: string; blind_spots?: string; strategic_advice?: string }> | undefined),
+            ...(lifebookSectionZhTw as Record<string, { structure_analysis?: string; behavior_pattern?: string; blind_spots?: string; strategic_advice?: string }>),
+          },
+          lifeLordDecode: (lifeLordBodyLordZhTw as Record<string, unknown>).lifeLordDecode as Record<string, string> | undefined,
+          bodyLordDecode: (lifeLordBodyLordZhTw as Record<string, unknown>).bodyLordDecode as Record<string, string> | undefined,
+          bodyPalaceByHour: (lifeLordBodyLordZhTw as Record<string, unknown>).bodyPalaceByHour as Record<string, { palace: string; tagline: string; interpretation: string }> | undefined,
+          lifeBodyRelation: lifeBodyRelationZhTw as Record<string, { tagline: string; interpretation: string; strategy_tone: string }>,
+          starLogicMain: (starPalacesMainZhTw as Record<string, unknown>).starLogicMain as Record<string, string> | undefined,
+          starPalacesMain: (starPalacesMainZhTw as Record<string, unknown>).starPalacesMain as Record<string, string> | undefined,
+          starPalacesAux: (starPalacesAuxZhTw as Record<string, unknown>).starPalacesAux as Record<string, string> | undefined,
+          starPalacesAuxAction: (starPalacesAuxZhTw as Record<string, unknown>).starPalacesAuxAction as Record<string, string> | undefined,
+          starPalacesAuxRisk: (starPalacesAuxZhTw as Record<string, unknown>).starPalacesAuxRisk as Record<string, number> | undefined,
+          starBaseMeaning: (starBaseMeaningZhTw as Record<string, unknown>).starBaseMeaning as Record<string, string> | undefined,
+          palaceContexts: (palaceContextsZhTw as Record<string, unknown>).palaceContexts as Record<string, string> | undefined,
+          starSanfangFamilies: (starSanfangFamiliesZhTw as { starSanfangFamilies?: DbContent["starSanfangFamilies"] }).starSanfangFamilies,
+          starMetadata: (starMetadataJson as Record<string, unknown>).stars
+            ? { starNameZhToId: (starMetadataJson as Record<string, unknown>).starNameZhToId as Record<string, string>, stars: (starMetadataJson as Record<string, unknown>).stars as Record<string, { name_zh: string; category: string; base_weight: number; base_risk: number }> }
+            : undefined,
+          palaceRiskSummary: (palaceRiskCorpusZhTw as Record<string, unknown>).palaceRiskSummary as Record<string, string> | undefined,
+          palaceActionAdvice: (palaceRiskCorpusZhTw as Record<string, unknown>).palaceActionAdvice as Record<string, string> | undefined,
+          narrativeCorpus: (narrativeCorpusZhTw as Record<string, unknown>).s00
+            ? { s00: (narrativeCorpusZhTw as Record<string, unknown>).s00 as Record<string, { openers: string[]; explainers: string[]; advisers: string[]; connectors?: string[] }> }
+            : undefined,
+          decisionMatrix: decisionMatrixJson as { palaceEventWeights: Record<string, Record<string, number>>; eventLabels: Record<string, string>; palaceThemes: Record<string, string> },
+        };
+
+  // 1. KV 優先
+  const cached = await env?.CACHE?.get(cacheKey);
+  if (cached) {
+    try {
+      const content = JSON.parse(cached) as DbContent;
+      if (content && typeof content === "object") {
+        console.log("[getContentForLocale] locale=%s source=kv", dbLocale);
+        return { content, source: "kv" };
+      }
+    } catch {
+      // 快取損壞，往下打 D1
+    }
+  }
+
+  // 2. D1
+  const db = env?.CONSULT_DB;
+  if (db) {
+    try {
+      const stmt = db.prepare(
+        "SELECT copy_key, content FROM ui_copy_texts WHERE locale = ?"
+      );
+      const { results } = await stmt.bind(dbLocale).all();
+      const rows = (results ?? []) as Array<{ copy_key: string; content: string }>;
+      const content =
+        rows.length > 0
+          ? mergeContent(staticContent, buildContentFromRows(rows))
+          : staticContent;
+      const source = rows.length > 0 ? "d1" : "static";
+      console.log(
+        "[getContentForLocale] locale=%s source=%s starPalacesKeys=%s",
+        dbLocale,
+        source,
+        Object.keys(content.starPalaces ?? {}).length
+      );
+      if (source === "d1" && content.starPalaces) {
+        const sample = "紫微_命宮";
+        if (!(sample in content.starPalaces)) {
+          console.warn("[getContentForLocale] missing sample key: %s", sample);
+        }
+      }
+      await env?.CACHE?.put(cacheKey, JSON.stringify(content), {
+        expirationTtl: CONTENT_CACHE_TTL,
+      });
+      return { content, source };
+    } catch (e) {
+      console.warn("[getContentForLocale] D1 failed, using static:", e);
+    }
+  }
+
+  // 3. 靜態 fallback，保證至少結構存在
+  console.log("[getContentForLocale] locale=%s source=static (fallback)", dbLocale);
+  const safeContent =
+    staticContent &&
+    typeof staticContent === "object" &&
+    staticContent.palaces &&
+    staticContent.stars &&
+    staticContent.starPalaces
+      ? staticContent
+      : emptyDbContent();
+  return { content: safeContent, source: "static" };
+}
+
 export default {
   async fetch(req: Request, env?: Env): Promise<Response> {
     if (req.method === "OPTIONS") return corsPreflight();
@@ -127,48 +721,21 @@ export default {
       });
     }
 
-    // GET /content/2026?locale=
+    // GET /content/2026?locale= （與未來所有用到 content 的 API 共用 getContentForLocale）
     if (req.method === "GET" && url.pathname === "/content/2026") {
-      const requestedLocale = (url.searchParams.get("locale") ?? "zh-TW").trim() as Locale;
+      const requestedLocale = (url.searchParams.get("locale") ?? "zh-TW").trim();
       const localeUsed: Locale = requestedLocale === "en" ? "en" : "zh-TW";
       const dbLocale = ["en", "zh-CN", "zh-TW"].includes(requestedLocale)
         ? requestedLocale
         : localeUsed;
-      const cacheKey = `content:${dbLocale}`;
-      const CACHE_TTL = 3600; // 1 小時
-
-      // 1. KV 快取優先
-      const cached = await env?.CACHE?.get(cacheKey);
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached) as Record<string, unknown>;
-          return json({ ...parsed, source: "kv" });
-        } catch {
-          // 快取損壞時 fallback 到 D1
-        }
-      }
-
-      const staticContent = (localeUsed === "en" ? contentEn : contentZhTw) as DbContent;
-      const db = env?.CONSULT_DB;
-
-      if (db) {
-        try {
-          const stmt = db.prepare(
-            "SELECT copy_key, content FROM ui_copy_texts WHERE locale = ?"
-          );
-          const { results } = await stmt.bind(dbLocale).all();
-          const rows = (results ?? []) as Array<{ copy_key: string; content: string }>;
-          const result = rows.length > 0
-            ? { ok: true, requestedLocale, localeUsed, source: "d1", ...mergeContent(staticContent, buildContentFromRows(rows)) }
-            : { ok: true, requestedLocale, localeUsed, source: "static", ...staticContent };
-          await env?.CACHE?.put(cacheKey, JSON.stringify(result), { expirationTtl: CACHE_TTL });
-          return json(result);
-        } catch (e) {
-          console.warn("[content/2026] D1 query failed, using static:", e);
-        }
-      }
-
-      return json({ ok: true, requestedLocale, localeUsed, source: "static", ...staticContent });
+      const { content, source } = await getContentForLocale(env, dbLocale);
+      return json({
+        ok: true,
+        requestedLocale,
+        localeUsed,
+        source,
+        ...content,
+      });
     }
 
     // POST /api/log-usage
@@ -301,7 +868,6 @@ export default {
         });
         return Object.keys(out).length ? out : null;
       }
-      // iztro getPalaceNames(fromIndex) 回傳從該索引起算的 12 宮，故 [0] 為小限／大限／流年所在宮
       function palaceFromItem(item: { palaceNames?: string[]; index?: number } | undefined): string | null {
         if (!item?.palaceNames?.length) return null;
         const raw = item.palaceNames[0];
@@ -309,9 +875,13 @@ export default {
       }
 
       const ageData = horoscope?.age;
-      const activeLimitPalaceName = palaceFromItem(ageData);
       const decadalPalace = palaceFromItem(horoscope?.decadal);
-      const yearlyPalace = palaceFromItem(horoscope?.yearly);
+      // 流年命宮：依命宮地支旋轉（offset = mingIndex - liunianIndex），不用 iztro 的 palaceNames[index]
+      const yearlyBranch = horoscope?.yearly?.earthlyBranch ?? null;
+      const mingBranchForYearly = aZhTw?.earthlyBranchOfSoulPalace ?? "";
+      const yearlyPalace =
+        (yearlyBranch && mingBranchForYearly && computeFlowYearPalaceFromBranch(yearlyBranch, mingBranchForYearly))
+        ?? palaceFromItem(horoscope?.yearly);
 
       // horoscopeByYear 改為延遲載入（點擊進階時再算），減少 CPU 避免 1102
       const horoscopeByYear: Record<number, { nominalAge: number | null; palace: string | null; stem: string | null }> = {};
@@ -322,7 +892,6 @@ export default {
         yearlyStem: ageData?.heavenlyStem ?? null,
         yearlyBranch: ageData?.earthlyBranch ?? null,
         yearlyIndex: ageData?.index ?? null,
-        activeLimitPalaceName,
         mutagenStars: buildMutagenStars(ageData?.mutagen),
         decadal: horoscope?.decadal ? {
           stem: horoscope.decadal.heavenlyStem ?? null,
@@ -384,6 +953,8 @@ export default {
         hour: { stem: hourly[0], branch: hourly[1] },
       };
 
+      const ziweiPalaces = extractZiweiPalacesWithBrightness(astrolabeZhTw);
+
       return json({
         ok: true,
         language,
@@ -401,6 +972,7 @@ export default {
             basic: ziweiBasic,
             mainStars,
             horoscope: ziweiHoroscope,
+            palaces: ziweiPalaces,
           },
         },
       });
@@ -448,7 +1020,6 @@ export default {
         return (raw && palaceNameToZhTW(raw)) ?? raw ?? null;
       }
       const ageData = horoscope?.age;
-      const activeLimitPalaceName = palaceFromItem(ageData);
       const decadalPalace = palaceFromItem(horoscope?.decadal);
       const yearlyPalace = palaceFromItem(horoscope?.yearly);
       const startYear = Math.max(1900, targetYear - 6);
@@ -466,7 +1037,6 @@ export default {
         yearlyStem: ageData?.heavenlyStem ?? null,
         yearlyBranch: ageData?.earthlyBranch ?? null,
         yearlyIndex: ageData?.index ?? null,
-        activeLimitPalaceName,
         mutagenStars: buildMutagenStars(ageData?.mutagen),
         decadal: horoscope?.decadal ? { stem: horoscope.decadal.heavenlyStem ?? null, branch: horoscope.decadal.earthlyBranch ?? null, palace: decadalPalace, palaceIndex: horoscope.decadal.index, mutagenStars: buildMutagenStars(horoscope.decadal.mutagen) } : null,
         yearly: horoscope?.yearly ? { stem: horoscope.yearly.heavenlyStem ?? null, branch: horoscope.yearly.earthlyBranch ?? null, palace: yearlyPalace, palaceIndex: horoscope.yearly.index, mutagenStars: buildMutagenStars(horoscope.yearly.mutagen) } : null,
@@ -475,35 +1045,90 @@ export default {
       return json({ ok: true, horoscope: ziweiHoroscope });
     }
 
-    // POST /api/life-book/generate-section（單章，供前端逐次呼叫並顯示進度）
-    if (req.method === "POST" && url.pathname === "/api/life-book/generate-section") {
+    const LIFEBOOK_CONFIG_KEY = "lifebook:config";
+
+    // GET /api/life-book/config（取得命書 prompt 設定，KV 或預設）
+    if (req.method === "GET" && url.pathname === "/api/life-book/config") {
+      const forceDefault = url.searchParams.get("default") === "1";
+      if (!forceDefault) {
+        const cached = await env?.CACHE?.get(LIFEBOOK_CONFIG_KEY);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached) as LifeBookConfig;
+            return json({ ok: true, config: parsed });
+          } catch {
+            /* fallback to default */
+          }
+        }
+      }
+      return json({ ok: true, config: getDefaultConfig() });
+    }
+
+    // POST /api/life-book/config（儲存命書 prompt 設定）
+    if (req.method === "POST" && url.pathname === "/api/life-book/config") {
+      let body: LifeBookConfig;
+      try {
+        body = (await req.json()) as LifeBookConfig;
+      } catch {
+        return badRequest("Invalid JSON");
+      }
+      const config: LifeBookConfig = { ...getDefaultConfig() };
+      if (body.persona !== undefined) config.persona = body.persona;
+      if (body.rules !== undefined) config.rules = body.rules;
+      if (body.templates !== undefined) config.templates = body.templates;
+      if (body.shishen !== undefined) config.shishen = body.shishen;
+      if (body.wuxing !== undefined) config.wuxing = body.wuxing;
+      if (body.model !== undefined) config.model = body.model;
+      try {
+        await env?.CACHE?.put(LIFEBOOK_CONFIG_KEY, JSON.stringify(config));
+      } catch (e) {
+        console.error("[life-book] KV put failed:", e);
+        return json({ ok: false, error: "儲存失敗" }, { status: 500 });
+      }
+      return json({ ok: true, config });
+    }
+
+    // POST /api/life-book/ask（自訂 prompt + 單題問答）
+    if (req.method === "POST" && url.pathname === "/api/life-book/ask") {
       const apiKey = env?.OPENAI_API_KEY;
       if (!apiKey) {
         return json({ ok: false, error: "OPENAI_API_KEY 未設定" }, { status: 500 });
       }
-
-      let body: { section_key?: string; chart_json?: unknown; weight_analysis?: unknown };
+      let body: { prompt?: string; question?: string; chart_json?: unknown; weight_analysis?: unknown; model?: string; temperature?: number };
       try {
         body = (await req.json()) as typeof body;
       } catch {
         return badRequest("Invalid JSON");
       }
+      const prompt = typeof body?.prompt === "string" ? body.prompt.trim() : "";
+      const question = typeof body?.question === "string" ? body.question.trim() : "";
+      if (!prompt) return badRequest("缺少 prompt");
+      if (!question) return badRequest("缺少 question");
 
-      const sectionKey = typeof body?.section_key === "string" ? body.section_key : "";
       const chartJson = body?.chart_json as Record<string, unknown> | undefined;
       const weightAnalysis = body?.weight_analysis as Record<string, unknown> | undefined;
+      const askModel = typeof body?.model === "string" && body.model.trim() ? body.model.trim() : "gpt-4.1";
+      const askTemp = typeof body?.temperature === "number" && Number.isFinite(body.temperature) ? body.temperature : 0.7;
+      const askOptions = getGenerationOptions(askModel, askTemp);
 
-      if (!sectionKey || !(SECTION_ORDER as string[]).includes(sectionKey)) {
-        return badRequest("無效的 section_key");
+      let userContent = `【問題】\n${question}`;
+      if (chartJson && typeof chartJson === "object") {
+        userContent += `\n\n【命盤數據】\n${JSON.stringify(chartJson, null, 2)}`;
       }
-      if (!chartJson || typeof chartJson !== "object") return badRequest("缺少 chart_json");
-      if (!weightAnalysis || typeof weightAnalysis !== "object") return badRequest("缺少 weight_analysis");
+      if (weightAnalysis && typeof weightAnalysis === "object") {
+        userContent += `\n\n【權重摘要】\n${JSON.stringify(weightAnalysis, null, 2)}`;
+      }
+      userContent += "\n\n請根據上述數據回答問題，使用第二人稱（你），精準、有洞察。";
 
-      const userPrompt = buildSectionUserPrompt(
-        sectionKey,
-        chartJson,
-        weightAnalysis as { importance_map?: Record<string, string>; top_focus_palaces?: string[]; risk_palaces?: string[]; stable_palaces?: string[] }
-      );
+      const askMessages = [
+        { role: "system" as const, content: prompt },
+        { role: "user" as const, content: userContent },
+      ];
+      logLifeBookOpenAIPayload("life-book/ask", {
+        model: askModel,
+        messages: askMessages,
+        chartJson: chartJson ?? undefined,
+      });
 
       const openaiResp = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -512,19 +1137,193 @@ export default {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            { role: "system" as const, content: SYSTEM_PROMPT },
-            { role: "user" as const, content: userPrompt },
-          ],
-          temperature: 0.7,
-          max_tokens: 4000,
+          ...askOptions,
+          messages: askMessages,
+          max_completion_tokens: 2000,
         }),
       });
 
       if (!openaiResp.ok) {
         const errText = await openaiResp.text();
-        return json({ ok: false, error: `生成失敗: ${errText.slice(0, 150)}` }, { status: 502 });
+        return json({ ok: false, error: `API 失敗: ${errText.slice(0, 150)}` }, { status: 502 });
+      }
+
+      const openaiData = (await openaiResp.json()) as { choices?: Array<{ message?: { content?: string } }> };
+      const answer = openaiData?.choices?.[0]?.message?.content ?? "";
+      return json({ ok: true, answer });
+    }
+
+    // POST /api/life-book/infer（Phase 3 推論層：命盤 → 結構化 insight）
+    if (req.method === "POST" && url.pathname === "/api/life-book/infer") {
+      const apiKey = env?.OPENAI_API_KEY;
+      if (!apiKey) {
+        return json({ ok: false, error: "OPENAI_API_KEY 未設定" }, { status: 500 });
+      }
+      let body: { chart_json?: unknown; weight_analysis?: unknown; locale?: string; model?: string; temperature?: number };
+      try {
+        body = (await req.json()) as typeof body;
+      } catch {
+        return badRequest("Invalid JSON");
+      }
+      const chartJson = body?.chart_json as Record<string, unknown> | undefined;
+      const weightAnalysis = body?.weight_analysis as Record<string, unknown> | undefined;
+      if (!chartJson || typeof chartJson !== "object") return badRequest("缺少 chart_json");
+      if (!weightAnalysis || typeof weightAnalysis !== "object") return badRequest("缺少 weight_analysis");
+
+      // 與前端一致：chart_json 可能為 exportCalculationResults() 或含 features 的 compute 回傳，統一取 ziwei/bazi
+      const chartForInfer = { ...chartJson } as Record<string, unknown>;
+      if (!chartForInfer.ziwei && (chartJson as Record<string, unknown>)?.features && typeof (chartJson as Record<string, unknown>).features === "object") {
+        const features = (chartJson as Record<string, unknown>).features as Record<string, unknown>;
+        if (features.ziwei) chartForInfer.ziwei = features.ziwei;
+        if (features.bazi) chartForInfer.bazi = features.bazi;
+      }
+
+      const inferModel = typeof body?.model === "string" && body.model.trim() ? body.model.trim() : "gpt-4.1";
+      const inferTemp = typeof body?.temperature === "number" && Number.isFinite(body.temperature) ? body.temperature : 0.3;
+      const inferOptions = getGenerationOptions(inferModel, inferTemp);
+
+      const rawLocale = String(body?.locale ?? chartForInfer?.language ?? chartForInfer?.astrolabeLanguage ?? "zh-TW");
+      const lifeBookLocale: Locale = rawLocale === "en" || rawLocale === "en-US" ? "en" : rawLocale === "zh-CN" ? "zh-CN" : "zh-TW";
+      const { content: localeContent } = await getContentForLocale(env, lifeBookLocale);
+      const usedKeys = getUsedStarPalaceKeys(chartForInfer?.ziwei, lifeBookLocale);
+      const usedStarPalaces = buildEffectiveUsedStarPalaces(localeContent?.starPalacesMain, localeContent?.starPalaces, usedKeys, localeContent?.starPalacesAux);
+      const usedStarPalacesAuxAction = filterUsedStarPalaces(localeContent?.starPalacesAuxAction, usedKeys);
+      const usedStarPalacesAuxRisk = filterUsedStarPalacesAuxRisk(localeContent?.starPalacesAuxRisk, usedKeys);
+      const starPalacesTotal = typeof localeContent?.starPalaces === "object" ? Object.keys(localeContent.starPalaces).length : 0;
+      console.log("[life-book/infer] starPalaces_total_count=%s starPalaces_used_count=%s", starPalacesTotal, Object.keys(usedStarPalaces).length);
+
+      const masterStars = getMasterStarsFromZiwei(chartForInfer?.ziwei);
+      const masterStarsWithDefs = getMasterStarsWithDefs(masterStars, localeContent?.stars, {
+        lifeLordDecode: localeContent?.lifeLordDecode,
+        bodyLordDecode: localeContent?.bodyLordDecode,
+      });
+      const inferBodyPalaceInfo = getBodyPalaceInfo(chartForInfer, localeContent?.bodyPalaceByHour);
+      const inferLifeBodySnippet = getLifeBodyRelationSnippet(
+        inferBodyPalaceInfo,
+        localeContent?.lifeBodyRelation as Record<string, { tagline: string; interpretation: string; strategy_tone: string }> | undefined,
+        masterStarsWithDefs
+      );
+      const filteredWeightForInfer = filterStablePalacesByDominant(
+        weightAnalysis as { stable_palaces?: string[]; [k: string]: unknown },
+        chartForInfer,
+        chartForInfer?.tenGodByPalace ? { tenGodByPalace: chartForInfer.tenGodByPalace as Record<string, string> } : null
+      );
+      const userPrompt = buildInferUserPrompt(chartForInfer, filteredWeightForInfer, {
+        starPalaces: usedStarPalaces,
+        masterStars: masterStarsWithDefs,
+        lifeBodyRelationSnippet: inferLifeBodySnippet.length > 0 ? inferLifeBodySnippet : undefined,
+        starPalacesAuxAction: Object.keys(usedStarPalacesAuxAction).length > 0 ? usedStarPalacesAuxAction : undefined,
+        starPalacesAuxRisk: Object.keys(usedStarPalacesAuxRisk).length > 0 ? usedStarPalacesAuxRisk : undefined,
+      });
+
+      const inferMessages = [
+        { role: "system" as const, content: INFER_SYSTEM_PROMPT },
+        { role: "user" as const, content: userPrompt },
+      ];
+      logLifeBookOpenAIPayload("life-book/infer", {
+        model: inferModel,
+        messages: inferMessages,
+        chartJson: chartForInfer,
+      });
+
+      const openaiResp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          ...inferOptions,
+          messages: inferMessages,
+          max_completion_tokens: 16000,
+        }),
+      });
+
+      if (!openaiResp.ok) {
+        const errText = await openaiResp.text();
+        return json({ ok: false, error: `推論失敗: ${errText.slice(0, 150)}` }, { status: 502 });
+      }
+
+      const openaiData = (await openaiResp.json()) as { choices?: Array<{ message?: { content?: string } }> };
+      const content = openaiData?.choices?.[0]?.message?.content ?? "";
+      const jsonMatch = content.trim().match(/\{[\s\S]*\}/);
+      let insight: InferOutput = {};
+      if (jsonMatch) {
+        try {
+          insight = JSON.parse(jsonMatch[0]) as InferOutput;
+        } catch {
+          /* ignore */
+        }
+      }
+      return json({ ok: true, insight });
+    }
+
+    // POST /api/life-book/narrate（Phase 3 敘事層：insight → 風格化文案）
+    if (req.method === "POST" && url.pathname === "/api/life-book/narrate") {
+      const apiKey = env?.OPENAI_API_KEY;
+      if (!apiKey) {
+        return json({ ok: false, error: "OPENAI_API_KEY 未設定" }, { status: 500 });
+      }
+      let body: { section_key?: string; insight?: SectionInsight; model?: string; temperature?: number };
+      try {
+        body = (await req.json()) as typeof body;
+      } catch {
+        return badRequest("Invalid JSON");
+      }
+      const sectionKey = typeof body?.section_key === "string" ? body.section_key : "";
+      const insight = body?.insight as SectionInsight | undefined;
+      if (!sectionKey || !(SECTION_ORDER as readonly string[]).includes(sectionKey)) {
+        return badRequest("無效的 section_key");
+      }
+      if (!insight || typeof insight !== "object") return badRequest("缺少 insight");
+
+      let lifeBookConfig: LifeBookConfig | null = null;
+      const cached = await env?.CACHE?.get(LIFEBOOK_CONFIG_KEY);
+      if (cached) {
+        try {
+          lifeBookConfig = JSON.parse(cached) as LifeBookConfig;
+        } catch {
+          /* ignore */
+        }
+      }
+
+      const modelFromBody = typeof body?.model === "string" && body.model.trim() ? body.model.trim() : null;
+      const effectiveModel = modelFromBody ?? lifeBookConfig?.model ?? NARRATE_MODEL;
+      const narrateTemp = typeof body?.temperature === "number" && Number.isFinite(body.temperature) ? body.temperature : 0.7;
+      const narrateOptions = getGenerationOptions(effectiveModel, narrateTemp);
+
+      const template = SECTION_TEMPLATES.find((t) => t.section_key === sectionKey);
+      if (!template) return badRequest("無效的 section_key");
+
+      const systemPrompt = buildNarrateSystemPrompt(lifeBookConfig);
+      const userPrompt = buildNarrateUserPrompt(sectionKey, insight, template, lifeBookConfig);
+
+      const narrateMessages = [
+        { role: "system" as const, content: systemPrompt },
+        { role: "user" as const, content: userPrompt },
+      ];
+      logLifeBookOpenAIPayload("life-book/narrate", {
+        model: effectiveModel,
+        messages: narrateMessages,
+        chartJson: null,
+      });
+
+      const openaiResp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          ...narrateOptions,
+          messages: narrateMessages,
+          max_completion_tokens: 4000,
+        }),
+      });
+
+      if (!openaiResp.ok) {
+        const errText = await openaiResp.text();
+        return json({ ok: false, error: `敘事失敗: ${errText.slice(0, 150)}` }, { status: 502 });
       }
 
       const openaiData = (await openaiResp.json()) as { choices?: Array<{ message?: { content?: string } }> };
@@ -539,43 +1338,400 @@ export default {
         }
       }
 
-      const valid =
+      const hasFourFields =
         parsed &&
-        typeof parsed.section_key === "string" &&
         typeof parsed.structure_analysis === "string" &&
         typeof parsed.behavior_pattern === "string" &&
         typeof parsed.blind_spots === "string" &&
         typeof parsed.strategic_advice === "string";
 
-      if (valid && parsed) {
-        return json({ ok: true, section: parsed });
+      if (hasFourFields && parsed) {
+        const section = {
+          section_key: typeof parsed.section_key === "string" ? parsed.section_key : sectionKey,
+          title: typeof parsed.title === "string" ? parsed.title : template.title,
+          importance_level: (typeof parsed.importance_level === "string" && ["high", "medium", "low"].includes(parsed.importance_level)) ? parsed.importance_level : "medium",
+          structure_analysis: parsed.structure_analysis,
+          behavior_pattern: parsed.behavior_pattern,
+          blind_spots: parsed.blind_spots,
+          strategic_advice: parsed.strategic_advice,
+        };
+        return json({ ok: true, section });
       }
 
       return json({
         ok: true,
         section: {
           section_key: sectionKey,
-          title: `[${sectionKey}]`,
+          title: template.title,
           importance_level: "medium",
-          structure_analysis: "(AI 回傳格式異常)",
-          behavior_pattern: "",
-          blind_spots: "",
-          strategic_advice: "",
+          structure_analysis: insight.evidence || "(敘事格式異常)",
+          behavior_pattern: insight.core_insight || "",
+          blind_spots: insight.implications || "",
+          strategic_advice: insight.suggestions || "",
         },
       });
     }
 
-    // POST /api/life-book/generate（保留：一次 20 章，可能逾時）
-    if (req.method === "POST" && url.pathname === "/api/life-book/generate") {
+    // POST /api/life-book/generate-section（單章，供前端逐次呼叫並顯示進度）
+    if (req.method === "POST" && url.pathname === "/api/life-book/generate-section") {
       const apiKey = env?.OPENAI_API_KEY;
       if (!apiKey) {
-        return json(
-          { ok: false, error: "OPENAI_API_KEY 未設定" },
-          { status: 500 }
-        );
+        return json({ ok: false, error: "OPENAI_API_KEY 未設定" }, { status: 500 });
       }
 
-      let body: { chart_json?: unknown; weight_analysis?: unknown };
+      let body: {
+        section_key?: string;
+        chart_json?: unknown;
+        weight_analysis?: unknown;
+        model?: string;
+        temperature?: number;
+        locale?: string;
+        minor_fortune_summary?: string;
+        minor_fortune_triggers?: string;
+        /** "ai" = 呼叫 OpenAI 產出給用戶；"technical" = 不呼叫 API，回傳資料庫／命盤技術細節（自用） */
+        output_mode?: "ai" | "technical";
+      };
+      try {
+        body = (await req.json()) as typeof body;
+      } catch {
+        return badRequest("Invalid JSON");
+      }
+
+      const sectionKey = typeof body?.section_key === "string" ? body.section_key : "";
+      const chartJson = body?.chart_json as Record<string, unknown> | undefined;
+      const weightAnalysis = body?.weight_analysis as Record<string, unknown> | undefined;
+      const modelFromBody = typeof body?.model === "string" && body.model.trim() ? body.model.trim() : null;
+
+      if (!sectionKey || !(SECTION_ORDER as readonly string[]).includes(sectionKey)) {
+        return badRequest("無效的 section_key");
+      }
+      if (!chartJson || typeof chartJson !== "object") return badRequest("缺少 chart_json");
+      if (!weightAnalysis || typeof weightAnalysis !== "object") return badRequest("缺少 weight_analysis");
+
+      // 與前端一致：chart_json 可能為 exportCalculationResults() 或含 features 的 compute 回傳，統一取 ziwei
+      const normalizedChart = { ...chartJson } as Record<string, unknown>;
+      if (!normalizedChart.ziwei && (chartJson as Record<string, unknown>)?.features && typeof (chartJson as Record<string, unknown>).features === "object") {
+        const features = (chartJson as Record<string, unknown>).features as Record<string, unknown>;
+        if (features.ziwei) normalizedChart.ziwei = features.ziwei;
+        if (features.bazi) normalizedChart.bazi = features.bazi;
+      }
+      const chartForSection = normalizedChart;
+
+      let lifeBookConfig: LifeBookConfig | null = null;
+      const cached = await env?.CACHE?.get(LIFEBOOK_CONFIG_KEY);
+      if (cached) {
+        try {
+          lifeBookConfig = JSON.parse(cached) as LifeBookConfig;
+        } catch {
+          /* use default */
+        }
+      }
+      const effectiveModel = modelFromBody ?? lifeBookConfig?.model ?? "gpt-4.1";
+      const sectionTemp = typeof body?.temperature === "number" && Number.isFinite(body.temperature) ? body.temperature : 0.7;
+      const sectionOptions = getGenerationOptions(effectiveModel, sectionTemp);
+
+      const sectionLocaleRaw = String(body?.locale ?? chartForSection?.language ?? chartForSection?.astrolabeLanguage ?? "zh-TW");
+      const sectionLocale: Locale = sectionLocaleRaw === "en" || sectionLocaleRaw === "en-US" ? "en" : sectionLocaleRaw === "zh-CN" ? "zh-CN" : "zh-TW";
+      const { content: sectionContent } = await getContentForLocale(env, sectionLocale);
+      const sectionUsedKeys = getUsedStarPalaceKeys(chartForSection?.ziwei, sectionLocale);
+      const usedStarPalacesSection = buildEffectiveUsedStarPalaces(sectionContent?.starPalacesMain, sectionContent?.starPalaces, sectionUsedKeys, sectionContent?.starPalacesAux);
+      const usedStarPalacesAuxActionSection = filterUsedStarPalaces(sectionContent?.starPalacesAuxAction, sectionUsedKeys);
+      const usedStarPalacesAuxRiskSection = filterUsedStarPalacesAuxRisk(sectionContent?.starPalacesAuxRisk, sectionUsedKeys);
+      const sectionStarPalacesTotal = typeof sectionContent?.starPalaces === "object" ? Object.keys(sectionContent.starPalaces).length : 0;
+      console.log("[life-book/generate-section] starPalaces_total_count=%s starPalaces_used_count=%s", sectionStarPalacesTotal, Object.keys(usedStarPalacesSection).length);
+
+      const sectionMasterStars = getMasterStarsFromZiwei(chartForSection?.ziwei);
+      const sectionMasterStarsWithDefs = getMasterStarsWithDefs(sectionMasterStars, sectionContent?.stars, {
+        lifeLordDecode: sectionContent?.lifeLordDecode,
+        bodyLordDecode: sectionContent?.bodyLordDecode,
+      });
+      const sectionBodyPalaceInfo = getBodyPalaceInfo(chartForSection, sectionContent?.bodyPalaceByHour);
+      const sectionLifeBodySnippet = getLifeBodyRelationSnippet(
+        sectionBodyPalaceInfo,
+        sectionContent?.lifeBodyRelation as Record<string, { tagline: string; interpretation: string; strategy_tone: string }> | undefined,
+        sectionMasterStarsWithDefs
+      );
+      const sectionConfigWithStarPalaces: LifeBookConfig = {
+        ...(lifeBookConfig ?? getDefaultConfig()),
+        starPalaces: usedStarPalacesSection,
+        starPalacesAuxAction: Object.keys(usedStarPalacesAuxActionSection).length > 0 ? usedStarPalacesAuxActionSection : undefined,
+        starPalacesAuxRisk: Object.keys(usedStarPalacesAuxRiskSection).length > 0 ? usedStarPalacesAuxRiskSection : undefined,
+        masterStars: sectionMasterStarsWithDefs,
+        bodyPalaceInfo: sectionBodyPalaceInfo,
+        lifeBodyRelationSnippet: sectionLifeBodySnippet.length > 0 ? sectionLifeBodySnippet : undefined,
+        minorFortuneSummary: typeof body?.minor_fortune_summary === "string" ? body.minor_fortune_summary : undefined,
+        minorFortuneTriggers: typeof body?.minor_fortune_triggers === "string" ? body.minor_fortune_triggers : undefined,
+        tenGodByPalace: (chartForSection?.tenGodByPalace as Record<string, string> | undefined) ?? {},
+        wuxingByPalace: (chartForSection?.wuxingByPalace as Record<string, string> | undefined) ?? {},
+      };
+
+      if (body?.output_mode === "technical") {
+        const genSectionTemplate = SECTION_TEMPLATES.find((t) => t.section_key === sectionKey);
+        const sectionTitle = genSectionTemplate?.title ?? `[${sectionKey}]`;
+        const chartSlice = getChartSlice(chartForSection, genSectionTemplate?.slice_types ?? []);
+        const blocks = getSectionTechnicalBlocks(
+          sectionKey,
+          chartForSection,
+          sectionConfigWithStarPalaces,
+          sectionContent as Parameters<typeof getSectionTechnicalBlocks>[3],
+          sectionLocale === "zh-TW" ? "zh-TW" : sectionLocale === "zh-CN" ? "zh-CN" : "en"
+        );
+        const technicalParts: string[] = [];
+        const skipDebugBlocks = sectionKey === "s00" || sectionKey === "s03" || sectionKey === "s04";
+        if (blocks.underlyingParamsText && !skipDebugBlocks) technicalParts.push("", blocks.underlyingParamsText);
+        if (blocks.riskBlockText && !skipDebugBlocks) technicalParts.push("", blocks.riskBlockText);
+        const resolved = blocks.resolvedSkeleton;
+        if (resolved) {
+          technicalParts.push("", resolved.structure_analysis);
+        } else if (blocks.skeletonBlockText) {
+          technicalParts.push("", blocks.skeletonBlockText);
+        }
+        let structureAnalysisFinal = sanitizeStructureAnalysis(technicalParts.join("\n"));
+        if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
+          const p2 = buildP2FindingsAndContext(chartForSection ?? undefined);
+          const injectOpts = p2.findings ? { findings: p2.findings, timeContext: p2.timeContext, timelineValidationIssues: p2.timelineValidationIssues } : undefined;
+          structureAnalysisFinal = injectTimeModuleDataIntoSection(
+            sectionKey,
+            structureAnalysisFinal,
+            chartForSection ?? {},
+            (sectionContent as Parameters<typeof injectTimeModuleDataIntoSection>[3]) ?? {},
+            sectionConfigWithStarPalaces,
+            sectionLocale === "zh-TW" ? "zh-TW" : sectionLocale === "zh-CN" ? "zh-CN" : "en",
+            injectOpts
+          );
+        }
+        const technicalSection: Record<string, unknown> = {
+          section_key: sectionKey,
+          title: sectionTitle,
+          importance_level: genSectionTemplate?.importance_level ?? "medium",
+          structure_analysis: structureAnalysisFinal,
+          behavior_pattern: resolved?.behavior_pattern ?? "",
+          blind_spots: resolved?.blind_spots ?? "",
+          strategic_advice: resolved?.strategic_advice ?? "",
+          output_mode: "technical",
+          technical: {
+            chart_slice: chartSlice,
+            star_palace_quotes: usedStarPalacesSection && Object.keys(usedStarPalacesSection).length > 0 ? usedStarPalacesSection : undefined,
+            underlying_params_text: blocks.underlyingParamsText,
+            risk_block_text: blocks.riskBlockText,
+            decadal_limits: chartForSection?.decadalLimits,
+            yearly_horoscope: chartForSection?.yearlyHoroscope,
+            liunian: chartForSection?.liunian,
+            minor_fortune_by_palace: chartForSection?.minorFortuneByPalace,
+            overlap_analysis: chartForSection?.overlapAnalysis,
+            weight_analysis: weightAnalysis,
+            wuxing_by_palace: chartForSection?.wuxingByPalace,
+            ten_god_by_palace: chartForSection?.tenGodByPalace,
+            ziwei: chartForSection?.ziwei,
+            bazi: chartForSection?.bazi,
+            five_elements: chartForSection?.fiveElements ?? chartForSection?.wuxingData,
+            four_transformations: chartForSection?.fourTransformations,
+          },
+        };
+        return json({ ok: true, section: technicalSection, output_mode: "technical" });
+      }
+
+      const filteredWeightForSection = filterStablePalacesByDominant(
+        weightAnalysis as { stable_palaces?: string[]; [k: string]: unknown },
+        chartForSection,
+        sectionConfigWithStarPalaces
+      );
+      const systemPrompt = getSystemPrompt(sectionConfigWithStarPalaces);
+      const userPrompt = buildSectionUserPrompt(
+        sectionKey,
+        chartForSection,
+        filteredWeightForSection as { importance_map?: Record<string, string>; top_focus_palaces?: string[]; risk_palaces?: string[]; stable_palaces?: string[] },
+        sectionConfigWithStarPalaces,
+        env,
+        {
+          neuralLoops: sectionContent?.neuralLoops,
+          highPressure: sectionContent?.highPressure,
+          consciousPalace: sectionContent?.consciousPalace,
+          starBaseCore: sectionContent?.starBaseCore,
+          starBaseShadow: sectionContent?.starBaseShadow,
+          wuxingEnergy: sectionContent?.wuxingEnergy,
+          starPalaces: sectionContent?.starPalaces,
+          tenGodPalacesById: sectionContent?.tenGodPalacesById,
+          archetypeElement: sectionContent?.archetypeElement,
+          archetypeStar: sectionContent?.archetypeStar,
+          lifebookSection: sectionContent?.lifebookSection,
+        },
+        sectionLocale === "zh-TW" ? "zh-TW" : sectionLocale === "zh-CN" ? "zh-CN" : "en"
+      );
+
+      const sectionMessages = [
+        { role: "system" as const, content: systemPrompt },
+        { role: "user" as const, content: userPrompt },
+      ];
+
+      const isLifebookDebug = env?.LIFEBOOK_DEBUG === "1" || env?.LIFEBOOK_DEBUG === "true";
+      if (isLifebookDebug && sectionKey === "s18") {
+        console.log("[life-book/generate-section] [LIFEBOOK_DEBUG] s18 full prompt (system length=%s, user length=%s)", systemPrompt.length, userPrompt.length);
+        console.log("[life-book/generate-section] [LIFEBOOK_DEBUG] s18 SYSTEM PROMPT:\n---\n%s\n---", systemPrompt);
+        console.log("[life-book/generate-section] [LIFEBOOK_DEBUG] s18 USER PROMPT:\n---\n%s\n---", userPrompt);
+      }
+
+      logLifeBookOpenAIPayload("life-book/generate-section", {
+        model: effectiveModel,
+        messages: sectionMessages,
+        chartJson: chartForSection,
+      });
+
+      const openaiResp = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          ...sectionOptions,
+          messages: sectionMessages,
+          max_completion_tokens: 4000,
+        }),
+      });
+
+      if (!openaiResp.ok) {
+        const errText = await openaiResp.text();
+        return json({ ok: false, error: `生成失敗: ${errText.slice(0, 150)}` }, { status: 502 });
+      }
+
+      const openaiData = (await openaiResp.json()) as { choices?: Array<{ message?: { content?: string } }> };
+      const content = openaiData?.choices?.[0]?.message?.content ?? "";
+      const parsed = parseSectionJson(content);
+
+      const genSectionTemplate = SECTION_TEMPLATES.find((t) => t.section_key === sectionKey);
+      const sectionTitle = genSectionTemplate?.title ?? `[${sectionKey}]`;
+
+      const four = parsed ? toSectionFourFields(parsed, sectionKey, sectionTitle) : null;
+      const hasFullFour =
+        four &&
+        four.structure_analysis !== "(未提供)" &&
+        four.behavior_pattern !== "(未提供)" &&
+        four.blind_spots !== "(未提供)" &&
+        four.strategic_advice !== "(未提供)";
+
+      if (parsed && four && (hasFullFour || four.structure_analysis || four.behavior_pattern || four.blind_spots || four.strategic_advice)) {
+        let structureAnalysisOut = four.structure_analysis;
+        let behaviorPatternOut = four.behavior_pattern;
+        let blindSpotsOut = four.blind_spots;
+        let strategicAdviceOut = four.strategic_advice;
+        if (sectionKey === "s03") {
+          const [sa, bp, bl, st] = dedupeParagraphsAcrossBlocks([
+            structureAnalysisOut,
+            behaviorPatternOut,
+            blindSpotsOut,
+            strategicAdviceOut,
+          ]);
+          structureAnalysisOut = normalizePunctuation(sa);
+          behaviorPatternOut = normalizePunctuation(bp);
+          blindSpotsOut = normalizePunctuation(bl);
+          strategicAdviceOut = normalizePunctuation(st);
+        } else {
+          structureAnalysisOut = normalizePunctuation(structureAnalysisOut);
+          behaviorPatternOut = normalizePunctuation(behaviorPatternOut);
+          blindSpotsOut = normalizePunctuation(blindSpotsOut);
+          strategicAdviceOut = normalizePunctuation(strategicAdviceOut);
+        }
+        if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
+          const p2 = buildP2FindingsAndContext(chartForSection ?? undefined);
+          const injectOpts = p2.findings ? { findings: p2.findings, timeContext: p2.timeContext, timelineValidationIssues: p2.timelineValidationIssues } : undefined;
+          structureAnalysisOut = injectTimeModuleDataIntoSection(
+            sectionKey,
+            structureAnalysisOut,
+            chartForSection ?? {},
+            (sectionContent as Parameters<typeof injectTimeModuleDataIntoSection>[3]) ?? {},
+            sectionConfigWithStarPalaces,
+            sectionLocale === "zh-TW" ? "zh-TW" : sectionLocale === "zh-CN" ? "zh-CN" : "en",
+            injectOpts
+          );
+        }
+        if (PALACE_SECTION_KEYS.has(sectionKey)) {
+          const overrides = getPalaceSectionReaderOverrides(
+            sectionKey,
+            chartForSection ?? {},
+            sectionConfigWithStarPalaces,
+            sectionContent as Parameters<typeof getPalaceSectionReaderOverrides>[3],
+            sectionLocale === "zh-TW" ? "zh-TW" : sectionLocale === "zh-CN" ? "zh-CN" : "en"
+          );
+          if (overrides) {
+            // 一律以我們產生的星曜區塊覆蓋，確保「星曜說明＋在本宮表現」一定出現（不依賴 AI 是否寫了該段）
+            const block = overrides.starBlockToAppend;
+            const idx = structureAnalysisOut.indexOf("【星曜結構】");
+            if (idx >= 0) {
+              const after = structureAnalysisOut.slice(idx);
+              const nextReminder = after.indexOf("【此宮提醒】");
+              structureAnalysisOut = structureAnalysisOut.slice(0, idx) + block + (nextReminder >= 0 ? "\n\n" + after.slice(nextReminder) : "");
+            } else {
+              structureAnalysisOut = structureAnalysisOut + block;
+            }
+            behaviorPatternOut = overrides.behavior_pattern;
+            blindSpotsOut = overrides.blind_spots;
+            strategicAdviceOut = overrides.strategic_advice;
+          }
+        }
+        structureAnalysisOut = sanitizeStructureAnalysis(structureAnalysisOut);
+        behaviorPatternOut = sanitizeForReader(behaviorPatternOut);
+        blindSpotsOut = sanitizeForReader(blindSpotsOut);
+        strategicAdviceOut = sanitizeForReader(strategicAdviceOut);
+        const section: Record<string, unknown> = {
+          section_key: typeof parsed.section_key === "string" ? parsed.section_key : sectionKey,
+          title: typeof parsed.title === "string" ? parsed.title : sectionTitle,
+          importance_level: (typeof parsed.importance_level === "string" && ["high", "medium", "low"].includes(parsed.importance_level)) ? parsed.importance_level : "medium",
+          structure_analysis: structureAnalysisOut,
+          behavior_pattern: behaviorPatternOut,
+          blind_spots: blindSpotsOut,
+          strategic_advice: strategicAdviceOut,
+        };
+        if (usedStarPalacesSection && Object.keys(usedStarPalacesSection).length > 0) {
+          section.star_palace_quotes = usedStarPalacesSection;
+        }
+        return json({ ok: true, section });
+      }
+
+      const rawFallback = content.trim().slice(0, 4000);
+      let fallbackStructure = rawFallback
+        ? `${rawFallback}${rawFallback.length >= 4000 ? "…" : ""}\n\n（原始回傳未符四欄位 JSON，建議重試該章取得正確格式。）`
+        : "(AI 回傳格式異常，請重試該章)";
+      if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
+        const p2 = buildP2FindingsAndContext(chartForSection ?? undefined);
+        const injectOpts = p2.findings ? { findings: p2.findings, timeContext: p2.timeContext, timelineValidationIssues: p2.timelineValidationIssues } : undefined;
+        fallbackStructure = injectTimeModuleDataIntoSection(
+          sectionKey,
+          fallbackStructure,
+          chartForSection ?? {},
+          (sectionContent as Parameters<typeof injectTimeModuleDataIntoSection>[3]) ?? {},
+          sectionConfigWithStarPalaces,
+          sectionLocale === "zh-TW" ? "zh-TW" : sectionLocale === "zh-CN" ? "zh-CN" : "en",
+          injectOpts
+        );
+      }
+      const fallbackSection: Record<string, unknown> = {
+        section_key: sectionKey,
+        title: sectionTitle,
+        importance_level: "medium",
+        structure_analysis: fallbackStructure,
+        behavior_pattern: "",
+        blind_spots: "",
+        strategic_advice: "",
+      };
+      if (usedStarPalacesSection && Object.keys(usedStarPalacesSection).length > 0) {
+        fallbackSection.star_palace_quotes = usedStarPalacesSection;
+      }
+      return json({ ok: true, section: fallbackSection });
+    }
+
+    // POST /api/life-book/generate（保留：一次 20 章，可能逾時）
+    if (req.method === "POST" && url.pathname === "/api/life-book/generate") {
+      let body: {
+        chart_json?: unknown;
+        weight_analysis?: unknown;
+        locale?: string;
+        minor_fortune_summary?: string;
+        minor_fortune_triggers?: string;
+        model?: string;
+        temperature?: number;
+        output_mode?: "ai" | "technical";
+      };
       try {
         body = (await req.json()) as typeof body;
       } catch {
@@ -592,27 +1748,174 @@ export default {
         return badRequest("缺少 weight_analysis");
       }
 
+      // 與前端一致：chart_json 可能為 exportCalculationResults() 或含 features 的 compute 回傳，統一取 ziwei/bazi
+      const chartForGenerate = { ...chartJson } as Record<string, unknown>;
+      if (!chartForGenerate.ziwei && (chartJson as Record<string, unknown>)?.features && typeof (chartJson as Record<string, unknown>).features === "object") {
+        const features = (chartJson as Record<string, unknown>).features as Record<string, unknown>;
+        if (features.ziwei) chartForGenerate.ziwei = features.ziwei;
+        if (features.bazi) chartForGenerate.bazi = features.bazi;
+      }
+
+      const apiKey = env?.OPENAI_API_KEY;
+      if (body?.output_mode !== "technical" && !apiKey) {
+        return json({ ok: false, error: "OPENAI_API_KEY 未設定" }, { status: 500 });
+      }
+
+      const generateModel = typeof body?.model === "string" && body.model.trim() ? body.model.trim() : "gpt-4.1";
+      const generateTemp = typeof body?.temperature === "number" && Number.isFinite(body.temperature) ? body.temperature : 0.7;
+      const generateOptions = getGenerationOptions(generateModel, generateTemp);
+
+      const generateLocaleRaw = String(body?.locale ?? chartForGenerate?.language ?? chartForGenerate?.astrolabeLanguage ?? "zh-TW");
+      const generateLocale: Locale = generateLocaleRaw === "en" || generateLocaleRaw === "en-US" ? "en" : generateLocaleRaw === "zh-CN" ? "zh-CN" : "zh-TW";
+      const { content: generateContent } = await getContentForLocale(env, generateLocale);
+      const generateUsedKeys = getUsedStarPalaceKeys(chartForGenerate?.ziwei, generateLocale);
+      const usedStarPalacesGenerate = buildEffectiveUsedStarPalaces(generateContent?.starPalacesMain, generateContent?.starPalaces, generateUsedKeys, generateContent?.starPalacesAux);
+      const usedStarPalacesAuxActionGenerate = filterUsedStarPalaces(generateContent?.starPalacesAuxAction, generateUsedKeys);
+      const usedStarPalacesAuxRiskGenerate = filterUsedStarPalacesAuxRisk(generateContent?.starPalacesAuxRisk, generateUsedKeys);
+      const generateStarPalacesTotal = typeof generateContent?.starPalaces === "object" ? Object.keys(generateContent.starPalaces).length : 0;
+      console.log("[life-book/generate] starPalaces_total_count=%s starPalaces_used_count=%s", generateStarPalacesTotal, Object.keys(usedStarPalacesGenerate).length);
+
+      const generateMasterStars = getMasterStarsFromZiwei(chartForGenerate?.ziwei);
+      const generateMasterStarsWithDefs = getMasterStarsWithDefs(generateMasterStars, generateContent?.stars, {
+        lifeLordDecode: generateContent?.lifeLordDecode,
+        bodyLordDecode: generateContent?.bodyLordDecode,
+      });
+      const generateBodyPalaceInfo = getBodyPalaceInfo(chartForGenerate, generateContent?.bodyPalaceByHour);
+      const generateLifeBodySnippet = getLifeBodyRelationSnippet(
+        generateBodyPalaceInfo,
+        generateContent?.lifeBodyRelation as Record<string, { tagline: string; interpretation: string; strategy_tone: string }> | undefined,
+        generateMasterStarsWithDefs
+      );
+      const generateConfig: LifeBookConfig = {
+        ...getDefaultConfig(),
+        starPalaces: usedStarPalacesGenerate,
+        starPalacesAuxAction: Object.keys(usedStarPalacesAuxActionGenerate).length > 0 ? usedStarPalacesAuxActionGenerate : undefined,
+        starPalacesAuxRisk: Object.keys(usedStarPalacesAuxRiskGenerate).length > 0 ? usedStarPalacesAuxRiskGenerate : undefined,
+        masterStars: generateMasterStarsWithDefs,
+        bodyPalaceInfo: generateBodyPalaceInfo,
+        lifeBodyRelationSnippet: generateLifeBodySnippet.length > 0 ? generateLifeBodySnippet : undefined,
+        minorFortuneSummary: typeof body?.minor_fortune_summary === "string" ? body.minor_fortune_summary : undefined,
+        minorFortuneTriggers: typeof body?.minor_fortune_triggers === "string" ? body.minor_fortune_triggers : undefined,
+        tenGodByPalace: (chartForGenerate?.tenGodByPalace as Record<string, string> | undefined) ?? {},
+        wuxingByPalace: (chartForGenerate?.wuxingByPalace as Record<string, string> | undefined) ?? {},
+      };
       const sections: Record<string, Record<string, unknown>> = {};
-      const sectionOrder = SECTION_ORDER as string[];
+      const sectionOrder = [...SECTION_ORDER];
+
+      const localeForTechnical = generateLocale === "zh-TW" ? "zh-TW" : generateLocale === "zh-CN" ? "zh-CN" : "en";
 
       for (let i = 0; i < sectionOrder.length; i++) {
         const sectionKey = sectionOrder[i];
+        if (body?.output_mode === "technical") {
+          const genSectionTemplate = SECTION_TEMPLATES.find((t) => t.section_key === sectionKey);
+          const sectionTitle = genSectionTemplate?.title ?? `[${sectionKey}]`;
+          const chartSlice = getChartSlice(chartForGenerate, genSectionTemplate?.slice_types ?? []);
+          const blocks = getSectionTechnicalBlocks(sectionKey, chartForGenerate, generateConfig, generateContent as Parameters<typeof getSectionTechnicalBlocks>[3], localeForTechnical);
+          const technicalParts: string[] = [];
+          const skipDebugBlocks = sectionKey === "s00" || sectionKey === "s03" || sectionKey === "s04";
+          if (blocks.underlyingParamsText && !skipDebugBlocks) technicalParts.push("", blocks.underlyingParamsText);
+          if (blocks.riskBlockText && !skipDebugBlocks) technicalParts.push("", blocks.riskBlockText);
+          const resolved = blocks.resolvedSkeleton;
+          if (resolved) {
+            technicalParts.push("", resolved.structure_analysis);
+          } else if (blocks.skeletonBlockText) {
+            technicalParts.push("", blocks.skeletonBlockText);
+          }
+          let structureAnalysisFinal = sanitizeStructureAnalysis(technicalParts.join("\n"));
+          if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
+            const p2 = buildP2FindingsAndContext(chartForGenerate ?? undefined);
+            const injectOpts = p2.findings ? { findings: p2.findings, timeContext: p2.timeContext, timelineValidationIssues: p2.timelineValidationIssues } : undefined;
+            structureAnalysisFinal = injectTimeModuleDataIntoSection(
+              sectionKey,
+              structureAnalysisFinal,
+              chartForGenerate ?? {},
+              (generateContent as Parameters<typeof injectTimeModuleDataIntoSection>[3]) ?? {},
+              generateConfig,
+              localeForTechnical,
+              injectOpts
+            );
+          }
+          sections[sectionKey] = {
+            section_key: sectionKey,
+            title: sectionTitle,
+            importance_level: genSectionTemplate?.importance_level ?? "medium",
+            structure_analysis: structureAnalysisFinal,
+            behavior_pattern: resolved?.behavior_pattern ?? "",
+            blind_spots: resolved?.blind_spots ?? "",
+            strategic_advice: resolved?.strategic_advice ?? "",
+            output_mode: "technical",
+            technical: {
+              chart_slice: chartSlice,
+              star_palace_quotes: usedStarPalacesGenerate && Object.keys(usedStarPalacesGenerate).length > 0 ? usedStarPalacesGenerate : undefined,
+              underlying_params_text: blocks.underlyingParamsText,
+              risk_block_text: blocks.riskBlockText,
+              decadal_limits: chartForGenerate?.decadalLimits,
+              yearly_horoscope: chartForGenerate?.yearlyHoroscope,
+              liunian: chartForGenerate?.liunian,
+              minor_fortune_by_palace: chartForGenerate?.minorFortuneByPalace,
+              overlap_analysis: chartForGenerate?.overlapAnalysis,
+              weight_analysis: weightAnalysis,
+              wuxing_by_palace: chartForGenerate?.wuxingByPalace,
+              ten_god_by_palace: chartForGenerate?.tenGodByPalace,
+              ziwei: chartForGenerate?.ziwei,
+              bazi: chartForGenerate?.bazi,
+              five_elements: chartForGenerate?.fiveElements ?? chartForGenerate?.wuxingData,
+              four_transformations: chartForGenerate?.fourTransformations,
+            },
+          };
+          continue;
+        }
+
+        const filteredWeightForGenerate = filterStablePalacesByDominant(
+          weightAnalysis as { stable_palaces?: string[]; [k: string]: unknown },
+          chartForGenerate,
+          generateConfig
+        );
         const userPrompt = buildSectionUserPrompt(
           sectionKey,
-          chartJson,
-          weightAnalysis as { importance_map?: Record<string, string>; top_focus_palaces?: string[]; risk_palaces?: string[]; stable_palaces?: string[] }
+          chartForGenerate,
+          filteredWeightForGenerate as { importance_map?: Record<string, string>; top_focus_palaces?: string[]; risk_palaces?: string[]; stable_palaces?: string[] },
+          generateConfig,
+          env,
+          {
+            neuralLoops: generateContent?.neuralLoops,
+            highPressure: generateContent?.highPressure,
+            consciousPalace: generateContent?.consciousPalace,
+            starBaseCore: generateContent?.starBaseCore,
+            starBaseShadow: generateContent?.starBaseShadow,
+            wuxingEnergy: generateContent?.wuxingEnergy,
+            starPalaces: generateContent?.starPalaces,
+            tenGodPalacesById: generateContent?.tenGodPalacesById,
+            archetypeElement: generateContent?.archetypeElement,
+            archetypeStar: generateContent?.archetypeStar,
+            lifebookSection: generateContent?.lifebookSection,
+          },
+          generateLocale === "zh-TW" ? "zh-TW" : generateLocale === "zh-CN" ? "zh-CN" : "en"
         );
 
         const messages = [
-          { role: "system" as const, content: SYSTEM_PROMPT },
+          { role: "system" as const, content: getSystemPrompt(generateConfig) },
           { role: "user" as const, content: userPrompt },
         ];
 
-        const openaiBody = {
-          model: "gpt-4o-mini",
+        const isLifebookDebug = env?.LIFEBOOK_DEBUG === "1" || env?.LIFEBOOK_DEBUG === "true";
+        if (isLifebookDebug && sectionKey === "s18") {
+          const sysPrompt = getSystemPrompt(generateConfig);
+          console.log("[life-book/generate] [LIFEBOOK_DEBUG] s18 full prompt (system length=%s, user length=%s)", sysPrompt.length, userPrompt.length);
+          console.log("[life-book/generate] [LIFEBOOK_DEBUG] s18 SYSTEM PROMPT:\n---\n%s\n---", sysPrompt);
+          console.log("[life-book/generate] [LIFEBOOK_DEBUG] s18 USER PROMPT:\n---\n%s\n---", userPrompt);
+        }
+
+        logLifeBookOpenAIPayload("life-book/generate", {
+          model: generateModel,
           messages,
-          temperature: 0.7,
-          max_tokens: 4000,
+          chartJson: chartForGenerate,
+        });
+
+        const openaiBody = {
+          ...generateOptions,
+          messages,
+          max_completion_tokens: 4000,
         };
 
         const openaiResp = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -641,39 +1944,105 @@ export default {
           choices?: Array<{ message?: { content?: string } }>;
         };
         const content = openaiData?.choices?.[0]?.message?.content ?? "";
+        const parsed = parseSectionJson(content);
 
-        // 解析 JSON
-        let parsed: Record<string, unknown> | null = null;
-        const jsonMatch = content.trim().match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          try {
-            parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>;
-          } catch {
-            /* ignore */
-          }
+        const batchTemplate = SECTION_TEMPLATES.find((t) => t.section_key === sectionKey);
+        const batchTitle = batchTemplate?.title ?? `[${sectionKey}]`;
+
+        const four = parsed ? toSectionFourFields(parsed, sectionKey, batchTitle) : null;
+        const hasUsable = four && (four.structure_analysis !== "(未提供)" || four.behavior_pattern !== "(未提供)" || four.blind_spots !== "(未提供)" || four.strategic_advice !== "(未提供)");
+
+        const rawFallback = content.trim().slice(0, 4000);
+        let structureAnalysisOut = hasUsable && four && parsed ? four.structure_analysis : (rawFallback
+          ? `${rawFallback}${rawFallback.length >= 4000 ? "…" : ""}\n\n（原始回傳未符四欄位 JSON，建議重試該章。）`
+          : "(AI 回傳格式異常，請重試)");
+        if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
+          const p2 = buildP2FindingsAndContext(chartForGenerate ?? undefined);
+          const injectOpts = p2.findings ? { findings: p2.findings, timeContext: p2.timeContext, timelineValidationIssues: p2.timelineValidationIssues } : undefined;
+          structureAnalysisOut = injectTimeModuleDataIntoSection(
+            sectionKey,
+            structureAnalysisOut,
+            chartForGenerate ?? {},
+            (generateContent as Parameters<typeof injectTimeModuleDataIntoSection>[3]) ?? {},
+            generateConfig,
+            localeForTechnical,
+            injectOpts
+          );
         }
-
-        const valid =
-          parsed &&
-          typeof parsed.section_key === "string" &&
-          typeof parsed.title === "string" &&
-          typeof parsed.structure_analysis === "string" &&
-          typeof parsed.behavior_pattern === "string" &&
-          typeof parsed.blind_spots === "string" &&
-          typeof parsed.strategic_advice === "string";
-
-        if (valid && parsed) {
-          sections[sectionKey] = parsed;
+        let behaviorPatternOut: string;
+        let blindSpotsOut: string;
+        let strategicAdviceOut: string;
+        if (PALACE_SECTION_KEYS.has(sectionKey)) {
+          const overrides = getPalaceSectionReaderOverrides(
+            sectionKey,
+            chartForGenerate ?? {},
+            generateConfig,
+            generateContent as Parameters<typeof getPalaceSectionReaderOverrides>[3],
+            localeForTechnical
+          );
+          if (overrides) {
+            if (!structureAnalysisOut.includes("【星曜結構】")) {
+              structureAnalysisOut = structureAnalysisOut + overrides.starBlockToAppend;
+            }
+            behaviorPatternOut = overrides.behavior_pattern;
+            blindSpotsOut = overrides.blind_spots;
+            strategicAdviceOut = overrides.strategic_advice;
+          } else {
+            behaviorPatternOut = (hasUsable && four) ? sanitizeForReader(four.behavior_pattern) : "";
+            blindSpotsOut = (hasUsable && four) ? sanitizeForReader(four.blind_spots) : "";
+            strategicAdviceOut = (hasUsable && four) ? sanitizeForReader(four.strategic_advice) : "";
+          }
         } else {
-          sections[sectionKey] = {
-            section_key: sectionKey,
-            title: `[${sectionKey}] 解析失敗`,
-            importance_level: "medium",
-            structure_analysis: "(AI 回傳格式異常，請重試)",
-            behavior_pattern: "",
-            blind_spots: "",
-            strategic_advice: "",
-          };
+          behaviorPatternOut = (hasUsable && four) ? sanitizeForReader(four.behavior_pattern) : "";
+          blindSpotsOut = (hasUsable && four) ? sanitizeForReader(four.blind_spots) : "";
+          strategicAdviceOut = (hasUsable && four) ? sanitizeForReader(four.strategic_advice) : "";
+        }
+        structureAnalysisOut = sanitizeStructureAnalysis(structureAnalysisOut);
+        if (hasUsable && four && sectionKey === "s03") {
+          const [sa, bp, bl, st] = dedupeParagraphsAcrossBlocks([
+            structureAnalysisOut,
+            behaviorPatternOut,
+            blindSpotsOut,
+            strategicAdviceOut,
+          ]);
+          structureAnalysisOut = normalizePunctuation(sa);
+          behaviorPatternOut = normalizePunctuation(bp);
+          blindSpotsOut = normalizePunctuation(bl);
+          strategicAdviceOut = normalizePunctuation(st);
+        } else if (hasUsable && four) {
+          structureAnalysisOut = normalizePunctuation(structureAnalysisOut);
+          behaviorPatternOut = normalizePunctuation(behaviorPatternOut);
+          blindSpotsOut = normalizePunctuation(blindSpotsOut);
+          strategicAdviceOut = normalizePunctuation(strategicAdviceOut);
+        }
+        const sectionPayload: Record<string, unknown> = hasUsable && four && parsed
+          ? {
+              section_key: typeof parsed.section_key === "string" ? parsed.section_key : sectionKey,
+              title: typeof parsed.title === "string" ? parsed.title : batchTitle,
+              importance_level: (typeof parsed.importance_level === "string" && ["high", "medium", "low"].includes(parsed.importance_level)) ? parsed.importance_level : "medium",
+              structure_analysis: structureAnalysisOut,
+              behavior_pattern: behaviorPatternOut,
+              blind_spots: blindSpotsOut,
+              strategic_advice: strategicAdviceOut,
+            }
+          : {
+              section_key: sectionKey,
+              title: batchTitle,
+              importance_level: "medium",
+              structure_analysis: structureAnalysisOut,
+              behavior_pattern: "",
+              blind_spots: "",
+              strategic_advice: "",
+            };
+        if (usedStarPalacesGenerate && Object.keys(usedStarPalacesGenerate).length > 0) {
+          sectionPayload.star_palace_quotes = usedStarPalacesGenerate;
+        }
+        sections[sectionKey] = sectionPayload;
+
+        // 節流：每章完成後等待，避免 TPM (tokens/min) 在短時間內爆量觸發 rate limit
+        if (i < sectionOrder.length - 1) {
+          const delayMs = 2200;
+          await new Promise((r) => setTimeout(r, delayMs));
         }
       }
 

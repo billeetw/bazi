@@ -3,6 +3,8 @@
  * Used by: palace-detail, strategic-panel, wuxing-meaning, data-renderer
  */
 import { EN_TO_ZH, ZH_TO_EN } from "../../calc/star-registry-generated.js";
+/** 由 scripts/sync-star-palaces.js 從 worker/content/content-zh-TW.json 同步，勿手動編輯 */
+import STAR_PALACES_FALLBACK_ZH from "../../../data/star-palaces-zh-TW.json";
 
 (function () {
   "use strict";
@@ -151,6 +153,25 @@ import { EN_TO_ZH, ZH_TO_EN } from "../../calc/star-registry-generated.js";
     } catch (e) { return false; }
   }
 
+  /**
+   * 取得「星曜在該宮位」的特定表現
+   * @param {Object} dbContent - 來自 loadDbContent 的合併內容
+   * @param {string} starName - 星曜名稱（如 紫微、火星）
+   * @param {string} palaceName - 宮位名稱（如 命宮、官祿）
+   * @param {string} [defaultText] - 無資料時的預設
+   * @returns {string|null}
+   */
+  function getStarInPalaceContent(dbContent, starName, palaceName, defaultText) {
+    var dict = dbContent && dbContent.starPalaces;
+    if (!dict || typeof dict !== "object") dict = {};
+    var key = starName + "_" + palaceName;
+    var val = dict[key];
+    if (val != null && String(val).trim() !== "") return val;
+    val = STAR_PALACES_FALLBACK_ZH && STAR_PALACES_FALLBACK_ZH[key];
+    if (val != null && String(val).trim() !== "") return val;
+    return defaultText != null ? defaultText : null;
+  }
+
   function getContentValue(dbContent, category, key, defaultText) {
     var dict = dbContent && dbContent[category];
     var useEn = isEnContentLocale();
@@ -223,6 +244,7 @@ import { EN_TO_ZH, ZH_TO_EN } from "../../calc/star-registry-generated.js";
   if (!window.UiUtils) window.UiUtils = {};
   window.UiUtils.ContentUtils = {
     getContentValue: getContentValue,
+    getStarInPalaceContent: getStarInPalaceContent,
     getWuxingItem: getWuxingItem,
     isDebugMode: isDebugMode,
   };

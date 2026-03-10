@@ -23,9 +23,11 @@ export async function onRequestGet(context) {
   try {
     const url = new URL(request.url);
     let birthYear = parseInt(url.searchParams.get('birthYear') || '', 10);
+    const birthDateParam = url.searchParams.get('birth_date') || url.searchParams.get('birthDate') || '';
+    let birthDate = birthDateParam && /^\d{4}-\d{2}-\d{2}$/.test(String(birthDateParam).trim()) ? birthDateParam.trim() : null;
     const year = parseInt(url.searchParams.get('year') || '2026', 10);
 
-    if (!birthYear || isNaN(birthYear)) {
+    if ((!birthYear || isNaN(birthYear)) && !birthDate) {
       const payload = await getAuthFromRequest(request, env.JWT_SECRET);
       if (payload?.sub && env.CONSULT_DB) {
         const row = await env.CONSULT_DB
@@ -35,16 +37,26 @@ export async function onRequestGet(context) {
           .bind(payload.sub)
           .first();
         if (row?.birth_date) {
-          birthYear = parseInt(String(row.birth_date).slice(0, 4), 10);
+          birthDate = String(row.birth_date).trim();
+          if (/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+            birthYear = parseInt(birthDate.slice(0, 4), 10);
+          } else {
+            birthYear = parseInt(String(row.birth_date).slice(0, 4), 10);
+          }
         }
       }
+    } else if (birthDate && (!birthYear || isNaN(birthYear))) {
+      birthYear = parseInt(birthDate.slice(0, 4), 10);
     }
 
-    if (!birthYear || isNaN(birthYear) || birthYear < 1900 || birthYear > 2100) {
-      return jsonResponse({ error: '請提供 birthYear（出生年）或登入後使用預設命盤' }, 400);
+    if ((!birthYear || isNaN(birthYear)) && !birthDate) {
+      return jsonResponse({ error: '請提供 birthYear 或 birth_date（YYYY-MM-DD）或登入後使用預設命盤' }, 400);
+    }
+    if (birthYear && (birthYear < 1900 || birthYear > 2100)) {
+      return jsonResponse({ error: '出生年超出範圍' }, 400);
     }
 
-    const status = getTaisuiStatus({ birthYear, year });
+    const status = getTaisuiStatus({ birthYear, birthDate, year });
     return jsonResponse(status);
   } catch (err) {
     console.error('[taisui/status] Error:', err);

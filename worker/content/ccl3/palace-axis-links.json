@@ -1,0 +1,11 @@
+{
+  "meta": { "version": "1.0", "description": "CCL3 palace_axis_links：宮位連動軸，供 root cause / spillover / s18/s20" },
+  "items": [
+    { "axis": "父疾線", "fromPalace": "父母宮", "toPalace": "疾厄宮", "meaning": "權威與價值壓力如何變成身體耗損" },
+    { "axis": "子田線", "fromPalace": "子女宮", "toPalace": "田宅宮", "meaning": "創造與產出如何影響根基與安全感" },
+    { "axis": "夫官線", "fromPalace": "夫妻宮", "toPalace": "官祿宮", "meaning": "關係與事業的互相牽動（夫妻官祿線）" },
+    { "axis": "命遷線", "fromPalace": "命宮", "toPalace": "遷移宮", "meaning": "自我與對外舞台的一體兩面" },
+    { "axis": "財福線", "fromPalace": "財帛宮", "toPalace": "福德宮", "meaning": "物質與精神、資源與價值感的連動" },
+    { "axis": "兄僕線", "fromPalace": "兄弟宮", "toPalace": "僕役宮", "meaning": "同輩與人脈、合作與團隊的軸線" }
+  ]
+}

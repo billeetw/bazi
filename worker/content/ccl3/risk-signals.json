@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "version": "1.2",
+    "description": "CCL3 risk_signals：紅綠燈系統（P1.5），可從 overlap/decisionMatrix/key year 組；sourceType 與 trigger 分離資料來源與邏輯條件",
+    "sourceTypes": ["overlap", "decisionMatrix", "keyYear"],
+    "overlapMapping": {
+      "criticalRisks": "red",
+      "maxOpportunities": "green",
+      "volatileAmbivalences": "yellow"
+    },
+    "decisionMatrixMapping": {
+      "avoid": "red",
+      "caution": "yellow",
+      "encourage": "green"
+    }
+  },
+  "items": [
+    {
+      "signalId": "relationship_red_peak",
+      "color": "red",
+      "sourceType": "overlap",
+      "trigger": { "bucket": "criticalRisks", "palace": "夫妻宮", "jiCount": 2 },
+      "label": "關係承壓高峰",
+      "advice": "避免重大關係決策"
+    },
+    {
+      "signalId": "year_red_relationship_template",
+      "color": "red",
+      "sourceType": "keyYear",
+      "trigger": { "palace": "夫妻宮", "jiCount": 2, "extra": ["官祿忌入夫妻"] },
+      "label": "關係承壓高峰",
+      "advice": "避免合資、重大承諾與硬碰硬"
+    },
+    {
+      "signalId": "year_green_career_template",
+      "color": "green",
+      "sourceType": "overlap",
+      "trigger": { "bucket": "maxOpportunities", "palace": "官祿宮", "luCount": 1 },
+      "label": "事業有資源挹注",
+      "advice": "可積極布局、爭取可見度與資源"
+    },
+    {
+      "signalId": "year_yellow_wealth_template",
+      "color": "yellow",
+      "sourceType": "overlap",
+      "trigger": { "bucket": "volatileAmbivalences", "palace": "財帛宮", "jiCount": 1, "luCount": 1, "extra": ["祿忌同宮"] },
+      "label": "財運吉凶並見",
+      "advice": "成敗一線間，謹慎決策、不 all-in"
+    }
+  ]
+}

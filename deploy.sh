@@ -13,13 +13,24 @@ else
     echo "   複製 .env.deploy.example 為 .env.deploy 並填入 token"
 fi
 
-# 檢查 Git 狀態
+# 檢查 Git 狀態（DEPLOY_SKIP_CONFIRM=1 或 -y 可略過確認）
+SKIP_CONFIRM="${DEPLOY_SKIP_CONFIRM:-0}"
+for arg in "$@"; do
+    if [ "$arg" = "-y" ] || [ "$arg" = "--yes" ]; then
+        SKIP_CONFIRM=1
+        break
+    fi
+done
 if [ -n "$(git status --porcelain)" ]; then
     echo "⚠️  有未提交的變更"
-    read -p "是否繼續部署？(y/n) " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-        exit 1
+    if [ "$SKIP_CONFIRM" = "1" ]; then
+        echo "    (略過確認，繼續部署)"
+    else
+        read -p "是否繼續部署？(y/n) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
     fi
 fi
 
@@ -27,6 +38,10 @@ fi
 echo "📦 建置主 bundle..."
 npm run build:main || { echo "❌ build:main 失敗"; exit 1; }
 echo "✅ 主 bundle 建置完成"
+
+# 建置啟動動畫（選填，失敗不阻擋部署）
+echo "📦 建置啟動動畫..."
+npm run build:startup 2>/dev/null || echo "⚠️  build:startup 略過（可選）"
 
 # 建置專家後台 bundle
 echo "📦 建置專家後台 bundle..."
@@ -37,6 +52,11 @@ echo "✅ 專家後台 bundle 建置完成"
 echo "📦 建置占卦頁 bundle..."
 npm run build:divination || { echo "❌ build:divination 失敗"; exit 1; }
 echo "✅ 占卦頁 bundle 建置完成"
+
+# 建置命書 Viewer
+echo "📦 建置命書 Viewer..."
+npm run build:lifebook-viewer || { echo "❌ build:lifebook-viewer 失敗"; exit 1; }
+echo "✅ 命書 Viewer 建置完成"
 
 # 檢查 dist/app.js 存在
 if [ ! -f "dist/app.js" ]; then

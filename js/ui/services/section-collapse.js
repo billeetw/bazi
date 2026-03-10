@@ -31,9 +31,10 @@
         const body = sec.querySelector(".section-body");
         const icon = sec.querySelector(".section-toggle-icon");
         const sectionId = sec.getAttribute("data-section");
+        const isPan = sectionId === "pan";
         const isDao = sectionId === "dao";
         const isAct = sectionId === "act";
-        if (isDao || isAct) {
+        if (isPan || isDao || isAct) {
           sec.classList.remove("section-collapsed");
           if (body) body.classList.remove("hidden");
           if (icon) icon.textContent = "▼";

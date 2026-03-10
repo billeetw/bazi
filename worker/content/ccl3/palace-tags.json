@@ -1,0 +1,17 @@
+{
+  "meta": { "version": "1.0", "description": "CCL3 palace_tags：宮位標籤，供 s15/s19/s00/s03 主戰場語義" },
+  "items": [
+    { "palace": "命宮", "themeTags": ["自我", "方向", "認同", "人生主軸"], "riskTags": ["迷失", "討好", "過度承擔"], "opportunityTags": ["定位清晰", "主導人生"], "roleType": "主角" },
+    { "palace": "兄弟宮", "themeTags": ["同輩", "合作", "競爭", "手足"], "riskTags": ["比較", "界線模糊"], "opportunityTags": ["貴人", "團隊"], "roleType": "戰友" },
+    { "palace": "夫妻宮", "themeTags": ["伴侶", "親密", "合夥", "一對一"], "riskTags": ["依賴", "控制", "外溢"], "opportunityTags": ["互補", "承諾"], "roleType": "伴侶" },
+    { "palace": "子女宮", "themeTags": ["創造", "產出", "傳承", "延伸"], "riskTags": ["過度期待", "投射"], "opportunityTags": ["作品", "傳承"], "roleType": "創造者" },
+    { "palace": "財帛宮", "themeTags": ["金錢", "資源", "價值", "交換"], "riskTags": ["貪婪", "匱乏感"], "opportunityTags": ["理財", "資源放大"], "roleType": "資源者" },
+    { "palace": "疾厄宮", "themeTags": ["身體", "壓力", "修復", "健康"], "riskTags": ["過勞", "忽略身體"], "opportunityTags": ["調養", "覺察"], "roleType": "載體" },
+    { "palace": "遷移宮", "themeTags": ["對外", "環境", "舞台", "移動"], "riskTags": ["漂泊", "逃避"], "opportunityTags": ["拓展", "貴人"], "roleType": "行者" },
+    { "palace": "僕役宮", "themeTags": ["人脈", "團隊", "合作", "交友"], "riskTags": ["消耗", "界線"], "opportunityTags": ["貴人", "分工"], "roleType": "連結者" },
+    { "palace": "官祿宮", "themeTags": ["事業", "社會角色", "責任", "成果"], "riskTags": ["過勞", "角色失衡", "責任過載"], "opportunityTags": ["升遷", "定位提升", "專業成名"], "roleType": "承擔者" },
+    { "palace": "田宅宮", "themeTags": ["家庭", "居所", "安全感", "根基"], "riskTags": ["動盪", "匱乏感"], "opportunityTags": ["安定", "置產"], "roleType": "根基" },
+    { "palace": "福德宮", "themeTags": ["內在", "精神", "價值感", "休息"], "riskTags": ["耗竭", "空虛"], "opportunityTags": ["豐盛感", "修復"], "roleType": "靈魂" },
+    { "palace": "父母宮", "themeTags": ["權威", "制度", "長輩", "規範"], "riskTags": ["對抗", "依賴"], "opportunityTags": ["支持", "傳承"], "roleType": "根源" }
+  ]
+}

@@ -175,7 +175,7 @@
             const getTextColorClassLocal = window.Config?.getTextColorClass || getTextColorClass;
             const getRgbColorLocal = window.Config?.getRgbColor || getColorFromCode;
             
-            // 文字顏色：小限命宮使用琥珀色，否則根據 colorCode 使用對應顏色
+            // 文字顏色：流年命宮使用琥珀色，否則根據 colorCode 使用對應顏色
             const labelClass = r.isActiveLimit ? "text-amber-200" : getTextColorClassLocal(colorCode);
             
             // 能量條顏色：使用統一的 RGB 顏色映射

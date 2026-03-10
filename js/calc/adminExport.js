@@ -190,6 +190,112 @@
         results.bazi = window.contract.bazi;
         results.ziwei = window.contract.ziwei;
       }
+
+      // 命書時間軸：decadalLimits（12 段大限）、yearlyHoroscope（當年小限）、liunian（當年流年四化）
+      if (results.ziwei && results.bazi && window.BaziCore && window.CalcConstants && window.CalcHelpers) {
+        try {
+          var ziwei = results.ziwei;
+          var bazi = results.bazi;
+          var wuxingju = ziwei.core && ziwei.core.wuxingju ? ziwei.core.wuxingju : "金四局";
+          var mingBranch = ziwei.core && ziwei.core.minggongBranch ? ziwei.core.minggongBranch : "寅";
+          var yearStem = (bazi.display && bazi.display.yG ? bazi.display.yG : "").toString().trim();
+          var gender = (birthInfo && (birthInfo.gender === "F" || birthInfo.gender === "M" || birthInfo.gender === "女" || birthInfo.gender === "男")) ? birthInfo.gender : null;
+          var mingStem = window.BaziCore.getMinggongStem(mingBranch, yearStem);
+          var PALACE_DEFAULT = window.CalcConstants.PALACE_DEFAULT || ["命宮", "兄弟", "夫妻", "子女", "財帛", "疾厄", "遷移", "僕役", "官祿", "田宅", "福德", "父母"];
+
+          var limits = window.BaziCore.getDecadalLimits({ wuxingju: wuxingju, mingBranch: mingBranch, mingPalaceIndex: 0, gender: gender });
+          var decadalLimits = [];
+          for (var i = 0; i < limits.length; i++) {
+            var lim = limits[i];
+            var stem = mingStem ? window.BaziCore.getPalaceStem(mingStem, lim.index) : null;
+            var mutagenStars = stem && window.CalcHelpers.getMutagenStars ? window.CalcHelpers.getMutagenStars(stem) : {};
+            var weights = stem && window.CalcHelpers.getSiHuaWeights ? window.CalcHelpers.getSiHuaWeights(stem) : {};
+            decadalLimits.push({
+              index: lim.index,
+              palaceIndex: lim.palaceIndex,
+              startAge: lim.startAge,
+              endAge: lim.endAge,
+              palace: PALACE_DEFAULT[lim.palaceIndex] || "",
+              stem: stem,
+              mutagenStars: mutagenStars,
+              weights: weights,
+              type: "dalimit"
+            });
+          }
+          results.decadalLimits = decadalLimits;
+
+          var birthYear = birthInfo && birthInfo.year != null ? Number(birthInfo.year) : null;
+          var currentYear = new Date().getFullYear();
+          var age = birthYear != null && !isNaN(birthYear) ? (currentYear - birthYear) : null;
+          if (age != null && age >= 0 && age <= 120) {
+            var horoscope = window.BaziCore.getHoroscopeFromAge(age, ziwei, bazi, gender);
+            if (horoscope) {
+              results.yearlyHoroscope = {
+                age: horoscope.age,
+                nominalAge: horoscope.age,
+                year: birthYear != null ? birthYear + age : currentYear,
+                yearlyStem: horoscope.yearlyStem,
+                mutagenStars: horoscope.mutagenStars || {}
+              };
+            }
+          }
+
+          // 各宮位小限年份：依年齡 0～99 算出每年小限落宮，再依宮位彙整（供時間模組 s15a 顯示與決策時間軸）
+          var palaceOrderShort = ["命", "兄弟", "夫妻", "子女", "財帛", "疾厄", "遷移", "僕役", "官祿", "田宅", "福德", "父母"];
+          var toPalaceKey = function (p) {
+            var s = (p || "").toString().trim();
+            return s === "命宮" ? "命" : s.replace(/宮$/, "");
+          };
+          var palaceToYears = {};
+          var maxAge = birthYear != null ? Math.min(99, 120 - (currentYear - birthYear)) : 99;
+          for (var a = 0; a <= maxAge; a++) {
+            var h = window.BaziCore.getHoroscopeFromAge(a, ziwei, bazi, gender);
+            if (!h || !h.activeLimitPalaceName) continue;
+            var key = toPalaceKey(h.activeLimitPalaceName);
+            if (!palaceToYears[key]) palaceToYears[key] = [];
+            var y = birthYear != null ? birthYear + a : null;
+            palaceToYears[key].push({
+              year: y,
+              nominalAge: a,
+              stem: h.yearlyStem || null
+            });
+          }
+          var riskPalaces = new Set((results.overlapAnalysis && results.overlapAnalysis.criticalRisks || []).map(function (r) { return toPalaceKey(r.palace); }));
+          var opportunityPalaces = new Set((results.overlapAnalysis && results.overlapAnalysis.maxOpportunities || []).map(function (o) { return toPalaceKey(o.palace); }));
+          var volatilePalaces = new Set((results.overlapAnalysis && results.overlapAnalysis.volatileAmbivalences || []).map(function (v) { return toPalaceKey(v.palace); }));
+          results.minorFortuneByPalace = palaceOrderShort.map(function (palaceKey) {
+            var entries = (palaceToYears[palaceKey] || []).sort(function (a, b) { return (a.year || 0) - (b.year || 0); });
+            var first = entries[0];
+            var palaceName = palaceKey === "命" ? "命宮" : palaceKey + "宮";
+            var note = "";
+            if (riskPalaces.has(palaceKey)) note = "此宮為超級地雷區，該年宜保守";
+            else if (volatilePalaces.has(palaceKey)) note = "吉凶並見，謹慎決策";
+            else if (opportunityPalaces.has(palaceKey)) note = "機會區，可積極把握";
+            return {
+              palace: palaceName,
+              year: first ? first.year : null,
+              nominalAge: first ? first.nominalAge : null,
+              stem: first ? first.stem : null,
+              note: note || null
+            };
+          });
+
+          var ft = results.fourTransformations;
+          if (ft && ft.liunian) {
+            results.liunian = {
+              year: currentYear,
+              stem: ft.liunian.stem,
+              branch: ft.liunian.branch,
+              palace: ft.liunian.palace,
+              mutagenStars: ft.liunian.mutagenStars || {},
+              weights: ft.liunian.weights || {},
+              type: "liunian"
+            };
+          }
+        } catch (err) {
+          console.warn("[adminExport] 命書時間軸組裝失敗:", err);
+        }
+      }
     }
 
     return results;
@@ -219,6 +325,7 @@
     const auth = btoa(`${adminUser}:${adminPass}`);
     
     try {
+      console.log('📡 API REQUEST', '/api/admin/calculation-results', JSON.stringify(results, null, 2));
       const response = await fetch('/api/admin/calculation-results', {
         method: 'POST',
         headers: {

@@ -1,0 +1,161 @@
+{
+  "palaceEventWeights": {
+    "命宮": {
+      "start_business": 3,
+      "change_job": 2,
+      "move_house": 1,
+      "invest": 1,
+      "marry_or_commit": 1,
+      "divorce_or_breakup": 1,
+      "have_child": 1,
+      "study_or_retrain": 3,
+      "rest_and_reset": 2
+    },
+    "兄弟": {
+      "start_business": 3,
+      "change_job": 2,
+      "move_house": 1,
+      "invest": 2,
+      "marry_or_commit": 1,
+      "divorce_or_breakup": 1,
+      "have_child": 1,
+      "study_or_retrain": 2,
+      "rest_and_reset": 1
+    },
+    "夫妻": {
+      "start_business": 2,
+      "change_job": 1,
+      "move_house": 1,
+      "invest": 1,
+      "marry_or_commit": 4,
+      "divorce_or_breakup": 3,
+      "have_child": 2,
+      "study_or_retrain": 1,
+      "rest_and_reset": 2
+    },
+    "子女": {
+      "have_child": 4,
+      "invest": 1,
+      "start_business": 1,
+      "change_job": 1,
+      "move_house": 1,
+      "marry_or_commit": 2,
+      "divorce_or_breakup": 1,
+      "study_or_retrain": 1,
+      "rest_and_reset": 2
+    },
+    "財帛": {
+      "invest": 4,
+      "start_business": 3,
+      "change_job": 2,
+      "move_house": 1,
+      "marry_or_commit": 1,
+      "divorce_or_breakup": 1,
+      "have_child": 1,
+      "study_or_retrain": 2,
+      "rest_and_reset": 1
+    },
+    "疾厄": {
+      "rest_and_reset": 4,
+      "study_or_retrain": 2,
+      "start_business": 1,
+      "change_job": 1,
+      "move_house": 1,
+      "invest": 1,
+      "marry_or_commit": 1,
+      "divorce_or_breakup": 1,
+      "have_child": 1
+    },
+    "遷移": {
+      "move_house": 4,
+      "start_business": 2,
+      "change_job": 2,
+      "invest": 2,
+      "study_or_retrain": 2,
+      "marry_or_commit": 1,
+      "divorce_or_breakup": 1,
+      "have_child": 1,
+      "rest_and_reset": 1
+    },
+    "僕役": {
+      "start_business": 3,
+      "change_job": 2,
+      "invest": 2,
+      "move_house": 1,
+      "marry_or_commit": 1,
+      "divorce_or_breakup": 1,
+      "have_child": 1,
+      "study_or_retrain": 2,
+      "rest_and_reset": 1
+    },
+    "官祿": {
+      "start_business": 4,
+      "change_job": 4,
+      "invest": 3,
+      "move_house": 1,
+      "marry_or_commit": 1,
+      "divorce_or_breakup": 1,
+      "have_child": 1,
+      "study_or_retrain": 3,
+      "rest_and_reset": 1
+    },
+    "田宅": {
+      "move_house": 4,
+      "invest": 3,
+      "start_business": 1,
+      "change_job": 1,
+      "marry_or_commit": 2,
+      "divorce_or_breakup": 1,
+      "have_child": 2,
+      "study_or_retrain": 1,
+      "rest_and_reset": 2
+    },
+    "福德": {
+      "rest_and_reset": 4,
+      "study_or_retrain": 3,
+      "start_business": 1,
+      "change_job": 1,
+      "move_house": 1,
+      "invest": 1,
+      "marry_or_commit": 1,
+      "divorce_or_breakup": 1,
+      "have_child": 1
+    },
+    "父母": {
+      "move_house": 2,
+      "rest_and_reset": 3,
+      "change_job": 1,
+      "start_business": 1,
+      "invest": 1,
+      "marry_or_commit": 2,
+      "divorce_or_breakup": 2,
+      "have_child": 1,
+      "study_or_retrain": 1
+    }
+  },
+  "eventLabels": {
+    "start_business": "創業 / 自立門戶",
+    "change_job": "換工作 / 職涯調整",
+    "move_house": "搬家 / 生活場景調整",
+    "invest": "投資 / 財務布局",
+    "marry_or_commit": "結婚 / 關係承諾",
+    "divorce_or_breakup": "分手 / 離開不適合的關係",
+    "have_child": "生小孩 / 育兒規劃",
+    "study_or_retrain": "進修 / 轉換專業",
+    "rest_and_reset": "休養調整 / 暫緩重大決策"
+  },
+  "palaceThemes": {
+    "命宮": "自我定位與人生方向",
+    "兄弟": "合作與人脈布局",
+    "夫妻": "親密關係節奏",
+    "子女": "創造與傳承",
+    "財帛": "財務與投資節奏",
+    "疾厄": "身心與健康節奏",
+    "遷移": "外在環境與移動",
+    "僕役": "人際與團隊節奏",
+    "官祿": "事業與工作節奏",
+    "田宅": "居住與安全感",
+    "福德": "精神與休息節奏",
+    "父母": "根源與權威議題"
+  }
+}

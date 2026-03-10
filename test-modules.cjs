@@ -59,7 +59,7 @@ const services = [
   { name: 'FormInit', file: 'js/ui/services/form-init.js', exports: ['initSelectors'] },
   { name: 'SoundService', file: 'js/ui/services/sound-service.js', exports: ['playSyncSound'] },
   { name: 'CalculationFlow', file: 'js/ui/services/calculation-flow.js', exports: ['validateInputs', 'updateDashboardUI', 'updateSummary', 'renderTactics'] },
-  { name: 'EventBindings', file: 'js/ui/services/event-bindings.js', exports: ['bindLaunchButton', 'bindWuxingClickEvents', 'bindAgeSlider'] },
+  { name: 'EventBindings', file: 'js/ui/services/event-bindings.js', exports: ['bindLaunchButton', 'bindWuxingClickEvents', 'bindOverloadAdviceModal', 'bindMobileSheetCloseEvents'] },
   { name: 'DataRenderer', file: 'js/ui/services/data-renderer.js', exports: ['renderBaziData', 'renderTenGodCommand', 'renderZiweiAndLiuyue'] },
 ];
 

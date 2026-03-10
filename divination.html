@@ -2,6 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
+  <base href="/" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="大衍之數占卦：易經 64 卦。寫下你的問題，以 18 次點擊模擬揲蓍，取得本卦、之卦、互卦與卦辭爻辭。" />
   <title>易經學習＋占卦服務｜大衍之數｜人生說明書</title>
@@ -16,7 +17,7 @@
       (function(){ var s = document.createElement('script'); s.async = true; s.src = 'https://www.googletagmanager.com/gtag/js?id=' + window.GA_MEASUREMENT_ID; document.head.appendChild(s); window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} window.gtag = gtag; gtag('js', new Date()); gtag('config', window.GA_MEASUREMENT_ID, { anonymize_ip: true }); })();
     }
   </script>
-  <link href="dist/tailwind.css" rel="stylesheet" />
+  <link href="/dist/tailwind.css" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;600;700&display=swap" rel="stylesheet" />
   <style>
     body { font-family: 'Noto Serif TC', system-ui, serif; background: #0a0a16; color: #e2e8f0; min-height: 100vh; transition: background 0.8s ease; }
@@ -87,10 +88,15 @@
       <h2 class="text-lg font-bold text-amber-300">1. 寫下你的問題</h2>
       <p class="text-slate-400 text-sm">請具體描述你正在考慮的事。例如：「我正在考慮今年 3 月轉換跑道去科技業，未來的發展如何？」</p>
       <textarea id="question" rows="4" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500" placeholder="請具體寫下你的問題…" maxlength="500"></textarea>
+      <div id="questionClarificationPrompt" class="hidden mt-2 p-3 rounded-lg border border-amber-400/20 bg-amber-500/5">
+        <p class="text-amber-400/90 text-xs font-medium mb-1">💡 補充這些會讓解讀更對題：</p>
+        <p id="questionClarificationText" class="text-slate-300 text-sm mb-2"></p>
+        <button type="button" id="btnFillTemplate" class="text-xs px-3 py-1.5 rounded-lg border border-amber-400/40 text-amber-300 hover:bg-amber-500/20 transition">填入範本</button>
+      </div>
 
       <div>
-        <label class="block text-sm text-slate-400 mb-2">當下的心情</label>
-        <div class="flex flex-wrap gap-2">
+        <p class="block text-sm text-slate-400 mb-2" id="mood-label">當下的心情</p>
+        <div class="flex flex-wrap gap-2" role="group" aria-labelledby="mood-label">
           <label class="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/20 cursor-pointer hover:border-amber-400/40 transition">
             <input type="radio" name="mood" value="anxious" class="rounded-full" />
             <span>焦慮</span>
@@ -107,9 +113,9 @@
       </div>
 
       <div>
-        <label class="block text-sm text-slate-400 mb-2">問事時間範圍</label>
+        <p class="block text-sm text-slate-400 mb-2" id="timePeriod-label">問事時間範圍</p>
         <p class="text-slate-500 text-xs mb-2">動爻將依此標注為月份、年份或人生階段</p>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-2" role="group" aria-labelledby="timePeriod-label">
           <label class="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/20 cursor-pointer hover:border-amber-400/40 transition">
             <input type="radio" name="timePeriod" value="6months" class="rounded-full" checked />
             <span>六個月</span>
@@ -191,7 +197,63 @@
     <div id="step3" class="glass p-6 space-y-6 hidden">
       <h2 class="text-lg font-bold text-amber-300">占卦結果</h2>
       <p class="text-slate-500 text-sm" id="resultTimestamp"></p>
+      <p class="text-slate-500 text-sm" id="resultTimeRange"></p>
       <p id="resultSavedHint" class="text-emerald-400/90 text-sm hidden">已儲存至你的紀錄。</p>
+
+      <div id="coreSummaryBlock" class="rounded-2xl p-4 bg-black/30 backdrop-blur border border-amber-400/20 mb-4">
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+          <div class="min-w-0 flex-1">
+            <p class="text-slate-500 text-xs mb-1">你問的是</p>
+            <p id="coreSummaryAsked" class="text-slate-100 font-medium break-words"></p>
+          </div>
+          <div id="coreSummaryTags" class="flex flex-wrap gap-1"></div>
+        </div>
+        <div class="mb-3">
+          <p class="text-slate-500 text-xs mb-1">一句話結論</p>
+          <p id="coreSummaryConclusion" class="text-amber-300 text-lg font-semibold leading-snug"></p>
+        </div>
+        <div class="mb-3">
+          <p class="text-slate-500 text-xs mb-1">三步行動</p>
+          <ol id="coreSummaryActions" class="list-decimal pl-5 space-y-1 text-slate-300 text-sm"></ol>
+        </div>
+        <details class="group" id="coreSummaryTimeDetails">
+          <summary class="cursor-pointer text-slate-500 text-xs mb-1 list-none flex items-center gap-1">
+            <span class="group-open:rotate-90 transition-transform">▶</span>
+            <span>時間窗（推進／轉折／風險）</span>
+          </summary>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
+            <div>
+              <p class="text-slate-500 text-xs mb-1">推進窗口</p>
+              <div id="coreSummaryBest" class="flex flex-wrap gap-1"></div>
+            </div>
+            <div>
+              <p class="text-slate-500 text-xs mb-1">轉折注意</p>
+              <div id="coreSummaryTurning" class="flex flex-wrap gap-1"></div>
+            </div>
+            <div>
+              <p class="text-slate-500 text-xs mb-1">收尾風險</p>
+              <div id="coreSummaryRisk" class="flex flex-wrap gap-1"></div>
+            </div>
+          </div>
+        </details>
+      </div>
+
+      <div id="safetyDisclaimerBlock" class="hidden mb-4 p-3 rounded-lg border border-amber-400/20 bg-amber-500/5">
+        <p id="safetyDisclaimerText" class="text-slate-400 text-xs leading-relaxed"></p>
+      </div>
+
+      <div id="contextToggleWrap" class="hidden flex flex-wrap gap-2 mb-4 items-center">
+        <span class="text-slate-500 text-sm">本次情境：</span>
+        <span id="contextCurrentLabel" class="text-amber-300 font-medium"></span>
+        <button type="button" id="btnToggleContext" class="text-slate-400 text-sm hover:text-amber-300 ml-2">切換解讀</button>
+      </div>
+      <div id="contextButtonsWrap" class="hidden flex flex-wrap gap-2 mb-4 items-center">
+        <span class="text-slate-500 text-sm">解讀情境：</span>
+        <button type="button" class="context-btn px-3 py-1.5 rounded-lg text-sm border transition border-slate-600 text-slate-400 hover:border-amber-400/50 hover:text-amber-300" data-context="career">事業</button>
+        <button type="button" class="context-btn px-3 py-1.5 rounded-lg text-sm border transition border-slate-600 text-slate-400 hover:border-amber-400/50 hover:text-amber-300" data-context="wealth">財運</button>
+        <button type="button" class="context-btn px-3 py-1.5 rounded-lg text-sm border transition border-slate-600 text-slate-400 hover:border-amber-400/50 hover:text-amber-300" data-context="love">感情</button>
+        <button type="button" class="context-btn px-3 py-1.5 rounded-lg text-sm border transition border-slate-600 text-slate-400 hover:border-amber-400/50 hover:text-amber-300" data-context="neutral">無特定</button>
+      </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="result-card result-card-primary p-4 rounded-xl border border-slate-600/50 bg-slate-800/30">
@@ -211,35 +273,36 @@
         </div>
       </div>
 
-      <div id="contextToggleWrap" class="hidden flex flex-wrap gap-2 mb-4 items-center">
-        <span class="text-slate-500 text-sm">解讀情境：</span>
-        <button type="button" class="context-btn px-3 py-1.5 rounded-lg text-sm border transition border-slate-600 text-slate-400 hover:border-amber-400/50 hover:text-amber-300" data-context="career">事業</button>
-        <button type="button" class="context-btn px-3 py-1.5 rounded-lg text-sm border transition border-slate-600 text-slate-400 hover:border-amber-400/50 hover:text-amber-300" data-context="wealth">財運</button>
-        <button type="button" class="context-btn px-3 py-1.5 rounded-lg text-sm border transition border-slate-600 text-slate-400 hover:border-amber-400/50 hover:text-amber-300" data-context="love">感情</button>
-        <button type="button" class="context-btn px-3 py-1.5 rounded-lg text-sm border transition border-slate-600 text-slate-400 hover:border-amber-400/50 hover:text-amber-300" data-context="neutral">無特定</button>
-      </div>
       <div class="space-y-4">
-        <div>
-          <h3 class="text-amber-400 font-semibold mb-2">卦辭</h3>
-          <p id="judgment" class="text-slate-300 text-sm leading-relaxed"></p>
-          <div id="openingWisdomBlock" class="mt-3 p-3 rounded-lg border border-amber-400/20 bg-amber-500/5 hidden">
-            <p id="openingWisdomText" class="text-slate-300 text-sm leading-relaxed"></p>
-            <p id="cultivationCoreText" class="text-amber-400/90 text-sm mt-2 font-medium"></p>
+        <details class="group border border-slate-600/50 rounded-xl overflow-hidden" id="learningSectionDetails">
+          <summary class="cursor-pointer p-4 bg-slate-800/30 text-amber-400 font-semibold list-none flex items-center justify-between gap-2">
+            <span>易經學習（卦辭、彖象、當位應與）</span>
+            <span class="text-slate-500 text-sm group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div class="p-4 pt-0 space-y-4">
+            <div>
+              <h3 class="text-amber-400 font-semibold mb-2">卦辭</h3>
+              <p id="judgment" class="text-slate-300 text-sm leading-relaxed"></p>
+              <div id="openingWisdomBlock" class="mt-3 p-3 rounded-lg border border-amber-400/20 bg-amber-500/5 hidden">
+                <p id="openingWisdomText" class="text-slate-300 text-sm leading-relaxed"></p>
+                <p id="cultivationCoreText" class="text-amber-400/90 text-sm mt-2 font-medium"></p>
+              </div>
+              <div id="structureLearningCard" class="mt-3 p-4 rounded-xl border border-sky-400/20 bg-sky-500/5 hidden">
+                <h4 class="text-sky-300 font-semibold text-sm mb-2">【卦象學習卡】</h4>
+                <p id="structureUpperLower" class="text-slate-300 text-sm mb-1"></p>
+                <p id="structureDesc" class="text-slate-400 text-sm mb-2"></p>
+                <p id="structureContradiction" class="text-slate-300 text-sm mb-2"></p>
+                <p id="structureLearningHint" class="text-amber-400/90 text-sm">💡 <span id="structureLearningHintText"></span></p>
+              </div>
+              <div id="commentariesSection" class="mt-3 space-y-2">
+                <p id="tuanText" class="text-slate-400 text-sm leading-relaxed hidden"><span class="text-slate-500 text-xs">彖傳：</span><span id="tuanContent"></span></p>
+                <p id="daxiangText" class="text-slate-400 text-sm leading-relaxed hidden"><span class="text-slate-500 text-xs">大象傳：</span><span id="daxiangContent"></span></p>
+              </div>
+              <p id="primaryInterpretation" class="text-slate-400 text-sm leading-relaxed mt-2 pt-2 border-t border-slate-700/50"><span class="text-slate-500 text-xs">大局：</span><span id="primaryInterpretationText"></span></p>
+              <p id="spaceGuideBlock" class="text-slate-500 text-sm leading-relaxed mt-3 hidden"><span class="text-slate-500 text-xs">2026 空間指南：</span><span id="spaceGuideText"></span></p>
+            </div>
           </div>
-          <div id="structureLearningCard" class="mt-3 p-4 rounded-xl border border-sky-400/20 bg-sky-500/5 hidden">
-            <h4 class="text-sky-300 font-semibold text-sm mb-2">【卦象學習卡】</h4>
-            <p id="structureUpperLower" class="text-slate-300 text-sm mb-1"></p>
-            <p id="structureDesc" class="text-slate-400 text-sm mb-2"></p>
-            <p id="structureContradiction" class="text-slate-300 text-sm mb-2"></p>
-            <p id="structureLearningHint" class="text-amber-400/90 text-sm">💡 <span id="structureLearningHintText"></span></p>
-          </div>
-          <div id="commentariesSection" class="mt-3 space-y-2">
-            <p id="tuanText" class="text-slate-400 text-sm leading-relaxed hidden"><span class="text-slate-500 text-xs">彖傳：</span><span id="tuanContent"></span></p>
-            <p id="daxiangText" class="text-slate-400 text-sm leading-relaxed hidden"><span class="text-slate-500 text-xs">大象傳：</span><span id="daxiangContent"></span></p>
-          </div>
-          <p id="primaryInterpretation" class="text-slate-400 text-sm leading-relaxed mt-2 pt-2 border-t border-slate-700/50"><span class="text-slate-500 text-xs">大局：</span><span id="primaryInterpretationText"></span></p>
-          <p id="spaceGuideBlock" class="text-slate-500 text-sm leading-relaxed mt-3 hidden"><span class="text-slate-500 text-xs">2026 空間指南：</span><span id="spaceGuideText"></span></p>
-        </div>
+        </details>
         <div id="changingLinesSection" class="p-4 rounded-xl border border-amber-400/20 bg-amber-500/5">
           <h3 class="text-amber-400 font-semibold mb-2">動爻深度解析</h3>
           <p id="changingLinesPeriodHint" class="text-slate-500 text-xs mb-2"></p>
@@ -289,30 +352,45 @@
           </div>
         </div>
         <div id="resultLoginPrompt" class="hidden p-4 rounded-xl border border-amber-400/30 bg-amber-500/5 divination-save-prompt">
-          <p class="text-slate-200 text-sm leading-relaxed mb-3">🔮 想保留這份天機嗎？登入後可儲存你的占卦紀錄方便後續檢視，並結合個人命盤進行深度解析。</p>
+          <p class="text-slate-200 text-sm leading-relaxed mb-3">保存這卦，4–8 週後回來驗證（可追蹤準確度）。登入後可儲存至「我的占卦紀錄」，並結合個人命盤深度解析。</p>
           <button type="button" id="btnResultSaveLogin" class="w-full py-3 rounded-xl bg-amber-500/90 text-slate-900 font-bold text-sm hover:bg-amber-400 transition">立即儲存</button>
         </div>
         <div id="feedbackSection" class="p-4 rounded-xl border border-slate-600/50 bg-slate-800/30">
           <h3 class="text-amber-400 font-semibold mb-2">這卦對你有幫助嗎？</h3>
           <p class="text-slate-500 text-xs mb-3">你的回饋能幫助我們優化解讀。</p>
+          <div id="feedbackVerifiableBlock" class="hidden mb-3 p-3 rounded-lg border border-amber-400/20 bg-amber-500/5">
+            <p id="feedbackVerifiableText" class="text-slate-300 text-sm mb-2"></p>
+            <div id="feedbackVerifiableCheckboxes" class="mb-2 space-y-1"></div>
+            <p class="text-slate-500 text-xs mb-2">你有遇到嗎？</p>
+            <div class="flex flex-wrap gap-2">
+              <button type="button" class="verification-btn px-3 py-1.5 rounded-lg border border-slate-600 text-slate-400 text-sm hover:border-emerald-500/50 hover:text-emerald-300 transition" data-verification="yes">有</button>
+              <button type="button" class="verification-btn px-3 py-1.5 rounded-lg border border-slate-600 text-slate-400 text-sm hover:border-red-500/50 hover:text-red-300 transition" data-verification="no">沒有</button>
+              <button type="button" class="verification-btn px-3 py-1.5 rounded-lg border border-slate-600 text-slate-400 text-sm hover:border-amber-500/50 hover:text-amber-300 transition" data-verification="partial">部分</button>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-2">
+              <button type="button" id="btnIcal4w" class="text-xs px-3 py-1.5 rounded-lg border border-amber-400/40 text-amber-300 hover:bg-amber-500/20 transition">4 週後提醒我驗證</button>
+              <button type="button" id="btnIcal8w" class="text-xs px-3 py-1.5 rounded-lg border border-amber-400/40 text-amber-300 hover:bg-amber-500/20 transition">8 週後提醒我驗證</button>
+            </div>
+          </div>
           <div id="feedbackButtons" class="flex flex-wrap gap-2 mb-3">
             <button type="button" class="feedback-btn px-4 py-2 rounded-lg border border-green-500/40 bg-green-500/10 text-green-300 text-sm hover:bg-green-500/20 transition active:scale-[0.98]" data-rating="accurate">覺得準</button>
-            <button type="button" class="feedback-btn px-4 py-2 rounded-lg border border-red-500/40 bg-red-500/10 text-red-300 text-sm hover:bg-red-500/20 transition active:scale-[0.98]" data-rating="inaccurate">不準</button>
+            <button type="button" class="feedback-btn px-4 py-2 rounded-lg border border-orange-500/40 bg-orange-500/10 text-orange-300 text-sm hover:bg-orange-500/20 transition active:scale-[0.98]" data-rating="inaccurate_related">不準（但相關）</button>
+            <button type="button" class="feedback-btn px-4 py-2 rounded-lg border border-red-500/40 bg-red-500/10 text-red-300 text-sm hover:bg-red-500/20 transition active:scale-[0.98]" data-rating="unrelated">不相關</button>
             <button type="button" class="feedback-btn px-4 py-2 rounded-lg border border-slate-500/40 bg-slate-500/10 text-slate-300 text-sm hover:bg-slate-500/20 transition active:scale-[0.98]" data-rating="pending">尚待驗證</button>
           </div>
           <div id="feedbackSuggestionWrap" class="hidden mb-3">
-            <label class="block text-slate-500 text-xs mb-1">建議或補充說明（選填）</label>
+            <label class="block text-slate-500 text-xs mb-1" for="feedbackSuggestion">建議或補充說明（選填）</label>
             <textarea id="feedbackSuggestion" rows="2" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-200 text-sm placeholder-slate-500" placeholder="例如：哪部分特別準確、或希望加強的面向…" maxlength="500"></textarea>
             <button type="button" id="btnFeedbackSubmit" class="mt-2 px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-400/40 text-amber-300 text-sm font-medium hover:bg-amber-500/30 transition">送出回饋</button>
           </div>
           <div id="feedbackSuggestionStandalone" class="mb-3 pt-3 border-t border-slate-600/50">
-            <label class="block text-slate-500 text-xs mb-1">建議或意見（選填，可不選準確度直接填寫）</label>
+            <label class="block text-slate-500 text-xs mb-1" for="feedbackSuggestionOnly">建議或意見（選填，可不選準確度直接填寫）</label>
             <textarea id="feedbackSuggestionOnly" rows="2" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-slate-200 text-sm placeholder-slate-500" placeholder="例如：希望增加的功能、解讀方式、介面改進…" maxlength="500"></textarea>
             <button type="button" id="btnSuggestionOnlySubmit" class="mt-2 px-4 py-2 rounded-lg border border-slate-500/40 text-slate-300 text-sm hover:bg-slate-500/20 transition">送出建議</button>
           </div>
           <div id="feedbackThankYou" class="hidden">
-            <p class="text-emerald-400/90 text-sm">感謝你的回饋！</p>
-            <p class="text-slate-500 text-xs mt-1"><a href="index.html" class="text-amber-400/90 hover:text-amber-300 underline">登入</a> 後可在「我的占卦紀錄」查看此回饋與後續驗證。</p>
+            <p class="text-emerald-400/90 text-sm font-medium">感謝你的回饋！</p>
+            <p id="feedbackThankYouExtra" class="text-slate-500 text-xs mt-1"><a href="index.html" class="text-amber-400/90 hover:text-amber-300 underline">登入</a> 後可在「我的占卦紀錄」查看此回饋。</p>
           </div>
         </div>
       </div>
@@ -324,6 +402,20 @@
     </div>
   </div>
 
-  <script src="dist/divination.js"></script>
+  <script>
+    window.__divinationError = null;
+    window.onerror = function (msg, url, line, col, err) {
+      var s = (msg || "") + " at " + (url || "") + ":" + line + ":" + col + (err && err.stack ? "\n" + err.stack : "");
+      window.__divinationError = s;
+      if (typeof console !== "undefined" && console.error) console.error("[divination] onerror", s);
+      return false;
+    };
+    window.addEventListener("unhandledrejection", function (e) {
+      var s = (e.reason && (e.reason.message || String(e.reason))) || "unhandledrejection";
+      window.__divinationError = s;
+      if (typeof console !== "undefined" && console.error) console.error("[divination] unhandledrejection", e.reason);
+    });
+  </script>
+  <script src="/dist/divination.js"></script>
 </body>
 </html>

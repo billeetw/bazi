@@ -1,0 +1,26 @@
+# Content JSON 檢查：lifebookSection + starPalacesAux/AuxAction/AuxRisk key 與格式
+name: Content validate
+
+on:
+  push:
+    paths:
+      - "worker/content/**"
+      - "scripts/validate-content-json.cjs"
+      - ".github/workflows/content-validate.yml"
+  pull_request:
+    paths:
+      - "worker/content/**"
+      - "scripts/validate-content-json.cjs"
+      - ".github/workflows/content-validate.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run validate-content

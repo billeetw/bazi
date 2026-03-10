@@ -1,0 +1,3 @@
+# 靜態 JSON 快取（占卦易經資料）
+/data/iching/*
+  Cache-Control: public, max-age=86400

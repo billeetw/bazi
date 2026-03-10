@@ -1,13 +1,11 @@
 /**
- * 前後端 fallback 計分一致性測試
- * 同一 answers 輸入，比對 js/calc/shichen-logic 與 functions/utils/shichen-logic 輸出
- * 應得到相同的 branch、top2Branches、delta
+ * 推算時辰邏輯測試（共用模組 shared/shichen-logic.js）
+ * 驗證 branch、top2Branches、delta、debug 等輸出
  *
  * 用法：node scripts/shichen-parity-test.js
  */
 
-import { estimateHourFromAnswers as estimateFrontend } from '../js/calc/shichen-logic.js';
-import { estimateHourFromAnswers as estimateBackend } from '../functions/utils/shichen-logic.js';
+import { estimateHourFromAnswers } from '../shared/shichen-logic.js';
 
 const TEST_CASES = [
   {
@@ -163,25 +161,20 @@ function runTest() {
   let failed = 0;
   let lowConfidenceCount = 0;
   for (const tc of TEST_CASES) {
-    const fe = estimateFrontend(tc.answers, {});
-    const be = estimateBackend(tc.answers, {});
+    const out = estimateHourFromAnswers(tc.answers, {});
 
-    const branchOk = fe.branch === be.branch;
-    const top2Ok =
-      JSON.stringify(fe.top2Branches || []) === JSON.stringify(be.top2Branches || []);
-    const deltaOk = Math.abs((fe.delta || 0) - (be.delta || 0)) < 0.001;
+    const hasBranch = out.branch && typeof out.branch === 'string';
+    const hasTop2 = Array.isArray(out.top2Branches);
+    const hasDelta = typeof out.delta === 'number';
 
-    if (branchOk && top2Ok && deltaOk) {
-      const lc = fe.lowConfidence ? ' [lowConfidence]' : '';
-      const cand = fe.candidates ? ` candidates=${JSON.stringify(fe.candidates)}` : '';
-      console.log('✅', tc.name, '| branch:', fe.branch, '| top2:', fe.top2Branches, '| delta:', fe.delta?.toFixed(2), lc, cand);
-      if (fe.lowConfidence) lowConfidenceCount++;
+    if (hasBranch && hasTop2 && hasDelta) {
+      const lc = out.lowConfidence ? ' [lowConfidence]' : '';
+      const cand = out.candidates ? ` candidates=${JSON.stringify(out.candidates)}` : '';
+      console.log('✅', tc.name, '| branch:', out.branch, '| top2:', out.top2Branches, '| delta:', out.delta?.toFixed(2), lc, cand);
+      if (out.lowConfidence) lowConfidenceCount++;
       passed++;
     } else {
-      console.error('❌', tc.name);
-      if (!branchOk) console.error('   branch:', fe.branch, '!=', be.branch);
-      if (!top2Ok) console.error('   top2:', fe.top2Branches, '!=', be.top2Branches);
-      if (!deltaOk) console.error('   delta:', fe.delta, '!=', be.delta);
+      console.error('❌', tc.name, '| missing branch/top2/delta');
       failed++;
     }
   }
@@ -192,7 +185,7 @@ function runTest() {
   }
 
   // 驗證 debug 擴充欄位存在
-  const sample = estimateBackend(TEST_CASES[0].answers, {});
+  const sample = estimateHourFromAnswers(TEST_CASES[0].answers, {});
   const debugOk =
     sample.debug?.scores != null && typeof sample.debug.scores === 'object' &&
     sample.debug.timeSubtotal != null &&

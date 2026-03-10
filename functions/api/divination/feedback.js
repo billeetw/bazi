@@ -20,8 +20,8 @@ export async function onRequestPost(context) {
     const feedbackText = (body?.feedback_text ?? "").toString().trim().slice(0, 500);
 
     if (!divinationId) return jsonResponse({ error: "請提供 divination_id" }, 400);
-    if (!["accurate", "inaccurate", "pending", "suggestion"].includes(rating)) {
-      return jsonResponse({ error: "rating 必須為 accurate、inaccurate、pending 或 suggestion" }, 400);
+    if (!["accurate", "inaccurate", "inaccurate_related", "unrelated", "pending", "suggestion"].includes(rating)) {
+      return jsonResponse({ error: "rating 必須為 accurate、inaccurate、inaccurate_related、unrelated、pending 或 suggestion" }, 400);
     }
 
     const db = env.CONSULT_DB;

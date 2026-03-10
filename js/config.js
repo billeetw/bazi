@@ -8,19 +8,21 @@
 
   /**
    * API 基底 URL
-   * - 8788（wrangler pages dev）：用同源，由 Pages Function 代理到遠端 Worker
-   * - 5173（vite dev）：直接用遠端 Worker
-   * - ?api=local：用本地 Worker 8787
+   * - 8788、8789、3000（wrangler pages dev）：用同源，由 Pages Function 代理到遠端 Worker
+   * - 5173 等（serve/vite）：直接用遠端 Worker，本地無 Worker 時避免 ERR_CONNECTION_REFUSED
+   * - ?api=local 且 port 非 5173：用本地 Worker 8787（需先 cd worker && npx wrangler dev）
    */
   const REMOTE_API_BASE = "https://bazi-api.billeetw.workers.dev";
-  const useLocalApi =
-    typeof window !== "undefined" &&
-    /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname) &&
-    (window.location.search.includes("api=local") || false);
+  const port = (typeof window !== "undefined" && window.location.port) || "";
   const usePagesProxy =
     typeof window !== "undefined" &&
     /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname) &&
-    ["8788", "8789", "3000"].includes(window.location.port);
+    ["8788", "8789", "3000"].includes(port);
+  const useLocalApi =
+    typeof window !== "undefined" &&
+    /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname) &&
+    window.location.search.includes("api=local") &&
+    !["5173", "5174", "3001"].includes(port);
   const API_BASE = useLocalApi
     ? "http://localhost:8787"
     : usePagesProxy

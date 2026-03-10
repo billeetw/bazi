@@ -2,6 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
+  <base href="/" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta id="metaDescription" name="description" content="輸入出生時間，免費取得八字五行、紫微斗數 12 宮與 2026 流年分析。了解你的角色設定，迎向無悔人生。" />
   <title id="pageTitle">人生說明書｜八字紫微 2026 戰略｜一起出來玩</title>
@@ -31,7 +32,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;600;700;900&display=swap" rel="stylesheet" />
 
   <!-- Tailwind（build-time 編譯，僅含實際使用的 class） -->
-  <link href="dist/tailwind.css" rel="stylesheet" />
+  <link href="/dist/tailwind.css" rel="stylesheet" />
   <!-- Google Identity Services（登入用） -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
@@ -163,16 +164,16 @@
 
   <main class="max-w-7xl mx-auto px-4 pt-6 space-y-8">
 
-    <!-- 占卦入口（置頂） -->
-    <a id="divinationEntranceCard" href="divination.html?from=homepage" class="block mb-6 rounded-2xl border border-amber-400/20 bg-gradient-to-br from-slate-900/90 to-slate-950 overflow-hidden relative cursor-pointer group divination-entrance-card max-w-3xl mx-auto">
-      <div class="absolute inset-0 bg-amber-400/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
-      <div class="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2"></div>
-      <div class="relative p-4 md:p-5 flex items-center gap-4">
-        <div class="flex-shrink-0 w-12 h-12 md:w-14 md:h-14 rounded-xl bg-amber-500/20 flex items-center justify-center text-xl animate-pulse">☰</div>
-        <span class="flex-1 text-base md:text-lg font-bold text-amber-300">易經之美占卦預測</span>
-        <span class="text-amber-400/80 group-hover:text-amber-300 transition-colors text-sm">開始</span>
+    <!-- 占卦 Hero Card（靜態卡片，無動畫） -->
+    <a id="divinationEntranceCard" href="divination.html?from=homepage" class="block home-static-card max-w-3xl mx-auto overflow-hidden relative cursor-pointer group p-6 md:p-8">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <h2 class="home-section-title text-2xl md:text-3xl font-semibold text-amber-300 tracking-tight">易經之美占卦服務</h2>
+        <span class="identify-time-btn divination-cta-btn inline-flex items-center justify-center min-w-[140px] md:min-w-[180px] shrink-0">立即預測</span>
       </div>
     </a>
+
+    <!-- 分隔線：占卦／命盤 -->
+    <div class="max-w-3xl mx-auto my-8 border-t border-dashed border-amber-400/20"></div>
 
     <!-- 我的命盤（僅登入時顯示） -->
     <section id="myChartsSection" class="hidden glass-container glass-input p-6 max-w-3xl mx-auto space-y-4 scroll-mt-24">
@@ -182,11 +183,11 @@
       <p id="myChartsEmpty" class="body-caption text-slate-500 hidden" data-i18n="ui.myChartsEmpty">尚無命盤。請在下方輸入出生資料後，點「儲存到我的命盤」；儲存後會出現在此處，點選即可載入。</p>
     </section>
 
-    <!-- 命運座標輸入（極簡結構） -->
-    <section id="inputCard" class="glass-container glass-input p-8 md:p-12 max-w-3xl mx-auto space-y-8">
+    <!-- 命運座標輸入（靜態卡片，無動畫） -->
+    <section id="inputCard" class="home-static-card p-8 md:p-12 max-w-3xl mx-auto space-y-8">
       <div class="text-center mb-8">
-        <h1 class="text-2xl md:text-3xl font-semibold text-amber-300 mb-2 tracking-tight" data-i18n="home.heroHeadline">輸入出生時間</h1>
-        <p class="text-sm md:text-base text-slate-400 italic" data-i18n="home.heroSubheadline">30 秒了解你的角色設定</p>
+        <h2 class="home-section-title text-2xl md:text-3xl font-semibold text-amber-300 mb-2 tracking-tight" data-i18n="home.heroHeadline">紫微｜八字 命運分析</h2>
+        <p class="text-sm md:text-base text-slate-400 italic" data-i18n="home.heroSubheadline">解構靈魂格局，預見人生運勢</p>
       </div>
 
       <!-- 第一行：年、月、日 -->
@@ -207,12 +208,13 @@
         </div>
         <div class="destiny-bar-wrap"><select id="gender" class="destiny-select" aria-label="性別"></select></div>
       </div>
-      <!-- 第三行：精確時、分 -->
-      <div id="exactTimeRow" class="destiny-bar-row grid-cols-2">
+      <!-- 第三行：精確時、分（預設隱藏，選「時分」時顯示） -->
+      <div id="exactTimeRow" class="destiny-bar-row grid-cols-2 hidden">
         <div class="destiny-bar-wrap"><select id="birthHour" class="destiny-select" aria-label="時"></select></div>
         <div class="destiny-bar-wrap"><select id="birthMinute" class="destiny-select" aria-label="分"></select></div>
       </div>
-      <div id="shichenRow" class="hidden space-y-4">
+      <!-- 時辰列：預設顯示（與 form-init 預設 timeMode=shichen 一致） -->
+      <div id="shichenRow" class="space-y-4">
         <div class="destiny-bar-row grid-cols-2">
           <div class="destiny-bar-wrap"><select id="birthShichen" class="destiny-select" aria-label="時辰"></select></div>
           <div class="destiny-bar-wrap"><select id="birthShichenHalf" class="destiny-select" aria-label="上半/下半"></select></div>
@@ -264,7 +266,53 @@
         <!-- LEFT WORKSPACES -->
         <div class="space-y-8" id="workspaceSections">
 
-          <!-- 1) 能量結構分析 -->
+          <!-- 1) 命盤場域 -->
+          <section id="ws-pan" class="workspace-section glass dashboard-card p-6 md:p-7 space-y-4" data-section="pan">
+            <div class="section-header flex items-center justify-between cursor-pointer md:cursor-default" data-section-toggle>
+              <div>
+                <h2 class="section-title-main font-black tracking-tight">命盤場域 · 12 宮作戰地圖</h2>
+                <p class="body-caption text-slate-400 mt-1">點場域看耦合（本宮＋對宮＋三合）。</p>
+              </div>
+              <span class="section-toggle-icon md:hidden text-amber-400/80">▼</span>
+            </div>
+            <div class="section-body">
+          <div id="ws-ziwei" class="space-y-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 class="section-title-main font-black tracking-tight" data-i18n="ziwei.boardTitle">紫微 12 宮</h2>
+              </div>
+            </div>
+
+            <div id="ziweiGrid" class="zw-grid-container"></div>
+
+            <div class="text-sm md:text-base text-slate-400" id="ziweiHint"></div>
+
+            <!-- 紫微分數 -->
+            <section id="ws-ziwei-scores" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="rounded-xl border border-white/10 p-4">
+                <div class="text-sm md:text-base font-semibold text-slate-200 mb-2" data-i18n="ziwei.palaceStrengthTitle">宮位強度</div>
+                <div id="ziweiPalaceScores"></div>
+              </div>
+              <div class="rounded-xl border border-white/10 p-4">
+                <div class="text-sm md:text-base font-semibold text-slate-200 mb-2" data-i18n="ziwei.fivePhaseRatioTitle">紫微五行比例</div>
+                <div id="ziweiWuxingScores">
+                  <div class="space-y-3">
+                    <div id="ziweiWxBars"></div>
+
+                    <div class="body-caption font-black tracking-widest text-slate-400" data-i18n="bazi.ziweiQuestion">
+                      紫微 —— 這關好過嗎？
+                    </div>
+                    <div id="ziweiWxRadar" class="w-full max-w-[260px]"></div>
+                    <div id="ziweiWxComment" class="body-caption text-slate-300 leading-relaxed"></div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+            </div>
+          </section>
+
+          <!-- 2) 能量結構分析 -->
           <section id="ws-dao" class="workspace-section glass dashboard-card p-6 md:p-7 space-y-4" data-section="dao">
             <div class="section-header flex items-center justify-between cursor-pointer md:cursor-default" data-section-toggle>
               <div>
@@ -314,7 +362,7 @@
             </div>
           </section>
 
-          <!-- 2) 五行動力學 -->
+          <!-- 3) 五行動力學 -->
           <section id="ws-wux" class="workspace-section glass dashboard-card p-6 md:p-7 space-y-4" data-section="wux">
             <div class="section-header flex items-center justify-between cursor-pointer md:cursor-default" data-section-toggle>
               <div>
@@ -386,52 +434,6 @@
                   </div>
                 </div>
               </details>
-            </div>
-          </section>
-
-          <!-- 3) 命盤場域 -->
-          <section id="ws-pan" class="workspace-section glass dashboard-card p-6 md:p-7 space-y-4" data-section="pan">
-            <div class="section-header flex items-center justify-between cursor-pointer md:cursor-default" data-section-toggle>
-              <div>
-                <h2 class="section-title-main font-black tracking-tight">命盤場域 · 12 宮作戰地圖</h2>
-                <p class="body-caption text-slate-400 mt-1">點場域看耦合（本宮＋對宮＋三合）。</p>
-              </div>
-              <span class="section-toggle-icon md:hidden text-amber-400/80">▼</span>
-            </div>
-            <div class="section-body">
-          <div id="ws-ziwei" class="space-y-4">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <h2 class="section-title-main font-black tracking-tight" data-i18n="ziwei.boardTitle">紫微 12 宮</h2>
-              </div>
-            </div>
-
-            <div id="ziweiGrid" class="zw-grid-container"></div>
-
-            <div class="text-sm md:text-base text-slate-400" id="ziweiHint"></div>
-
-            <!-- 紫微分數 -->
-            <section id="ws-ziwei-scores" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="rounded-xl border border-white/10 p-4">
-                <div class="text-sm md:text-base font-semibold text-slate-200 mb-2" data-i18n="ziwei.palaceStrengthTitle">宮位強度</div>
-                <div id="ziweiPalaceScores"></div>
-              </div>
-              <div class="rounded-xl border border-white/10 p-4">
-                <div class="text-sm md:text-base font-semibold text-slate-200 mb-2" data-i18n="ziwei.fivePhaseRatioTitle">紫微五行比例</div>
-                <div id="ziweiWuxingScores">
-                  <div class="space-y-3">
-                    <div id="ziweiWxBars"></div>
-
-                    <div class="body-caption font-black tracking-widest text-slate-400" data-i18n="bazi.ziweiQuestion">
-                      紫微 —— 這關好過嗎？
-                    </div>
-                    <div id="ziweiWxRadar" class="w-full max-w-[260px]"></div>
-                    <div id="ziweiWxComment" class="body-caption text-slate-300 leading-relaxed"></div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
             </div>
           </section>
 
@@ -857,7 +859,7 @@
   </div>
 
   <script src="js/bootstrap.js"></script>
-  <script type="module" src="dist/app.js"></script>
+  <script type="module" src="/dist/app.js"></script>
   <div id="startup-root"></div>
 
 </body>

@@ -1,0 +1,26 @@
+{
+  "meta": { "version": "1.1", "description": "CCL3 star_psychology：星曜心理（P1.5 第一批+第二批），供 s04/s18/s21 深層斷語" },
+  "items": [
+    { "star": "紫微", "egoCore": "透過掌控局面與維持尊嚴來確認自己的價值", "shadow": "過度在意形象與權威", "defenseMechanism": "維持體面、壓抑脆弱", "growthLesson": "學會在不完美中仍然信任自己" },
+    { "star": "天機", "egoCore": "透過理解世界與掌握資訊來取得安全感", "shadow": "過度思考與猶豫", "defenseMechanism": "理性分析逃避情緒", "growthLesson": "在不確定中仍然願意行動" },
+    { "star": "太陽", "egoCore": "透過承擔責任與照亮他人來證明價值", "shadow": "過度燃燒自己", "defenseMechanism": "扛責任、忽略需求", "growthLesson": "學會讓他人一起承擔" },
+    { "star": "武曲", "egoCore": "透過效率與掌控資源建立安全感", "shadow": "過度控制與不信任", "defenseMechanism": "強化紀律與理性", "growthLesson": "讓資源流動而不是只防守" },
+    { "star": "天同", "egoCore": "透過舒適與情感連結維持內心平衡", "shadow": "逃避壓力", "defenseMechanism": "拖延與轉移注意", "growthLesson": "在舒適之外也能承擔責任" },
+    { "star": "廉貞", "egoCore": "透過界線與力量證明自己", "shadow": "權力鬥爭與情緒衝突", "defenseMechanism": "控制與對抗", "growthLesson": "力量可以用來創造而不是防禦" },
+    { "star": "天府", "egoCore": "透過穩定與管理維持秩序", "shadow": "過度承擔責任", "defenseMechanism": "維持系統運作", "growthLesson": "允許自己偶爾放手" },
+    { "star": "太陰", "egoCore": "透過照顧與情感連結建立安全感", "shadow": "依附與敏感", "defenseMechanism": "情感退縮", "growthLesson": "安全感可以來自內在" },
+    { "star": "貪狼", "egoCore": "透過探索與體驗世界來感受生命", "shadow": "過度追逐刺激", "defenseMechanism": "感官滿足", "growthLesson": "慾望需要節奏" },
+    { "star": "巨門", "egoCore": "透過觀察與質疑理解世界", "shadow": "懷疑與批判", "defenseMechanism": "語言分析", "growthLesson": "理解與信任可以並存" },
+    { "star": "天相", "egoCore": "透過維持公平與關係秩序找到定位", "shadow": "過度迎合", "defenseMechanism": "角色扮演", "growthLesson": "在關係中保持真實" },
+    { "star": "天梁", "egoCore": "透過守護他人與維持道德建立價值", "shadow": "過度責任感", "defenseMechanism": "扮演保護者", "growthLesson": "允許他人自己成長" },
+    { "star": "七殺", "egoCore": "透過突破與決斷證明存在", "shadow": "極端與孤立", "defenseMechanism": "快速行動", "growthLesson": "力量可以溫柔" },
+    { "star": "破軍", "egoCore": "透過破壞與重建探索新世界", "shadow": "衝動破壞", "defenseMechanism": "推翻舊秩序", "growthLesson": "改變需要節奏" },
+    { "star": "文昌", "egoCore": "透過理解與知識建立秩序", "shadow": "過度理性", "defenseMechanism": "分析", "growthLesson": "接受不完美的答案" },
+    { "star": "文曲", "egoCore": "透過情感與表達建立價值", "shadow": "情緒化判斷", "defenseMechanism": "美化與感性解釋", "growthLesson": "讓情感與現實平衡" },
+    { "star": "左輔", "egoCore": "透過支持他人找到自己的位置", "shadow": "過度依附", "defenseMechanism": "扮演助手角色", "growthLesson": "支持他人同時也支持自己" },
+    { "star": "右弼", "egoCore": "透過人脈連結建立價值", "shadow": "過度迎合", "defenseMechanism": "維持和諧", "growthLesson": "在人際中保持真實" },
+    { "star": "祿存", "egoCore": "透過累積資源獲得安全感", "shadow": "守財焦慮", "defenseMechanism": "保守", "growthLesson": "讓資源流動" },
+    { "star": "擎羊", "egoCore": "透過對抗證明自己", "shadow": "衝突上癮", "defenseMechanism": "強硬", "growthLesson": "力量可以轉為創造" },
+    { "star": "陀羅", "egoCore": "透過持續努力維持秩序", "shadow": "拖延與糾結", "defenseMechanism": "停滯", "growthLesson": "在壓力中仍然前進" }
+  ]
+}

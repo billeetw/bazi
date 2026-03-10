@@ -1,0 +1,12 @@
+---
+description: HTML 靜態資源路徑規範，避免 clean URL 下 404
+globs: "**/*.html"
+alwaysApply: false
+---
+
+# HTML 靜態資源路徑
+
+- **根目錄入口頁**（可能以 clean URL 提供，如 `/divination`、`/consultation`）：在 `<head>` 中加 `<base href="/" />`（緊接 charset 後），且 dist 資源用根相對路徑：`/dist/tailwind.css`、`/dist/xxx.js`。
+- **子目錄頁**（如 `articles/*.html`）：不要加 `<base>`，僅將共用 CSS 改為根路徑：`href="/dist/tailwind.css"`。
+- 新增或修改會載入 `dist/`、`data/` 的 HTML 時，一律使用根相對路徑（`/dist/...`）或配合 `<base href="/" />`，避免在 `/path` 下變成 `/path/dist/...` 導致 404。
+- 詳見 `docs/asset-paths-convention.md`。

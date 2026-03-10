@@ -1,11 +1,12 @@
 /**
  * Proxy: /api/life-book/* -> bazi-api Worker
- * 支援 generate 與 generate-section
+ * 支援 generate、generate-section、config (GET/POST)
  */
 const REMOTE = "https://bazi-api.billeetw.workers.dev";
 
 function handleRequest(request, path) {
-  const targetUrl = `${REMOTE}/api/life-book/${path}`;
+  const url = new URL(request.url);
+  const targetUrl = `${REMOTE}/api/life-book/${path}${url.search}`;
   const headers = new Headers(request.headers);
   headers.set("host", new URL(REMOTE).host);
 
@@ -22,6 +23,13 @@ function handleRequest(request, path) {
       headers: newHeaders,
     });
   });
+}
+
+export async function onRequestGet(context) {
+  const { params } = context;
+  const path = params.path || "";
+  if (path !== "config") return new Response("Not Found", { status: 404 });
+  return handleRequest(context.request, path);
 }
 
 export async function onRequestPost(context) {

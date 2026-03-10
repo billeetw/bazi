@@ -18,7 +18,8 @@
     "test:e2e": "npm run build:main && npx playwright test --config=playwright.config.cjs",
     "test:e2e:ui": "npm run build:main && npx playwright test --config=playwright.config.cjs --ui",
     "test:wuxing": "node scripts/test-wuxing-pipeline.js",
-    "build:divination": "vite build --config vite.divination.config.ts"
+    "build:divination": "vite build --config vite.divination.config.ts",
+    "build:lifebook-viewer": "vite build --config vite.lifebook-viewer.config.ts"
   },
   "dependencies": {
     "framer-motion": "^11.11.17",

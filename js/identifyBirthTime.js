@@ -131,7 +131,9 @@ import { estimateHourFromAnswers } from "./calc/shichen-logic.js";
     var optsWithAuth = { method: "POST", headers: headers, body: body };
     function tryFetchWithOpts(base, fetchOpts) {
       if (!base) return Promise.reject(new Error("no base"));
-      return fetch(base + "/api/me/estimate-hour", fetchOpts)
+      var url = base + "/api/me/estimate-hour";
+      console.log("📡 API REQUEST", url, JSON.stringify({ answers: answers }, null, 2));
+      return fetch(url, fetchOpts)
         .then(function (r) { return r.json(); })
         .then(function (data) {
           if (data && data.error) throw new Error(data.error);

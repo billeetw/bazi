@@ -1,0 +1,77 @@
+{
+  "meta": {
+    "version": "1.2",
+    "description": "CCL3 cross_chart_rules：三盤聯動規則（P1.5 含 R1～R4），程式只比對 edge 查表組 findings",
+    "triggerTypes": {
+      "edgeMatch": "transform + fromPalace + toPalace（具體宮位）",
+      "samePalaceTransformMix": "samePalace + hasTransforms（同宮祿忌並見）",
+      "groupMatch": "transform + sourceGroup + targetGroup（pressure=田宅/財帛/福德/官祿, relationship=夫妻/僕役/兄弟）"
+    }
+  },
+  "items": [
+    {
+      "ruleId": "R1_career_spill_relationship",
+      "triggerType": "edgeMatch",
+      "trigger": { "transform": "忌", "fromPalace": "官祿宮", "toPalace": "夫妻宮" },
+      "diagnosis": "事業壓力外溢到關係",
+      "lifePattern": "責任壓力轉化為關係摩擦",
+      "advice": "先處理角色與責任邊界"
+    },
+    {
+      "ruleId": "R1_wealth_spill_spirit",
+      "triggerType": "edgeMatch",
+      "trigger": { "transform": "忌", "fromPalace": "財帛宮", "toPalace": "福德宮" },
+      "diagnosis": "金錢與資源壓力外溢到精神與價值感",
+      "lifePattern": "表面是空虛或焦慮，根源在資源不穩",
+      "advice": "先穩住資源與理財節奏，再處理內在焦慮"
+    },
+    {
+      "ruleId": "R1_parent_spill_health",
+      "triggerType": "edgeMatch",
+      "trigger": { "transform": "忌", "fromPalace": "父母宮", "toPalace": "疾厄宮" },
+      "diagnosis": "權威與規範壓力外溢到身體",
+      "lifePattern": "表面是身體不適，根源在權威或制度壓力",
+      "advice": "先釐清壓力來源與界線，再調養身體"
+    },
+    {
+      "ruleId": "R2_security_translate_relation",
+      "triggerType": "edgeMatch",
+      "trigger": { "transform": "忌", "fromPalace": "田宅宮", "toPalace": "夫妻宮" },
+      "diagnosis": "安全感不穩被翻譯成關係衝突",
+      "lifePattern": "真正要補的不是表面關係，而是底層安全感",
+      "advice": "先穩住底層安全感與資源感，再處理關係與角色"
+    },
+    {
+      "ruleId": "R2_security_translate_creation",
+      "triggerType": "edgeMatch",
+      "trigger": { "transform": "忌", "fromPalace": "田宅宮", "toPalace": "子女宮" },
+      "diagnosis": "安全感壓力轉化為成果控制",
+      "lifePattern": "表面是創造與產出壓力，本質是根基焦慮",
+      "advice": "先處理安全感來源"
+    },
+    {
+      "ruleId": "R2_security_translate_career",
+      "triggerType": "edgeMatch",
+      "trigger": { "transform": "忌", "fromPalace": "財帛宮", "toPalace": "官祿宮" },
+      "diagnosis": "資源焦慮被翻譯成職場過度承擔",
+      "lifePattern": "表面是工作壓力，根源在資源感與價值感",
+      "advice": "先釐清資源與價值界線，再調整職場節奏"
+    },
+    {
+      "ruleId": "R3_overcompensation_same_palace",
+      "triggerType": "samePalaceTransformMix",
+      "trigger": { "samePalace": true, "hasTransforms": ["祿", "忌"] },
+      "diagnosis": "過度補償型壓力",
+      "lifePattern": "一邊想抓住機會，一邊又被壓力拖住",
+      "advice": "先釐清真正目標"
+    },
+    {
+      "ruleId": "R4_relationship_displacement",
+      "triggerType": "groupMatch",
+      "trigger": { "transform": "忌", "sourceGroup": "pressure", "targetGroup": "relationship" },
+      "diagnosis": "壓力轉移到人際場",
+      "lifePattern": "真正壓力來自其他場域",
+      "advice": "找出真正壓力來源"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>命書 Viewer - 人生說明書</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: {} },
+      darkMode: 'class',
+    };
+  </script>
+  <style>
+    body {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: 'Noto Sans TC', system-ui, sans-serif;
+    }
+  </style>
+</head>
+<body class="antialiased">
+  <div id="lifebook-root"></div>
+  <script type="module" src="/src/lifebook-viewer/index.tsx"></script>
+</body>
+</html>

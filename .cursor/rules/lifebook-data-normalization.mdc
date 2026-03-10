@@ -1,0 +1,26 @@
+---
+description: 命書／四化／星群資料正規化守則，避免疊床架屋、雙軌並存
+globs: "**/lifebook/**", "**/lifeBook*.ts", "**/worker/**/lifebook*", "**/patternPhrase*.ts", "**/starPersonality*.ts", "**/canonicalKeys*"
+alwaysApply: false
+---
+
+# 命書資料正規化守則（由 AI 把關）
+
+新增或修改命書相關功能時，**一律依下列單一來源與入口**，不得再建重複表、重複鍵、重複句庫。
+
+## 單一來源
+
+| 資料 | 唯一來源 | 禁止 |
+|------|----------|------|
+| 星曜群性（動/智/穩/權/財/情緒） | `worker/src/lifebook/starPersonalityMap.ts` → `STAR_PERSONALITY_MAP`、`calculateStarGroupStats`、`hasGroup` | 不得新增「另一套」星群分類表（如 id 鍵 3 群） |
+| 四化規則句型（判讀/行動/證據） | 20 條：`patternPhraseLibrary.ts`（by ruleId）；10 類：`patternPhraseLibraryRuleTypes.ts`（by ruleType）。Renderer 優先用 ruleType，無對應再用 ruleId | 不得在別處再建一份「句型庫」或重複模板 |
+| 宮位 canonical（中文＋宮） | `worker/src/lifebook/canonicalKeys.ts` → `toPalaceCanonical(idOrName)` | 不得在各模組重寫 normPalace / 宮名正規化邏輯 |
+| 星曜 canonical（中文名） | `canonicalKeys.ts` → `toStarName(idOrName)` | 不得散落 STAR_ID_TO_NAME / 星名轉換 |
+
+## 原則
+
+- **不疊床架屋**：新需求優先擴充既有模組（如補 ruleType 對應、補星標籤），不另開「第二套」結構。
+- **鍵與語彙一致**：星群用**星名（中文）**；宮位對外/命書用 **toPalaceCanonical** 輸出；rule 展示用 ruleType 語義（10 類），計算與命中仍用 S00RuleId。
+- **JSON/匯出**：若需給 Cursor、營運或前端用的靜態資料，從上述 TS 單一來源匯出到 `docs/lifebook/*.json`，並在 README 註明來源；不在 JSON 裡再維護一份「主資料」。
+
+詳見 `docs/lifebook-data-normalization-and-usage-assessment.md`。

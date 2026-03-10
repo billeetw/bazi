@@ -56,6 +56,7 @@
     if (volatileAmbivalences && volatileAmbivalences.length > 0) {
       volatileAmbivalences.forEach(volatile => {
         const { palace, transformations, jiCount, luCount, note } = volatile;
+        if (!palace || !transformations) return;
         const palaceDesc = PALACE_DESCRIPTIONS[palace] || palace;
         
         // 構建評論：強調「成敗一線間」
@@ -97,8 +98,16 @@
     }
 
     // 1. 處理 CRITICAL_RISK（超級地雷區）- 優先級次高
-    criticalRisks.forEach(risk => {
-      const { palace, transformations, jiCount } = risk;
+    (criticalRisks || []).forEach(risk => {
+      const { palace, transformations, jiCount, reason, source } = risk;
+      if (!palace) return;
+      // Mini C 新增項目：僅 { palace, reason, source }，無 transformations / jiCount
+      if (!transformations || (jiCount == null && reason != null)) {
+        if (reason === "double_ji") {
+          comments.push("⚠️ " + palace + "宮：此宮位在原命、大限、流年或小限中有多重化忌共振，壓力與風險需要特別留意。");
+        }
+        return;
+      }
       const palaceDesc = PALACE_DESCRIPTIONS[palace] || palace;
       
       // 構建評論（按照用戶要求的格式）
@@ -153,8 +162,16 @@
     });
 
     // 2. 處理 MAX_OPPORTUNITY（大發財機會）
-    maxOpportunities.forEach(opportunity => {
-      const { palace, transformations, luCount } = opportunity;
+    (maxOpportunities || []).forEach(opportunity => {
+      const { palace, transformations, luCount, reason, source } = opportunity;
+      if (!palace) return;
+      // Mini C 新增項目：僅 { palace, reason, source }，無 transformations / luCount
+      if (!transformations || (luCount == null && reason != null)) {
+        if (reason === "double_lu") {
+          comments.push("✨ " + palace + "宮：此宮位在原命、大限、流年或小限中有多重化祿共振，代表此處有明顯的機會與資源集中。");
+        }
+        return;
+      }
       const palaceDesc = PALACE_DESCRIPTIONS[palace] || palace;
       
       // 構建評論

@@ -1,0 +1,140 @@
+{
+  "s00": {
+    "structure_analysis": "【這局你為什麼而來】\n\n{lifeArchetypeBlock}\n\n命盤線索：主戰場 {s00HotPalaces}。\n\n【這局真正的核心槓桿】\n\n{s00MainNarrative}\n\n命盤線索：重點星曜 {s00HotStars} 多層命中。\n\n【這局最容易出現轉折的地方】\n\n{s00DominantPalaces}\n\n命盤線索：宮位能量集中於 {s00HotPalaces}。\n\n【關鍵連鎖反應】\n\n{s00NarrativeBlocks}\n\n命盤線索：四化流向與重點星宮。\n\n【你這局真正卡住的是什麼】\n\n{s00PiercingDiagnosisBlock}\n\n【今年怎麼走比較順】\n\n{s00YearlyAdvice}\n\n命盤線索：年度四化與大限主題共同影響。",
+    "behavior_pattern": "【這局的底層風向】\n\n祿代表自然會靠近的資源與機會，權代表願意主動掌握的方向，科代表修正與學習能力，忌則代表容易出現壓力與反思的領域。理解四化能量的流動，可以看見自己在不同情境下的反應模式。",
+    "blind_spots": "【常見盲點】\n\n把化忌當成壞運、只看到化祿的資源、忽略本命／大限／流年三個時間層的差異。",
+    "strategic_advice": ""
+  },
+  "s03": {
+    "structure_analysis": "【你的生命作業系統】\n\n{starGroupStatsBlock}\n\n命盤線索：星曜節奏分布為 {starEnergySummary}。\n\n【你的命盤主線劇本】\n\n{wholeChartMainlineBlock}\n\n命盤線索：主舞台宮位見強弱宮所述。\n\n【你的四化慣性】\n\n{siHuaPatternTopBlocks}\n\n命盤線索：四化多層命中星曜與宮位。\n\n【你的能量流動】\n\n{sihuaTopFlowsBlock}\n\n{loopSummaryBlock}\n\n命盤線索：四化流向與能量環。\n\n【穿透式診斷】\n\n{s03PiercingDiagnosisBlock}\n\n【你的實戰指南】\n\n需要補強的地方：{weakPalace}\n\n可以發揮的地方：{strongPalace}\n\n命盤線索：弱宮與高槓桿宮位見上。",
+    "behavior_pattern": "【行為模式】\n\n當命宮三方四正被啟動時，你通常會依序經歷：命宮確立立場與方向、財帛思考資源與交換、官祿落實成果、遷移接收回饋。四化則是背後的開關：本命為長期慣性，大限為十年主題，流年為當年議題。",
+    "blind_spots": "【盲點】\n\n三方四正偏食（習慣用同一種模式解所有題）、星曜能量極端時的擺盪、四化引動時快速進入既有反應模式。",
+    "strategic_advice": "【你真正該怎麼做】\n\n先回到命盤主線判斷議題類型；補強與發揮並行：{weakPalace} {strongPalace}"
+  },
+  "s02": {
+    "structure_analysis": "【你是帶著什麼狀態上場】\n\n{palaceStarOpening}\n\n{palaceCoreDefinition}\n\n【主星定調】\n\n{mainStarsLeadBlock}\n\n{mainStarsBrightnessNarrative}\n\n{palaceStarStrength}\n\n【優勢與慣性】\n\n{assistantStarsNarrative}\n\n【三方四正如何牽動】\n\n{palaceSanfangInsight}\n\n【四化如何觸發】\n\n{palaceTransformNarrative}\n\n{sihuaNarrativeBlock}\n\n【最容易失衡】\n\n{palaceStarTension}\n\n【成熟後如何運用】\n\n{palaceStarMature}\n\n【星曜結構】\n\n以下說明本宮星曜的基本性質，以及它們在此宮位中的表現。\n\n{palaceStarsOnlySnippet}\n\n命盤線索：{palaceChartClue}\n{palaceRiskReminderBlock}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": "{palaceGlobalLinkHints}\n\n{palaceSiHuaHints}"
+  },
+  "s10": {
+    "structure_analysis": "【上場方式】\n\n{palaceStarOpening}\n\n{palaceCoreDefinition}\n\n【主星定調】\n\n{mainStarsLeadBlock}\n\n{mainStarsBrightnessNarrative}\n\n{palaceStarStrength}\n\n【優勢與慣性】\n\n{assistantStarsNarrative}\n\n【三方四正如何牽動】\n\n{palaceSanfangInsight}\n\n【四化如何觸發】\n\n{palaceTransformNarrative}\n\n{sihuaNarrativeBlock}\n\n【最容易失衡】\n\n{palaceStarTension}\n\n【成熟後如何運用】\n\n{palaceStarMature}\n\n【星曜結構】\n\n以下說明本宮星曜的基本性質，以及它們在此宮位中的表現。\n\n{palaceStarsOnlySnippet}\n\n命盤線索：{palaceChartClue}\n{palaceRiskReminderBlock}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": "{palaceGlobalLinkHints}\n\n{palaceSiHuaHints}"
+  },
+  "s01": {
+    "structure_analysis": "【上場方式】\n\n{palaceStarOpening}\n\n{palaceCoreDefinition}\n\n【主星定調】\n\n{mainStarsLeadBlock}\n\n{mainStarsBrightnessNarrative}\n\n{palaceStarStrength}\n\n【優勢與慣性】\n\n{assistantStarsNarrative}\n\n【三方四正如何牽動】\n\n{palaceSanfangInsight}\n\n【四化如何觸發】\n\n{palaceTransformNarrative}\n\n{sihuaNarrativeBlock}\n\n【最容易失衡】\n\n{palaceStarTension}\n\n【成熟後如何運用】\n\n{palaceStarMature}\n\n【星曜結構】\n\n以下說明本宮星曜的基本性質，以及它們在此宮位中的表現。\n\n{palaceStarsOnlySnippet}\n\n命盤線索：{palaceChartClue}\n{palaceRiskReminderBlock}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": "{palaceGlobalLinkHints}\n\n{palaceSiHuaHints}"
+  },
+  "s05": {
+    "structure_analysis": "【上場方式】\n\n{palaceStarOpening}\n\n{palaceCoreDefinition}\n\n【主星定調】\n\n{mainStarsLeadBlock}\n\n{mainStarsBrightnessNarrative}\n\n{palaceStarStrength}\n\n【優勢與慣性】\n\n{assistantStarsNarrative}\n\n【三方四正如何牽動】\n\n{palaceSanfangInsight}\n\n【四化如何觸發】\n\n{palaceTransformNarrative}\n\n{sihuaNarrativeBlock}\n\n【最容易失衡】\n\n{palaceStarTension}\n\n【成熟後如何運用】\n\n{palaceStarMature}\n\n【星曜結構】\n\n以下說明本宮星曜的基本性質，以及它們在此宮位中的表現。\n\n{palaceStarsOnlySnippet}\n\n命盤線索：{palaceChartClue}\n{palaceRiskReminderBlock}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": "{palaceGlobalLinkHints}\n\n{palaceSiHuaHints}"
+  },
+  "s06": {
+    "structure_analysis": "【上場方式】\n\n{palaceStarOpening}\n\n{palaceCoreDefinition}\n\n【主星定調】\n\n{mainStarsLeadBlock}\n\n{mainStarsBrightnessNarrative}\n\n{palaceStarStrength}\n\n【優勢與慣性】\n\n{assistantStarsNarrative}\n\n【三方四正如何牽動】\n\n{palaceSanfangInsight}\n\n【四化如何觸發】\n\n{palaceTransformNarrative}\n\n{sihuaNarrativeBlock}\n\n【最容易失衡】\n\n{palaceStarTension}\n\n【成熟後如何運用】\n\n{palaceStarMature}\n\n【星曜結構】\n\n以下說明本宮星曜的基本性質，以及它們在此宮位中的表現。\n\n{palaceStarsOnlySnippet}\n\n命盤線索：{palaceChartClue}\n{palaceRiskReminderBlock}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": "{palaceGlobalLinkHints}\n\n{palaceSiHuaHints}"
+  },
+  "s07": {
+    "structure_analysis": "【上場方式】\n\n{palaceStarOpening}\n\n{palaceCoreDefinition}\n\n【主星定調】\n\n{mainStarsLeadBlock}\n\n{mainStarsBrightnessNarrative}\n\n{palaceStarStrength}\n\n【優勢與慣性】\n\n{assistantStarsNarrative}\n\n【三方四正如何牽動】\n\n{palaceSanfangInsight}\n\n【四化如何觸發】\n\n{palaceTransformNarrative}\n\n{sihuaNarrativeBlock}\n\n【最容易失衡】\n\n{palaceStarTension}\n\n【成熟後如何運用】\n\n{palaceStarMature}\n\n【星曜結構】\n\n以下說明本宮星曜的基本性質，以及它們在此宮位中的表現。\n\n{palaceStarsOnlySnippet}\n\n命盤線索：{palaceChartClue}\n{palaceRiskReminderBlock}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": "{palaceGlobalLinkHints}\n\n{palaceSiHuaHints}"
+  },
+  "s08": {
+    "structure_analysis": "【上場方式】\n\n{palaceStarOpening}\n\n{palaceCoreDefinition}\n\n【主星定調】\n\n{mainStarsLeadBlock}\n\n{mainStarsBrightnessNarrative}\n\n{palaceStarStrength}\n\n【優勢與慣性】\n\n{assistantStarsNarrative}\n\n【三方四正如何牽動】\n\n{palaceSanfangInsight}\n\n【四化如何觸發】\n\n{palaceTransformNarrative}\n\n{sihuaNarrativeBlock}\n\n【最容易失衡】\n\n{palaceStarTension}\n\n【成熟後如何運用】\n\n{palaceStarMature}\n\n【星曜結構】\n\n以下說明本宮星曜的基本性質，以及它們在此宮位中的表現。\n\n{palaceStarsOnlySnippet}\n\n命盤線索：{palaceChartClue}\n{palaceRiskReminderBlock}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": "{palaceGlobalLinkHints}\n\n{palaceSiHuaHints}"
+  },
+  "s04": {
+    "structure_analysis": "【1. 核心配置】\n\n命主 {lifeLordName}：{destinyStarCore}\n\n身主 {bodyLordName}：{bodyStarCore}\n\n身宮落在 {bodyPalaceName}：{bodyPalaceCore}\n\n命盤線索：命主／身主／身宮。\n\n【2. 你的內在驅力（命主 × 身主）】\n\n{destinyBodyDialogue}\n\n命盤線索：命主×身主。\n\n【3. 你的人生體感會落在哪裡（身宮）】\n\n{bodyPalaceFocusBlock}\n\n命盤線索：身宮落在 {bodyPalaceName}。\n\n【4. 命身是否同步（命宮 vs 身宮）】\n\n{bodyPalaceAlignmentNarrative}\n\n命盤線索：命宮與身宮。\n\n【5. 你最該學會怎麼使用自己】\n\n{s04StrategyBlock}\n\n命盤線索：命主＋身主＋身宮。",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": ""
+  },
+  "s09": {
+    "structure_analysis": "【上場方式】\n\n{palaceStarOpening}\n\n{palaceCoreDefinition}\n\n【主星定調】\n\n{mainStarsLeadBlock}\n\n{mainStarsBrightnessNarrative}\n\n{palaceStarStrength}\n\n【優勢與慣性】\n\n{assistantStarsNarrative}\n\n【三方四正如何牽動】\n\n{palaceSanfangInsight}\n\n【四化如何觸發】\n\n{palaceTransformNarrative}\n\n{sihuaNarrativeBlock}\n\n【最容易失衡】\n\n{palaceStarTension}\n\n【成熟後如何運用】\n\n{palaceStarMature}\n\n【星曜結構】\n\n以下說明本宮星曜的基本性質，以及它們在此宮位中的表現。\n\n{palaceStarsOnlySnippet}\n\n命盤線索：{palaceChartClue}\n{palaceRiskReminderBlock}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": "{palaceGlobalLinkHints}\n\n{palaceSiHuaHints}"
+  },
+  "s11": {
+    "structure_analysis": "【上場方式】\n\n{palaceStarOpening}\n\n{palaceCoreDefinition}\n\n【主星定調】\n\n{mainStarsLeadBlock}\n\n{mainStarsBrightnessNarrative}\n\n{palaceStarStrength}\n\n【優勢與慣性】\n\n{assistantStarsNarrative}\n\n【三方四正如何牽動】\n\n{palaceSanfangInsight}\n\n【四化如何觸發】\n\n{palaceTransformNarrative}\n\n{sihuaNarrativeBlock}\n\n【最容易失衡】\n\n{palaceStarTension}\n\n【成熟後如何運用】\n\n{palaceStarMature}\n\n【星曜結構】\n\n以下說明本宮星曜的基本性質，以及它們在此宮位中的表現。\n\n{palaceStarsOnlySnippet}\n\n命盤線索：{palaceChartClue}\n{palaceRiskReminderBlock}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": "{palaceGlobalLinkHints}\n\n{palaceSiHuaHints}"
+  },
+  "s12": {
+    "structure_analysis": "【上場方式】\n\n{palaceStarOpening}\n\n{palaceCoreDefinition}\n\n【主星定調】\n\n{mainStarsLeadBlock}\n\n{mainStarsBrightnessNarrative}\n\n{palaceStarStrength}\n\n【優勢與慣性】\n\n{assistantStarsNarrative}\n\n【三方四正如何牽動】\n\n{palaceSanfangInsight}\n\n【四化如何觸發】\n\n{palaceTransformNarrative}\n\n{sihuaNarrativeBlock}\n\n【最容易失衡】\n\n{palaceStarTension}\n\n【成熟後如何運用】\n\n{palaceStarMature}\n\n【星曜結構】\n\n以下說明本宮星曜的基本性質，以及它們在此宮位中的表現。\n\n{palaceStarsOnlySnippet}\n\n命盤線索：{palaceChartClue}\n{palaceRiskReminderBlock}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": "{palaceGlobalLinkHints}\n\n{palaceSiHuaHints}"
+  },
+  "s13": {
+    "structure_analysis": "【上場方式】\n\n{palaceStarOpening}\n\n{palaceCoreDefinition}\n\n【主星定調】\n\n{mainStarsLeadBlock}\n\n{mainStarsBrightnessNarrative}\n\n{palaceStarStrength}\n\n【優勢與慣性】\n\n{assistantStarsNarrative}\n\n【三方四正如何牽動】\n\n{palaceSanfangInsight}\n\n【四化如何觸發】\n\n{palaceTransformNarrative}\n\n{sihuaNarrativeBlock}\n\n【最容易失衡】\n\n{palaceStarTension}\n\n【成熟後如何運用】\n\n{palaceStarMature}\n\n【星曜結構】\n\n以下說明本宮星曜的基本性質，以及它們在此宮位中的表現。\n\n{palaceStarsOnlySnippet}\n\n命盤線索：{palaceChartClue}\n{palaceRiskReminderBlock}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": "{palaceGlobalLinkHints}\n\n{palaceSiHuaHints}"
+  },
+  "s14": {
+    "structure_analysis": "【上場方式】\n\n{palaceStarOpening}\n\n{palaceCoreDefinition}\n\n【主星定調】\n\n{mainStarsLeadBlock}\n\n{mainStarsBrightnessNarrative}\n\n{palaceStarStrength}\n\n【優勢與慣性】\n\n{assistantStarsNarrative}\n\n【三方四正如何牽動】\n\n{palaceSanfangInsight}\n\n【四化如何觸發】\n\n{palaceTransformNarrative}\n\n{sihuaNarrativeBlock}\n\n【最容易失衡】\n\n{palaceStarTension}\n\n【成熟後如何運用】\n\n{palaceStarMature}\n\n【星曜結構】\n\n以下說明本宮星曜的基本性質，以及它們在此宮位中的表現。\n\n{palaceStarsOnlySnippet}\n\n命盤線索：{palaceChartClue}\n{palaceRiskReminderBlock}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": "{palaceGlobalLinkHints}\n\n{palaceSiHuaHints}"
+  },
+  "s15": {
+    "structure_analysis": "【時間軸校對總覽】\n\n生年四化：{birthSihuaLine}\n\n目前大限：\n宮位：{currentDecadalPalace}\n四化：{currentDecadeSihuaLine}\n\n目前流年：\n命宮：{flowYearMingPalace}\n四化：{flowYearSihuaLine}\n\n【你正站在哪一個人生章節】\n\n此刻你的大限落在{currentDecadalPalace}，這十年主線在演的是「{currentDecadalTheme}」。\n\n這十年的核心功課：{currentDecadalHomework}\n\n【這十年的主戰場】\n\n主戰場：{s15MainBattlefield}\n次戰場：{s15SecondaryBattlefield}\n\n【今年在這十年裡扮演什麼角色】\n\n今年是這十年裡的{yearRoleInDecade}。{yearRoleWhy}\n\n【十年 × 年度交叉】\n\n{s15TopCrossChartSynthesis}\n\n{s15TopCrossChartAdvice}\n\n【關鍵年份】\n\n▲ 超級地雷區（必須絕對避開）\n\n{mineBlocks}\n\n✨ 大發財機會（建議積極把握）\n\n{wealthBlocks}\n\n⚡ 劇烈震盪／吉凶並見（成敗一線間）\n\n{shockBlocks}\n\n【這段時間你最容易重演的功課】\n\n{recurringHomeworkNarrative}\n\n【你現在最該怎麼走】\n\n現在：{s15ActionNow}\n\n一年內：{s15ActionOneYear}\n\n這十年：{s15ActionDecade}\n\n【收束：你往何處去】\n\n{s15ClosingLesson}\n\n{s15ClosingNowSee}",
+    "behavior_pattern": "你的人生不是平均分散，而是被切成一段一段的大篇章。每一個十年有一個主宮位在發聲、一個主星星系在帶頭、一種大限四化在放大慣性。這些組合就是你每十年的「人生關卡設計」。",
+    "blind_spots": "盲點通常來自兩種誤會：把某一個大限當成「一輩子都會這樣」；或完全忽略大限主題，以為所有年份都可以用同一套策略。有的十年適合衝、有的適合守或收成。",
+    "strategic_advice": "回頭看：對照已走過的大限，劇烈轉折有跡可循。活在當下：理解現在這十年的主題，不硬拗。往前看：提前知道之後幾個大限的大方向，什麼時候適合衝、什麼時候適合守。盲點與策略請綁定當前十年與今年，見上方各段。"
+  },
+  "s15a": {
+    "structure_analysis": "本章內容已整合至「時間主線與功課」（s15）。請見 s15 的 8 段敘事與附錄。\n\n以下為附錄資料：宮位年限與風險標示。\n\n{minorFortuneTimelineTable}\n\n【統計摘要】劇烈震盪：{shockCount} 個宮位；超級地雷：{mineCount} 個；大發財機會：{wealthCount} 個。\n\n{shockBlocks}\n\n{mineBlocks}\n\n{wealthBlocks}\n\n{keyYearsDecisionTimeline}",
+    "behavior_pattern": "流年落宮影響該年心理濾鏡與決策傾向；疊宮標示可作為該年行動參考。詳見 s15。",
+    "blind_spots": "若流年落入地雷區或吉凶並見宮位，該年宜保守、避免重大賭注。",
+    "strategic_advice": "善用機會區年份積極布局；地雷區年份以守成為主。完整策略見 s15 第 7 段。"
+  },
+  "s16": {
+    "structure_analysis": "【今年主線與心理濾鏡】\n\n流年命宮：{flowYearMingPalace}\n\n流年四化：{flowYearSihuaLine}\n\n年度角色：{yearRoleInDecade}\n\n建議：{yearOneLineAdvice}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": ""
+  },
+  "s17": {
+    "structure_analysis": "【十年 × 年度交叉】\n\n今年在這十年裡的位置：{yearRoleInDecade}。\n\n地雷區／機會區／震盪區年份與完整解釋，見「時間主線與功課」（s15）第 5 段與附錄。",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": ""
+  },
+  "s18": {
+    "structure_analysis": "【主要盲點】\n\n{s18BlindSpotLine}\n\n{s18BodyLine}\n\n{s18AdviceLine}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": ""
+  },
+  "s19": {
+    "structure_analysis": "【行動策略】\n\n立刻可做：{s19ActionNow}\n\n長期累積：{s19LongTerm}\n\n避開折損：{s19Avoid}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": ""
+  },
+  "s20": {
+    "structure_analysis": "【三盤疊加診斷】\n\n{s20BenmingLine}\n\n{s20DecadalLine}\n\n{s20YearLine}\n\n{s20CrossChartLine}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": ""
+  },
+  "s21": {
+    "structure_analysis": "【靈魂總結】\n\n你反覆在學的：{s21LifelongLesson}\n\n現在這段時間真正要看懂的：{s21NowSee}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": ""
+  }
+}

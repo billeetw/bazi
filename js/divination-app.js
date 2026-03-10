@@ -1,4 +1,5 @@
     (function () {
+      if (typeof console !== "undefined" && console.log) console.log("[divination] script loaded");
       var urlParams = typeof URLSearchParams !== "undefined" ? new URLSearchParams(window.location.search) : null;
       var isEmbed = urlParams && urlParams.get("embed") === "1";
       if (isEmbed) {
@@ -50,19 +51,21 @@
         if (!pending || !pending.lines || pending.lines.length !== 6) return;
         var authHeaders = (window.AuthService && window.AuthService.getAuthHeaders) ? window.AuthService.getAuthHeaders() : {};
         if (!authHeaders.Authorization) return;
+        var pendingPayload = {
+          question: pending.question,
+          mood: pending.mood,
+          primaryIndex: pending.primaryIndex,
+          transformedIndex: pending.transformedIndex,
+          mutualIndex: pending.mutualIndex,
+          lines: pending.lines,
+          changingLines: pending.changingLines,
+          source: pending.source,
+        };
+        console.log("📡 API REQUEST", "/api/divination", JSON.stringify(pendingPayload, null, 2));
         fetch("/api/divination", {
           method: "POST",
           headers: Object.assign({ "Content-Type": "application/json" }, authHeaders),
-          body: JSON.stringify({
-            question: pending.question,
-            mood: pending.mood,
-            primaryIndex: pending.primaryIndex,
-            transformedIndex: pending.transformedIndex,
-            mutualIndex: pending.mutualIndex,
-            lines: pending.lines,
-            changingLines: pending.changingLines,
-            source: pending.source,
-          }),
+          body: JSON.stringify(pendingPayload),
         })
           .then(function (res) { return res.json().catch(function () { return {}; }); })
           .then(function (data) {
@@ -81,6 +84,9 @@
         if (e.detail && e.detail.loggedIn) bindPendingDivinationAfterLogin();
       });
 
+      function runDivinationUI() {
+        try {
+          if (typeof console !== "undefined" && console.log) console.log("[divination] runDivinationUI start");
       const step1 = document.getElementById("step1");
       const step2 = document.getElementById("step2");
       const step3 = document.getElementById("step3");
@@ -100,7 +106,11 @@
       let structureData = null;
       let openingWisdomData = null;
       let actionsData = null;
+      let typesData = null;
+      let templatesData = null;
+      let transitionsData = null;
       let currentResult = null;
+      let currentContext = "career";
       let timePeriod = "6months";
       let lastDivinationId = null;
       const ritualReminder = document.getElementById("ritualReminder");
@@ -243,6 +253,18 @@
         if (actionsData) return Promise.resolve(actionsData);
         return fetch("data/iching/hexagram-actions.json").then((r) => r.json()).then((d) => { actionsData = d; return d; });
       }
+      function loadTypes() {
+        if (typesData) return Promise.resolve(typesData);
+        return fetch("data/iching/hexagram-types.json").then((r) => r.json()).then((d) => { typesData = d; return d; });
+      }
+      function loadTemplates() {
+        if (templatesData) return Promise.resolve(templatesData);
+        return fetch("data/iching/type-action-templates.json").then((r) => r.json()).then((d) => { templatesData = d; return d; });
+      }
+      function loadTransitions() {
+        if (transitionsData) return Promise.resolve(transitionsData);
+        return fetch("data/iching/hexagram-transitions.json").then((r) => r.json()).then((d) => { transitionsData = d; return d; });
+      }
 
       function getHexagram(i) {
         if (!hexagramsData) return null;
@@ -293,6 +315,7 @@
       }
 
       function renderStalks() {
+        if (!stalksContainer) return;
         stalksContainer.innerHTML = "";
         for (var i = 0; i < 49; i++) {
           var s = document.createElement("div");
@@ -301,17 +324,69 @@
         }
       }
 
-      btnStart.addEventListener("click", function () {
-        var q = document.getElementById("question").value.trim();
-        if (!q) {
-          alert("請先寫下你的問題");
-          return;
+      var fullDataPromise = null;
+      function ensureFullData() {
+        if (fullDataPromise) return fullDataPromise;
+        fullDataPromise = Promise.all([
+          loadCommentaries(),
+          loadStructure(),
+          loadOpeningWisdom(),
+          loadActions(),
+          loadTypes(),
+          loadTemplates(),
+          loadTransitions(),
+          typeof DivinationScore !== "undefined" ? DivinationScore.loadLines384() : Promise.resolve(),
+          typeof DivinationInterpretation !== "undefined" ? DivinationInterpretation.loadSummaries() : Promise.resolve(),
+        ]).then(function (arr) {
+          commentariesData = arr[0];
+          structureData = arr[1];
+          openingWisdomData = arr[2];
+          actionsData = arr[3];
+          typesData = arr[4];
+          templatesData = arr[5];
+          transitionsData = arr[6];
+        });
+        return fullDataPromise;
+      }
+
+      function onStartDivination() {
+        try {
+          var q = document.getElementById("question").value.trim();
+          if (!q) {
+            alert("請先寫下你的問題");
+            return;
+          }
+          ensureFullData();
+          var tp = document.querySelector('input[name="timePeriod"]:checked');
+          timePeriod = tp ? tp.value : "6months";
+          if (step1) step1.classList.add("hidden");
+          if (ritualReminder) {
+            ritualReminder.classList.remove("hidden");
+          } else if (step2) {
+            document.body.classList.remove("wuxing-金", "wuxing-木", "wuxing-水", "wuxing-火", "wuxing-土");
+            if (changeProgress) changeProgress.textContent = "長按開始";
+            if (holdLabel) holdLabel.textContent = "長按";
+            if (linesPreview) { linesPreview.innerHTML = ""; linesPreview.classList.remove("lines-complete"); }
+            clearProgressDots();
+            lineValues = [];
+            renderStalks();
+            step2.classList.remove("hidden");
+          }
+        } catch (err) {
+          console.error("[divination] 進入占卦錯誤:", err);
+          alert("操作時發生錯誤，請重新整理頁面再試。");
         }
-        var tp = document.querySelector('input[name="timePeriod"]:checked');
-        timePeriod = tp ? tp.value : "6months";
-        step1.classList.add("hidden");
-        ritualReminder.classList.remove("hidden");
-      });
+      }
+      if (btnStart) {
+        btnStart.addEventListener("click", onStartDivination);
+        if (typeof console !== "undefined" && console.log) console.log("[divination] btnStart listener attached");
+      } else {
+        console.warn("[divination] btnStart not found, will bind on DOMContentLoaded");
+        document.addEventListener("DOMContentLoaded", function () {
+          var el = document.getElementById("btnStart");
+          if (el) { el.addEventListener("click", onStartDivination); console.log("[divination] btnStart listener attached (after DOMContentLoaded)"); }
+        });
+      }
       function clearProgressDots() {
         if (!progressDots) return;
         progressDots.querySelectorAll(".divination-progress-dot").forEach(function (d) { d.classList.remove("active"); });
@@ -323,13 +398,12 @@
         });
       }
       if (btnRitualOk) btnRitualOk.addEventListener("click", function () {
-        ritualReminder.classList.add("hidden");
-        step2.classList.remove("hidden");
+        if (ritualReminder) ritualReminder.classList.add("hidden");
+        if (step2) step2.classList.remove("hidden");
         document.body.classList.remove("wuxing-金", "wuxing-木", "wuxing-水", "wuxing-火", "wuxing-土");
-        changeProgress.textContent = "長按開始";
-        holdLabel.textContent = "長按";
-        linesPreview.innerHTML = "";
-        linesPreview.classList.remove("lines-complete");
+        if (changeProgress) changeProgress.textContent = "長按開始";
+        if (holdLabel) holdLabel.textContent = "長按";
+        if (linesPreview) { linesPreview.innerHTML = ""; linesPreview.classList.remove("lines-complete"); }
         clearProgressDots();
         lineValues = [];
         renderStalks();
@@ -408,17 +482,18 @@
         step2.classList.add("hidden");
         step3.classList.remove("hidden");
         setTimeout(function () {
-          showResult();
-          // 手機版：結果區在下方，延遲滾動確保 DOM 已渲染，避免用戶以為沒有結果
-          var scrollToResult = function () {
-            try {
-              step3.scrollIntoView({ behavior: "smooth", block: "start" });
-            } catch (e) {
-              step3.scrollIntoView(true);
-            }
-          };
-          setTimeout(scrollToResult, 150);
-          setTimeout(scrollToResult, 500);
+          ensureFullData().then(function () {
+            showResult();
+            var scrollToResult = function () {
+              try {
+                step3.scrollIntoView({ behavior: "smooth", block: "start" });
+              } catch (e) {
+                step3.scrollIntoView(true);
+              }
+            };
+            setTimeout(scrollToResult, 150);
+            setTimeout(scrollToResult, 500);
+          });
         }, 100);
       }
 
@@ -442,6 +517,14 @@
           result.mutualIndex = BINARY_TO_KING_WEN[DayanDivination.getMutualHexagram(lineValues).slice().reverse().join("")] || 1;
           result.changingLines = lineValues.map(function (v, i) { return (v === 6 || v === 9 ? i : -1); }).filter(function (i) { return i >= 0; });
         }
+        var question = (prebuiltResult && prebuiltResult.question) ? String(prebuiltResult.question) : (document.getElementById("question") ? document.getElementById("question").value.trim() : "");
+        var analysis = typeof window.analyzeQuestion === "function" ? window.analyzeQuestion(question) : null;
+        var defaultContext = "career";
+        if (analysis && analysis.category) {
+          if (analysis.category === "wealth") defaultContext = "wealth";
+          else if (analysis.category === "love") defaultContext = "love";
+          else if (analysis.category === "health" || analysis.category === "general") defaultContext = "neutral";
+        }
         var transformed = DayanDivination.getTransformedLines(lineValues);
         var mutualBin = DayanDivination.getMutualHexagram(lineValues);
 
@@ -453,19 +536,135 @@
         document.getElementById("transformedName").textContent = (transformedH ? transformedH.name : "—") + "卦";
         document.getElementById("mutualName").textContent = (mutual ? mutual.name : "—") + "卦";
 
+        var contextLabelMap = { career: "事業", wealth: "財運", love: "感情", neutral: "無特定" };
         var contextWrap = document.getElementById("contextToggleWrap");
-        contextWrap.classList.remove("hidden");
-        contextWrap.classList.add("flex");
-        var ctxBtns = contextWrap.querySelectorAll(".context-btn");
+        var contextCurrentEl = document.getElementById("contextCurrentLabel");
+        var contextButtonsWrap = document.getElementById("contextButtonsWrap");
+        if (contextWrap) {
+          contextWrap.classList.remove("hidden");
+          contextWrap.classList.add("flex");
+        }
+        if (contextCurrentEl) contextCurrentEl.textContent = contextLabelMap[defaultContext] || defaultContext;
+        if (contextButtonsWrap) contextButtonsWrap.classList.add("hidden");
+        var ctxBtns = contextButtonsWrap ? contextButtonsWrap.querySelectorAll(".context-btn") : [];
         ctxBtns.forEach(function (b) {
           b.classList.remove("border-amber-400", "text-amber-300", "bg-amber-500/20");
           b.classList.add("border-slate-600", "text-slate-400");
-          if (b.dataset.context === "career") {
+          if (b.dataset.context === defaultContext) {
             b.classList.add("border-amber-400", "text-amber-300", "bg-amber-500/20");
             b.classList.remove("border-slate-600", "text-slate-400");
           }
         });
         currentResult = result;
+        currentContext = defaultContext;
+
+        var timeRangeEl = document.getElementById("resultTimeRange");
+        if (timeRangeEl) {
+          var rangeLabels = { "6months": "半年（1–6 月）", "1year": "一年（2、4、6、8、10、12 月）", "6years": "六年（第1–6 年）", "stages": "無特定區間（六階段）" };
+          timeRangeEl.textContent = "問事範圍：" + (rangeLabels[timePeriod] || rangeLabels["6months"]);
+        }
+
+        var primaryPalaceForResp = palaceData ? palaceData.hexagramToPalace[String(result.primaryIndex)] : null;
+        var primaryWuxingForResp = primaryPalaceForResp && palaceData ? palaceData.palaceWuxing[primaryPalaceForResp] : null;
+        var monthlyResult = typeof DivinationScore !== "undefined" && DivinationScore.computeMonthlyScores
+          ? DivinationScore.computeMonthlyScores(result.primaryIndex, result.changingLines, primaryWuxingForResp)
+          : { months: [], totalTrend: "" };
+        var readingForSummary = {
+          primaryIndex: result.primaryIndex,
+          primaryName: primary ? primary.name : null,
+          mutualName: mutual ? mutual.name : null,
+          transformedName: transformedH ? transformedH.name : null,
+          monthlyScores: monthlyResult.months || [],
+          totalTrend: monthlyResult.totalTrend || "平",
+          changingLines: result.changingLines || [],
+          timePeriod: timePeriod || "6months",
+        };
+        function escapeHtml(s) {
+          return String(s).replace(/[&<>"']/g, function (c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] || c;
+          });
+        }
+        var summary = typeof BuildCoreSummary !== "undefined" && BuildCoreSummary.buildCoreSummary
+          ? BuildCoreSummary.buildCoreSummary({
+              questionText: question,
+              analysis: analysis || {},
+              reading: readingForSummary,
+              typesData: typesData,
+              templatesData: templatesData,
+              transitionsData: transitionsData,
+              actionsData: actionsData,
+            })
+          : null;
+        if (summary) {
+          var askedEl = document.getElementById("coreSummaryAsked");
+          var tagsEl = document.getElementById("coreSummaryTags");
+          var conclusionEl = document.getElementById("coreSummaryConclusion");
+          var actionsEl = document.getElementById("coreSummaryActions");
+          var bestEl = document.getElementById("coreSummaryBest");
+          var turningEl = document.getElementById("coreSummaryTurning");
+          var riskEl = document.getElementById("coreSummaryRisk");
+          if (askedEl) askedEl.textContent = summary.header.asked;
+          if (tagsEl) {
+            tagsEl.innerHTML = (summary.header.tags || []).map(function (t) {
+              return '<span class="text-xs px-2 py-1 rounded-full bg-white/10 text-slate-300">' + escapeHtml(t) + "</span>";
+            }).join("");
+          }
+          if (conclusionEl) conclusionEl.textContent = summary.header.conclusion;
+          if (actionsEl) {
+            actionsEl.innerHTML = (summary.actions || []).map(function (a) {
+              return "<li>" + escapeHtml(a) + "</li>";
+            }).join("");
+          }
+          var tw = summary.timeWindows || {};
+          if (bestEl) bestEl.innerHTML = (tw.best || []).map(function (x) {
+            return '<span class="text-xs px-2 py-1 rounded-full bg-amber-500/20 text-amber-300">' + escapeHtml(x.label) + " +" + (x.score || 0) + "</span>";
+          }).join("") || '<span class="text-xs text-slate-500">無</span>';
+          if (turningEl) turningEl.innerHTML = (tw.turning || []).length ? (tw.turning || []).map(function (x) {
+            return '<span class="text-xs px-2 py-1 rounded-full bg-sky-500/20 text-sky-300">' + escapeHtml(x.label) + " ★</span>";
+          }).join("") : '<span class="text-xs text-slate-500">無</span>';
+          if (riskEl) riskEl.innerHTML = (tw.risk || []).length ? (tw.risk || []).map(function (x) {
+            return '<span class="text-xs px-2 py-1 rounded-full bg-red-500/20 text-red-300">' + escapeHtml(x.label) + " " + (x.score || 0) + "</span>";
+          }).join("") : '<span class="text-xs text-slate-500">無</span>';
+          var fbSection = document.getElementById("feedbackSection");
+          var verifiableBlock = document.getElementById("feedbackVerifiableBlock");
+          var verifiableText = document.getElementById("feedbackVerifiableText");
+          var checkboxesContainer = document.getElementById("feedbackVerifiableCheckboxes");
+          if (fbSection && summary.verifiablePoint) {
+            fbSection.dataset.verifiablePoint = summary.verifiablePoint;
+            if (verifiableBlock && verifiableText) {
+              verifiableText.textContent = summary.verifiablePoint;
+              verifiableBlock.classList.remove("hidden");
+              if (checkboxesContainer && summary.verifiableCheckboxes && summary.verifiableCheckboxes.length > 0) {
+                checkboxesContainer.innerHTML = summary.verifiableCheckboxes.map(function (label, i) {
+                  return '<label class="flex items-center gap-2 text-slate-400 text-xs cursor-pointer"><input type="checkbox" class="verifiable-checkbox rounded" data-index="' + i + '"><span>' + escapeHtml(label) + "</span></label>";
+                }).join("");
+              } else if (checkboxesContainer) {
+                checkboxesContainer.innerHTML = "";
+              }
+            }
+          } else if (verifiableBlock) {
+            verifiableBlock.classList.add("hidden");
+          }
+          var safetyBlock = document.getElementById("safetyDisclaimerBlock");
+          var safetyText = document.getElementById("safetyDisclaimerText");
+          if (safetyBlock && safetyText) {
+            var cat = analysis ? analysis.category : "general";
+            var q = (question || "").toLowerCase();
+            var needsLegal = /法律|官司|訴訟|律師|判決/.test(q);
+            var needsHealth = cat === "health";
+            var needsWealth = cat === "wealth" || /投資|股票|基金|標的/.test(q);
+            var parts = [];
+            if (needsHealth) parts.push("健康問題請依醫師建議就醫，本解讀僅供趨勢參考。");
+            if (needsWealth) parts.push("投資理財有風險，請勿依此單一依據做決策。");
+            if (needsLegal) parts.push("法律事務請諮詢專業律師。");
+            if (parts.length > 0) {
+              safetyText.textContent = parts.join(" ");
+              safetyBlock.classList.remove("hidden");
+            } else {
+              safetyBlock.classList.add("hidden");
+            }
+          }
+        }
 
         renderLines(document.getElementById("primaryLines"), lineValues, result.primaryIndex, result.changingLines, true);
         renderLines(document.getElementById("transformedLines"), transformed, null, null, true);
@@ -510,7 +709,7 @@
         }
         var primaryPalace = palaceData ? palaceData.hexagramToPalace[String(result.primaryIndex)] : null;
         var primaryWuxing = primaryPalace && palaceData ? palaceData.palaceWuxing[primaryPalace] : null;
-        applyInsight(result, "career", primary, primaryWuxing);
+        applyInsight(result, defaultContext, primary, primaryWuxing);
 
         var mutualInterpSection = document.getElementById("mutualInterpretationSection");
         var transformedInterpSection = document.getElementById("transformedInterpretationSection");
@@ -536,7 +735,7 @@
             if (mutualHint) mutualHint.textContent = "由本卦二三四、三四五爻重組，代表第 3–4 月的轉型期。";
             if (transformedHint) transformedHint.textContent = "由動爻變換產生，代表第 6 月後的定調。";
           }
-          var ctx = "career";
+          var ctx = defaultContext;
           document.getElementById("mutualInterpretation").textContent = DivinationInterpretation.getMutualInterpretation(result.mutualIndex, mutual ? mutual.name : null, mutualWuxing || "", ctx, timePeriod);
           document.getElementById("transformedInterpretation").textContent = DivinationInterpretation.getTransformedInterpretation(result.transformedIndex, transformedH ? transformedH.name : null, transformedWuxing || "", ctx, timePeriod);
           var act = actionsData && actionsData.hexagrams ? actionsData.hexagrams[String(result.mutualIndex)] : null;
@@ -640,7 +839,7 @@
                 explainEl.classList.add("hidden");
               }
             }
-            var alerts = typeof DivinationReminders !== "undefined" ? DivinationReminders.getAlertsForMonths(trend.months, 0) : [];
+            var alerts = typeof DivinationReminders !== "undefined" ? DivinationReminders.getAlertsForMonths(trend.months, 0, timePeriod) : [];
             var alertSection = document.getElementById("alertSection");
             if (alerts.length > 0 && alertSection) {
               alertSection.classList.remove("hidden");
@@ -737,19 +936,21 @@
         var isLoggedIn = (window.AuthService && window.AuthService.isLoggedIn) ? window.AuthService.isLoggedIn() : false;
         var urlParams = typeof URLSearchParams !== "undefined" ? new URLSearchParams(window.location.search) : null;
         var source = (urlParams && urlParams.get("from") === "homepage") ? "Homepage_Entrance" : "Result_Save";
+        var divPayload = {
+          question: document.getElementById("question").value.trim(),
+          mood: (document.querySelector('input[name="mood"]:checked') || {}).value || null,
+          primaryIndex: result.primaryIndex,
+          transformedIndex: result.transformedIndex,
+          mutualIndex: result.mutualIndex,
+          lines: lineValues,
+          changingLines: result.changingLines,
+          source: source,
+        };
+        console.log("📡 API REQUEST", "/api/divination", JSON.stringify(divPayload, null, 2));
         fetch("/api/divination", {
             method: "POST",
             headers: Object.assign({ "Content-Type": "application/json" }, authHeaders),
-            body: JSON.stringify({
-              question: document.getElementById("question").value.trim(),
-              mood: (document.querySelector('input[name="mood"]:checked') || {}).value || null,
-              primaryIndex: result.primaryIndex,
-              transformedIndex: result.transformedIndex,
-              mutualIndex: result.mutualIndex,
-              lines: lineValues,
-              changingLines: result.changingLines,
-              source: source,
-            }),
+            body: JSON.stringify(divPayload),
           })
           .then(function (res) { return res.json().catch(function () { return {}; }); })
           .then(function (data) {
@@ -782,8 +983,7 @@
           var question = document.getElementById("question") ? document.getElementById("question").value.trim() : "";
           var moodEl = document.querySelector('input[name="mood"]:checked');
           var mood = moodEl ? moodEl.value : null;
-          var ctxBtn = document.querySelector("#contextToggleWrap .context-btn.border-amber-400");
-          var context = ctxBtn && ctxBtn.dataset.context ? ctxBtn.dataset.context : "career";
+          var context = currentContext || "career";
           var urlParams = typeof URLSearchParams !== "undefined" ? new URLSearchParams(window.location.search) : null;
           var source = (urlParams && urlParams.get("from") === "homepage") ? "Homepage_Entrance" : "Result_Save";
           savePendingDivinationToStorage(currentResult, question, mood, context, source);
@@ -809,34 +1009,49 @@
         "110011": 61, "001100": 62, "010101": 63, "101010": 64,
       };
 
-      document.getElementById("contextToggleWrap").addEventListener("click", function (e) {
-        var btn = e.target.closest(".context-btn");
-        if (!btn || !currentResult) return;
-        var ctx = btn.dataset.context;
-        if (typeof window.gtag === "function" && window.GA_MEASUREMENT_ID) {
-          window.gtag("event", "divination_context_switch", { scenario: ctx, hexagram: currentResult.primaryIndex });
-        }
-        var primary = getHexagram(currentResult.primaryIndex);
-        var mutual = getHexagram(currentResult.mutualIndex);
-        var transformedH = getHexagram(currentResult.transformedIndex);
-        var primaryPalace = palaceData ? palaceData.hexagramToPalace[String(currentResult.primaryIndex)] : null;
-        var primaryWuxing = primaryPalace && palaceData ? palaceData.palaceWuxing[primaryPalace] : null;
-        var mutualPalace = palaceData ? palaceData.hexagramToPalace[String(currentResult.mutualIndex)] : null;
-        var mutualWuxing = mutualPalace && palaceData ? palaceData.palaceWuxing[mutualPalace] : null;
-        var transformedPalace = palaceData ? palaceData.hexagramToPalace[String(currentResult.transformedIndex)] : null;
-        var transformedWuxing = transformedPalace && palaceData ? palaceData.palaceWuxing[transformedPalace] : null;
-        applyInsight(currentResult, ctx, primary, primaryWuxing);
-        if (typeof DivinationInterpretation !== "undefined") {
-          document.getElementById("mutualInterpretation").textContent = DivinationInterpretation.getMutualInterpretation(currentResult.mutualIndex, mutual ? mutual.name : null, mutualWuxing || "", ctx, timePeriod);
-          document.getElementById("transformedInterpretation").textContent = DivinationInterpretation.getTransformedInterpretation(currentResult.transformedIndex, transformedH ? transformedH.name : null, transformedWuxing || "", ctx, timePeriod);
-        }
-        document.querySelectorAll("#contextToggleWrap .context-btn").forEach(function (b) {
-          b.classList.remove("border-amber-400", "text-amber-300", "bg-amber-500/20");
-          b.classList.add("border-slate-600", "text-slate-400");
+      var btnToggleContext = document.getElementById("btnToggleContext");
+      if (btnToggleContext) {
+        btnToggleContext.addEventListener("click", function () {
+          var wrap = document.getElementById("contextButtonsWrap");
+          if (wrap) wrap.classList.toggle("hidden");
         });
-        btn.classList.add("border-amber-400", "text-amber-300", "bg-amber-500/20");
-        btn.classList.remove("border-slate-600", "text-slate-400");
-      });
+      }
+      var contextButtonsWrapEl = document.getElementById("contextButtonsWrap");
+      if (contextButtonsWrapEl) {
+        contextButtonsWrapEl.addEventListener("click", function (e) {
+          var btn = e.target.closest(".context-btn");
+          if (!btn || !currentResult) return;
+          var ctx = btn.dataset.context;
+          currentContext = ctx;
+          var contextLabelMap = { career: "事業", wealth: "財運", love: "感情", neutral: "無特定" };
+          var contextCurrentEl = document.getElementById("contextCurrentLabel");
+          if (contextCurrentEl) contextCurrentEl.textContent = contextLabelMap[ctx] || ctx;
+          contextButtonsWrapEl.classList.add("hidden");
+          if (typeof window.gtag === "function" && window.GA_MEASUREMENT_ID) {
+            window.gtag("event", "divination_context_switch", { scenario: ctx, hexagram: currentResult.primaryIndex });
+          }
+          var primary = getHexagram(currentResult.primaryIndex);
+          var mutual = getHexagram(currentResult.mutualIndex);
+          var transformedH = getHexagram(currentResult.transformedIndex);
+          var primaryPalace = palaceData ? palaceData.hexagramToPalace[String(currentResult.primaryIndex)] : null;
+          var primaryWuxing = primaryPalace && palaceData ? palaceData.palaceWuxing[primaryPalace] : null;
+          var mutualPalace = palaceData ? palaceData.hexagramToPalace[String(currentResult.mutualIndex)] : null;
+          var mutualWuxing = mutualPalace && palaceData ? palaceData.palaceWuxing[mutualPalace] : null;
+          var transformedPalace = palaceData ? palaceData.hexagramToPalace[String(currentResult.transformedIndex)] : null;
+          var transformedWuxing = transformedPalace && palaceData ? palaceData.palaceWuxing[transformedPalace] : null;
+          applyInsight(currentResult, ctx, primary, primaryWuxing);
+          if (typeof DivinationInterpretation !== "undefined") {
+            document.getElementById("mutualInterpretation").textContent = DivinationInterpretation.getMutualInterpretation(currentResult.mutualIndex, mutual ? mutual.name : null, mutualWuxing || "", ctx, timePeriod);
+            document.getElementById("transformedInterpretation").textContent = DivinationInterpretation.getTransformedInterpretation(currentResult.transformedIndex, transformedH ? transformedH.name : null, transformedWuxing || "", ctx, timePeriod);
+          }
+          contextButtonsWrapEl.querySelectorAll(".context-btn").forEach(function (b) {
+            b.classList.remove("border-amber-400", "text-amber-300", "bg-amber-500/20");
+            b.classList.add("border-slate-600", "text-slate-400");
+          });
+          btn.classList.add("border-amber-400", "text-amber-300", "bg-amber-500/20");
+          btn.classList.remove("border-slate-600", "text-slate-400");
+        });
+      }
 
       var btnToChart = document.getElementById("btnToChart");
       if (btnToChart) btnToChart.addEventListener("click", function (e) {
@@ -870,7 +1085,13 @@
         var fbThank = document.getElementById("feedbackThankYou");
         if (fbButtons) { fbButtons.classList.remove("hidden"); fbButtons.querySelectorAll(".feedback-btn").forEach(function (b) { b.classList.remove("opacity-50", "border-amber-400", "bg-amber-500/20"); }); }
         if (fbWrap) { fbWrap.classList.add("hidden"); var ta = document.getElementById("feedbackSuggestion"); if (ta) ta.value = ""; }
+        selectedFeedbackRating = null;
+        selectedVerification = null;
+        document.querySelectorAll(".verification-btn").forEach(function (b) { b.classList.remove("border-emerald-500/50", "text-emerald-300", "border-red-500/50", "text-red-300", "border-amber-500/50", "text-amber-300"); b.classList.add("border-slate-600", "text-slate-400"); });
+        document.querySelectorAll(".verifiable-checkbox").forEach(function (cb) { cb.checked = false; });
         if (fbThank) fbThank.classList.add("hidden");
+        var thankExtra = document.getElementById("feedbackThankYouExtra");
+        if (thankExtra) thankExtra.innerHTML = "<a href='index.html' class='text-amber-400/90 hover:text-amber-300 underline'>登入</a> 後可在「我的占卦紀錄」查看此回饋。";
         var sugOnly = document.getElementById("feedbackSuggestionOnly");
         var btnSug = document.getElementById("btnSuggestionOnlySubmit");
         if (sugOnly) sugOnly.value = "";
@@ -879,7 +1100,10 @@
         if (linesPreview) linesPreview.classList.remove("lines-complete");
         var rlp = document.getElementById("resultLoginPrompt");
         if (rlp) rlp.classList.add("hidden");
-        document.getElementById("contextToggleWrap").classList.add("hidden");
+        var ctxWrap = document.getElementById("contextToggleWrap");
+        if (ctxWrap) ctxWrap.classList.add("hidden");
+        var ctxBtnsWrap = document.getElementById("contextButtonsWrap");
+        if (ctxBtnsWrap) ctxBtnsWrap.classList.add("hidden");
         currentResult = null;
         document.getElementById("question").value = "";
         var tp6 = document.querySelector('input[name="timePeriod"][value="6months"]');
@@ -945,6 +1169,7 @@
       });
 
       var selectedFeedbackRating = null;
+      var selectedVerification = null;
       document.querySelectorAll(".feedback-btn").forEach(function (btn) {
         btn.addEventListener("click", function () {
           if (selectedFeedbackRating) return;
@@ -958,6 +1183,52 @@
           document.getElementById("feedbackSuggestionWrap").classList.remove("hidden");
         });
       });
+      document.querySelectorAll(".verification-btn").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          selectedVerification = btn.dataset.verification;
+          document.querySelectorAll(".verification-btn").forEach(function (b) {
+            b.classList.remove("border-emerald-500/50", "text-emerald-300", "border-red-500/50", "text-red-300", "border-amber-500/50", "text-amber-300");
+            b.classList.add("border-slate-600", "text-slate-400");
+          });
+          btn.classList.remove("border-slate-600", "text-slate-400");
+          if (selectedVerification === "yes") btn.classList.add("border-emerald-500/50", "text-emerald-300");
+          else if (selectedVerification === "no") btn.classList.add("border-red-500/50", "text-red-300");
+          else btn.classList.add("border-amber-500/50", "text-amber-300");
+        });
+      });
+      function downloadIcalReminder(weeks) {
+        var now = new Date();
+        var d = new Date(now.getTime() + weeks * 7 * 24 * 60 * 60 * 1000);
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, "0");
+        var day = String(d.getDate()).padStart(2, "0");
+        var dateStr = "" + y + m + day;
+        var hexName = currentResult && hexagramsData ? (hexagramsData.hexagrams[currentResult.primaryIndex] || {}).name || "卦" : "卦";
+        var title = "占卦驗證提醒：" + hexName + "卦";
+        var ics = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//17gonplay//Divination//ZH\r\nBEGIN:VEVENT\r\nDTSTART;VALUE=DATE:" + dateStr + "\r\nDTEND;VALUE=DATE:" + dateStr + "\r\nSUMMARY:" + title + "\r\nDESCRIPTION:4-8週後回來驗證占卦結果\r\nEND:VEVENT\r\nEND:VCALENDAR";
+        var blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "divination-reminder-" + weeks + "w.ics";
+        a.click();
+        URL.revokeObjectURL(a.href);
+        if (typeof window.gtag === "function" && window.GA_MEASUREMENT_ID) {
+          window.gtag("event", "divination_ical_download", { weeks: weeks });
+        }
+      }
+      var btnIcal4 = document.getElementById("btnIcal4w");
+      var btnIcal8 = document.getElementById("btnIcal8w");
+      if (btnIcal4) btnIcal4.addEventListener("click", function () { downloadIcalReminder(4); });
+      if (btnIcal8) btnIcal8.addEventListener("click", function () { downloadIcalReminder(8); });
+
+      ["coreSummaryTimeDetails", "learningSectionDetails"].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el && typeof window.gtag === "function" && window.GA_MEASUREMENT_ID) {
+          el.addEventListener("toggle", function () {
+            if (el.open) window.gtag("event", "divination_details_expand", { details_id: id });
+          });
+        }
+      });
       document.getElementById("btnSuggestionOnlySubmit").addEventListener("click", function () {
         var text = (document.getElementById("feedbackSuggestionOnly") || {}).value || "";
         if (!text.trim()) { alert("請輸入建議或意見"); return; }
@@ -965,10 +1236,12 @@
         var btn = document.getElementById("btnSuggestionOnlySubmit");
         btn.disabled = true;
         btn.textContent = "送出中…";
+        var fbPayload1 = { divination_id: lastDivinationId, rating: "suggestion", feedback_text: text.trim() };
+        console.log("📡 API REQUEST", "/api/divination/feedback", JSON.stringify(fbPayload1, null, 2));
         fetch("/api/divination/feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ divination_id: lastDivinationId, rating: "suggestion", feedback_text: text.trim() }),
+          body: JSON.stringify(fbPayload1),
         })
           .then(function (r) { return r.json().catch(function () { return {}; }); })
           .then(function (data) {
@@ -992,18 +1265,47 @@
         submitBtn.disabled = true;
         submitBtn.textContent = "送出中…";
         var text = (document.getElementById("feedbackSuggestion") || {}).value || "";
+        if (selectedVerification) {
+          var vLabel = selectedVerification === "yes" ? "有" : (selectedVerification === "no" ? "沒有" : "部分");
+          text = "【驗證:" + vLabel + "】" + (text ? " " + text : "");
+        }
+        var checkedIndices = [];
+        document.querySelectorAll(".verifiable-checkbox:checked").forEach(function (cb) {
+          checkedIndices.push(cb.dataset.index);
+        });
+        if (checkedIndices.length > 0) {
+          text = (text ? text + " " : "") + "【指標:" + checkedIndices.join(",") + "】";
+        }
+        var fbPayload2 = { divination_id: lastDivinationId, rating: selectedFeedbackRating, feedback_text: text };
+        console.log("📡 API REQUEST", "/api/divination/feedback", JSON.stringify(fbPayload2, null, 2));
         fetch("/api/divination/feedback", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ divination_id: lastDivinationId, rating: selectedFeedbackRating, feedback_text: text }),
+          body: JSON.stringify(fbPayload2),
         })
           .then(function (r) { return r.json().catch(function () { return {}; }); })
           .then(function (data) {
             document.getElementById("feedbackButtons").classList.add("hidden");
             document.getElementById("feedbackSuggestionWrap").classList.add("hidden");
-            document.getElementById("feedbackThankYou").classList.remove("hidden");
+            var verifiableBlock = document.getElementById("feedbackVerifiableBlock");
+            if (verifiableBlock) verifiableBlock.classList.add("hidden");
+            var thankEl = document.getElementById("feedbackThankYou");
+            var thankExtra = document.getElementById("feedbackThankYouExtra");
+            if (thankEl) thankEl.classList.remove("hidden");
+            if (thankExtra) {
+              var loggedIn = window.AuthService && window.AuthService.isLoggedIn && window.AuthService.isLoggedIn();
+              if (selectedFeedbackRating === "pending") {
+                if (loggedIn) {
+                  thankExtra.innerHTML = "儲存後可在「我的占卦紀錄」查看，4–8 週後回來驗證。";
+                } else {
+                  thankExtra.innerHTML = "建議儲存，4–8 週後回來對照驗證。<br><a href='index.html' class='text-amber-400/90 hover:text-amber-300 underline mt-1 inline-block'>登入</a> 後可儲存至「我的占卦紀錄」。";
+                }
+              } else {
+                thankExtra.innerHTML = "<a href='index.html' class='text-amber-400/90 hover:text-amber-300 underline'>登入</a> 後可在「我的占卦紀錄」查看此回饋。";
+              }
+            }
             if (typeof window.gtag === "function" && window.GA_MEASUREMENT_ID) {
-              window.gtag("event", "divination_feedback", { rating: selectedFeedbackRating });
+              window.gtag("event", "divination_feedback", { rating: selectedFeedbackRating, verification: selectedVerification || "" });
             }
           })
           .catch(function () {
@@ -1013,23 +1315,49 @@
           });
       });
 
-      Promise.all([
-        loadHexagrams(),
-        loadPalace(),
-        loadCommentaries(),
-        loadStructure(),
-        loadOpeningWisdom(),
-        loadActions(),
-        typeof DivinationScore !== "undefined" ? DivinationScore.loadLines384() : Promise.resolve(),
-        typeof DivinationInterpretation !== "undefined" ? DivinationInterpretation.loadSummaries() : Promise.resolve(),
-      ]).then(function (arr) {
+      Promise.all([loadHexagrams(), loadPalace()]).then(function (arr) {
         hexagramsData = arr[0];
         palaceData = arr[1];
-        commentariesData = arr[2];
-        structureData = arr[3];
-        openingWisdomData = arr[4];
-        actionsData = arr[5];
       });
+
+      var questionInputTimer = null;
+      var questionEl = document.getElementById("question");
+      var clarificationPrompt = document.getElementById("questionClarificationPrompt");
+      var clarificationText = document.getElementById("questionClarificationText");
+      if (questionEl && clarificationPrompt && clarificationText && typeof window.analyzeQuestion === "function") {
+        questionEl.addEventListener("input", function () {
+          clearTimeout(questionInputTimer);
+          questionInputTimer = setTimeout(function () {
+            var q = questionEl.value.trim();
+            if (!q) {
+              clarificationPrompt.classList.add("hidden");
+              return;
+            }
+            var analysis = window.analyzeQuestion(q);
+            if (analysis.needsClarification && analysis.suggestedFollowUp) {
+              clarificationText.textContent = analysis.suggestedFollowUp;
+              clarificationPrompt.classList.remove("hidden");
+              clarificationPrompt.dataset.suggestedFollowUp = analysis.suggestedFollowUp;
+            } else {
+              clarificationPrompt.classList.add("hidden");
+              delete clarificationPrompt.dataset.suggestedFollowUp;
+            }
+          }, 400);
+        });
+      }
+      var btnFillTemplate = document.getElementById("btnFillTemplate");
+      if (btnFillTemplate && questionEl && clarificationPrompt) {
+        btnFillTemplate.addEventListener("click", function () {
+          var template = clarificationPrompt.dataset.suggestedFollowUp || clarificationText.textContent || "";
+          if (template) {
+            var cur = questionEl.value.trim();
+            questionEl.value = cur ? cur + " " + template : template;
+            if (typeof window.gtag === "function" && window.GA_MEASUREMENT_ID) {
+              window.gtag("event", "divination_fill_template", {});
+            }
+          }
+        });
+      }
 
       var historyExpanded = false;
       var historyLoaded = false;
@@ -1048,6 +1376,7 @@
             historyEmpty.classList.add("hidden");
             historyList.classList.add("hidden");
             var authHeaders = (window.AuthService && window.AuthService.getAuthHeaders) ? window.AuthService.getAuthHeaders() : {};
+            console.log("📡 API REQUEST", "/api/me/divinations", JSON.stringify({}, null, 2));
             fetch("/api/me/divinations", { headers: authHeaders })
               .then(function (r) { return r.json().catch(function () { return {}; }); })
               .then(function (data) {
@@ -1081,6 +1410,7 @@
                         transformedIndex: rec.transformed_index,
                         mutualIndex: rec.mutual_index,
                         changingLines: rec.changing_lines || [],
+                        question: rec.question || "",
                       };
                       step1.classList.add("hidden");
                       step2.classList.add("hidden");
@@ -1089,8 +1419,10 @@
                       if (sh) sh.classList.add("hidden");
                       lastDivinationId = rec.id || null;
                       currentResult = res;
-                      showResult(res);
-                      document.getElementById("resultTimestamp").textContent = "占卦時間：" + (rec.created_at ? new Date(rec.created_at).toLocaleString("zh-TW", { dateStyle: "medium", timeStyle: "short" }) : "—");
+                      ensureFullData().then(function () {
+                        showResult(res);
+                        document.getElementById("resultTimestamp").textContent = "占卦時間：" + (rec.created_at ? new Date(rec.created_at).toLocaleString("zh-TW", { dateStyle: "medium", timeStyle: "short" }) : "—");
+                      });
                     });
                     historyList.appendChild(btn);
                   });
@@ -1105,4 +1437,17 @@
           }
         });
       }
+        } catch (e) {
+          if (typeof window !== "undefined") window.__divinationError = e && (e.message || String(e));
+          if (typeof console !== "undefined" && console.error) console.error("[divination] runDivinationUI error", e);
+          throw e;
+        }
+    }
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", function () {
+        try { runDivinationUI(); } catch (e) { console.error("[divination] init error", e); }
+      });
+    } else {
+      try { runDivinationUI(); } catch (e) { console.error("[divination] init error", e); }
+    }
     })();

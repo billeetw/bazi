@@ -41,16 +41,6 @@
     return null;
   }
 
-  /** 同步小限滑桿顯示與數值（滑桿已移除，保留以相容舊呼叫） */
-  function syncAgeSliderDisplay(age) {
-    const slider = document.getElementById("currentAgeSlider");
-    const display = document.getElementById("currentAgeDisplay");
-    if (age == null || !Number.isFinite(Number(age))) return;
-    const a = Math.max(1, Math.min(120, Number(age)));
-    if (slider) slider.value = String(a);
-    if (display) display.textContent = String(a);
-  }
-
   /** 閃爍提示效果 */
   function flashPeek(el) {
     if (!el) return;
@@ -98,7 +88,6 @@
   window.UiDomHelpers = {
     animateValue,
     getCurrentAge,
-    syncAgeSliderDisplay,
     flashPeek,
     openPalaceSheet,
     closePalaceSheet,

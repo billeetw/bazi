@@ -1,0 +1,22 @@
+{
+  "meta": { "version": "1.1", "description": "CCL3 star_life_lessons：星曜人生功課（P1.5），供 s21 靈魂收束與命盤主題" },
+  "items": [
+    { "star": "紫微", "lesson": "真正的尊嚴來自內在穩定", "shadowPattern": "過度維持形象" },
+    { "star": "天機", "lesson": "智慧需要行動", "shadowPattern": "思考取代行動" },
+    { "star": "太陽", "lesson": "照亮世界也要照顧自己", "shadowPattern": "過度燃燒" },
+    { "star": "武曲", "lesson": "資源需要流動", "shadowPattern": "過度控制" },
+    { "star": "天同", "lesson": "舒適與責任需要平衡", "shadowPattern": "逃避壓力" },
+    { "star": "廉貞", "lesson": "力量可以用來創造", "shadowPattern": "權力衝突" },
+    { "star": "太陰", "lesson": "安全感來自內心", "shadowPattern": "依附" },
+    { "star": "巨門", "lesson": "理解與信任可以共存", "shadowPattern": "懷疑一切" },
+    { "star": "七殺", "lesson": "力量可以溫柔", "shadowPattern": "極端決斷" },
+    { "star": "破軍", "lesson": "改變需要節奏", "shadowPattern": "破壞過度" },
+    { "star": "文昌", "lesson": "接受世界的不確定", "shadowPattern": "過度分析" },
+    { "star": "文曲", "lesson": "情感與理性並存", "shadowPattern": "情緒判斷" },
+    { "star": "祿存", "lesson": "資源需要流動", "shadowPattern": "守財焦慮" },
+    { "star": "擎羊", "lesson": "力量可以用來突破，而不是對抗", "shadowPattern": "衝突" },
+    { "star": "陀羅", "lesson": "前進比完美更重要", "shadowPattern": "拖延" },
+    { "star": "地空", "lesson": "空虛是重新開始的入口", "shadowPattern": "失去動力" },
+    { "star": "地劫", "lesson": "失去也是轉化", "shadowPattern": "資源流失" }
+  ]
+}

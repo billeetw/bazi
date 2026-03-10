@@ -2,6 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
+  <base href="/" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="專業命理師一對一深度諮詢，結合八字紫微命盤與流年分析，協助你做出關鍵決策。預約 1:1 諮詢。" />
   <title>1:1 深度諮詢｜人生說明書</title>
@@ -19,7 +20,7 @@
   <meta name="twitter:title" content="1:1 深度諮詢｜人生說明書" />
   <meta name="twitter:description" content="專業命理師一對一深度諮詢，結合八字紫微命盤與流年分析。" />
   <meta name="twitter:image" content="https://www.17gonplay.com/assets/og-image.jpg" />
-  <link href="dist/tailwind.css" rel="stylesheet" />
+  <link href="/dist/tailwind.css" rel="stylesheet" />
   <style>
     body { background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%); color: #e2e8f0; font-family: system-ui, sans-serif; }
     .glass { background: rgba(15,23,42,0.88); backdrop-filter: blur(18px); border: 1px solid rgba(148,163,184,0.35); border-radius: 1.25rem; }
@@ -115,7 +116,8 @@
       </div>
       <div class="pt-2 border-t border-white/10">
         <p class="text-sm font-bold text-amber-300 mb-2">付款資訊確認 *</p>
-        <p class="text-sm text-slate-300 mb-3">匯款帳號：國泰世華 (013) 帳號 011035019997（一起出來玩股份有限公司）</p>
+        <p class="text-sm text-slate-300 mb-1">匯款帳號：國泰世華 (013) 帳號 011035019997（一起出來玩股份有限公司）</p>
+        <p class="text-sm text-slate-300 mb-3">EMAIL：billeetw@gmail.com　地址：台北市信義路二段207號三樓　統編：24744311</p>
         <label class="block text-xs text-slate-500 mb-1">您的匯款帳號後五碼 *</label>
         <input type="text" name="bankLast5" required maxlength="5" pattern="[0-9]{5}" class="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-slate-100" placeholder="五位數字" />
       </div>
@@ -250,6 +252,7 @@
       msgEl.classList.add('hidden');
 
       try {
+        console.log('📡 API REQUEST', '/api/consultation', JSON.stringify(payload, null, 2));
         var res = await fetch('/api/consultation', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

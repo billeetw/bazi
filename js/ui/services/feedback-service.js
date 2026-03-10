@@ -101,8 +101,8 @@
     // 这里暂时跳过，由后端处理
 
     try {
-      // 使用相对路径，Cloudflare Pages Functions 会自动处理
       const apiUrl = API_BASE ? `${API_BASE}/api/feedback` : '/api/feedback';
+      console.log('📡 API REQUEST', apiUrl, JSON.stringify(body, null, 2));
       const resp = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -184,8 +184,8 @@
    */
   async function getFeedbackStats() {
     try {
-      // 使用相对路径，Cloudflare Pages Functions 会自动处理
       const apiUrl = API_BASE ? `${API_BASE}/api/feedback?action=stats` : '/api/feedback?action=stats';
+      console.log('📡 API REQUEST', apiUrl, JSON.stringify({ action: 'stats' }, null, 2));
       const resp = await fetch(apiUrl, {
         method: 'GET',
       });

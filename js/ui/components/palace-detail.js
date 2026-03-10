@@ -163,27 +163,29 @@
           const block = document.getElementById("palaceStrategyBlock");
           if (block) block.textContent = "";
         });
-        return; // 異步處理中，提前返回
+        // 不提前 return：仍須往下渲染宮位解釋與星曜解釋，戰略金句由上方 .then() 異步更新 #palaceStrategyBlock
+      } else {
+        // 非小限命宮時才呼叫第二次 API，小限命宮僅用上方加權分數的 async 鏈更新戰略區
+        const maxScore = Math.max(...Object.values(window.ziweiScores.palaceScores).map(Number), 0.01);
+        const strength = Strategy.scoreToStrength(displayScore, maxScore);
+        const sihuaList = getSihuaForPalace(ziwei, name, horoscope?.mutagenStars || {});
+        Strategy.getStrategyNoteFromAPI(name, strength, sihuaList).then(function (advice) {
+          const block = document.getElementById("palaceStrategyBlock");
+          if (!block) return;
+          if (advice && advice !== t("ziwei.noStrategyHint") && advice !== "（暫無戰略提示）") {
+            const esc = window.Utils?.escHtml || ((s) => {
+              if (s == null) return "";
+              return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+            });
+            block.outerHTML = "<div class=\"p-4 md:p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-xs md:text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">" + t("ziwei.strategyQuote") + "</div><div class=\"text-base md:text-sm text-amber-100/95 leading-relaxed\">" + esc(advice) + "</div></div>";
+          } else {
+            block.textContent = "";
+          }
+        }).catch(function () {
+          const block = document.getElementById("palaceStrategyBlock");
+          if (block) block.textContent = "";
+        });
       }
-      const maxScore = Math.max(...Object.values(window.ziweiScores.palaceScores).map(Number), 0.01);
-      const strength = Strategy.scoreToStrength(displayScore, maxScore);
-      const sihuaList = getSihuaForPalace(ziwei, name, horoscope?.mutagenStars || {});
-      Strategy.getStrategyNoteFromAPI(name, strength, sihuaList).then(function (advice) {
-        const block = document.getElementById("palaceStrategyBlock");
-        if (!block) return;
-        if (advice && advice !== t("ziwei.noStrategyHint") && advice !== "（暫無戰略提示）") {
-          const esc = window.Utils?.escHtml || ((s) => {
-            if (s == null) return "";
-            return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-          });
-          block.outerHTML = "<div class=\"p-4 md:p-4 rounded-xl border border-amber-400/30 bg-amber-500/10 mb-4\"><div class=\"text-xs md:text-[10px] text-amber-200 font-black tracking-widest uppercase mb-2\">" + t("ziwei.strategyQuote") + "</div><div class=\"text-base md:text-sm text-amber-100/95 leading-relaxed\">" + esc(advice) + "</div></div>";
-        } else {
-          block.textContent = "";
-        }
-      }).catch(function () {
-        const block = document.getElementById("palaceStrategyBlock");
-        if (block) block.textContent = "";
-      });
     } else {
       strategyHtml = "";
     }
@@ -200,6 +202,14 @@
           if (starRaw && starRaw.startsWith("(missing:")) starRaw = null;
           if (!starRaw || String(starRaw).trim() === "") starRaw = null;
           var explain = starRaw || t("ziwei.starNoData");
+          var starInPalace = ContentUtils && typeof ContentUtils.getStarInPalaceContent === "function"
+            ? ContentUtils.getStarInPalaceContent(dbContent, s, name, null)
+            : null;
+          if (starInPalace && String(starInPalace).trim() === "") starInPalace = null;
+          var fullExplain = explain;
+          if (starInPalace) {
+            fullExplain = explain + "\n\n📍 " + (t("ziwei.starInPalaceLabel") || "伯彥老師提醒") + "\n" + starInPalace;
+          }
           const badgeHtml = getMutagenBadgeHtml(s, mutagenStars);
           const titleDisplay = badgeHtml ? `【${s}】 ${badgeHtml}` : `【${s}】`;
           return `
@@ -208,7 +218,7 @@
                 <div class="body-text font-black ${wx ? "star-wx-" + wx : "text-slate-200"}">${titleDisplay}</div>
                 <div class="body-caption text-slate-500">${wx ? t("ziwei.wuxingLabel") + wx : ""}</div>
               </div>
-              <div class="body-text text-slate-300 mt-2 leading-relaxed whitespace-pre-line">${explain}</div>
+              <div class="body-text text-slate-300 mt-2 leading-relaxed whitespace-pre-line">${fullExplain}</div>
             </div>
           `;
         })

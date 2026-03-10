@@ -484,6 +484,24 @@
                   console.warn('[calc.js] 生成疊宮報告失敗:', err);
                 }
               }
+              // M7 戰略聯動：在現有結果上產出 StrategicLink[] 供命書依 key 抓文案
+              if (window.StrategicLinkEngine && window.contract && window.contract.ziwei && overlapAnalysis && window.contract.bodyPalaceReport) {
+                try {
+                  const ctx = window.StrategicLinkEngine.buildStrategicContext(
+                    window.contract.ziwei,
+                    overlapAnalysis,
+                    window.contract.bodyPalaceReport,
+                    window.contract.userBehavior,
+                    window.contract.luEvents
+                  );
+                  window.contract.strategicLinks = window.StrategicLinkEngine.buildStrategicLinks(ctx);
+                  if (window.BaziApp?.State) {
+                    window.BaziApp.State.setState("strategicLinks", window.contract.strategicLinks);
+                  }
+                } catch (err) {
+                  console.warn('[calc.js] strategicLinks 計算失敗:', err);
+                }
+              }
             }
           } catch (err) {
             console.warn('[calc.js] 疊宮分析計算失敗:', err);
@@ -852,11 +870,27 @@
   // computeDynamicTactics
 
   /**
+   * 依流年地支與命宮地支計算流年命宮（與 worker 寅起地支環一致）。
+   * @param {string} yearlyBranch 流年地支（如「午」）
+   * @param {string} mingBranch 命宮地支
+   * @returns {string|null} 宮位名（如「疾厄宮」）或 null
+   */
+  function computeYearlyDestinyPalace(yearlyBranch, mingBranch) {
+    const BRANCH_RING_INDEX = { 寅: 0, 卯: 1, 辰: 2, 巳: 3, 午: 4, 未: 5, 申: 6, 酉: 7, 戌: 8, 亥: 9, 子: 10, 丑: 11 };
+    const PALACE_BY_OFFSET = ["命宮", "兄弟宮", "夫妻宮", "子女宮", "財帛宮", "疾厄宮", "遷移宮", "僕役宮", "官祿宮", "田宅宮", "福德宮", "父母宮"];
+    const mingIdx = BRANCH_RING_INDEX[mingBranch];
+    const yearlyIdx = BRANCH_RING_INDEX[yearlyBranch];
+    if (mingIdx == null || mingIdx === undefined || yearlyIdx == null || yearlyIdx === undefined) return null;
+    const offset = (mingIdx - yearlyIdx + 12) % 12;
+    return PALACE_BY_OFFSET[offset] ?? null;
+  }
+
+  /**
    * 依「命宮地支」＋固定 PALACE_DEFAULT → 算出每一格要放哪個宮位（格子＝地支、內容＝宮位）
-   * horoscope 可選：{ yearlyIndex, activeLimitPalaceName } 或後端回傳之 horoscope，用於 isActiveLimit
-   * 
+   * horoscope 可選：yearlyDestinyPalace 或 yearly.palace / yearlyBranch 用於標示「流年命宮」
+   *
    * @param {Object} ziwei 紫微命盤資料
-   * @param {Object} horoscope 小限資料（可選）
+   * @param {Object} horoscope 流年／大限資料（可選，含 yearlyDestinyPalace 或 yearly.palace / yearlyBranch）
    * @param {Object} options 選項（可選，包含 bazi 和 gender 用於計算大限旋轉方向）
    * @returns {Array} 宮位槽位陣列
    */
@@ -874,8 +908,18 @@
     }
 
     const palaceOrder = PALACE_DEFAULT;
-    const rawActiveLimit = horoscope?.activeLimitPalaceName ?? (horoscope != null && Number.isInteger(horoscope.yearlyIndex) ? palaceOrder[horoscope.yearlyIndex] : null);
-    const activeLimitPalace = (window.CalcHelpers?.normalizePalaceName && rawActiveLimit) ? window.CalcHelpers.normalizePalaceName(rawActiveLimit) : rawActiveLimit;
+    // 流年命宮：優先 API 回傳，否則依當年地支＋命宮地支推算（與 worker 一致）
+    let yearlyDestinyPalace =
+      horoscope?.yearlyDestinyPalace ??
+      (horoscope?.yearly?.palace != null ? horoscope.yearly.palace : null) ??
+      (horoscope?.yearlyBranch && mingBranch ? computeYearlyDestinyPalace(horoscope.yearlyBranch, mingBranch) : null);
+    if (!yearlyDestinyPalace && mingBranch && (horoscope != null || options.targetYear != null)) {
+      const y = options.targetYear != null ? options.targetYear : new Date().getFullYear();
+      const BRANCHES_BY_YEAR = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"];
+      const yearlyBranch = BRANCHES_BY_YEAR[((y - 2020) % 12 + 12) % 12];
+      yearlyDestinyPalace = computeYearlyDestinyPalace(yearlyBranch, mingBranch);
+    }
+    const activeLimitPalace = (window.CalcHelpers?.normalizePalaceName && yearlyDestinyPalace) ? window.CalcHelpers.normalizePalaceName(yearlyDestinyPalace) : yearlyDestinyPalace;
     
     // 獲取命宮索引（mingBranch 已在上面声明）
     const mingPalaceIndex = 0; // 命宮在 PALACE_DEFAULT 中的索引固定為 0

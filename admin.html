@@ -2,10 +2,11 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
+  <base href="/" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
   <title>報名紀錄後台</title>
-  <link href="dist/tailwind.css" rel="stylesheet" />
+  <link href="/dist/tailwind.css" rel="stylesheet" />
   <style>
     body { background: radial-gradient(circle at top, #1e293b 0, #020617 55%, #000 100%); color: #e2e8f0; font-family: system-ui, sans-serif; }
     .glass { background: rgba(15,23,42,0.88); backdrop-filter: blur(18px); border: 1px solid rgba(148,163,184,0.35); border-radius: 1.25rem; }
@@ -43,7 +44,11 @@
 
       <section id="lifeBooksSection" class="glass p-4 md:p-6 mb-6 hidden">
         <h2 class="text-lg font-black text-amber-300 mb-3">已存命書</h2>
-        <span id="lifeBooksCount" class="text-sm text-slate-500"></span>
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          <input type="text" id="lifeBooksSearchInput" placeholder="搜尋出生、Email、ID…" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 w-56" />
+          <button type="button" id="lifeBooksSearchBtn" class="px-3 py-2 rounded-lg bg-amber-600/80 text-slate-900 text-sm font-medium hover:bg-amber-500">搜尋</button>
+          <span id="lifeBooksCount" class="text-sm text-slate-500"></span>
+        </div>
         <div id="lifeBooksLoading" class="text-sm text-slate-500 py-4 hidden">載入中…</div>
         <div id="lifeBooksList" class="mt-2 space-y-2"></div>
         <button type="button" id="hideLifeBooksBtn" class="mt-2 text-sm text-slate-400 hover:text-slate-300">收起</button>
@@ -270,15 +275,22 @@
     document.getElementById('hideLifeBooksBtn').addEventListener('click', function () {
       document.getElementById('lifeBooksSection').classList.add('hidden');
     });
+    document.getElementById('lifeBooksSearchBtn').addEventListener('click', function () { loadLifeBooks(); });
+    document.getElementById('lifeBooksSearchInput').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') loadLifeBooks();
+    });
 
     function loadLifeBooks() {
       var section = document.getElementById('lifeBooksSection');
       var loading = document.getElementById('lifeBooksLoading');
       var listEl = document.getElementById('lifeBooksList');
       var countEl = document.getElementById('lifeBooksCount');
+      var searchVal = (document.getElementById('lifeBooksSearchInput') && document.getElementById('lifeBooksSearchInput').value) || '';
+      var url = '/api/admin/life-books?limit=100';
+      if (searchVal.trim()) url += '&q=' + encodeURIComponent(searchVal.trim());
       loading.classList.remove('hidden');
       listEl.innerHTML = '';
-      fetch('/api/admin/life-books', { headers: authHeader() })
+      fetch(url, { headers: authHeader() })
         .then(function (res) {
           if (res.status === 401) { showLogin(); return Promise.reject(new Error('請重新登入')); }
           return res.json();
@@ -290,24 +302,34 @@
           countEl.textContent = '共 ' + list.length + ' 筆';
           listEl.innerHTML = list.map(function (row) {
             var created = row.created_at ? new Date(row.created_at).toLocaleString('zh-TW') : '';
-            return '<div class="flex items-center justify-between py-2 border-b border-white/5">' +
-              '<span class="text-sm">' + escapeHtml(row.email || '—') + ' · ' + escapeHtml(row.birth_info || '') + ' · ' + created + '</span>' +
-              '<button type="button" class="text-amber-400 hover:text-amber-300 text-sm ml-2" data-id="' + escapeHtml(row.id) + '">預覽</button>' +
-              '</div>';
+            return '<div class="flex items-center justify-between py-2 border-b border-white/5 gap-2">' +
+              '<span class="text-sm flex-1 truncate">' + escapeHtml(row.email || '—') + ' · ' + escapeHtml(row.birth_info || '') + ' · ' + created + '</span>' +
+              '<span class="flex-shrink-0">' +
+              '<button type="button" class="text-amber-400 hover:text-amber-300 text-sm mr-2" data-id="' + escapeHtml(row.id) + '" data-action="preview">預覽</button>' +
+              '<button type="button" class="text-emerald-400 hover:text-emerald-300 text-sm" data-id="' + escapeHtml(row.id) + '" data-action="download" data-birth="' + escapeHtml(row.birth_info || '') + '">下載</button>' +
+              '</span></div>';
           }).join('');
           listEl.querySelectorAll('button[data-id]').forEach(function (btn) {
             btn.addEventListener('click', function () {
               var id = btn.getAttribute('data-id');
+              var action = btn.getAttribute('data-action');
               if (!id) return;
               fetch('/api/admin/life-books/' + id, { headers: authHeader() })
                 .then(function (res) { return res.json(); })
                 .then(function (data) {
-                  if (data.html_content) {
+                  if (!data.html_content) { alert('此命書無 HTML 內容'); return; }
+                  if (action === 'download') {
+                    var blob = new Blob([data.html_content], { type: 'text/html; charset=utf-8' });
+                    var a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    var baseName = (data.client_name || data.birth_info || id).replace(/[\/\s:]/g, '-').slice(0, 40);
+                    a.download = 'life-book-' + baseName + '.html';
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                  } else {
                     var w = window.open('', '_blank');
                     w.document.write(data.html_content);
                     w.document.close();
-                  } else {
-                    alert('此命書無 HTML 內容');
                   }
                 })
                 .catch(function () { alert('載入失敗'); });

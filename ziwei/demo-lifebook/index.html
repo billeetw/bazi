@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>命盤 Demo（示範命書）</title>
+  <link rel="stylesheet" href="/dist/tailwind.css" />
+  <style>
+    body { background: #0f172a; color: #e2e8f0; font-family: 'Noto Sans TC', system-ui, sans-serif; padding: 1rem; }
+    .zw-grid-container {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(5, 1fr);
+      gap: 0.5rem;
+      min-height: 280px;
+    }
+    .zw-palace {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 0.85rem;
+      padding: 0.5rem;
+      font-size: 12px;
+    }
+    .zw-palace:hover { border-color: rgba(248,250,252,0.5); }
+  </style>
+</head>
+<body>
+  <div class="max-w-3xl mx-auto">
+    <h1 class="text-lg font-bold text-amber-300/90 mb-2">紫微命盤與五行雷達圖（示範）</h1>
+    <p id="demoBirthCaption" class="text-sm text-slate-500 mb-4">示範用出生：1990年1月1日 子時（0:00） 女</p>
+
+    <div id="ziweiGrid" class="zw-grid-container"></div>
+    <div id="ziweiHint" class="text-sm text-slate-400 mt-1"></div>
+
+    <div class="mt-6">
+      <h2 class="text-sm font-bold text-slate-400 mb-2">五行雷達圖（戰略）</h2>
+      <div id="ziweiWxRadar" class="w-full max-w-[260px]" style="width:220px;height:220px;"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/dist/app.js"></script>
+  <script>
+    var DEMO_BIRTH = { year: 1990, month: 1, day: 1, hour: 0, minute: 0, gender: 'F' };
+
+    function runDemo() {
+      var hint = document.getElementById('ziweiHint');
+      var caption = document.getElementById('demoBirthCaption');
+      hint.textContent = '正在連線後端計算命盤…';
+
+      var apiService = window.UiServices && window.UiServices.ApiService;
+      if (!apiService || typeof apiService.computeAll !== 'function') {
+        hint.textContent = 'ApiService 未載入，請確認已載入 app.js。';
+        return;
+      }
+
+      apiService.computeAll(DEMO_BIRTH)
+        .then(function (payload) {
+          var contract = payload && payload.features;
+          if (!contract || !contract.ziwei || !contract.bazi) {
+            hint.textContent = '後端未回傳命盤資料（features.ziwei / bazi）。';
+            return;
+          }
+          var ziwei = contract.ziwei;
+          var bazi = contract.bazi;
+          var horoscope = ziwei.horoscope || null;
+          var opts = { bazi: bazi, gender: DEMO_BIRTH.gender };
+
+          if (window.UiComponents && window.UiComponents.ZiweiGrid && window.UiComponents.ZiweiGrid.renderZiwei) {
+            window.UiComponents.ZiweiGrid.renderZiwei(ziwei, horoscope, null, opts);
+            hint.textContent = '點場域看耦合（本宮＋對宮＋三合）。';
+          } else {
+            hint.textContent = 'UiComponents.ZiweiGrid 未載入，請確認已載入 app.js。';
+          }
+
+          var wx = (bazi.wuxing && (bazi.wuxing.strategic || bazi.wuxing.surface)) || null;
+          if (window.UiRenderHelpers && window.UiRenderHelpers.renderRadarChart && wx) {
+            window.UiRenderHelpers.renderRadarChart('ziweiWxRadar', wx);
+          }
+        })
+        .catch(function (err) {
+          console.error('demo-lifebook chart failed', err);
+          hint.textContent = '載入命盤失敗：' + (err && err.message ? err.message : String(err));
+        });
+    }
+    if (document.readyState === 'complete') {
+      setTimeout(runDemo, 50);
+    } else {
+      window.addEventListener('load', function () { setTimeout(runDemo, 50); });
+    }
+  </script>
+</body>
+</html>

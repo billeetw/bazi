@@ -116,9 +116,9 @@
    * 使用 StrategicPanel 组件渲染
    */
   function renderTactics(params) {
-    const { bazi, dbContent, ziweiPalaceMetadata, liuyueData, ziwei } = params;
+    const { bazi, dbContent, ziweiPalaceMetadata, liuyueData, ziwei, bodyPalaceReport } = params;
     
-    // 使用 StrategicPanel 組件（ziwei 來自 contract.ziwei，用於命主/身主）
+    // 使用 StrategicPanel 組件（ziwei 用於命主/身主；bodyPalaceReport 用於身宮在XX宮卡片）
     if (window.UiComponents?.StrategicPanel?.renderStrategicPanel) {
       window.UiComponents.StrategicPanel.renderStrategicPanel({
         bazi,
@@ -126,6 +126,7 @@
         ziweiPalaceMetadata,
         liuyueData,
         ziwei,
+        bodyPalaceReport: bodyPalaceReport ?? null,
       });
     } else {
       // Fallback: 使用旧的简单渲染方式

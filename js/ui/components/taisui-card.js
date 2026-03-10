@@ -85,7 +85,7 @@
       .replace(/"/g, "&quot;");
   }
 
-  async function renderTaisuiCard(birthYear, year = 2026) {
+  async function renderTaisuiCard(birthYear, year = 2026, options = {}) {
     const el = document.getElementById("taisuiCard");
     if (!el) return;
 
@@ -93,9 +93,12 @@
 
     const params = new URLSearchParams({ year: String(year) });
     if (birthYear) params.set("birthYear", String(birthYear));
+    const birthDate = options?.birth_date && /^\d{4}-\d{2}-\d{2}$/.test(String(options.birth_date).trim()) ? options.birth_date.trim() : null;
+    if (birthDate) params.set("birth_date", birthDate);
 
     try {
       const url = getApiUrl("/api/taisui/status?" + params.toString());
+      console.log("📡 API REQUEST", url, JSON.stringify({ year: options?.year, birthYear: options?.birth_year }, null, 2));
       const r = await fetch(url, { headers: getAuthHeaders() });
       const data = await r.json();
 
@@ -311,13 +314,16 @@
     const ANIMATION_MS = 1500;
 
     try {
-      const r = await fetch(getApiUrl("/api/taisui/lamp"), {
+      var lampUrlFirst = getApiUrl("/api/taisui/lamp");
+      var lampBody = { year };
+      console.log("📡 API REQUEST", lampUrlFirst, JSON.stringify(lampBody, null, 2));
+      const r = await fetch(lampUrlFirst, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           ...getAuthHeaders(),
         },
-        body: JSON.stringify({ year }),
+        body: JSON.stringify(lampBody),
       });
       const data = await r.json();
 
@@ -329,6 +335,7 @@
             if (svc && typeof svc.saveChartWithData === "function") {
               const saveResult = await svc.saveChartWithData(formData, "本人");
               if (saveResult.ok) {
+                console.log("📡 API REQUEST", getApiUrl("/api/taisui/lamp"), "(retry)", JSON.stringify({ year }, null, 2));
                 const r2 = await fetch(getApiUrl("/api/taisui/lamp"), {
                   method: "POST",
                   headers: { "Content-Type": "application/json", ...getAuthHeaders() },
@@ -454,10 +461,13 @@
     if (lampIcon) requestAnimationFrame(function () { lampIcon.classList.add("lit"); });
 
     try {
-      const r = await fetch(getApiUrl("/api/taisui/lamp"), {
+      var lampPayload2 = { year };
+      var lampUrl2 = getApiUrl("/api/taisui/lamp");
+      console.log("📡 API REQUEST", lampUrl2, JSON.stringify(lampPayload2, null, 2));
+      const r = await fetch(lampUrl2, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...getAuthHeaders() },
-        body: JSON.stringify({ year }),
+        body: JSON.stringify(lampPayload2),
       });
       const data = await r.json();
 
@@ -482,7 +492,8 @@
 
       if (window.UiComponents?.TaisuiCard?.renderTaisuiCard) {
         const vy = formData.birth_date ? parseInt(String(formData.birth_date).slice(0, 4), 10) : null;
-        window.UiComponents.TaisuiCard.renderTaisuiCard(vy, year);
+        const birthDate = formData.birth_date && /^\d{4}-\d{2}-\d{2}$/.test(String(formData.birth_date).trim()) ? formData.birth_date.trim() : null;
+        window.UiComponents.TaisuiCard.renderTaisuiCard(vy, year, { birth_date: birthDate });
       }
     } catch (err) {
       console.error("[taisui-card] claimPendingLamp error:", err);

@@ -292,7 +292,7 @@
   function renderStrategicPanel(params) {
     console.log("[strategic-panel.js] renderStrategicPanel 開始執行");
     const t = (k, o) => (typeof window !== "undefined" && window.I18n && typeof window.I18n.t === "function") ? window.I18n.t(k, o) : k;
-    const { bazi, dbContent, ziweiPalaceMetadata, liuyueData, ziwei: ziweiParam } = params;
+    const { bazi, dbContent, ziweiPalaceMetadata, liuyueData, ziwei: ziweiParam, bodyPalaceReport } = params;
     
     console.log("[strategic-panel.js] 參數檢查:", {
       hasBazi: !!bazi,
@@ -404,6 +404,20 @@
       html += `
         <div class="p-4 rounded-xl border border-slate-400/20 bg-white/5 mt-3 text-xs text-slate-500">
           ${t("strategic.bodyMasterUnavailable")}
+        </div>
+      `;
+    }
+    
+    // 身宮在 XX 宮（輕量卡片：title + oneLiner + tip）
+    if (bodyPalaceReport && bodyPalaceReport.behaviorUi) {
+      const ui = bodyPalaceReport.behaviorUi;
+      html += `
+        <div class="mt-4 p-4 rounded-xl border border-violet-400/40 bg-white/5">
+          <div class="text-xs font-semibold text-slate-200 mb-2">身宮在${bodyPalaceReport.bodyPalaceZh || "某宮"}</div>
+          <div class="text-xs font-bold text-violet-400 mb-2">${ui.title || ""}</div>
+          <div class="text-[11px] text-slate-400 leading-relaxed mb-2">${ui.oneLiner || ""}</div>
+          <div class="text-[11px] text-amber-200/90">💡 ${ui.tip || ""}</div>
+          ${bodyPalaceReport.doubleJiCopy ? `<div class="text-[11px] text-amber-300/90 mt-2">⚠️ ${bodyPalaceReport.doubleJiCopy.directive}</div>` : ""}
         </div>
       `;
     }

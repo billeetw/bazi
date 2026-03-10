@@ -27,8 +27,60 @@ const SAN_XING = [
 const ZI_XING = new Set(["辰", "午", "酉", "亥"]);
 
 /**
- * 出生年 → 地支（1984 甲子年起算）
- * @param {number} year
+ * Lunar New Year (Taiwan): Gregorian [month, day] of first day of lunar year.
+ * Used to convert Gregorian birth date → lunar year for zodiac.
+ */
+const LNY_BY_YEAR = {
+  1924: [2, 5], 1930: [1, 30], 1940: [2, 8], 1950: [2, 17], 1960: [1, 28],
+  1970: [2, 6], 1980: [2, 16], 1988: [2, 17], 1989: [2, 6], 1990: [1, 26],
+  1991: [2, 15], 1992: [2, 4], 1993: [1, 23], 1994: [2, 10], 1995: [1, 31],
+  1996: [2, 19], 1997: [2, 7], 1998: [1, 28], 1999: [2, 16], 2000: [2, 5],
+  2001: [1, 24], 2002: [2, 12], 2003: [2, 1], 2004: [1, 22], 2005: [2, 9],
+  2006: [1, 29], 2007: [2, 18], 2008: [2, 7], 2009: [1, 26], 2010: [2, 14],
+  2011: [2, 3], 2012: [1, 23], 2013: [2, 10], 2014: [1, 31], 2015: [2, 19],
+  2016: [2, 8], 2017: [1, 28], 2018: [2, 16], 2019: [2, 5], 2020: [1, 25],
+  2021: [2, 12], 2022: [2, 1], 2023: [1, 22], 2024: [2, 10], 2025: [1, 29],
+  2026: [2, 17], 2027: [2, 6], 2028: [1, 26], 2029: [2, 13], 2030: [2, 3],
+};
+
+function getLNYForYear(gregYear) {
+  const y = Number(gregYear);
+  if (LNY_BY_YEAR[y]) return LNY_BY_YEAR[y];
+  if (y < 1924 || y > 2030) return null;
+  for (let i = y; i >= 1924; i--) {
+    if (LNY_BY_YEAR[i]) return LNY_BY_YEAR[i];
+  }
+  return null;
+}
+
+/**
+ * Gregorian (year, month, day) → lunar year number (for zodiac/stem-branch).
+ * Uses Lunar New Year table (Taiwan). If date is before LNY, lunar year = gregYear - 1.
+ * @param {number} gregYear
+ * @param {number} gregMonth
+ * @param {number} gregDay
+ * @returns {number|null} lunar year or null if unknown
+ */
+export function getLunarYearFromDate(gregYear, gregMonth, gregDay) {
+  const y = Number(gregYear);
+  const m = Number(gregMonth);
+  const d = Number(gregDay);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
+  const lny = getLNYForYear(y);
+  if (!lny) {
+    if (m === 1) return y - 1;
+    if (m >= 3) return y;
+    return d < 15 ? y - 1 : y;
+  }
+  const [lnyMonth, lnyDay] = lny;
+  if (m < lnyMonth || (m === lnyMonth && d < lnyDay)) return y - 1;
+  return y;
+}
+
+/**
+ * 出生年（西曆）→ 地支（1984 甲子年起算）
+ * 僅適用於「已確定為農曆年」的年份；若只有西曆生日請用 getLunarYearFromDate + yearToBranch。
+ * @param {number} year 農曆年（或西曆年，若呼叫端已做 LNY 轉換）
  * @returns {string}
  */
 export function yearToBranch(year) {
@@ -132,15 +184,31 @@ export function yearToStemBranch(year) {
 
 /**
  * 取得太歲狀態完整物件（供 API 使用）
+ * 生肖／userBranch 依農曆年計算：若有 birthDate 或 (birthMonth, birthDay)，會先換算農曆年再取地支。
  * @param {Object} opts
- * @param {number} opts.birthYear
- * @param {number} opts.year
+ * @param {number} opts.birthYear 西曆出生年
+ * @param {number} [opts.birthMonth] 西曆出生月（與 birthDay 一起提供時，用 LNY 換算農曆年）
+ * @param {number} [opts.birthDay] 西曆出生日
+ * @param {string} [opts.birthDate] 西曆生日 YYYY-MM-DD（可取代 birthYear + birthMonth + birthDay）
+ * @param {number} opts.year 流年（西曆）
  * @returns {Object}
  */
-export function getTaisuiStatus({ birthYear, year = 2026 }) {
+export function getTaisuiStatus({ birthYear, birthMonth, birthDay, birthDate, year = 2026 }) {
   const flowBranch = yearToBranch(year);
   const flowStemBranch = yearToStemBranch(year);
-  const userBranch = yearToBranch(birthYear);
+  let lunarBirthYear = null;
+  if (birthDate && /^\d{4}-\d{2}-\d{2}$/.test(String(birthDate).trim())) {
+    const [y, m, d] = birthDate.trim().split("-").map(Number);
+    lunarBirthYear = getLunarYearFromDate(y, m, d);
+  } else if (
+    Number.isFinite(Number(birthYear)) &&
+    Number.isFinite(Number(birthMonth)) &&
+    Number.isFinite(Number(birthDay))
+  ) {
+    lunarBirthYear = getLunarYearFromDate(Number(birthYear), Number(birthMonth), Number(birthDay));
+  }
+  const effectiveBirthYear = lunarBirthYear != null ? lunarBirthYear : Number(birthYear);
+  const userBranch = yearToBranch(isNaN(effectiveBirthYear) ? 1984 : effectiveBirthYear);
   const zodiac = branchToZodiac(userBranch);
   const { type, label, relation } = getTaisuiType(userBranch, flowBranch);
 

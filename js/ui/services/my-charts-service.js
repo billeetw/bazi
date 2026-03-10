@@ -118,7 +118,9 @@
     var headers = auth.getAuthHeaders();
     if (!headers.Authorization) return Promise.resolve([]);
     var base = window.location.origin;
-    return fetch(base + API_ME_CHARTS, { method: 'GET', headers })
+    var urlCharts = base + API_ME_CHARTS;
+    console.log('📡 API REQUEST', urlCharts, JSON.stringify({}, null, 2));
+    return fetch(urlCharts, { method: 'GET', headers })
       .then(function (res) {
         if (res.status === 401) {
           console.warn('[MyCharts] GET /api/me/charts 回傳 401，請確認正式機已設定 JWT_SECRET');
@@ -191,7 +193,9 @@
       gender: formData.gender || "M",
     };
     var base = window.location.origin;
-    return fetch(base + API_ME_CHARTS, {
+    var urlChartsPost = base + API_ME_CHARTS;
+    console.log('📡 API REQUEST', urlChartsPost, JSON.stringify(body, null, 2));
+    return fetch(urlChartsPost, {
       method: "POST",
       headers: Object.assign({ "Content-Type": "application/json" }, auth.getAuthHeaders()),
       body: JSON.stringify(body),
@@ -231,7 +235,9 @@
     var auth = window.AuthService;
     if (!auth || !auth.getAuthHeaders) return;
     var base = window.location.origin;
-    fetch(base + API_ME_CHARTS + "/" + encodeURIComponent(id), {
+    var urlChartDelete = base + API_ME_CHARTS + "/" + encodeURIComponent(id);
+    console.log('📡 API REQUEST', urlChartDelete, JSON.stringify({ id }, null, 2));
+    fetch(urlChartDelete, {
       method: "DELETE",
       headers: auth.getAuthHeaders(),
     })

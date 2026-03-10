@@ -1,0 +1,149 @@
+{
+  "meta": {
+    "version": "1.1",
+    "description": "CCL3 star_combinations：星曜組合象（P1.5），供 starCombinationEngine 兩兩比對產出 findings",
+    "patternTypes": ["personality", "mind", "expression", "strategy", "wealth", "stress", "relationship", "desire"],
+    "canonicalStarOrder": ["紫微", "天機", "太陽", "武曲", "天同", "廉貞", "天府", "太陰", "貪狼", "巨門", "天相", "天梁", "七殺", "破軍", "文昌", "文曲", "左輔", "右弼", "祿存", "擎羊", "陀羅", "火星", "鈴星", "地空", "地劫", "天魁", "天鉞", "天姚", "咸池", "天刑", "天傷"],
+    "note": "stars 欄位已依此序寫死；查表前 engine 須將宮內兩星依 canonicalStarOrder 排序後再比對，勿接受逆序以免漏命中"
+  },
+  "items": [
+    {
+      "comboId": "ziwei_tianfu_emperor",
+      "stars": ["紫微", "天府"],
+      "patternType": "personality",
+      "patternName": "帝王格局",
+      "psychology": "天生管理與統籌能力",
+      "lifePattern": "適合管理系統與資源",
+      "shockLevel": 1
+    },
+    {
+      "comboId": "ziwei_qisha_lonely_power",
+      "stars": ["紫微", "七殺"],
+      "patternType": "personality",
+      "patternName": "孤獨領袖",
+      "psychology": "強烈掌控與突破慾望",
+      "lifePattern": "容易走上權力位置",
+      "shockLevel": 2
+    },
+    {
+      "comboId": "tianji_jumen_thinker",
+      "stars": ["天機", "巨門"],
+      "patternType": "mind",
+      "patternName": "思想家",
+      "psychology": "善於觀察與分析世界",
+      "lifePattern": "適合研究與評論",
+      "shockLevel": 1
+    },
+    {
+      "comboId": "lianzhen_tanlang_desire_power",
+      "stars": ["廉貞", "貪狼"],
+      "patternType": "desire",
+      "patternName": "慾望動力",
+      "psychology": "強烈慾望與權力感",
+      "lifePattern": "容易在人際或娛樂圈活躍",
+      "shockLevel": 2
+    },
+    {
+      "comboId": "tianji_wenchang_strategist",
+      "stars": ["天機", "文昌"],
+      "patternType": "mind",
+      "patternName": "策略思考者",
+      "psychology": "善於分析與計畫",
+      "lifePattern": "適合顧問與策士",
+      "shockLevel": 1
+    },
+    {
+      "comboId": "jumen_wenqu_voice",
+      "stars": ["巨門", "文曲"],
+      "patternType": "expression",
+      "patternName": "語言影響力",
+      "psychology": "言語與表達具有影響力",
+      "lifePattern": "適合寫作或評論",
+      "shockLevel": 1
+    },
+    {
+      "comboId": "lianzhen_wenchang_strategy",
+      "stars": ["廉貞", "文昌"],
+      "patternType": "strategy",
+      "patternName": "權力策略",
+      "psychology": "善於運作權力結構",
+      "lifePattern": "政治與組織能力強",
+      "shockLevel": 1
+    },
+    {
+      "comboId": "wuqu_lucun_finance",
+      "stars": ["武曲", "祿存"],
+      "patternType": "wealth",
+      "patternName": "財務管理者",
+      "psychology": "資源掌控能力強",
+      "lifePattern": "適合理財或企業管理",
+      "shockLevel": 1
+    },
+    {
+      "comboId": "qisha_lucun_risk_capital",
+      "stars": ["七殺", "祿存"],
+      "patternType": "wealth",
+      "patternName": "冒險資本家",
+      "psychology": "敢於高風險決策",
+      "lifePattern": "高風險高回報",
+      "bodySignals": ["神經緊繃"],
+      "shockLevel": 2
+    },
+    {
+      "comboId": "ziwei_lingxing_inner_fire",
+      "stars": ["紫微", "鈴星"],
+      "patternType": "stress",
+      "patternName": "名士內火",
+      "psychology": "外在尊嚴內在焦慮",
+      "lifePattern": "壓力傾向自己承擔",
+      "bodySignals": ["腸胃", "失眠"],
+      "narrativeHint": "尊嚴與焦慮同時存在",
+      "shockLevel": 2
+    },
+    {
+      "comboId": "jumen_lingxing_argument",
+      "stars": ["巨門", "鈴星"],
+      "patternType": "stress",
+      "patternName": "語言衝突",
+      "psychology": "內在懷疑與焦慮",
+      "lifePattern": "容易陷入爭論",
+      "shockLevel": 2
+    },
+    {
+      "comboId": "qisha_huoxing_explosion",
+      "stars": ["七殺", "火星"],
+      "patternType": "stress",
+      "patternName": "爆衝格局",
+      "psychology": "決斷與衝動並存",
+      "lifePattern": "容易突然行動",
+      "shockLevel": 3
+    },
+    {
+      "comboId": "pojun_dijie_collapse",
+      "stars": ["破軍", "地劫"],
+      "patternType": "stress",
+      "patternName": "崩解重建",
+      "psychology": "舊秩序無法忍受",
+      "lifePattern": "人生常出現重大轉折",
+      "shockLevel": 3
+    },
+    {
+      "comboId": "taiyin_xianchi_romantic",
+      "stars": ["太陰", "咸池"],
+      "patternType": "relationship",
+      "patternName": "浪漫情感",
+      "psychology": "情感細膩與吸引力",
+      "lifePattern": "感情經歷豐富",
+      "shockLevel": 1
+    },
+    {
+      "comboId": "tanlang_tianyao_charm",
+      "stars": ["貪狼", "天姚"],
+      "patternType": "relationship",
+      "patternName": "魅力磁場",
+      "psychology": "吸引力強",
+      "lifePattern": "社交圈活躍",
+      "shockLevel": 1
+    }
+  ]
+}

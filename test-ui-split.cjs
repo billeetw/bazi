@@ -39,7 +39,6 @@ const domHelpersContent = fs.readFileSync('js/ui/utils/dom-helpers.js', 'utf8');
 const domHelpersExports = [
   'animateValue',
   'getCurrentAge',
-  'syncAgeSliderDisplay',
   'flashPeek',
   'openPalaceSheet',
   'closePalaceSheet',
@@ -93,11 +92,9 @@ console.log(`  ${hasRenderHelpersImport ? '✅' : '❌'} 导入 window.UiRenderH
 
 // 检查是否使用了工具函数
 console.log('\n🔍 检查工具函数使用:');
-const usesSyncAgeSlider = uiContent.includes('syncAgeSliderDisplay(');
 const usesRenderBar = uiContent.includes('renderBar(');
 const usesRenderRadar = uiContent.includes('renderRadarChart(');
 
-console.log(`  ${usesSyncAgeSlider ? '✅' : '⚠️'} 使用 syncAgeSliderDisplay`);
 console.log(`  ${usesRenderBar ? '✅' : '⚠️'} 使用 renderBar`);
 console.log(`  ${usesRenderRadar ? '✅' : '⚠️'} 使用 renderRadarChart`);
 

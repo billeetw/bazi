@@ -1,114 +1,20 @@
 /**
- * 首頁占卦雙入口：卡片點擊開啟 Drawer，iframe 載入 divination.html
- * 若用戶已輸入時辰，傳遞 birth 參數供占卦結果引用
+ * 首頁占卦入口：卡片與導覽列皆為普通 <a href="divination.html">，不依賴 JS 即可跳轉。
+ * 暫停 overlay/iframe 行為，避免 app.js 報錯時點擊完全沒反應。
  */
 
 (function () {
   "use strict";
 
-  const CARD_ID = "divinationEntranceCard";
-  const BACKDROP_ID = "divinationOverlayBackdrop";
-  const OVERLAY_ID = "divinationOverlay";
-  const IFRAME_ID = "divinationOverlayIframe";
-  const CLOSE_ID = "divinationOverlayClose";
-
-  function getBirthParamsFromForm() {
-    const year = document.getElementById("birthYear")?.value;
-    const month = document.getElementById("birthMonth")?.value;
-    const day = document.getElementById("birthDay")?.value;
-    const hour = document.getElementById("birthHour")?.value;
-    const minute = document.getElementById("birthMinute")?.value;
-    const gender = document.getElementById("gender")?.value;
-    const timeMode = document.getElementById("timeMode")?.value;
-    const shichen = document.getElementById("birthShichen")?.value;
-    const shichenHalf = document.getElementById("birthShichenHalf")?.value;
-    if (!year || !month || !day) return {};
-    const params = { birthYear: year, birthMonth: month, birthDay: day };
-    if (hour) params.birthHour = hour;
-    if (minute) params.birthMinute = minute;
-    if (gender) params.gender = gender;
-    if (timeMode) params.timeMode = timeMode;
-    if (shichen) params.birthShichen = shichen;
-    if (shichenHalf) params.birthShichenHalf = shichenHalf;
-    return params;
+  // 卡片改為純連結導向，不綁 click 開 overlay，確保「點下去一定有反應」
+  var card = document.getElementById("divinationEntranceCard");
+  if (card && card.getAttribute("href")) {
+    // 已有 href="divination.html?from=homepage"，無需改動，點擊即導向
+    return;
   }
 
-  function buildDivinationUrl() {
-    const base = window.location.origin + "/divination.html";
-    const params = new URLSearchParams();
-    params.set("from", "homepage");
-    params.set("embed", "1");
-    const birth = getBirthParamsFromForm();
-    Object.keys(birth).forEach(function (k) {
-      params.set(k, String(birth[k]));
-    });
-    return base + "?" + params.toString();
+  // 若卡片沒有 href（不應發生），補上
+  if (card && !card.getAttribute("href")) {
+    card.setAttribute("href", "divination.html?from=homepage");
   }
-
-  function openOverlay() {
-    const backdrop = document.getElementById(BACKDROP_ID);
-    const overlay = document.getElementById(OVERLAY_ID);
-    const iframe = document.getElementById(IFRAME_ID);
-    if (!backdrop || !overlay || !iframe) return false;
-    iframe.src = buildDivinationUrl();
-    backdrop.classList.remove("hidden");
-    document.body.style.overflow = "hidden";
-    requestAnimationFrame(function () {
-      backdrop.classList.add("opacity-100");
-      overlay.classList.remove("translate-x-full");
-    });
-    return true;
-  }
-
-  function closeOverlay() {
-    const backdrop = document.getElementById(BACKDROP_ID);
-    const overlay = document.getElementById(OVERLAY_ID);
-    const iframe = document.getElementById(IFRAME_ID);
-    if (!backdrop || !overlay || !iframe) return;
-    backdrop.classList.remove("opacity-100");
-    overlay.classList.add("translate-x-full");
-    document.body.style.overflow = "";
-    setTimeout(function () {
-      backdrop.classList.add("hidden");
-      iframe.src = "about:blank";
-    }, 300);
-  }
-
-  function init() {
-    const card = document.getElementById(CARD_ID);
-    const backdrop = document.getElementById(BACKDROP_ID);
-    const closeBtn = document.getElementById(CLOSE_ID);
-    if (!card) return;
-
-    card.addEventListener("click", function (e) {
-      if (window.gtag && window.GA_MEASUREMENT_ID) {
-        window.gtag("event", "divination_entrance_click", { from: "homepage" });
-      }
-      if (openOverlay()) {
-        e.preventDefault();
-      }
-    });
-
-    if (backdrop) {
-      backdrop.addEventListener("click", closeOverlay);
-    }
-    if (closeBtn) {
-      closeBtn.addEventListener("click", closeOverlay);
-    }
-
-    window.addEventListener("message", function (e) {
-      if (e.data && e.data.type === "divination-close-overlay") {
-        closeOverlay();
-      }
-    });
-  }
-
-  function runInit() {
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", function () { setTimeout(init, 50); });
-    } else {
-      setTimeout(init, 50);
-    }
-  }
-  runInit();
 })();

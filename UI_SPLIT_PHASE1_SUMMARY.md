@@ -8,8 +8,7 @@
 ### 2. DOM 操作工具函数提取 (`js/ui/utils/dom-helpers.js`)
 已提取以下函数到 `window.UiDomHelpers`：
 - `animateValue` - 数值缓动动画
-- `getCurrentAge` - 获取当前年龄
-- `syncAgeSliderDisplay` - 同步年龄滑杆显示
+- `getCurrentAge` - 获取当前年龄（由出生年推算）
 - `flashPeek` - 闪烁高亮效果
 - `openPalaceSheet` - 打开移动端底部面板
 - `closePalaceSheet` - 关闭移动端底部面板
@@ -39,7 +38,7 @@
 ### 4. ui.js 更新
 - ✅ 添加工具函数导入（从 `window.UiDomHelpers` 和 `window.UiRenderHelpers`）
 - ✅ 移除重复的函数定义（通过导入使用）
-- ✅ 优化代码使用工具函数（如 `syncAgeSliderDisplay`）
+- ✅ 优化代码使用工具函数
 
 ### 5. index.html 加载顺序
 - ✅ 确认工具函数在 `ui.js` 之前加载

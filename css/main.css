@@ -387,13 +387,7 @@
       background-position: center center;
       background-color: var(--bg-deep);
       filter: brightness(0.7) contrast(1.1);
-      animation: cosmic-drift 120s infinite alternate ease-in-out;
       pointer-events: none;
-    }
-    @keyframes cosmic-drift {
-      0% { transform: scale(1) rotate(0deg) translateZ(0); }
-      50% { transform: scale(1.08) rotate(2deg) translateZ(0); }
-      100% { transform: scale(1) rotate(0deg) translateZ(0); }
     }
     /* 流星動畫 */
     @keyframes meteor-shower {
@@ -497,41 +491,10 @@
       border-radius: 24px;
       box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.03), 0 10px 30px -5px rgba(0, 0, 0, 0.5);
       transition: all 0.4s ease;
-      animation: float-gentle 7s ease-in-out infinite;
     }
     .glass-container:hover {
       border-top: 1px solid var(--theme-amber-glow);
       box-shadow: inset 0 0 25px rgba(255, 191, 0, 0.08), 0 15px 35px -5px rgba(0, 0, 0, 0.6);
-      transform: translateY(-4px);
-      animation: float-gentle 5s ease-in-out infinite;
-    }
-    /* 首頁命運座標輸入區：不晃動，固定位置（!important 確保覆蓋） */
-    #inputCard,
-    #inputCard.glass-container,
-    #inputCard.glass-input,
-    section#inputCard {
-      animation: none !important;
-      transform: none !important;
-    }
-    #inputCard:hover,
-    #inputCard.glass-container:hover,
-    #inputCard.glass-input:hover {
-      animation: none !important;
-      transform: none !important;
-    }
-    /* 已儲存的命盤區：不晃動、不傾斜 */
-    #myChartsSection,
-    section#myChartsSection,
-    #myChartsSection.glass-container,
-    #myChartsSection.glass-input {
-      animation: none !important;
-      transform: none !important;
-    }
-    #myChartsSection:hover,
-    #myChartsSection.glass-container:hover,
-    #myChartsSection.glass-input:hover {
-      animation: none !important;
-      transform: none !important;
     }
 
     .glass-hero {
@@ -1301,45 +1264,6 @@
       font-size: 1.25rem;
       line-height: 1;
       filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-      animation: float-gentle 3s ease-in-out infinite;
-    }
-
-    .wuxing-logo-icon.surface-logo {
-      animation-delay: 0s;
-    }
-
-    .wuxing-logo-icon.surface-logo:last-child {
-      animation-delay: 1.5s;
-    }
-
-    .wuxing-logo-icon.strategic-logo {
-      animation-delay: 0.5s;
-    }
-
-    .wuxing-logo-icon.strategic-logo:last-child {
-      animation-delay: 2s;
-    }
-
-    @keyframes float-gentle {
-      0%, 100% {
-        transform: translateY(0) rotate(0deg);
-      }
-      50% {
-        transform: translateY(-4px) rotate(5deg);
-      }
-    }
-    /* 2 秒微浮動（延伸閱讀提示，提升滑動率） */
-    @keyframes float-subtle-2s {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-4px); }
-    }
-    .extended-reading-prompt {
-      animation: float-subtle-2s 2s ease-in-out infinite;
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .extended-reading-prompt {
-        animation: none;
-      }
     }
 
     /* 五行 bar 動畫 */
@@ -1734,4 +1658,42 @@
         animation: none;
         opacity: 0;
       }
+    }
+
+    /* 首頁靜態卡片：淺灰外框、無動畫，徹底防晃 */
+    .home-static-card {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+      animation: none !important;
+      transform: none !important;
+      transition: none;
+    }
+    .home-static-card h2,
+    .home-static-card p,
+    .home-static-card > div {
+      animation: none !important;
+      transform: none !important;
+    }
+    main {
+      isolation: isolate;
+    }
+
+    /* 首頁區塊主標：易經／紫微 統一字體 */
+    .home-section-title {
+      font-family: inherit;
+      font-weight: 600;
+      color: rgb(253 224 71); /* amber-300 */
+      letter-spacing: -0.025em;
+    }
+
+    /* 占卦 Hero Card */
+    .divination-cta-btn {
+      animation: none;
+    }
+    /* 命盤輸入區：沉穩風格，進階選項 */
+    #inputCard.input-card-secondary {
+      border-color: rgba(148, 163, 184, 0.15);
+      background: rgba(15, 23, 42, 0.55);
     }

@@ -51,7 +51,9 @@
         strength: String(strength || 1),
         sihuaList: (sihuaList || []).join(",")
       });
-      return fetch(base + "/api/strategy-note?" + params.toString(), {
+      const urlStrategyGet = base + "/api/strategy-note?" + params.toString();
+      console.log("📡 API REQUEST", urlStrategyGet, JSON.stringify({ palace, strength, sihuaList: sihuaList || [] }, null, 2));
+      return fetch(urlStrategyGet, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
       })
@@ -73,10 +75,12 @@
         });
     } else {
       // 生產環境：使用 POST 請求
+      var strategyPayload = { palace, strength, sihuaList: sihuaList || [] };
+      console.log("📡 API REQUEST", base + "/api/strategy-note", JSON.stringify(strategyPayload, null, 2));
       return fetch(base + "/api/strategy-note", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ palace, strength, sihuaList: sihuaList || [] }),
+        body: JSON.stringify(strategyPayload),
       })
         .then((r) => {
           if (!r.ok) {

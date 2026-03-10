@@ -74,7 +74,9 @@
     var existing = el.querySelector('.lamp-badge');
     if (existing) existing.remove();
     var origin = window.location.origin || '';
-    fetch(origin + '/api/me/badges?year=2026', { headers: getAuthHeaders() })
+    var badgesUrl = origin + '/api/me/badges?year=2026';
+    console.log('📡 API REQUEST', badgesUrl, JSON.stringify({ year: 2026 }, null, 2));
+    fetch(badgesUrl, { headers: getAuthHeaders() })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) {
         if (!data || !data.badges || data.badges.length === 0) return;
@@ -149,6 +151,7 @@
 
   function fetchConfig() {
     if (configFetchPromise) return configFetchPromise;
+    console.log('📡 API REQUEST', '/api/auth/config', JSON.stringify({}, null, 2));
     configFetchPromise = fetch('/api/auth/config')
       .then(function (res) {
         if (!res.ok) throw new Error('config ' + res.status);
@@ -221,10 +224,12 @@
               return;
             }
             var apiBase = window.location.origin;
+            var googlePayload = { code: code, redirect_uri: window.location.origin };
+            console.log('📡 API REQUEST', apiBase + '/api/auth/google', JSON.stringify({ ...googlePayload, code: (code || '').slice(0, 20) + '...' }, null, 2));
             fetch(apiBase + '/api/auth/google', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ code: code, redirect_uri: window.location.origin }),
+              body: JSON.stringify(googlePayload),
             })
               .then(function (res) {
                 return res.json().then(function (data) {

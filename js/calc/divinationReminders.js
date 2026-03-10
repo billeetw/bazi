@@ -7,28 +7,44 @@
   "use strict";
 
   /**
+   * 依 timePeriod 將爻索引 (1-6) 轉為時間標籤
+   */
+  function formatMonthLabel(month, timePeriod) {
+    const MONTHS_1YEAR = [2, 4, 6, 8, 10, 12];
+    const STAGES = ["起步", "開始有聲譽", "多變動", "戒慎恐懼", "如日中天", "逐步引退或局外觀察"];
+    switch (timePeriod) {
+      case "1year": return (MONTHS_1YEAR[month - 1] || month) + "月";
+      case "6years": return "第 " + month + " 年";
+      case "stages": return STAGES[month - 1] || "階段" + month;
+      default: return "第 " + month + " 月";
+    }
+  }
+
+  /**
    * 取得負分月份的預警文案
-   * @param {number} month - 月份 1-6
+   * @param {number} month - 爻位置 1-6
    * @param {number} score - 該月分數
    * @param {string} hint - 爻辭白話（如「濡其首」「亢龍有悔」）
    * @param {boolean} isChanging - 是否為動爻月
+   * @param {string} [timePeriod] - 6months | 1year | 6years | stages
    * @returns {{ title: string, body: string, cta: string }}
    */
-  function getNegativeMonthAlert(month, score, hint, isChanging) {
+  function getNegativeMonthAlert(month, score, hint, isChanging, timePeriod) {
+    const label = formatMonthLabel(month, timePeriod || "6months");
     const hintKey = (hint || "").split("：")[0] || "此爻";
     const templates = {
       default: {
-        title: "第 " + month + " 月：轉折在即",
-        body: "卦象顯示，第 " + month + " 月將進入「" + hintKey + "」的轉折期。這不是壞事——易經提醒我們：物極必反之前，正是調整步伐的黃金時刻。減少擴張、收斂鋒芒、把資源留在真正重要的事上。在丙午火年，懂得何時煞車的人，往往走得最遠。",
+        title: label + "：轉折在即",
+        body: "卦象顯示，" + label + "將進入「" + hintKey + "」的轉折期。這不是壞事——易經提醒我們：物極必反之前，正是調整步伐的黃金時刻。減少擴張、收斂鋒芒、把資源留在真正重要的事上。在丙午火年，懂得何時煞車的人，往往走得最遠。",
         cta: "回顧我的卦象",
       },
       month6: {
-        title: "半年將盡：最後一哩路的智慧",
+        title: (timePeriod === "1year" ? "12月" : timePeriod === "6years" ? "第 6 年" : "半年") + "將盡：最後一哩路的智慧",
         body: "上爻往往代表「物極必反」的臨界點。卦象中的「" + hintKey + "」提醒你：成功在望時，最忌過度沉溺或輕敵。這不是要你停下來，而是請你帶著警覺走完最後一哩。在火旺之年，保持清醒比保持衝勁更重要。",
         cta: "查看完整解析",
       },
       changing: {
-        title: "第 " + month + " 月 ★ 動爻月：關鍵轉折",
+        title: label + " ★ 動爻月：關鍵轉折",
         body: "這是你的動爻月——事情將在此發生實質轉折。「" + hintKey + "」不只是爻辭，而是當下的行動指南。卦象在提醒：此刻的選擇，會直接影響後續發展。放慢腳步、傾聽直覺、做出與內心一致的决定。",
         cta: "再看一次動爻解析",
       },
@@ -59,8 +75,9 @@
    * 掃描趨勢，回傳需預警的月份
    * @param {Array<{ month: number, score: number, hint: string, isChanging: boolean }>} months
    * @param {number} threshold - 低於此分數即預警，預設 0
+   * @param {string} [timePeriod] - 6months | 1year | 6years | stages
    */
-  function getAlertsForMonths(months, threshold) {
+  function getAlertsForMonths(months, threshold, timePeriod) {
     threshold = threshold ?? 0;
     const alerts = [];
     for (let i = 0; i < (months || []).length; i++) {
@@ -69,7 +86,7 @@
         alerts.push({
           month: m.month,
           score: m.score,
-          ...getNegativeMonthAlert(m.month, m.score, m.hint, m.isChanging),
+          ...getNegativeMonthAlert(m.month, m.score, m.hint, m.isChanging, timePeriod),
         });
       }
     }

@@ -23,6 +23,7 @@ import "./calc/tactics.js";
 import "./calc/adminExport.js";
 import "./calc/consultationScriptEngine.js";
 import "./calc/lifeBookEngine.js";
+import "./calc/lifeBookPalaceConstants.js";
 import "./calc.js";
 import "./ui/services/api-service.js";
 import "./ui/components/geolocation-calibration.js";

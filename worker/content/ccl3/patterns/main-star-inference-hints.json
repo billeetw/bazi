@@ -1,0 +1,21 @@
+{
+  "meta": { "version": "1.0", "description": "主星 fallback 語義，供 palaceInference 未命中矩陣時組句" },
+  "items": [
+    { "star": "紫微", "growthMode": "用尊嚴與秩序放大局面", "powerMode": "主導與定義規則", "correctionMode": "重整秩序與角色", "stressMode": "壓抑與不願示弱" },
+    { "star": "天機", "growthMode": "用理解與策略取得資源", "powerMode": "用分析與規劃主導", "correctionMode": "重新理解與方法優化", "stressMode": "過度思考與焦慮" },
+    { "star": "太陽", "growthMode": "用付出與照亮放大影響", "powerMode": "承擔與帶人", "correctionMode": "重新界定責任邊界", "stressMode": "過度燃燒" },
+    { "star": "武曲", "growthMode": "穩定累積、強化控制", "powerMode": "掌握資源、加強紀律", "correctionMode": "檢查成本、重整配置", "stressMode": "過度防守、怕失控" },
+    { "star": "天同", "growthMode": "用舒適與連結放大", "powerMode": "和諧中主導", "correctionMode": "整理感受與需求", "stressMode": "逃避與吞忍" },
+    { "star": "廉貞", "growthMode": "帶著慾望與企圖擴張", "powerMode": "要定義邊界、掌握主導權", "correctionMode": "重整關係與規則", "stressMode": "拉扯、控制、衝突升高" },
+    { "star": "天府", "growthMode": "用穩定與管理放大", "powerMode": "維持系統與秩序", "correctionMode": "重整資源與節奏", "stressMode": "過度承擔" },
+    { "star": "太陰", "growthMode": "用照顧與情感連結放大", "powerMode": "以柔主導", "correctionMode": "整理情緒與安全感", "stressMode": "依附與敏感" },
+    { "star": "貪狼", "growthMode": "用探索與體驗放大", "powerMode": "用魅力與機會主導", "correctionMode": "重整慾望與節奏", "stressMode": "過度追逐" },
+    { "star": "巨門", "growthMode": "用觀察與表達取得資源", "powerMode": "用語言與分析主導", "correctionMode": "重新理解與溝通", "stressMode": "懷疑與爭辯" },
+    { "star": "天相", "growthMode": "用公平與關係放大", "powerMode": "協調與平衡", "correctionMode": "重整角色與界線", "stressMode": "討好與失去界線" },
+    { "star": "天梁", "growthMode": "用守護與道德放大", "powerMode": "庇護與承擔", "correctionMode": "重整責任與保護", "stressMode": "過度責任感" },
+    { "star": "七殺", "growthMode": "快速切入、用結果證明", "powerMode": "直接掌舵、提高效率", "correctionMode": "砍掉重練、重設規則", "stressMode": "容忍度下降、快速切割" },
+    { "star": "破軍", "growthMode": "用破壞重建取得新局", "powerMode": "推翻舊秩序", "correctionMode": "重整與取捨", "stressMode": "崩解與衝動" },
+    { "star": "文昌", "growthMode": "用邏輯與表達取得資源", "powerMode": "用文書與流程主導", "correctionMode": "重新整理敘事與方法", "stressMode": "過度修飾與自我懷疑" },
+    { "star": "左輔", "growthMode": "用支援與協作放大", "powerMode": "在輔助角色中定調", "correctionMode": "重整支援邊界與角色", "stressMode": "過度承擔與界線模糊" }
+  ]
+}
