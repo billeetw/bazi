@@ -5,7 +5,7 @@
 
 import type { PatternHit } from "./s00PatternEngine.js";
 import type { S00RuleId } from "./s00FourTransformRules.js";
-import { getPhraseSet, pickTemplateIndex } from "./patternPhraseLibrary.js";
+import { getPhraseSet } from "./patternPhraseLibrary.js";
 import {
   getPhraseSetByRuleType,
   mapRuleIdToRuleType,
@@ -123,16 +123,14 @@ function renderEvidenceLine(hit: PatternHit, options: RenderOptions): string {
   const ev = hit.evidence ?? {};
   const ruleType = mapRuleIdToRuleType(hit.ruleId, ev as Record<string, unknown>);
   const ruleTypeSet = ruleType ? getPhraseSetByRuleType(ruleType) : undefined;
-  if (ruleTypeSet && ruleTypeSet.evidenceTemplates.length > 0) {
-    const idx = pickTemplateIndex(hit.ruleId, ruleTypeSet.evidenceTemplates.length);
-    const tpl = ruleTypeSet.evidenceTemplates[idx] ?? ruleTypeSet.evidenceTemplates[0];
+  if (ruleTypeSet?.evidenceTemplate) {
+    const tpl = ruleTypeSet.evidenceTemplate;
     const placeholders = evidenceToRuleTypePlaceholders(ev);
     const filled = fillPlaceholders(tpl, { ...placeholders, evidenceText: "" });
     if (filled) return filled.startsWith("證據：") ? filled : `證據：${filled}`;
   }
   const phraseSet = getPhraseSet(hit.ruleId as S00RuleId);
-  const idx = pickTemplateIndex(hit.ruleId, phraseSet.evidenceTemplates.length);
-  const tpl = phraseSet.evidenceTemplates[idx] ?? phraseSet.evidenceTemplates[0];
+  const tpl = phraseSet.evidenceTemplate;
   const evidenceText = Object.entries(ev)
     .map(([k, v]) => (v !== undefined && v !== "" ? `${k}：${formatEvidenceValue(v)}` : ""))
     .filter(Boolean)
@@ -166,19 +164,17 @@ function renderOneHit(
   if (!shortVersion) {
     if (matrixMeaning) {
       message = matrixMeaning;
-    } else if (ruleTypeSet && ruleTypeSet.messageTemplates.length > 0) {
-      const msgIdx = pickTemplateIndex(hit.ruleId, ruleTypeSet.messageTemplates.length);
-      message = fillPlaceholders(ruleTypeSet.messageTemplates[msgIdx] ?? hit.message, mergedPlaceholders) || hit.message;
+    } else if (ruleTypeSet?.messageTemplate) {
+      message = fillPlaceholders(ruleTypeSet.messageTemplate, mergedPlaceholders) || hit.message;
     } else {
       const phraseSet = getPhraseSet(hit.ruleId as S00RuleId);
-      message = fillPlaceholders(phraseSet.messageTemplates[pickTemplateIndex(hit.ruleId, phraseSet.messageTemplates.length)] ?? hit.message, mergedPlaceholders) || hit.message;
+      message = fillPlaceholders(phraseSet.messageTemplate, mergedPlaceholders) || hit.message;
     }
-    if (ruleTypeSet && ruleTypeSet.actionTemplates.length > 0) {
-      const actIdx = pickTemplateIndex(hit.ruleId + "_act", ruleTypeSet.actionTemplates.length);
-      action = fillPlaceholders(ruleTypeSet.actionTemplates[actIdx] ?? hit.action, mergedPlaceholders) || hit.action;
+    if (ruleTypeSet?.actionTemplate) {
+      action = fillPlaceholders(ruleTypeSet.actionTemplate, mergedPlaceholders) || hit.action;
     } else {
       const phraseSet = getPhraseSet(hit.ruleId as S00RuleId);
-      action = fillPlaceholders(phraseSet.actionTemplates[pickTemplateIndex(hit.ruleId + "_act", phraseSet.actionTemplates.length)] ?? hit.action, mergedPlaceholders) || hit.action;
+      action = fillPlaceholders(phraseSet.actionTemplate, mergedPlaceholders) || hit.action;
     }
   } else {
     message = "本宮也受此結構牽動。";
@@ -306,7 +302,7 @@ export function renderPatternHitsForPalace(
     if (forTech) hintLines.push(`[${hit.ruleId}]`);
   }
   const siHuaHintsBlock = hintLines.length > 0
-    ? "【本宮四化提示】\n\n" + hintLines.filter(Boolean).join("\n").replace(/\n{3,}/g, "\n\n").trim()
+    ? hintLines.filter(Boolean).join("\n").replace(/\n{3,}/g, "\n\n").trim()
     : "";
 
   return { globalLinkBlock, siHuaHintsBlock };

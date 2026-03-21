@@ -33,11 +33,10 @@ const BRIGHTNESS_TEMPLATES: Record<BrightnessLevel, string[]> = {
   ],
 };
 
-function pickBySeed<T>(arr: T[], seed?: number): T {
+/** 單一模板，不隨機選句。 */
+function firstTemplate<T>(arr: T[]): T {
   if (!arr.length) throw new Error("Empty template array");
-  if (seed == null || !Number.isFinite(seed)) return arr[0];
-  const idx = Math.abs(Math.floor(seed)) % arr.length;
-  return arr[idx];
+  return arr[0];
 }
 
 function normalizeBrightness(brightness?: string | null): BrightnessLevel | null {
@@ -56,5 +55,5 @@ export function buildBrightnessNarrative(
 ): string {
   const level = normalizeBrightness(brightness);
   if (!starName?.trim() || !level) return "";
-  return pickBySeed(BRIGHTNESS_TEMPLATES[level], seed);
+  return firstTemplate(BRIGHTNESS_TEMPLATES[level]);
 }

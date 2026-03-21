@@ -11,5 +11,7 @@ export interface StarCombinationRow {
   lifePattern: string;
   bodySignals?: string[];
   narrativeHint?: string;
+  /** 定盤提問：命中時在【星曜組合】區塊第一句輸出此問句 */
+  rectificationQuestion?: string;
   shockLevel: number;
 }

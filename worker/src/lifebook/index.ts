@@ -107,7 +107,7 @@ export {
   getPalacesInvolved,
   getStarsInvolved,
 } from "./patternHitRenderer.js";
-export { getPhraseSet, pickTemplateIndex, type RulePhraseSet } from "./patternPhraseLibrary.js";
+export { getPhraseSet, type RulePhraseSet } from "./patternPhraseLibrary.js";
 export {
   PATTERN_PHRASE_LIBRARY_BY_RULE_TYPE,
   getPhraseSetByRuleType,
@@ -240,6 +240,8 @@ export {
 export {
   getStarTransformMeaning,
   getTransformIntoPalaceMeaning,
+  getFlyPathMeaning,
+  buildFlyStarExplanation,
   getTransformEdgeMeaning,
   getDecadalPalaceTheme,
   buildDecadalNarrative,
@@ -267,6 +269,8 @@ export {
 /** Layer 4：LifebookFindings（Architecture Spec v1.1） */
 export {
   type LifebookFindings,
+  type SihuaPlacementItem,
+  type NatalFlowItem,
   type MainBattlefield,
   type PressureOutlet,
   type SpilloverFinding,

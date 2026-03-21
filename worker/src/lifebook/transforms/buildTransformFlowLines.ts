@@ -52,7 +52,7 @@ export function buildTransformFlowLines(chart: NormalizedChart): TransformFlowLi
 }
 
 /**
- * 產出模組二可用的「四化流向」區塊字串（本命／大限／流年各一段）
+ * 產出模組二可用的「本命宮干飛化」區塊字串（僅 natal 有 flows；大限／流年為四化落宮，不產 from→to）
  */
 export function formatTransformFlowBlocks(chart: NormalizedChart): string {
   const flows = buildTransformFlowLines(chart);
@@ -86,4 +86,39 @@ export function getFlowBlockForPalace(chart: NormalizedChart, palaceNameOrKey: s
   if (decade.length) parts.push(buildLayerFlowBlock(decade, "decade"));
   if (year.length) parts.push(buildLayerFlowBlock(year, "year"));
   return parts.join("\n\n");
+}
+
+export interface FlowDebugEntry {
+  layer: TransformEdge["layer"];
+  star: string;
+  star_palace: string;
+  fromPalace: string;
+  toPalace: string;
+  transform: string;
+}
+
+/**
+ * 產出 FLOW_DEBUG 結構化陣列（每條四化邊一筆），供技術版／除錯用。
+ */
+export function buildFlowDebugEntries(chart: NormalizedChart): FlowDebugEntry[] {
+  const out: FlowDebugEntry[] = [];
+  const layers: Array<{ layer: TransformEdge["layer"]; edges: TransformEdge[] | undefined }> = [
+    { layer: "natal", edges: chart.natal?.flows ?? chart.natal?.birthTransforms ?? chart.natalTransforms },
+    { layer: "decade", edges: chart.currentDecade?.flows },
+    { layer: "year", edges: chart.yearlyHoroscope?.flows },
+  ];
+  for (const { layer, edges } of layers) {
+    if (!edges?.length) continue;
+    for (const e of edges) {
+      out.push({
+        layer,
+        star: e.starName ?? "星",
+        star_palace: e.fromPalace,
+        fromPalace: e.fromPalace,
+        toPalace: e.toPalace,
+        transform: e.transform,
+      });
+    }
+  }
+  return out;
 }

@@ -1,6 +1,11 @@
 export { normalizeChart } from "./normalizeChart.js";
-export { buildPalaces, getStarByPalaceFromChart } from "./normalizePalaces.js";
-export { buildTransformEdgesFromOverlap, groupTransformsByLayer } from "./normalizeTransforms.js";
+export {
+  buildPalaces,
+  getStarByPalaceFromChart,
+  readZiweiSoulBranch,
+  findZiweiPalaceSlotIndexForCanonical,
+} from "./normalizePalaces.js";
+export { groupTransformsByLayer } from "./normalizeTransforms.js";
 export {
   resolveCurrentDecade,
   resolveYearlyHoroscope,

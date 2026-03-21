@@ -13,6 +13,7 @@ import {
 // 靜態載入：若 bundler 未把 JSON 打進 lifebook，可改由 index 注入 contentOpts
 import starTransformMeaningsData from "../../content/starTransformMeanings.json";
 import transformIntoPalaceData from "../../content/transformIntoPalaceMeanings.json";
+import flyPathMeaningsData from "../../content/flyPathMeanings.json";
 import decadalThemesData from "../../content/decadalPalaceThemes.json";
 
 type TransformKey = "lu" | "quan" | "ke" | "ji";
@@ -21,6 +22,11 @@ const starTransformMeanings: Record<string, { text: string }> =
   starTransformMeaningsData as Record<string, { text: string }>;
 const transformIntoPalaceMeanings: Record<string, string> =
   transformIntoPalaceData as Record<string, string>;
+const flyPathMeanings: Record<string, string> = Object.fromEntries(
+  Object.entries(flyPathMeaningsData as Record<string, string>).filter(
+    ([k]) => !k.startsWith("_")
+  )
+);
 const decadalPalaceThemes: Record<
   string,
   { theme: string; narrative: string }
@@ -82,13 +88,75 @@ export function getTransformIntoPalaceMeaning(
   return transformIntoPalaceMeanings[key] ?? null;
 }
 
+const TRANSFORM_LABEL: Record<TransformKey, string> = { lu: "祿", quan: "權", ke: "科", ji: "忌" };
+
+/**
+ * 飛星路徑：自出宮飛入入宮的解釋（語句庫 flyPathMeanings）。
+ * 用於組句「星化X 自A出 飛入B」時補上路徑語意。
+ */
+export function getFlyPathMeaning(
+  fromPalace: string,
+  toPalace: string
+): string | null {
+  const from = toPalaceCanon(fromPalace ?? "");
+  const to = toPalaceCanon(toPalace ?? "");
+  if (!from || !to || from === to) return null;
+  const key = `${from}_${to}`;
+  return flyPathMeanings[key] ?? null;
+}
+
+/**
+ * 組出「星曜 + 祿權科忌 + 飛星路徑」的完整解釋段（多句）。
+ * 語料來源：星曜性質(starSemantic)、四化作用(transformSemantic)、宮位語意(palaceSemantic)、路徑結論(flyPathMeanings)。
+ * 格式：開頭句 + 星象徵 + 化X帶來 + 代表從A到B + 因此…
+ */
+export function buildFlyStarExplanation(
+  star: string,
+  transform: string,
+  fromPalace: string,
+  toPalace: string
+): string {
+  const s = (star ?? "").trim();
+  const t = toTransformKey(transform);
+  const from = toPalaceCanon(fromPalace ?? "");
+  const to = toPalaceCanon(toPalace ?? "");
+  if (!s || !t || !from || !to || from === to) return "";
+
+  const label = TRANSFORM_LABEL[t];
+  const starSem = getStarSemantic(s);
+  const trSem = getTransformSemantic(t);
+  const fromSem = getPalaceSemantic(from);
+  const toSem = getPalaceSemantic(to);
+  const pathMeaning = getFlyPathMeaning(from, to);
+
+  const line1 = `${s}化${label}自${from.replace(/宮$/, "")}宮飛入${to.replace(/宮$/, "")}宮，`;
+  const starDesc = starSem?.core ? `${s}象徵${starSem.core}。` : "";
+  const trDesc = trSem?.core ? `化${label}帶來${trSem.core}。` : "";
+  const fromCore = fromSem?.short ?? fromSem?.core ?? from;
+  const toCore = toSem?.short ?? toSem?.core ?? to;
+  const pathLine = `代表${fromCore}的能量流向${toCore}領域。`;
+  let therefore = "";
+  if (pathMeaning && pathMeaning.includes("；")) {
+    const after = pathMeaning.split("；")[1]?.trim();
+    if (after) therefore = `因此${after.replace(/^代表\s*/, "").replace(/。$/, "")}。`;
+  } else if (pathMeaning) {
+    const stripped = pathMeaning.replace(/^自[^，]+，\s*/, "").trim();
+    const clause = stripped.replace(/^代表\s*/, "").replace(/。$/, "");
+    therefore = clause ? `因此${clause}。` : "";
+  }
+
+  const parts = [line1, starDesc, trDesc, pathLine, therefore].filter(Boolean);
+  return parts.join("\n");
+}
+
 /**
  * 飛宮邊（星從某宮飛入某宮之四化）解釋。
  * 優先順序：1) 星+宮+四化矩陣 2) 星+四化 3) 四化+宮 4) fallback 語義組句。
+ * 若有 fromPalace 且語句庫有該路徑，會於句尾補上「自X出、飛入Y」的解釋。
  */
 export function getTransformEdgeMeaning(
   star: string,
-  _fromPalace: string,
+  fromPalace: string,
   toPalace: string,
   transform: string
 ): string {
@@ -97,14 +165,16 @@ export function getTransformEdgeMeaning(
   const t = toTransformKey(transform);
   if (!s || !toPal || !t) return "";
 
+  const pathMeaning = getFlyPathMeaning(fromPalace, toPalace);
+
   const matrixMeaning = findStarPalaceTransformMeaning(star, toPal, transform);
-  if (matrixMeaning) return matrixMeaning;
+  if (matrixMeaning) return pathMeaning ? `${matrixMeaning} ${pathMeaning}` : matrixMeaning;
 
   const starTransform = getStarTransformMeaning(star, transform);
-  if (starTransform) return starTransform;
+  if (starTransform) return pathMeaning ? `${starTransform} ${pathMeaning}` : starTransform;
 
   const transformPalace = getTransformIntoPalaceMeaning(transform, toPal);
-  if (transformPalace) return transformPalace;
+  if (transformPalace) return pathMeaning ? `${transformPalace} ${pathMeaning}` : transformPalace;
 
   const starSem = getStarSemantic(star);
   const palSem = getPalaceSemantic(toPal);
@@ -112,7 +182,8 @@ export function getTransformEdgeMeaning(
   const starPart = starSem?.core ?? star;
   const palPart = palSem?.short ?? palSem?.core ?? toPal;
   const trPart = trSem?.plain ?? trSem?.core ?? t;
-  return `${starPart}在此十年與「${palPart}」交會，${trPart}。`;
+  const base = `${starPart}在此十年與「${palPart}」交會，${trPart}。`;
+  return pathMeaning ? `${base} ${pathMeaning}` : base;
 }
 
 export interface DecadalTransformEdge {

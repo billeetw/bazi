@@ -1,7 +1,7 @@
 {
   "meta": {
-    "version": "1.1",
-    "description": "CCL3 star_combinations：星曜組合象（P1.5），供 starCombinationEngine 兩兩比對產出 findings",
+    "version": "1.2",
+    "description": "CCL3 star_combinations：星曜組合象（P1.5），供 starCombinationEngine 兩兩比對產出 findings；含定盤提問（rectificationQuestion）。",
     "patternTypes": ["personality", "mind", "expression", "strategy", "wealth", "stress", "relationship", "desire"],
     "canonicalStarOrder": ["紫微", "天機", "太陽", "武曲", "天同", "廉貞", "天府", "太陰", "貪狼", "巨門", "天相", "天梁", "七殺", "破軍", "文昌", "文曲", "左輔", "右弼", "祿存", "擎羊", "陀羅", "火星", "鈴星", "地空", "地劫", "天魁", "天鉞", "天姚", "咸池", "天刑", "天傷"],
     "note": "stars 欄位已依此序寫死；查表前 engine 須將宮內兩星依 canonicalStarOrder 排序後再比對，勿接受逆序以免漏命中"
@@ -14,6 +14,7 @@
       "patternName": "帝王格局",
       "psychology": "天生管理與統籌能力",
       "lifePattern": "適合管理系統與資源",
+      "rectificationQuestion": "你是否常在群體中不自覺地承擔起『系統整合者』的角色，且非常在意資源是否被有效分配？",
       "shockLevel": 1
     },
     {
@@ -23,6 +24,7 @@
       "patternName": "孤獨領袖",
       "psychology": "強烈掌控與突破慾望",
       "lifePattern": "容易走上權力位置",
+      "rectificationQuestion": "在達成目標的過程中，你是否常覺得身邊沒人能跟上你的節奏，導致你寧可孤軍奮戰也要拿到主導權？",
       "shockLevel": 2
     },
     {
@@ -32,6 +34,7 @@
       "patternName": "思想家",
       "psychology": "善於觀察與分析世界",
       "lifePattern": "適合研究與評論",
+      "rectificationQuestion": "你是否常因看穿了事情的底層邏輯或缺陷，而忍不住想去評論、拆解或鑽研它？",
       "shockLevel": 1
     },
     {
@@ -41,6 +44,7 @@
       "patternName": "慾望動力",
       "psychology": "強烈慾望與權力感",
       "lifePattern": "容易在人際或娛樂圈活躍",
+      "rectificationQuestion": "在人際社交或追求目標時，你是否強烈感受到一種『不達目的誓不罷休』的野心與情感張力？",
       "shockLevel": 2
     },
     {
@@ -50,6 +54,7 @@
       "patternName": "策略思考者",
       "psychology": "善於分析與計畫",
       "lifePattern": "適合顧問與策士",
+      "rectificationQuestion": "比起執行，你是否更享受在幕後精密佈局、設計整套計畫並看著它按部就班實現的成就感？",
       "shockLevel": 1
     },
     {
@@ -59,6 +64,7 @@
       "patternName": "語言影響力",
       "psychology": "言語與表達具有影響力",
       "lifePattern": "適合寫作或評論",
+      "rectificationQuestion": "你是否發現自己的話語帶有一種特殊的渲染力，甚至在寫作或演說時，能精準捕捉到他人的情緒共鳴？",
       "shockLevel": 1
     },
     {
@@ -68,6 +74,7 @@
       "patternName": "權力策略",
       "psychology": "善於運作權力結構",
       "lifePattern": "政治與組織能力強",
+      "rectificationQuestion": "在處理組織或政治問題時，你是否能敏銳察覺權力結構的縫隙，並利用規範或手段來達成個人目的？",
       "shockLevel": 1
     },
     {
@@ -77,6 +84,7 @@
       "patternName": "財務管理者",
       "psychology": "資源掌控能力強",
       "lifePattern": "適合理財或企業管理",
+      "rectificationQuestion": "對於資產的增加與資源的掌控，你是否有一種近乎本能的危機感，必須親手管理才覺得踏實？",
       "shockLevel": 1
     },
     {
@@ -87,6 +95,7 @@
       "psychology": "敢於高風險決策",
       "lifePattern": "高風險高回報",
       "bodySignals": ["神經緊繃"],
+      "rectificationQuestion": "你是否曾在面臨重大決策時，即便心跳加速、神經緊繃，仍會選擇那個高風險但回報極高的路徑？",
       "shockLevel": 2
     },
     {
@@ -98,6 +107,7 @@
       "lifePattern": "壓力傾向自己承擔",
       "bodySignals": ["腸胃", "失眠"],
       "narrativeHint": "尊嚴與焦慮同時存在",
+      "rectificationQuestion": "外人看你是否覺得你優雅體面，但只有你自己知道內心常因焦慮而失眠，且這種壓力你絕不向外吐露？",
       "shockLevel": 2
     },
     {
@@ -107,6 +117,7 @@
       "patternName": "語言衝突",
       "psychology": "內在懷疑與焦慮",
       "lifePattern": "容易陷入爭論",
+      "rectificationQuestion": "你是否常在心裡對他人產生強烈的懷疑，且一旦爆發爭論時，你的言論會變得極具攻擊性且難以收手？",
       "shockLevel": 2
     },
     {
@@ -116,6 +127,7 @@
       "patternName": "爆衝格局",
       "psychology": "決斷與衝動並存",
       "lifePattern": "容易突然行動",
+      "rectificationQuestion": "你人生中是否常出現那種『大腦還沒想完，身體已經衝出去』，事後才驚覺動靜鬧得很大的時刻？",
       "shockLevel": 3
     },
     {
@@ -125,6 +137,7 @@
       "patternName": "崩解重建",
       "psychology": "舊秩序無法忍受",
       "lifePattern": "人生常出現重大轉折",
+      "rectificationQuestion": "你是否曾親手毀掉一段穩定的關係或事業，僅僅是因為你無法忍受那種一成不變的窒息感？",
       "shockLevel": 3
     },
     {
@@ -134,6 +147,7 @@
       "patternName": "浪漫情感",
       "psychology": "情感細膩與吸引力",
       "lifePattern": "感情經歷豐富",
+      "rectificationQuestion": "在感情世界中，你是否常被形容為『很有電力』，且容易陷入充滿美感但複雜的情緒糾葛中？",
       "shockLevel": 1
     },
     {
@@ -143,6 +157,87 @@
       "patternName": "魅力磁場",
       "psychology": "吸引力強",
       "lifePattern": "社交圈活躍",
+      "rectificationQuestion": "你是否發現自己天生具備某種社交魅力，能輕易吸引周遭人的注意，甚至在不經意間產生桃花？",
+      "shockLevel": 1
+    },
+    {
+      "comboId": "tianji_tianliang_staff",
+      "stars": ["天機", "天梁"],
+      "patternType": "mind",
+      "patternName": "幕僚長",
+      "psychology": "善於出謀劃策、為他人解決難題",
+      "lifePattern": "常被當成智囊團或心靈導師",
+      "rectificationQuestion": "你是否常被身邊的人當成『智囊團』或『心靈導師』，而你也樂於為他人出謀劃策、解決難題？",
+      "shockLevel": 1
+    },
+    {
+      "comboId": "taiyang_taiyin_dual",
+      "stars": ["太陽", "太陰"],
+      "patternType": "personality",
+      "patternName": "雙重人格",
+      "psychology": "白天積極陽光、深夜極度感性或憂鬱",
+      "lifePattern": "兩極落差極大",
+      "rectificationQuestion": "你是否覺得體內住著兩個極端的靈魂？例如：白天積極陽光，深夜卻極度感性甚至憂鬱，且兩者落差極大？",
+      "shockLevel": 2
+    },
+    {
+      "comboId": "tanlang_huoxing_surge",
+      "stars": ["貪狼", "火星"],
+      "patternType": "stress",
+      "patternName": "爆發潛力",
+      "psychology": "在極短時間內地位或財富突然飆升",
+      "lifePattern": "人生履歷具戲劇性轉折",
+      "rectificationQuestion": "你的人生履歷中，是否曾有過一段『在極短時間內地位或財富突然飆升』的戲劇性轉折？",
+      "shockLevel": 2
+    },
+    {
+      "comboId": "wuqu_tianfu_pragmatic",
+      "stars": ["武曲", "天府"],
+      "patternType": "wealth",
+      "patternName": "精打細算者",
+      "psychology": "非常在意實質價值，反感不切實際或浪費",
+      "lifePattern": "務實、追求可衡量的回報",
+      "rectificationQuestion": "你是否非常在意『實質價值』，對於任何不切實際的幻想或浪費時間的行為感到極度反感？",
+      "shockLevel": 1
+    },
+    {
+      "comboId": "jumen_tianxing_sharp",
+      "stars": ["巨門", "天刑"],
+      "patternType": "stress",
+      "patternName": "言論尖銳",
+      "psychology": "直言不諱、堅持真相，易捲入口舌或法律摩擦",
+      "lifePattern": "常因言語與規則產生摩擦",
+      "rectificationQuestion": "你是否常因直言不諱或堅持真相，而導致自己捲入不必要的口舌爭端，甚至與法律規則產生摩擦？",
+      "shockLevel": 2
+    },
+    {
+      "comboId": "pojun_dikong_dream_breaker",
+      "stars": ["破軍", "地空"],
+      "patternType": "stress",
+      "patternName": "夢想破壞者",
+      "psychology": "創意多但難以維持熱度，常開頭無結尾",
+      "lifePattern": "留下許多空殼計畫",
+      "rectificationQuestion": "你是否常有很棒的創意卻很難維持熱度，導致人生中留下了許多『開了頭卻沒結尾』的空殼計畫？",
+      "shockLevel": 2
+    },
+    {
+      "comboId": "lianzhen_qisha_venture",
+      "stars": ["廉貞", "七殺"],
+      "patternType": "personality",
+      "patternName": "衝鋒冒險家",
+      "psychology": "對穩定辦公室生活感到無聊，在高壓或開拓時才覺得活著",
+      "lifePattern": "適合高壓、危險或新領域",
+      "rectificationQuestion": "你是否對那種穩定的辦公室生活感到極度無聊，反而是在高壓、危險或開拓新領域時才覺得自己活著？",
+      "shockLevel": 2
+    },
+    {
+      "comboId": "taiyin_wenqu_intuition",
+      "stars": ["太陰", "文曲"],
+      "patternType": "expression",
+      "patternName": "靈感直覺",
+      "psychology": "常能預感事情發生，對神祕學或藝術有不學自通的天賦",
+      "lifePattern": "直覺與藝術表現力強",
+      "rectificationQuestion": "你是否經常能預感到某些事情的發生，或對神祕學、藝術有一種不學自通的敏銳天賦？",
       "shockLevel": 1
     }
   ]

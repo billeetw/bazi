@@ -1,17 +1,11 @@
 /**
  * 命宮（s02）星曜敘事 adapter：重用既有 source of truth，不新增句庫。
- * - 主星一句／主題：starSemanticDictionary
- * - 主星通用句：starBaseCore
- * - 命宮專用四段：mingGongStarMatrix
- * - 四化：mingGongTransformMatrix → starPalaceTransformMatrix（命宮）
- * - 輔煞：短標籤字典 + mingGongSentenceLibrary.getMingGongAssistantNarrative
+ * Phase 3A：四化敘事改為經 narrativeFacade.getTransformSemantic 取得，不再直接查 matrix。
  */
 
 import { getStarSemantic } from "./starSemanticDictionary.js";
 import { getMingGongStarInsight } from "./mingGongStarMatrix.js";
-import { getMingGongTransformMeaning } from "./mingGongTransformMatrix.js";
-import { findStarPalaceTransformMeaning } from "./starPalaceTransformMatrix.js";
-import { getMingGongAssistantNarrative } from "./mingGongSentenceLibrary.js";
+import { createNarrativeFacade } from "./narrativeFacade.js";
 import { STAR_NAME_ZH_TO_ID } from "./schema.js";
 
 export type MingGongStarMode = "opening" | "strength" | "tension" | "mature";
@@ -117,7 +111,7 @@ export function buildMingGongStarNarrative(
 }
 
 /**
- * 命宮輔星／煞星整合句：用短標籤字典組 summary，再交給 getMingGongAssistantNarrative 產出一段整合句，不逐顆卡片。
+ * 命宮輔星／煞星整合句：單一結構化模板，可對應星曜列表。不隨機、不輪替。
  */
 export function buildMingGongAssistantNarrative(
   assistantStars: string[],
@@ -135,19 +129,17 @@ export function buildMingGongAssistantNarrative(
     shaStars.length > 0
       ? shaStars.map((s) => formatWithLabel(s, SHA_STAR_SHORT_LABELS)).join("、")
       : "";
-  return getMingGongAssistantNarrative(
-    assistantStars.length > 0,
-    shaStars.length > 0,
-    assistantSummary,
-    shaSummary
-  );
+  if (assistantSummary && shaSummary) return `此宮輔星：${assistantSummary}；煞星：${shaSummary}。`;
+  if (assistantSummary) return `此宮輔星：${assistantSummary}。`;
+  if (shaSummary) return `此宮煞星：${shaSummary}。`;
+  return "此宮無明顯輔星或煞星。";
 }
 
-/** 命宮四化敘事 fallback 順序：(1) mingGongTransformMatrix (2) findStarPalaceTransformMeaning(star, "命宮", transform) (3) 通用句，不可空白。 */
+/** 命宮四化敘事 fallback（facade 查無時使用）。 */
 const MING_GONG_TRANSFORM_FALLBACK = "命宮的四化會透過本命、大限、流年層級牽動此宮，可對照全盤能量流向理解。";
 
 /**
- * 命宮四化敘事：優先 mingGongTransformMatrix → starPalaceTransformMatrix（星×命宮×四化）→ 通用 fallback（不可空白）。
+ * 命宮四化敘事：經 narrativeFacade.getTransformSemantic(transform, starName, "命宮") 取得 meaning／advice，不再直接查 matrix。
  */
 export function buildMingGongTransformNarrative(event: {
   starName: string;
@@ -155,11 +147,10 @@ export function buildMingGongTransformNarrative(event: {
 } | null): string {
   if (!event?.starName?.trim()) return "";
   const starName = event.starName.trim();
-  const type = toTransformType(event.type);
-  const typeKey = type === "祿" ? "lu" : type === "權" ? "quan" : type === "科" ? "ke" : "ji";
-  const fromMing = getMingGongTransformMeaning(starName, typeKey);
-  if (fromMing?.trim()) return fromMing;
-  const fromMatrix = findStarPalaceTransformMeaning(starName, "命宮", type);
-  if (fromMatrix?.trim()) return fromMatrix;
-  return MING_GONG_TRANSFORM_FALLBACK;
+  const type = toTransformType(event.type) as "祿" | "權" | "科" | "忌";
+  if (type !== "祿" && type !== "權" && type !== "科" && type !== "忌") return MING_GONG_TRANSFORM_FALLBACK;
+  const facade = createNarrativeFacade();
+  const block = facade.getTransformSemantic(type, starName, "命宮");
+  const text = block.meaning?.trim() ?? block.advice?.trim() ?? "";
+  return text || MING_GONG_TRANSFORM_FALLBACK;
 }

@@ -1,30 +1,17 @@
 /**
  * 十二宮通用 adapter：讓每一宮都具備與命宮同級的解盤式敘事。
- * - 命宮沿用 mingGong* 專用矩陣與句庫
- * - 其餘 11 宮用 getPalaceSemantic、getStarSemantic、findStarPalaceTransformMeaning、starSanfangFamilies 組出同結構
+ * Phase 3A：宮位／星曜語意與四化敘事改為經 narrativeFacade 取得，不再直接查 dictionary／matrix。
  */
 
 import { getPalaceSemantic, getStarSemantic } from "./starSemanticDictionary.js";
-import { pickMingGongCore } from "./mingGongSentenceLibrary.js";
-import { pickCaiBoCore } from "./caiBoGongSentenceLibrary.js";
-import { pickGuanLuCore } from "./guanLuGongSentenceLibrary.js";
-import { pickFuQiCore } from "./fuQiGongSentenceLibrary.js";
-import { pickFuDeCore } from "./fuDeGongSentenceLibrary.js";
-import { pickTianZhaiCore } from "./tianZhaiGongSentenceLibrary.js";
-import { pickZiNvCore } from "./ziNvGongSentenceLibrary.js";
-import { pickQianYiCore } from "./qianYiGongSentenceLibrary.js";
-import { pickPuYiCore } from "./puYiGongSentenceLibrary.js";
-import { pickJiECore } from "./jiEGongSentenceLibrary.js";
-import { pickFuMuCore } from "./fuMuGongSentenceLibrary.js";
-import { pickXiongDiCore } from "./xiongDiGongSentenceLibrary.js";
+import { createNarrativeFacade } from "./narrativeFacade.js";
 import {
   buildMingGongStarNarrative,
   buildMingGongTransformNarrative,
+  buildMingGongAssistantNarrative,
   type MingGongStarMode,
 } from "./mingGongAdapters.js";
-import { buildMingGongAssistantNarrative } from "./mingGongAdapters.js";
 import { getMingGongSanfangInsight } from "./mingGongSanfangMatrix.js";
-import { findStarPalaceTransformMeaning } from "./starPalaceTransformMatrix.js";
 import { getSanfangFamilyForPalace } from "../utils/starSanfangFamilies.js";
 import { STAR_NAME_ZH_TO_ID } from "./schema.js";
 import type { AssembleContentLookup } from "./assembler.js";
@@ -38,24 +25,9 @@ function toPalaceDisplayName(palaceKey: string): string {
 }
 
 /**
- * 宮位核心定義一句：命宮用句庫輪替，其餘用 getPalaceSemantic 組句。
+ * 宮位核心定義一句：一律由 getPalaceSemantic 組句，可對應宮位結構。
  */
-export function pickPalaceCoreDefinition(
-  palaceKey: string,
-  seed: number
-): string {
-  if (palaceKey === "命宮") return pickMingGongCore(seed);
-  if (palaceKey === "財帛") return pickCaiBoCore(seed);
-  if (palaceKey === "官祿") return pickGuanLuCore(seed);
-  if (palaceKey === "夫妻") return pickFuQiCore(seed);
-  if (palaceKey === "福德") return pickFuDeCore(seed);
-  if (palaceKey === "田宅") return pickTianZhaiCore(seed);
-  if (palaceKey === "子女") return pickZiNvCore(seed);
-  if (palaceKey === "遷移") return pickQianYiCore(seed);
-  if (palaceKey === "僕役") return pickPuYiCore(seed);
-  if (palaceKey === "疾厄") return pickJiECore(seed);
-  if (palaceKey === "父母") return pickFuMuCore(seed);
-  if (palaceKey === "兄弟") return pickXiongDiCore(seed);
+export function pickPalaceCoreDefinition(palaceKey: string, _seed?: number): string {
   const pal = getPalaceSemantic(palaceKey);
   if (!pal) return "";
   const name = toPalaceDisplayName(palaceKey);
@@ -161,7 +133,7 @@ function toTransformType(type: string): string {
 }
 
 /**
- * 四化敘事：命宮用 mingGongTransformMatrix，其餘用 findStarPalaceTransformMeaning（星×宮×四化）。
+ * 四化敘事：經 narrativeFacade.getTransformSemantic 取得 meaning；命宮委託 buildMingGongTransformNarrative。
  */
 export function buildPalaceTransformNarrative(
   event: { starName: string; type: string } | null,
@@ -169,11 +141,13 @@ export function buildPalaceTransformNarrative(
 ): string {
   if (!event?.starName?.trim()) return "";
   const starName = event.starName.trim();
-  const type = toTransformType(event.type);
+  const type = toTransformType(event.type) as "祿" | "權" | "科" | "忌";
   if (palaceKey === "命宮") return buildMingGongTransformNarrative(event);
+  if (type !== "祿" && type !== "權" && type !== "科" && type !== "忌") return "";
   const palaceForMatrix = toPalaceDisplayName(palaceKey);
-  const meaning = findStarPalaceTransformMeaning(starName, palaceForMatrix, type);
-  return meaning?.trim() ?? "";
+  const facade = createNarrativeFacade();
+  const block = facade.getTransformSemantic(type, starName, palaceForMatrix);
+  return block.meaning?.trim() ?? "";
 }
 
 /**

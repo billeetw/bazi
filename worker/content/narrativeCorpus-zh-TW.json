@@ -1,95 +1,34 @@
 {
-  "description": "命理師語氣句型庫：觀察→解釋→建議，供 s00 語氣渲染引擎使用。變數：{star} {layers} {palace} {transform} {hits} {detail} {fromPalace} {toPalace}",
+  "description": "s00 語氣已收斂至 patternPhraseLibrary / patternHitRenderer，此檔僅保留結構；openers/explainers/advisers 已移除。",
   "s00": {
     "sameStarOverlap": {
-      "openers": [
-        "你的盤裡有一顆星被多層時間結構同時點亮：{star}。",
-        "{star} 在本命、大限、流年多層都被引動，是這局的重點星。",
-        "整張盤有一顆星反覆出現：{star}。"
-      ],
-      "explainers": [
-        "因為 {layers} 都命中 {star}，所以相關議題會在不同階段反覆出現。",
-        "證據：{layers} 同時指向 {star}，代表這顆星是你這幾年的主軸之一。",
-        "多層四化都點名 {star}，代表與這顆星有關的選擇會一再出現。"
-      ],
-      "advisers": [
-        "遇到 {star} 類型的選擇，先做「主動設計」，不要只靠直覺反射。",
-        "與 {star} 相關的議題，建議先訂規則再行動。",
-        "當 {star} 被觸發時，先觀察節奏再做判斷。"
-      ],
+      "openers": [],
+      "explainers": [],
+      "advisers": [],
       "connectors": ["因此，", "這代表 "]
     },
     "samePalaceLuStack": {
-      "openers": [
-        "{palace} 這個領域被資源反覆點亮。",
-        "多層祿星都指向 {palace}，這裡是資源匯聚之處。",
-        "{palace} 在命盤裡被多層祿星疊加。"
-      ],
-      "explainers": [
-        "證據：{hits}（{detail}）。",
-        "本命、大限、流年的祿星都與 {palace} 有關，代表機會容易在這裡出現。",
-        "多個祿星飛入 {palace}，顯示資源與機會在此集中。"
-      ],
-      "advisers": [
-        "這十年要放大槓桿，優先把時間與資源放在 {palace}。",
-        "若要放大人生槓桿，可以優先把時間與資源投入在 {palace}。",
-        "當新的機會出現時，優先評估與 {palace} 相關的方向。"
-      ],
+      "openers": [],
+      "explainers": [],
+      "advisers": [],
       "connectors": ["因此，", "建議 "]
     },
     "samePalaceJiStack": {
-      "openers": [
-        "{palace} 這個領域被多層忌星疊加，壓力訊號明顯。",
-        "忌星在多層時間都指向 {palace}，這裡是考題集中區。",
-        "{palace} 承受較多壓力訊號。"
-      ],
-      "explainers": [
-        "證據：{hits}（{detail}）。",
-        "本命、大限、流年的忌星都與 {palace} 有關，代表這裡容易反覆出現考題。",
-        "多層四化壓力訊號集中在 {palace}。"
-      ],
-      "advisers": [
-        "面對 {palace} 的議題時，先建立界線與節奏，會比急著解決更有效。",
-        "在 {palace} 的決策上保持保守與彈性，可以減少壓力累積。",
-        "若 {palace} 出現問題，先從長期調整結構，而不是短期補救。"
-      ],
+      "openers": [],
+      "explainers": [],
+      "advisers": [],
       "connectors": ["因此，", "建議 "]
     },
     "sameStarLuJi": {
-      "openers": [
-        "{star} 同時承擔資源與壓力兩種角色。",
-        "你的盤裡 {star} 同時化祿與化忌，能量有拉扯。",
-        "{star} 既被祿點亮也被忌標註。"
-      ],
-      "explainers": [
-        "因為 {star} 同時出現化祿與化忌，所以「想要更多」與「怕出事」會在同一題上拉扯。",
-        "證據：{star} 同時化祿與化忌，相關議題容易既想投入又有所顧慮。",
-        "不同層四化同時點名 {star}，且祿忌並見。"
-      ],
-      "advisers": [
-        "對 {star} 類事件：先訂規則／界線，再加碼投入。",
-        "面對 {star} 的議題時，先建立原則再行動。",
-        "讓決策回到長期目標，而不是被情緒帶動。"
-      ],
+      "openers": [],
+      "explainers": [],
+      "advisers": [],
       "connectors": ["因此，", "建議 "]
     },
     "samePalaceLuJi": {
-      "openers": [
-        "{palace} 同時出現機會與壓力訊號。",
-        "{palace} 既有祿也有忌，機會與地雷在同一區域。",
-        "{palace} 的能量呈現「機會與風險並存」。"
-      ],
-      "explainers": [
-        "祿星與忌星同時影響 {palace}，代表很多重要事件會在這裡發生，但需要判斷力。",
-        "證據：祿與忌同時指向 {palace}，這裡既有資源也有考題。",
-        "在 {palace} 既有資源也有壓力，很多事情需要更謹慎地評估。",
-        "在 {palace} 既有資源也有壓力，很多與 {palaceCore} 相關的事情需要更謹慎地評估。"
-      ],
-      "advisers": [
-        "{palace} 的策略：先小步試錯→再放大，不要一次 All-in。",
-        "在 {palace} 的策略是：先小規模測試，再逐步放大。",
-        "只要能控制節奏，{palace} 的機會往往大於風險。"
-      ],
+      "openers": [],
+      "explainers": [],
+      "advisers": [],
       "connectors": ["因此，", "建議 "]
     }
   }

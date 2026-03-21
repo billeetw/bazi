@@ -86,6 +86,7 @@ export function buildStarCombinationFindingsForPalace(
       shockLevel: typeof matched.shockLevel === "number" ? matched.shockLevel : 1,
       bodySignals: matched.bodySignals ?? [],
       narrativeHint: matched.narrativeHint,
+      rectificationQuestion: matched.rectificationQuestion,
       source: "combination",
     });
   }

@@ -90,21 +90,16 @@ const NARRATIVES: Record<AlignmentType, string[]> = {
   ],
 };
 
-function pickBySeed(arr: string[], seed?: number): string {
-  if (!arr.length) return "";
-  if (seed == null || !Number.isFinite(seed)) return arr[0];
-  return arr[Math.abs(Math.floor(seed)) % arr.length];
-}
-
 /**
  * 依命宮、身宮產出「命身是否同步」敘事一句；分同宮／同向／錯位／張力型錯位／補償型錯位。
+ * 單一模板，不隨機選句。
  */
 export function buildBodyPalaceAlignmentNarrative(
   mingPalace: string,
   bodyPalace: string,
-  seed?: number
+  _seed?: number
 ): string {
   const t = getAlignmentType(mingPalace, bodyPalace);
   const arr = NARRATIVES[t];
-  return pickBySeed(arr, seed);
+  return arr?.length ? arr[0] : "";
 }

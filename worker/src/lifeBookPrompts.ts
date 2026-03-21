@@ -39,12 +39,39 @@ import {
   assembleTimeModuleFromFindings,
   hasTimelineErrors,
   type LifebookFindings,
+  type SihuaPlacementItem,
   type TimelineValidationIssue,
   normalizeChart,
+  createEmptyFindings,
 } from "./lifebook/index.js";
-import { getFlowBlockForPalace } from "./lifebook/transforms/buildTransformFlowLines.js";
 import type { NormalizedChart } from "./lifebook/normalizedChart.js";
+import type { LifebookFindingsV2 } from "./lifebook/v2/schema/findingsV2.js";
+import { buildS15aPlaceholderMapFromV2 } from "./lifebook/v2/assembler/buildS15aMapFromV2.js";
+import { buildS16PlaceholderMapFromV2 } from "./lifebook/v2/assembler/buildS16MapFromV2.js";
+import { getFlowBlockForPalace, buildFlowDebugEntries, type FlowDebugEntry } from "./lifebook/transforms/buildTransformFlowLines.js";
+import { buildPalaceByBranch, getFlowYearPalace } from "./palace-map.js";
+import {
+  buildTimeModuleDisplayFromChartJson,
+  buildNatalGongganFlowBlock,
+  type SihuaTimeBlocks,
+} from "./lifebook/sihuaTimeBuilders.js";
+import { getYearRoleInDecadeAndWhy, getRoleTakeaway } from "./lifebook/timeModulePlaceholders.js";
 import { getSanfangFamilyForPalace } from "./utils/starSanfangFamilies.js";
+import { buildDecadalSihuaFlows, buildPalaceStemMap, buildYearlySihuaFlows } from "./gonggan-flows.js";
+import { getMutagenStarsFromStem } from "./sihua-stem-table.js";
+import { getStarByPalaceFromChart } from "./lifebook/normalize/index.js";
+import { buildPalaces, findZiweiPalaceSlotIndexForCanonical } from "./lifebook/normalize/normalizePalaces.js";
+import { toPalaceCanonical } from "./lifebook/canonicalKeys.js";
+import { buildPalaceOverlay, buildPalaceOverlayBlocks, buildPalaceOverlayFromNormalizedChart } from "./lifebook/palaceOverlay.js";
+import { buildEventSignals, signalsToNarrative } from "./lifebook/s18/eventSignals.js";
+import { buildPalaceNarrativeInput } from "./lifebook/s17/palaceNarrative/PalaceNarrativeBuilder.js";
+import { renderPalaceNarrativeSample } from "./lifebook/s17/palaceNarrative/palaceNarrativeSampleRenderer.js";
+import {
+  palaceStructureToPalaceRawInput,
+  type PalaceRawInput,
+} from "./lifebook/s17/palaceNarrative/palaceNarrativeTypes.js";
+import { enrichPalaceRawWithBenmingMutagen } from "./lifebook/s17/palaceNarrative/enrichPalaceBenmingMutagen.js";
+import { buildS19MonthlyOutput, formatS19MonthlyOutputToCard } from "./lifebook/s19/index.js";
 import { aggregatePalaceWeightRisk, type StarMetadataInput } from "./lifebook/palaceWeightRiskAggregator.js";
 import {
   buildYearDecisionSummary,
@@ -69,9 +96,7 @@ import {
   MAIN_STAR_WHITELIST,
   AUX_STAR_WHITELIST,
   getStarGroupNarrative,
-  pickNarrativeIndex,
   hasGroup,
-  renderNarrativeBlocksAsString,
   buildS00YearlyAdvice,
   normalizeSiHuaEvents as normalizeSiHuaEventsLegacy,
   detectDominantPalaces,
@@ -83,29 +108,24 @@ import {
   type SiHuaEvent,
   type PatternHit,
   buildTopFlowsBlock,
-  buildSihuaEdges,
   computeSinkScores,
   buildLoopSummaryBlock,
   detectMultiLayerConflict,
   getPalaceSemantic,
+  getStarSemantic,
   toPalaceCanonical,
   getDecadalPalaceTheme,
   getStarTransformMeaning,
+  buildFlyStarExplanation,
 } from "./lifebook/index.js";
-import {
-  pickMingGongCore,
-  pickMingGongImbalance,
-} from "./lifebook/mingGongSentenceLibrary.js";
-import { pickBodyPalaceCore, pickBodyPalaceTension, pickBodyPalaceStrategy } from "./lifebook/bodyPalaceSentenceLibrary.js";
-import { pickBodyStarCore, pickBodyStarTension, pickBodyStarStrategy } from "./lifebook/bodyStarSentenceLibrary.js";
-import { pickDestinyStarCore, pickDestinyStarTension, pickDestinyStarStrategy } from "./lifebook/destinyStarSentenceLibrary.js";
 import { buildDestinyBodyDialogue } from "./lifebook/destinyBodyDialogue.js";
 import { buildBodyPalaceAlignmentNarrative } from "./lifebook/bodyPalaceAlignment.js";
 import { buildS04StrategyIntegrated } from "./lifebook/s04StrategyIntegrated.js";
 import { buildSihuaEdges, getEdgeScore } from "./lifebook/sihuaFlowEngine.js";
 import type { DiagnosticEdge } from "./lifebook/diagnosticTypes.js";
 import { buildDiagnosticBundle, buildPalaceSignalsFromEdges } from "./lifebook/diagnosticEngine.js";
-import { buildPalaceStarNarrativeBlock } from "./lifebook/starNarrativeForPalace.js";
+import { buildPalaceStarNarrativeBlock, buildPalaceStarIntroBlock } from "./lifebook/starNarrativeForPalace.js";
+import { createNarrativeFacade, type NarrativeContentLookup } from "./lifebook/narrativeFacade.js";
 import {
   buildMingGongStarNarrative,
   buildMingGongAssistantNarrative as buildMingGongAssistantNarrativeFromAdapter,
@@ -118,55 +138,13 @@ import {
   buildPalaceTransformNarrative,
   getPalaceSanfangInsight,
 } from "./lifebook/palaceAdapters.js";
-import { pickCaiBoTension, pickCaiBoMature } from "./lifebook/caiBoGongSentenceLibrary.js";
-import { pickGuanLuTension, pickGuanLuMature } from "./lifebook/guanLuGongSentenceLibrary.js";
-import { pickFuQiTension, pickFuQiMature } from "./lifebook/fuQiGongSentenceLibrary.js";
-import { pickFuDeTension, pickFuDeMature } from "./lifebook/fuDeGongSentenceLibrary.js";
-import { pickTianZhaiTension, pickTianZhaiMature } from "./lifebook/tianZhaiGongSentenceLibrary.js";
-import { pickZiNvTension, pickZiNvMature } from "./lifebook/ziNvGongSentenceLibrary.js";
-import { pickQianYiTension, pickQianYiMature } from "./lifebook/qianYiGongSentenceLibrary.js";
-import { pickPuYiTension, pickPuYiMature } from "./lifebook/puYiGongSentenceLibrary.js";
-import { pickJiETension, pickJiEMature } from "./lifebook/jiEGongSentenceLibrary.js";
-import { pickFuMuTension, pickFuMuMature } from "./lifebook/fuMuGongSentenceLibrary.js";
-import { pickXiongDiTension, pickXiongDiMature } from "./lifebook/xiongDiGongSentenceLibrary.js";
 import { buildBrightnessNarrative } from "./lifebook/brightnessNarrative.js";
 import {
   generateNarrative,
   buildDecisionAdviceFromHits,
 } from "./engine/index.js";
 
-/** 有專用句庫的宮位：回傳 tension / mature 句，否則回傳 null（改用 buildPalaceStarNarrative）。 */
-function getPalaceTensionMature(
-  palaceKey: string,
-  seed: number
-): { tension: string; mature: string } | null {
-  switch (palaceKey) {
-    case "財帛":
-      return { tension: pickCaiBoTension(seed), mature: pickCaiBoMature(seed) };
-    case "官祿":
-      return { tension: pickGuanLuTension(seed), mature: pickGuanLuMature(seed) };
-    case "夫妻":
-      return { tension: pickFuQiTension(seed), mature: pickFuQiMature(seed) };
-    case "福德":
-      return { tension: pickFuDeTension(seed), mature: pickFuDeMature(seed) };
-    case "田宅":
-      return { tension: pickTianZhaiTension(seed), mature: pickTianZhaiMature(seed) };
-    case "子女":
-      return { tension: pickZiNvTension(seed), mature: pickZiNvMature(seed) };
-    case "遷移":
-      return { tension: pickQianYiTension(seed), mature: pickQianYiMature(seed) };
-    case "僕役":
-      return { tension: pickPuYiTension(seed), mature: pickPuYiMature(seed) };
-    case "疾厄":
-      return { tension: pickJiETension(seed), mature: pickJiEMature(seed) };
-    case "父母":
-      return { tension: pickFuMuTension(seed), mature: pickFuMuMature(seed) };
-    case "兄弟":
-      return { tension: pickXiongDiTension(seed), mature: pickXiongDiMature(seed) };
-    default:
-      return null;
-  }
-}
+/** 一律用 buildPalaceStarNarrative 產出 tension / mature，可對應星曜與宮位。 */
 
 /** 句子級去重：依 \n\n 或 \n 切分，保留首次出現的句子，再合併 */
 function dedupeSentences(text: string): string {
@@ -325,73 +303,43 @@ function toFourTransformLine(t: FlowTransformationEntry): FourTransformLine {
   };
 }
 
-/**
- * 取得與某宮位相關的四化飛星列表（從 overlapAnalysis 或 legacy 格式）。
- * @param chartJson 命盤（含 overlapAnalysis / overlap、fourTransformations）
- * @param palaceKey 宮位 key（中文名如「財帛」／「財帛宮」或 id 如 cai）
- * @param layers 可選：只保留這些層級（benming / decadal / yearly）
- */
-export function collectFourTransformsForPalace(
-  chartJson: Record<string, unknown> | undefined,
-  palaceKey: string,
-  layers?: FourTransformLayer[]
-): FourTransformLine[] {
+/** 流年四化飛星僅用公式產出；缺資料時回傳 []，不讀 overlap。 */
+function getYearlyFourTransformLinesFromFormula(chartJson: Record<string, unknown> | undefined): FourTransformLine[] {
   if (!chartJson) return [];
-  const overlap = (chartJson.overlapAnalysis ?? chartJson.overlap) as Record<string, unknown> | undefined;
-  if (!overlap || typeof overlap !== "object") return [];
-
-  const palaceNameZh = (PALACE_ID_TO_NAME as Record<string, string>)[palaceKey] ?? palaceKey;
-  const norm = normPalaceForMatch(palaceNameZh);
-  const normPalace = norm;
-
-  let entries: FlowTransformationEntry[] = [];
-
-  const newItems = overlap.items as Array<{
-    palaceKey?: string;
-    palaceName?: string;
-    transformations?: FlowTransformationEntry[];
-  }> | undefined;
-  if (Array.isArray(newItems)) {
-    for (const it of newItems) {
-      const itNorm = normPalaceForMatch(it.palaceName ?? it.palaceKey ?? "");
-      if (itNorm !== norm) continue;
-      entries.push(...(it.transformations ?? []));
-    }
-  } else {
-    const risks = (overlap.criticalRisks ?? []) as Array<{ palace?: string; transformations?: Record<string, { type?: string; star?: string } | null> }>;
-    const opps = (overlap.maxOpportunities ?? []) as Array<{ palace?: string; transformations?: Record<string, { type?: string; star?: string } | null> }>;
-    const vol = (overlap.volatileAmbivalences ?? []) as Array<{ palace?: string; transformations?: Record<string, { type?: string; star?: string } | null> }>;
-    for (const arr of [risks, opps, vol]) {
-      for (const it of arr) {
-        const itNorm = normPalaceForMatch(it.palace ?? "");
-        if (itNorm !== norm) continue;
-        const trans = flattenLegacyTransformations(it.transformations, it.palace ?? "");
-        entries.push(...trans);
-        break; // 同一宮只會出現在一種 tag
-      }
-    }
-  }
-
-  let lines = entries.map(toFourTransformLine);
-  if (layers && layers.length > 0) {
-    const set = new Set(layers);
-    lines = lines.filter((l) => set.has(l.layer));
-  }
-  return lines;
+  const display = buildTimeModuleDisplayFromChartJson(chartJson);
+  const flowYearStem =
+    (chartJson.yearlyHoroscope as { stem?: string } | undefined)?.stem
+    ?? (chartJson.liunian as { stem?: string } | undefined)?.stem
+    ?? ((chartJson.ziwei as Record<string, unknown>)?.yearlyHoroscope as { stem?: string } | undefined)?.stem;
+  const flowYearPalace = (display.flowYearMingPalace ?? "").trim();
+  const starsByPalace = getStarByPalaceFromChart(chartJson);
+  if (!flowYearStem || !flowYearPalace || starsByPalace.size === 0) return [];
+  const flows = buildYearlySihuaFlows({
+    yearStem: flowYearStem.trim(),
+    flowYearPalace,
+    starsByPalace,
+  });
+  return flows.map((f) => ({
+    layer: "yearly" as const,
+    layerLabel: "流年",
+    starName: f.star,
+    type: (f.transform === "祿" ? "lu" : f.transform === "權" ? "quan" : f.transform === "科" ? "ke" : "ji") as "lu" | "quan" | "ke" | "ji",
+    typeLabel: f.transform === "祿" ? "化祿" : f.transform === "權" ? "化權" : f.transform === "科" ? "化科" : "化忌",
+    fromPalaceKey: f.fromPalace,
+    fromPalaceName: f.fromPalace,
+    toPalaceKey: f.toPalace,
+    toPalaceName: f.toPalace,
+  }));
 }
 
 /**
- * 命宮四化 narrative 優先順序：本命飛入 → 大限飛入 → 流年飛入 → 主星本身四化 → 無。
+ * 命宮四化 narrative 優先順序：主星本身四化（fourTransformations.benming）→ 無。疊宮報廢：不再從 overlap 取飛星列表。
  */
 function getMingGongTransformNarrativeByPriority(
   chartJson: Record<string, unknown> | undefined,
   leadMainStarName: string
 ): string {
   if (!chartJson) return "";
-  const allLines = collectFourTransformsForPalace(chartJson, "命宮");
-  const natalToMing = allLines.find((l) => l.layer === "benming" && l.starName);
-  const decadeToMing = allLines.find((l) => l.layer === "decadal" && l.starName);
-  const yearToMing = allLines.find((l) => l.layer === "yearly" && l.starName);
   let natalStarTransform: { starName: string; type: "lu" | "quan" | "ke" | "ji" } | null = null;
   const ft = chartJson.fourTransformations as { benming?: { mutagenStars?: Record<string, string> } } | undefined;
   const mutagen = ft?.benming?.mutagenStars;
@@ -409,14 +357,13 @@ function getMingGongTransformNarrativeByPriority(
       }
     }
   }
-  const transformEvent = natalToMing ?? decadeToMing ?? yearToMing ?? natalStarTransform;
+  const transformEvent = natalStarTransform;
   if (!transformEvent) return "";
   return buildMingGongTransformNarrative({ starName: transformEvent.starName, type: transformEvent.type });
 }
 
 /**
- * 任意宮位四化 narrative 優先順序：本命飛入 → 大限飛入 → 流年飛入 → 主星本身四化 → 無。
- * 命宮用命宮專用矩陣，其餘用 findStarPalaceTransformMeaning（星×宮×四化）。
+ * 任意宮位四化 narrative 優先順序：主星本身四化（fourTransformations.benming）→ 無。疊宮報廢：不再從 overlap 取飛星列表。
  */
 function getPalaceTransformNarrativeByPriority(
   chartJson: Record<string, unknown> | undefined,
@@ -424,10 +371,6 @@ function getPalaceTransformNarrativeByPriority(
   leadMainStarName: string
 ): string {
   if (!chartJson) return "";
-  const allLines = collectFourTransformsForPalace(chartJson, palaceKey);
-  const natalToPalace = allLines.find((l) => l.layer === "benming" && l.starName);
-  const decadeToPalace = allLines.find((l) => l.layer === "decadal" && l.starName);
-  const yearToPalace = allLines.find((l) => l.layer === "yearly" && l.starName);
   let natalStarTransform: { starName: string; type: "lu" | "quan" | "ke" | "ji" } | null = null;
   const ft = chartJson.fourTransformations as { benming?: { mutagenStars?: Record<string, string> } } | undefined;
   const mutagen = ft?.benming?.mutagenStars;
@@ -445,7 +388,7 @@ function getPalaceTransformNarrativeByPriority(
       }
     }
   }
-  const transformEvent = natalToPalace ?? decadeToPalace ?? yearToPalace ?? natalStarTransform;
+  const transformEvent = natalStarTransform;
   if (!transformEvent) return "";
   return buildPalaceTransformNarrative(
     { starName: transformEvent.starName, type: transformEvent.type },
@@ -453,12 +396,16 @@ function getPalaceTransformNarrativeByPriority(
   );
 }
 
+/** 模組二技術版不得出現小限；overlap 若有 layerLabel 小限／minor 一律排除 */
+const LAYER_LABEL_EXCLUDE_FOR_M2 = ["小限", "minor", "Minor", "小限 "];
+
 /**
- * 將 FourTransformLine[] 轉成命書用的技術版 block 與摘要。
+ * 將 FourTransformLine[] 轉成命書用的技術版 block 與摘要。模組二：排除小限層。
  */
 export function buildFourTransformBlocksForPalace(lines: FourTransformLine[]): { techBlock: string; summary: string } {
+  const filtered = lines.filter((t) => !LAYER_LABEL_EXCLUDE_FOR_M2.some((x) => t.layerLabel === x || (t.layerLabel && t.layerLabel.trim() === x)));
   const techLines: string[] = [];
-  for (const t of lines) {
+  for (const t of filtered) {
     const from = t.fromPalaceName ?? t.fromPalaceKey ?? "";
     const to = t.toPalaceName ?? t.toPalaceKey ?? "";
     const fromShort = from ? (from.replace(/宮$/, "") === "命" ? "命宮" : from.replace(/宮$/, "")) : "";
@@ -472,7 +419,7 @@ export function buildFourTransformBlocksForPalace(lines: FourTransformLine[]): {
   const techBlock = techLines.length > 0 ? techLines.map((l) => `- ${l}`).join("\n") : "（本宮無四化飛星資料）";
 
   const parts: string[] = [];
-  for (const t of lines) {
+  for (const t of filtered) {
     parts.push(`${t.layerLabel}：${t.starName}${t.typeLabel}`);
   }
   const summary =
@@ -491,15 +438,13 @@ const SIHUA_EFFECT_SHORT: Record<string, string> = {
   忌: "堵塞／情緒壓力／需要避免升級的衝突",
 };
 
-/** 從 chartJson 取得全盤所有 overlap 四化條目（用於四化能量總結）；僅來自 items，可能缺權/科（因 items 只含 tag 非 normal 的宮位）。 */
-function getAllOverlapTransformations(chartJson: Record<string, unknown> | undefined): FlowTransformationEntry[] {
-  if (!chartJson) return [];
-  const overlap = (chartJson.overlapAnalysis ?? chartJson.overlap) as { items?: Array<{ transformations?: FlowTransformationEntry[] }> } | undefined;
-  const items = Array.isArray(overlap?.items) ? overlap.items : [];
-  return items.flatMap((it) => it.transformations ?? []);
+function toPalaceNameForSummary(p: string | undefined): string {
+  if (!p || !p.trim()) return "";
+  const s = (p || "").trim();
+  return s.endsWith("宮") ? s : s === "命宮" || s === "命" ? "命宮" : s + "宮";
 }
 
-/** 從本命／大限／流年四化層推導「祿權科忌各落在哪些宮位」（補齊 overlap.items 缺權/科的問題） */
+/** 從本命／大限／流年四化層推導「祿權科忌各落在哪些宮位」 */
 function getSihuaPalaceListsFromLayers(chartJson: Record<string, unknown> | undefined): {
   luPalaces: string[];
   quanPalaces: string[];
@@ -513,8 +458,8 @@ function getSihuaPalaceListsFromLayers(chartJson: Record<string, unknown> | unde
   if (!chartJson) return { luPalaces: lu, quanPalaces: quan, kePalaces: ke, jiPalaces: ji };
   const layers = buildSiHuaLayers(chartJson);
   const push = (p: string | undefined, list: string[]) => {
-    const name = p ? (p.endsWith("宮") ? p : p === "命宮" || p === "命" ? "命宮" : p + "宮") : "";
-    if (name && !list.includes(name)) list.push(name);
+    const name = toPalaceNameForSummary(p);
+    if (name && name !== "落宮待核" && !list.includes(name)) list.push(name);
   };
   for (const layer of [layers.benming, layers.decadal, layers.yearly]) {
     if (!layer) continue;
@@ -526,6 +471,67 @@ function getSihuaPalaceListsFromLayers(chartJson: Record<string, unknown> | unde
   return { luPalaces: lu, quanPalaces: quan, kePalaces: ke, jiPalaces: ji };
 }
 
+/** 分層列出本命／大限／流年各自的祿權科忌落宮，便於排查 */
+function getSihuaByLayerLines(chartJson: Record<string, unknown> | undefined): string[] {
+  if (!chartJson) return [];
+  const layers = buildSiHuaLayers(chartJson);
+  const lines: string[] = [];
+  const layerOrder: Array<{ label: string; data: SiHuaLayer | null | undefined }> = [
+    { label: "本命", data: layers.benming },
+    { label: "大限", data: layers.decadal },
+    { label: "流年", data: layers.yearly },
+  ];
+  for (const { label, data } of layerOrder) {
+    if (!data) {
+      lines.push(`- ${label}：無四化落宮資料`);
+      continue;
+    }
+    const part = (s: SiHuaStar | null | undefined, key: string) => {
+      if (!s) return `${key}→（無）`;
+      const p = toPalaceNameForSummary(s.palaceName);
+      return p && p !== "落宮待核" ? `${key}→${p}` : `${key}→${s.starName}（落宮待核）`;
+    };
+    const parts = [part(data.lu, "祿"), part(data.quan, "權"), part(data.ke, "科"), part(data.ji, "忌")];
+    lines.push(`- ${label}：${parts.join("、")}`);
+  }
+  return lines;
+}
+
+/**
+ * 從 chartJson 產出結構化四化落宮（本命／大限／流年），供 Findings.sihuaPlacementItems 與單宮過濾使用。
+ * 不得從字串反解析；僅由產出 Findings 的 pipeline 呼叫。
+ */
+export function getSihuaPlacementItemsFromChart(
+  chartJson: Record<string, unknown> | undefined
+): SihuaPlacementItem[] {
+  if (!chartJson) return [];
+  const layers = buildSiHuaLayers(chartJson);
+  const items: SihuaPlacementItem[] = [];
+  const layerEntries: Array<{ key: keyof SiHuaLayers; layer: "natal" | "decade" | "year" }> = [
+    { key: "benming", layer: "natal" },
+    { key: "decadal", layer: "decade" },
+    { key: "yearly", layer: "year" },
+  ];
+  for (const { key, layer } of layerEntries) {
+    const data = layers[key];
+    if (!data) continue;
+    const stars: Array<{ t: "祿" | "權" | "科" | "忌"; s: SiHuaStar }> = [
+      data.lu && { t: "祿", s: data.lu },
+      data.quan && { t: "權", s: data.quan },
+      data.ke && { t: "科", s: data.ke },
+      data.ji && { t: "忌", s: data.ji },
+    ].filter((x): x is { t: "祿" | "權" | "科" | "忌"; s: SiHuaStar } => Boolean(x));
+    for (const { t, s } of stars) {
+      const raw = String(s.palaceName ?? s.palaceKey ?? "").trim();
+      if (!raw || raw.includes("待核") || raw.includes("未知")) continue;
+      const targetPalace = toPalaceNameForSummary(s.palaceName ?? s.palaceKey);
+      if (!targetPalace || targetPalace.includes("待核") || targetPalace.includes("未知")) continue;
+      items.push({ layer, transform: t, starName: s.starName, targetPalace });
+    }
+  }
+  return items;
+}
+
 /** 宮位顯示名：補上「宮」後綴（命→命宮、財帛→財帛宮） */
 function toPalaceDisplayName(p: string | undefined): string {
   if (!p) return "";
@@ -533,118 +539,279 @@ function toPalaceDisplayName(p: string | undefined): string {
   return s === "命" ? "命宮" : s ? s + "宮" : p;
 }
 
-const FLOWS_NOT_VERIFIED_MESSAGE = "（四化流向驗證未通過，暫不顯示）";
+const LAYER_LABEL: Record<"natal" | "decade" | "year", string> = {
+  natal: "本命",
+  decade: "大限",
+  year: "流年",
+};
+
+const SIHUA_FLOW_EMPTY_MESSAGE = "（本宮目前無特殊四化能量引動，宜平穩發揮星曜本質。）";
+/** 技術版：本命宮干飛化尚未驗證時顯示。 */
+const FLOWS_NOT_VERIFIED_MESSAGE = "（本命宮干飛化尚未驗證，請先完成命盤計算。）";
 
 /**
- * 組出單一宮位的「四化流向＋四化能量總結」完整區塊（供 12 宮 structure_analysis 的 sihuaFlowSummary）。
- * 依現有四化資料產出可判讀文字，無資料時不寫「此欄位資料不足」，改為說明此宮由星曜與三方四正主導。
- * flowsNotVerified 為 true 時僅輸出降級文案，不顯示可能錯誤的流向（前端排盤座標系與 worker flow 對齊後再改為 false）。
+ * 單宮四化摘要（Phase 3B-1）：只讀 LifebookFindings，依 currentPalace 做 contextual filtering。
+ * 禁止：normalizeChart、chartJson、現場重算四化／飛化。
+ * 單宮區塊不得輸出全盤式四化清單（祿落在：官祿宮、兄弟宮…）；僅輸出與本宮直接相關的 transforms／natal flows。
  */
 export function buildSihuaFlowSummary(args: {
-  sectionKey: string;
-  chartJson: Record<string, unknown> | undefined;
-  palaceKey: string | null;
-  /** 未驗證通過前不輸出具體流向，改為 FLOWS_NOT_VERIFIED_MESSAGE */
-  flowsNotVerified?: boolean;
+  currentPalace: string;
+  findings: LifebookFindings;
 }): string {
-  const { chartJson, palaceKey, flowsNotVerified = true } = args;
-  const LAYER_ORDER: Array<{ key: FourTransformLayer; label: string }> = [
-    { key: "benming", label: "本命" },
-    { key: "decadal", label: "大限" },
-    { key: "yearly", label: "流年" },
-  ];
+  const { currentPalace, findings } = args;
+  const palaceCanon = toPalaceDisplayName((currentPalace ?? "").trim()) || (currentPalace ?? "").trim();
+  if (!palaceCanon) return SIHUA_FLOW_EMPTY_MESSAGE;
 
-  if (!palaceKey || !chartJson) {
-    return [
-      "【四化流向（本命／大限／流年）】",
-      "",
-      "本命／大限／流年皆無明顯飛星流向進入此宮。",
-      "這代表此宮的劇情主要由「星曜本身」與「三方四正」主導，而非四化帶動。",
-      "",
-      "【四化能量總結】",
-      "",
-      "（此宮無四化飛入資料，請參照全盤他宮或技術版。）",
-    ].join("\n");
+  const placementItems = findings.sihuaPlacementItems ?? [];
+  const flowItems = findings.natalFlowItems ?? [];
+
+  const relevantTransforms = placementItems.filter(
+    (item) => toPalaceDisplayName(item.targetPalace) === palaceCanon || item.targetPalace === palaceCanon
+  );
+  const relevantFlows = flowItems.filter(
+    (e) =>
+      toPalaceDisplayName(e.fromPalace) === palaceCanon ||
+      toPalaceDisplayName(e.toPalace) === palaceCanon ||
+      e.fromPalace === palaceCanon ||
+      e.toPalace === palaceCanon
+  );
+
+  if (relevantTransforms.length === 0 && relevantFlows.length === 0) {
+    return SIHUA_FLOW_EMPTY_MESSAGE;
   }
 
-  const flowLines: string[] = [];
-  flowLines.push("【四化流向（本命／大限／流年）】");
-  flowLines.push("");
+  const lines: string[] = [];
 
-  if (flowsNotVerified) {
-    flowLines.push(FLOWS_NOT_VERIFIED_MESSAGE);
-  } else {
-    const chart = normalizeChart(chartJson);
-    const palaceDisplay = toPalaceDisplayName(palaceKey) || palaceKey;
-    const flowBlock = getFlowBlockForPalace(chart, palaceDisplay);
-    if (!flowBlock) {
-      flowLines.push("本命／大限／流年皆無明顯飛星流向進入此宮。");
-      flowLines.push("這代表此宮的劇情主要由「星曜本身」與「三方四正」主導，而非四化帶動。");
-    } else {
-      flowLines.push(flowBlock);
+  if (relevantTransforms.length > 0) {
+    for (const item of relevantTransforms) {
+      const layerLabel = LAYER_LABEL[item.layer];
+      lines.push(`本宮受到${layerLabel}的${item.starName}化${item.transform}引動。`);
     }
   }
 
-  const allTrans = getAllOverlapTransformations(chartJson);
-
-  // 四化能量總結：全盤祿／權／科／忌落在哪些宮位（先從 overlap.items 取，再與本命/大限/流年層合併，補齊權/科常為「無」的問題）
-  const luPalaces: string[] = [];
-  const quanPalaces: string[] = [];
-  const kePalaces: string[] = [];
-  const jiPalaces: string[] = [];
-  const toPalaceCount = new Map<string, number>();
-
-  const toTypeZh = (t: FlowTransformationEntry): "祿" | "權" | "科" | "忌" => {
-    const x = (t.type ?? "").trim() || (t.typeLabel ?? "").replace(/^化/, "");
-    if (x === "忌" || x === "ji") return "忌";
-    if (x === "祿" || x === "lu") return "祿";
-    if (x === "權" || x === "quan") return "權";
-    if (x === "科" || x === "ke") return "科";
-    return "科";
-  };
-  for (const t of allTrans) {
-    const toName = toPalaceDisplayName(t.toPalaceName ?? t.toPalaceKey ?? "");
-    if (!toName) continue;
-    toPalaceCount.set(toName, (toPalaceCount.get(toName) ?? 0) + 1);
-    const typeZh = toTypeZh(t);
-    const set = typeZh === "祿" ? luPalaces : typeZh === "權" ? quanPalaces : typeZh === "科" ? kePalaces : jiPalaces;
-    if (!set.includes(toName)) set.push(toName);
+  if (relevantFlows.length > 0) {
+    for (const e of relevantFlows) {
+      const fromCanon = toPalaceDisplayName(e.fromPalace) || e.fromPalace;
+      const toCanon = toPalaceDisplayName(e.toPalace) || e.toPalace;
+      const star = e.starName ?? "星";
+      if (fromCanon === palaceCanon && toCanon !== palaceCanon) {
+        lines.push(`本宮宮干化出${star}化${e.transform}，飛入並牽動了【${toCanon}】。`);
+      } else if (fromCanon !== palaceCanon && toCanon === palaceCanon) {
+        lines.push(`來自【${fromCanon}】的${star}化${e.transform}飛入本宮，帶來直接影響。`);
+      }
+    }
   }
-  const fromLayers = getSihuaPalaceListsFromLayers(chartJson);
-  for (const p of fromLayers.luPalaces) if (!luPalaces.includes(p)) luPalaces.push(p);
-  for (const p of fromLayers.quanPalaces) if (!quanPalaces.includes(p)) quanPalaces.push(p);
-  for (const p of fromLayers.kePalaces) if (!kePalaces.includes(p)) kePalaces.push(p);
-  for (const p of fromLayers.jiPalaces) if (!jiPalaces.includes(p)) jiPalaces.push(p);
 
-  const luStr = luPalaces.length > 0 ? luPalaces.join("、") : "無";
-  const quanStr = quanPalaces.length > 0 ? quanPalaces.join("、") : "無";
-  const keStr = kePalaces.length > 0 ? kePalaces.join("、") : "無";
-  const jiStr = jiPalaces.length > 0 ? jiPalaces.join("、") : "無";
+  const out = lines.length > 0 ? lines.join("\n") : SIHUA_FLOW_EMPTY_MESSAGE;
 
-  const densePalaces = [...toPalaceCount.entries()].filter(([, n]) => n >= 2).map(([p]) => p);
-  const allPalacesList = [...new Set(luPalaces.concat(quanPalaces, kePalaces, jiPalaces))];
-  const denseStr =
-    densePalaces.length > 0
-      ? densePalaces.join("、")
-      : allPalacesList.length > 0
-        ? `分散於多個宮位（以 ${allPalacesList.join("、")} 為主）`
-        : "分散於多個宮位（以本盤實際飛星為準）";
+  // Phase 5B-8：natalFlowItems 命中驗證（子女宮、夫妻宮、父母宮、命宮）
+  const DEBUG_PALACES = new Set(["子女宮", "夫妻宮", "父母宮", "命宮"]);
+  if (typeof console !== "undefined" && console.log && DEBUG_PALACES.has(palaceCanon)) {
+    const hasFlowData = flowItems.length > 0;
+    const hasMatch = relevantFlows.length > 0 || relevantTransforms.length > 0;
+    const hasOutput = lines.length > 0;
+    let reasonEmpty: string;
+    if (hasOutput) reasonEmpty = "—";
+    else if (!hasFlowData && placementItems.length === 0) reasonEmpty = "Findings 寫入：natalFlowItems 與 sihuaPlacementItems 皆無資料";
+    else if (hasFlowData && relevantFlows.length === 0 && relevantTransforms.length === 0) reasonEmpty = "宮名比對：有資料但無命中本宮（檢查 fromPalace/toPalace 與 palaceCanon 格式）";
+    else reasonEmpty = "邏輯：有命中但未產出句子（請查 builder 條件）";
 
-  flowLines.push("");
-  flowLines.push("【四化能量總結】");
-  flowLines.push("");
-  flowLines.push("- 祿（流動）落在：" + luStr);
-  flowLines.push("- 權（壓力／控制）落在：" + quanStr);
-  flowLines.push("- 科（整理／修復）落在：" + keStr);
-  flowLines.push("- 忌（卡點／情緒）落在：" + jiStr);
-  flowLines.push("");
-  flowLines.push("能量聚集的宮位：" + denseStr);
-  flowLines.push("");
-  flowLines.push(
-    "你在此宮位的事件會受到上述宮位的牽動：祿代表機會、科代表調整、權代表推力或壓力、忌代表盲點或需要避免升級的衝突。"
+    console.log("[buildSihuaFlowSummary Phase5B-8]", {
+      currentPalace,
+      palaceCanon,
+      "findings.natalFlowItems.length": flowItems.length,
+      matchedNatalFlows: relevantFlows.length,
+      matchedPlacements: relevantTransforms.length,
+      finalBuiltLines: lines,
+      outputIsEmpty: out === SIHUA_FLOW_EMPTY_MESSAGE,
+      reasonEmpty,
+      sampleFlows: flowItems.length ? flowItems.slice(0, 5).map((e) => ({ from: e.fromPalace, to: e.toPalace, star: e.starName, transform: e.transform })) : [],
+    });
+  }
+
+  return out;
+}
+
+/** 12 宮三行敘事開場（寫死，不用通用模板）。key 為宮名（命宮、財帛宮、僕役宮…），比對時支援無「宮」尾。 */
+const PALACE_CONTEXT_THREE_LINES: Record<string, string> = {
+  命宮:
+    "命宮掌管的是自我定位與人生方向，很多人生選擇表面上像是在回應外界，其實都與你怎麼理解自己有關。",
+  財帛宮:
+    "財帛宮掌管的是資源、收入與價值交換，很多表面上的事件像是在處理金錢與資源運作，其實都與你如何建立安全感與交換價值有關。",
+  兄弟宮:
+    "兄弟宮掌管的是同儕、手足與合作關係，很多表面上的事件像是在處理人際互動與合作競爭，其實都與你如何建立信任與界線有關。",
+  夫妻宮:
+    "夫妻宮掌管的是親密關係與長期伴侶，很多表面上的事件像是在處理感情與關係互動，其實都與你如何理解親密與承諾有關。",
+  子女宮:
+    "子女宮掌管的是創造力、投入與延續，很多表面上的事件像是在處理孩子、作品或興趣，其實都與你如何表達熱情與生命力有關。",
+  疾厄宮:
+    "疾厄宮掌管的是身心狀態與壓力承受，很多表面上的事件像是在處理健康與疲憊，其實都與你如何面對壓力與恢復能量有關。",
+  遷移宮:
+    "遷移宮掌管的是外在世界與行動範圍，很多表面上的事件像是在處理環境變動與機會，其實都與你如何面對未知與改變有關。",
+  僕役宮:
+    "奴僕宮掌管的是夥伴、同事與合作關係，很多表面上的事件像是在處理團隊與人際互動，其實都與你如何分配責任與建立合作有關。",
+  官祿宮:
+    "官祿宮掌管的是事業方向與社會角色，很多表面上的事件像是在處理工作與目標，其實都與你如何實現價值與承擔責任有關。",
+  田宅宮:
+    "田宅宮掌管的是家庭、根基與生活空間，很多表面上的事件像是在處理房子與家庭關係，其實都與你如何建立歸屬感與安全感有關。",
+  福德宮:
+    "福德宮掌管的是內在狀態與精神能量，很多表面上的事件像是在處理情緒與心情，其實都與你如何讓自己安定下來有關。",
+  父母宮:
+    "父母宮掌管的是權威、支持來源與價值框架，很多表面上的事件像是在處理長輩與制度，其實都與你如何理解責任與權威有關。",
+};
+
+/**
+ * 【這一宮正在發生什麼】三行敘事型開場。依宮名回傳寫死文案，不再使用通用模板或 facade。
+ */
+export function buildPalaceContextThreeLines(
+  palaceName: string,
+  _content?: NarrativeContentLookup
+): string {
+  const raw = (palaceName ?? "").trim();
+  if (!raw) return "";
+  const canon = raw.replace(/宮$/, "") === "命" ? "命宮" : raw.endsWith("宮") ? raw : raw + "宮";
+  return PALACE_CONTEXT_THREE_LINES[canon] ?? `${canon}反映你在這個領域的慣性與表現。`;
+}
+
+/** 12 宮【三方四正】區塊：本宮與三方四正宮位名 + 一句說明。不讀 chart，僅用宮名。 */
+export function buildSanFangAnalysis(currentPalace: string): string {
+  const raw = (currentPalace ?? "").trim();
+  if (!raw) return "（此宮無法取得三方四正資訊。）";
+  const canon = raw.replace(/宮$/, "") === "命" ? "命宮" : raw.endsWith("宮") ? raw : raw + "宮";
+  const allFour = getSanfangSizheng(canon);
+  if (!allFour) return "（此宮無法取得三方四正資訊。）";
+  const parts = allFour.split("、").filter(Boolean);
+  const others = parts.filter((p) => p !== canon);
+  if (others.length === 0) return "（此宮無法取得三方四正資訊。）";
+  const line1 = `${canon}與${others.join("、")}形成三方四正。`;
+  const line2 = "這代表此宮與這些宮位的主題會相互牽動，可一併觀察。";
+  return `${line1}\n\n${line2}`;
+}
+
+/** 12 宮【星曜組合】區塊：從 findings.starCombinations 篩選本宮，產出「X與Y同宮，代表…」。 */
+export function buildStarCombinationAnalysis(
+  palaceName: string,
+  findings: LifebookFindings | undefined
+): string {
+  const norm = normPalaceForMatch(palaceName);
+  if (!norm) return "（本宮目前無已定義的星曜組合。）";
+  const combos = findings?.starCombinations ?? [];
+  const forPalace = combos.filter((c) => normPalaceForMatch(c.palace) === norm);
+  if (forPalace.length === 0) return "（本宮目前無已定義的星曜組合。）";
+  const lines = forPalace.map((c) => {
+    const stars = c.stars ?? [];
+    const pair = stars.length >= 2 ? `${stars[0]}與${stars[1]}` : stars.join("與");
+    const question = (c.rectificationQuestion ?? "").trim();
+    const psych = (c.psychology ?? "").trim();
+    const life = (c.lifePattern ?? "").trim();
+    const hint = (c.narrativeHint ?? "").trim();
+    if (!pair) return "";
+    const parts: string[] = [];
+    if (question) parts.push(question);
+    let sentence = `${pair}同宮，代表${psych || "此組合在此宮有特殊意涵"}。`;
+    if (life) sentence += ` ${life}`;
+    if (hint) sentence += ` ${hint}`;
+    parts.push(sentence.replace(/。\s*。/g, "。").trim());
+    return parts.join("\n\n");
+  });
+  return lines.filter(Boolean).join("\n\n");
+}
+
+/**
+ * 命宮試點專用：【動態引動與根因】只顯示「四化落宮」。
+ * 僅使用 findings.sihuaPlacementItems，過濾 targetPalace === "命宮"；不包含宮干飛化、三方四正、全盤清單。
+ */
+export function buildMingGongSihuaPlacementOnly(findings: LifebookFindings): string {
+  const placementItems = findings.sihuaPlacementItems ?? [];
+  const mingGongCanon = "命宮";
+  const relevant = placementItems.filter(
+    (item) => toPalaceDisplayName(item.targetPalace) === mingGongCanon || item.targetPalace === mingGongCanon
   );
+  if (relevant.length === 0) return SIHUA_FLOW_EMPTY_MESSAGE;
+  const lines = relevant.map(
+    (item) => `本宮受到${LAYER_LABEL[item.layer]}的${item.starName}化${item.transform}引動。`
+  );
+  return lines.join("\n");
+}
 
-  return flowLines.join("\n");
+const SIHUA_PLACEMENT_EMPTY_MESSAGE = "（此宮目前沒有明顯的四化落宮引動。）";
+const SIHUA_FLOW_BLOCK_EMPTY_MESSAGE = "（此宮目前無特殊的宮干飛化牽動。）";
+
+/**
+ * Phase 5B-9：【四化引動】區塊。只負責四化落宮，從 findings.sihuaPlacementItems 過濾落宮為本宮的項目。
+ * 比對使用去宮字正規化；輸出「本宮受到[層級]的[星曜]化[四化]引動。」，無則回傳固定 fallback。
+ */
+export function buildSihuaPlacementBlock(
+  currentPalace: string,
+  findings: LifebookFindings
+): string {
+  const isDebugPalace = currentPalace === "兄弟宮" || currentPalace === "夫妻宮" || currentPalace === "兄弟" || currentPalace === "夫妻";
+  if (isDebugPalace && typeof console !== "undefined" && console.log) {
+    console.log(`[結構檢查 - ${currentPalace}] placement length:`, findings?.sihuaPlacementItems?.length ?? 0);
+    console.log(`[結構檢查 - ${currentPalace}] flow length:`, findings?.natalFlowItems?.length ?? 0);
+    console.log(`[結構檢查 - ${currentPalace}] Placement 第1筆:`, JSON.stringify(findings?.sihuaPlacementItems?.[0] ?? null));
+    console.log(`[結構檢查 - ${currentPalace}] Flow 第1筆:`, JSON.stringify(findings?.natalFlowItems?.[0] ?? null));
+    console.log(`[結構檢查 - ${currentPalace}] Placement keys:`, Object.keys(findings?.sihuaPlacementItems?.[0] ?? {}));
+    console.log(`[結構檢查 - ${currentPalace}] Flow keys:`, Object.keys(findings?.natalFlowItems?.[0] ?? {}));
+  }
+  const norm = normPalaceForMatch(currentPalace);
+  if (!norm) return SIHUA_PLACEMENT_EMPTY_MESSAGE;
+  const items = findings.sihuaPlacementItems ?? [];
+  const relevant = items.filter(
+    (item) => normPalaceForMatch(item.targetPalace) === norm
+  );
+  if (relevant.length === 0) return SIHUA_PLACEMENT_EMPTY_MESSAGE;
+  const lines = relevant.map(
+    (item) => `本宮受到${LAYER_LABEL[item.layer]}的${item.starName}化${item.transform}引動。`
+  );
+  return lines.join("\n");
+}
+
+/**
+ * Phase 5B-9：【宮干飛化】區塊。只負責本命宮干飛化，從 findings.natalFlowItems 過濾飛入／飛出本宮。
+ * 最多顯示 4 條，優先飛入再飛出；比對使用去宮字正規化。
+ */
+export function buildSihuaFlowBlock(
+  currentPalace: string,
+  findings: LifebookFindings
+): string {
+  const isDebugPalace = currentPalace === "兄弟宮" || currentPalace === "夫妻宮" || currentPalace === "兄弟" || currentPalace === "夫妻";
+  if (isDebugPalace && typeof console !== "undefined" && console.log) {
+    console.log(`[結構檢查 - ${currentPalace}] placement length:`, findings?.sihuaPlacementItems?.length ?? 0);
+    console.log(`[結構檢查 - ${currentPalace}] flow length:`, findings?.natalFlowItems?.length ?? 0);
+    console.log(`[結構檢查 - ${currentPalace}] Placement 第1筆:`, JSON.stringify(findings?.sihuaPlacementItems?.[0] ?? null));
+    console.log(`[結構檢查 - ${currentPalace}] Flow 第1筆:`, JSON.stringify(findings?.natalFlowItems?.[0] ?? null));
+    console.log(`[結構檢查 - ${currentPalace}] Placement keys:`, Object.keys(findings?.sihuaPlacementItems?.[0] ?? {}));
+    console.log(`[結構檢查 - ${currentPalace}] Flow keys:`, Object.keys(findings?.natalFlowItems?.[0] ?? {}));
+  }
+  const norm = normPalaceForMatch(currentPalace);
+  if (!norm) return SIHUA_FLOW_BLOCK_EMPTY_MESSAGE;
+  const flowItems = findings.natalFlowItems ?? [];
+  const matchedInFlows = flowItems.filter((e) => normPalaceForMatch(e.toPalace) === norm);
+  const matchedOutFlows = flowItems.filter((e) => normPalaceForMatch(e.fromPalace) === norm);
+  const lines: string[] = [];
+  const maxTotal = 4;
+  for (const e of matchedInFlows) {
+    if (lines.length >= maxTotal) break;
+    const fromDisplay = toPalaceDisplayName(e.fromPalace) || e.fromPalace;
+    const star = e.starName ?? "星";
+    lines.push(`來自【${fromDisplay}】的${star}化${e.transform}飛入本宮。`);
+  }
+  for (const e of matchedOutFlows) {
+    if (lines.length >= maxTotal) break;
+    const toDisplay = toPalaceDisplayName(e.toPalace) || e.toPalace;
+    const star = e.starName ?? "星";
+    lines.push(`本宮宮干化出${star}化${e.transform}，飛入【${toDisplay}】。`);
+  }
+  const finalReturnValue = lines.length > 0 ? lines.join("\n") : SIHUA_FLOW_BLOCK_EMPTY_MESSAGE;
+  if (isDebugPalace && typeof console !== "undefined" && console.log) {
+    console.log(`[FlowBlock Debug - ${currentPalace}] natalFlowItems.length:`, findings?.natalFlowItems?.length ?? 0);
+    console.log(`[FlowBlock Debug - ${currentPalace}] matchedInFlows:`, JSON.stringify(matchedInFlows, null, 2));
+    console.log(`[FlowBlock Debug - ${currentPalace}] matchedOutFlows:`, JSON.stringify(matchedOutFlows, null, 2));
+    console.log(`[FlowBlock Debug - ${currentPalace}] builtLines:`, JSON.stringify(lines, null, 2));
+    console.log(`[FlowBlock Debug - ${currentPalace}] finalReturn:`, finalReturnValue);
+  }
+  return finalReturnValue;
 }
 
 /** 技術版命書：四化來源說明（固定文案，不依 chartJson） */
@@ -707,36 +874,6 @@ interface OverlapItemForBlock {
   adviceSnippet?: string;
 }
 
-const LAYER_ORDER: Array<{ key: string; label: string }> = [
-  { key: "dalimit", label: "大限" },
-  { key: "liunian", label: "流年" },
-  { key: "benming", label: "本命" },
-];
-
-/** 從舊格式 transformations 物件轉成有序陣列（大限→流年→本命）；可選 fromPalaceName 以補上四化流向 */
-function flattenLegacyTransformations(
-  t: Record<string, { type?: string; star?: string } | null> | undefined,
-  fromPalaceName?: string
-): FlowTransformationEntry[] {
-  if (!t || typeof t !== "object") return [];
-  const out: FlowTransformationEntry[] = [];
-  const toPalace = fromPalaceName ? getOppositePalaceName(fromPalaceName) : "";
-  for (const { key, label } of LAYER_ORDER) {
-    const x = t[key];
-    if (x && x.star && x.type) {
-      const typeLabel = x.type === "祿" ? "化祿" : x.type === "權" ? "化權" : x.type === "科" ? "化科" : "化忌";
-      out.push({
-        layerLabel: label,
-        starName: x.star,
-        typeLabel,
-        type: x.type,
-        ...(fromPalaceName && toPalace ? { fromPalaceName, toPalaceName: toPalace } : {}),
-      });
-    }
-  }
-  return out;
-}
-
 /** 依 tag 回傳泛用「感受」與「建議」句（Domain 未提供時使用） */
 const TAG_FEELING_ADVICE: Record<"shock" | "mine" | "wealth", { feeling: string; advice: string }> = {
   shock: {
@@ -754,11 +891,16 @@ const TAG_FEELING_ADVICE: Record<"shock" | "mine" | "wealth", { feeling: string;
 };
 
 /** 單一疊宮項：產出【宮名】+ 四化詳細文字（祿從何來、忌往哪裡）+ 化忌/化祿重數；若有 year/age/natal/feeling/advice 則加時間診斷三小段。
- * 當 chart 存在時，四化流向改為「分層算 flow 再按宮位篩選」結果。 */
-function formatOverlapBlockItem(item: OverlapItemForBlock, chart?: NormalizedChart | null): string {
-  const flowText = chart
-    ? getFlowBlockForPalace(chart, item.palaceName) || getFlowTransformationsText(item.transformations)
-    : getFlowTransformationsText(item.transformations);
+ * Phase 5B-2：有 findings 時本命宮干飛化只讀 findings.natalFlowItems；無 findings 時才用 chart。 */
+function formatOverlapBlockItem(
+  item: OverlapItemForBlock,
+  chart?: NormalizedChart | null,
+  findings?: LifebookFindings | null
+): string {
+  const flowText =
+    findings != null
+      ? (buildNatalFlowBlockFromFindings(findings, item.palaceName) || getFlowTransformationsText(item.transformations))
+      : (chart ? getFlowBlockForPalace(chart, item.palaceName) : "") || getFlowTransformationsText(item.transformations);
   const fourDesc = flowText ? flowText : "（本宮無四化疊加）";
   const countLine = `化忌：${item.jiCount} 重 | 化祿：${item.luCount} 重`;
   const block = ["【" + item.palaceName + "】", fourDesc, countLine].join("\n");
@@ -812,170 +954,20 @@ export interface BuildOverlapDetailBlocksOpts {
   config?: LifeBookConfig | null;
   contentLocale?: "zh-TW" | "zh-CN" | "en";
   minorFortuneByPalace?: Array<{ palace?: string; year?: number | null; nominalAge?: number | null; stem?: string | null }>;
+  /** Phase 5B-2：有則本命宮干飛化只讀 findings.natalFlowItems，不讀 chart。 */
+  findings?: LifebookFindings | null;
 }
 
-/** 從 overlapAnalysis（新格式 items 或舊格式 criticalRisks/maxOpportunities/volatileAmbivalences）產出三組疊宮區塊文字；傳入 opts 時每宮產出「結構／感受／建議」三小段 */
+/** 從 overlay 產出三組疊宮區塊。疊宮清理：暫不讀舊 overlap 預算 transformations，恆回傳空；待 buildPalaceOverlay 接上後改為讀新資料。 */
 function buildOverlapDetailBlocks(
-  overlap: Record<string, unknown> | undefined,
-  opts?: BuildOverlapDetailBlocksOpts
+  _overlap: Record<string, unknown> | undefined,
+  _opts?: BuildOverlapDetailBlocksOpts
 ): {
   shockBlocks: string;
   mineBlocks: string;
   wealthBlocks: string;
 } {
-  const empty = { shockBlocks: "", mineBlocks: "", wealthBlocks: "" };
-  if (!overlap || typeof overlap !== "object") return empty;
-
-  type Tag = "shock" | "mine" | "wealth";
-  const tagLabelMap: Record<Tag, string> = {
-    shock: "劇烈震盪/吉凶並見（成敗一線間）",
-    mine: "超級地雷區（必須絕對避開）",
-    wealth: "大發財機會（建議積極把握）",
-  };
-
-  let items: OverlapItemForBlock[] = [];
-  const minorByPalace = opts?.minorFortuneByPalace ?? [];
-  const normShort = (p: string) => {
-    const s = (p || "").replace(/宮$/, "");
-    return s === "命" ? "命宮" : s;
-  };
-  const findMinor = (palaceName: string) =>
-    minorByPalace.find((m) => normShort(m?.palace ?? "") === normShort(palaceName));
-
-  const newItems = overlap.items as Array<{
-    palaceKey?: string;
-    palaceName?: string;
-    year?: number;
-    age?: number;
-    tag?: string;
-    tagLabel?: string;
-    jiCount?: number;
-    luCount?: number;
-    feelingSnippet?: string;
-    adviceSnippet?: string;
-    transformations?: Array<{ layer?: string; layerLabel?: string; starName?: string; type?: string; typeLabel?: string; fromPalaceKey?: string; fromPalaceName?: string; toPalaceKey?: string; toPalaceName?: string }>;
-  }> | undefined;
-
-  if (Array.isArray(newItems) && newItems.length > 0) {
-    for (const it of newItems) {
-      const tag = (it.tag === "shock" || it.tag === "mine" || it.tag === "wealth" ? it.tag : "normal") as OverlapItemForBlock["tag"];
-      if (tag === "normal") continue;
-      const transformations: FlowTransformationEntry[] = (it.transformations ?? []).map((x) => ({
-        layerLabel: x.layerLabel ?? "",
-        starName: x.starName ?? "",
-        typeLabel: x.typeLabel ?? (x.type === "ji" ? "化忌" : x.type === "lu" ? "化祿" : x.type === "quan" ? "化權" : "化科"),
-        type: x.type === "ji" ? "忌" : x.type === "lu" ? "祿" : x.type === "quan" ? "權" : "科",
-        fromPalaceKey: x.fromPalaceKey,
-        fromPalaceName: x.fromPalaceName,
-        toPalaceKey: x.toPalaceKey,
-        toPalaceName: x.toPalaceName,
-      }));
-      const palaceName = it.palaceName ?? it.palaceKey ?? "";
-      const minor = findMinor(palaceName);
-      items.push({
-        palaceName,
-        tag,
-        tagLabel: it.tagLabel ?? tagLabelMap[tag],
-        jiCount: typeof it.jiCount === "number" ? it.jiCount : 0,
-        luCount: typeof it.luCount === "number" ? it.luCount : 0,
-        transformations,
-        year: it.year ?? minor?.year ?? undefined,
-        age: it.age ?? minor?.nominalAge ?? undefined,
-        feelingSnippet: it.feelingSnippet,
-        adviceSnippet: it.adviceSnippet,
-      });
-    }
-  } else {
-    const risks = (overlap.criticalRisks ?? []) as Array<{ palace?: string; jiCount?: number; luCount?: number; transformations?: Record<string, { type?: string; star?: string } | null> }>;
-    const opps = (overlap.maxOpportunities ?? []) as Array<{ palace?: string; luCount?: number; transformations?: Record<string, { type?: string; star?: string } | null> }>;
-    const vol = (overlap.volatileAmbivalences ?? []) as Array<{ palace?: string; jiCount?: number; luCount?: number; transformations?: Record<string, { type?: string; star?: string } | null> }>;
-    for (const r of risks) {
-      const palaceName = r.palace ?? "";
-      const trans = flattenLegacyTransformations(r.transformations, palaceName);
-      if (trans.length > 0 || (r.jiCount ?? 0) > 0) {
-        const minor = findMinor(palaceName);
-        items.push({
-          palaceName,
-          tag: "mine",
-          tagLabel: tagLabelMap.mine,
-          jiCount: r.jiCount ?? 0,
-          luCount: r.luCount ?? 0,
-          transformations: trans,
-          year: minor?.year ?? undefined,
-          age: minor?.nominalAge ?? undefined,
-        });
-      }
-    }
-    for (const o of opps) {
-      const palaceName = o.palace ?? "";
-      const trans = flattenLegacyTransformations(o.transformations, palaceName);
-      if (trans.length > 0 || (o.luCount ?? 0) > 0) {
-        const minor = findMinor(palaceName);
-        items.push({
-          palaceName,
-          tag: "wealth",
-          tagLabel: tagLabelMap.wealth,
-          jiCount: 0,
-          luCount: o.luCount ?? 0,
-          transformations: trans,
-          year: minor?.year ?? undefined,
-          age: minor?.nominalAge ?? undefined,
-        });
-      }
-    }
-    for (const v of vol) {
-      const palaceName = v.palace ?? "";
-      const trans = flattenLegacyTransformations(v.transformations, palaceName);
-      if (trans.length > 0 || (v.jiCount ?? 0) > 0 || (v.luCount ?? 0) > 0) {
-        const minor = findMinor(palaceName);
-        items.push({
-          palaceName,
-          tag: "shock",
-          tagLabel: tagLabelMap.shock,
-          jiCount: v.jiCount ?? 0,
-          luCount: v.luCount ?? 0,
-          transformations: trans,
-          year: minor?.year ?? undefined,
-          age: minor?.nominalAge ?? undefined,
-        });
-      }
-    }
-  }
-
-  if (opts?.chartJson && opts?.content && opts?.config !== undefined) {
-    const locale = opts.contentLocale ?? "zh-TW";
-    for (const it of items) {
-      const sectionKey = getSectionKeyForPalace(it.palaceName);
-      if (sectionKey) {
-        const ctx = buildPalaceContext(sectionKey, opts.chartJson, opts.config, opts.content, locale);
-        if (ctx && ctx.stars.length > 0) {
-          it.natalStarsSummarySnippet = ctx.stars
-            .map((s) => `${s.name}${s.strength ? `（${s.strength}）` : ""}${s.meaningInPalace ? "：" + s.meaningInPalace.split(/[。\n]/)[0] : ""}`)
-            .join("；");
-        }
-      }
-      if (!it.feelingSnippet && it.tag !== "normal") it.feelingSnippet = TAG_FEELING_ADVICE[it.tag].feeling;
-      if (!it.adviceSnippet && it.tag !== "normal") it.adviceSnippet = TAG_FEELING_ADVICE[it.tag].advice;
-    }
-  }
-
-  const byTag = { shock: [] as OverlapItemForBlock[], mine: [] as OverlapItemForBlock[], wealth: [] as OverlapItemForBlock[] };
-  for (const it of items) {
-    if (it.tag in byTag) byTag[it.tag as Tag].push(it);
-  }
-  for (const tag of ["shock", "mine", "wealth"] as const) {
-    byTag[tag].sort((a, b) => getPalaceSortIndex(a.palaceName) - getPalaceSortIndex(b.palaceName));
-  }
-
-  const chart = opts?.chartJson ? normalizeChart(opts.chartJson) : null;
-  const formatGroup = (arr: OverlapItemForBlock[]) =>
-    arr.map((it) => formatOverlapBlockItem(it, chart)).join("\n\n");
-
-  return {
-    shockBlocks: formatGroup(byTag.shock),
-    mineBlocks: formatGroup(byTag.mine),
-    wealthBlocks: formatGroup(byTag.wealth),
-  };
+  return { shockBlocks: "", mineBlocks: "", wealthBlocks: "" };
 }
 
 export const MODEL_CONFIG = {
@@ -1043,6 +1035,14 @@ export interface LifeBookConfig {
   minorFortuneTriggers?: string;
   tenGodByPalace?: Record<string, string>;
   wuxingByPalace?: Record<string, string>;
+  /** Behavior Axis v1：命宮地支語氣微偏移（H3/H4；分開驗收） */
+  behaviorAxisV1?: boolean;
+  /** 星曜 × 地支軸衝突一句（分開驗收） */
+  behaviorAxisConflictV1?: boolean;
+  /** H3×H4 循環一句（最易變重；建議最後開） */
+  behaviorAxisLoopV1?: boolean;
+  /** 若 true，12 宮皆套用；若 false/undefined，僅命／福／財／夫（窄開啟） */
+  behaviorAxisWideOpen?: boolean;
 }
 
 export function getSystemPrompt(config?: LifeBookConfig | null): string {
@@ -1145,45 +1145,6 @@ const DECADAL_OPPOSITE: Record<string, string> = {
   財帛宮: "福德宮", 福德宮: "財帛宮", 疾厄宮: "父母宮", 父母宮: "疾厄宮",
 };
 
-function normPalaceForRole(p: string): string {
-  const s = (p ?? "").trim();
-  return s.endsWith("宮") ? s : s + "宮";
-}
-
-/** 今年在十年裡的角色：開局年／推進年／修正年／壓力年／收成年／轉折年；與一句說明。 */
-function getYearRoleInDecadeAndWhy(opts: {
-  decadalPalace: string;
-  liunianMutagen?: Record<string, string>;
-}): { role: string; why: string } {
-  const decadal = normPalaceForRole(opts.decadalPalace);
-  const ln = opts.liunianMutagen ?? {};
-  const has = (t: string, alt?: string) => !!(ln[t] || (alt && ln[alt]));
-  const ji = has("忌", "ji");
-  const lu = has("祿", "lu");
-  const ke = has("科", "ke");
-  const quan = has("權", "quan");
-
-  if (ji && !ke && !lu) return { role: "壓力年", why: "流年帶忌，壓力與修正點會比較明顯，適合穩住節奏、先守再攻。" };
-  if (ke && ji) return { role: "修正年", why: "科忌並見，今年適合用方法與理解來化解卡點，而不是硬衝。" };
-  if (ke && !ji) return { role: "修正年", why: "流年帶科，今年適合整理方法、建立口碑與節奏。" };
-  if (lu && !ji) return { role: "收成年", why: "流年帶祿，今年在資源與機會上較有空間。" };
-  if (quan) return { role: "推進年", why: "流年帶權，今年適合主動決策、扛起責任。" };
-  return { role: "推進年", why: "今年在十年裡適合順著大限主題布局，依流年四化微調節奏。" };
-}
-
-/** 依「今年在十年裡的角色」給一句：今年真正要修的是什麼（命書口吻） */
-function getRoleTakeaway(role: string): string {
-  switch (role) {
-    case "壓力年": return "在壓力點上設好界線、先守再攻，不讓同一題反覆爆。";
-    case "修正年": return "用方法與理解化解卡點，而不是硬衝或逃避。";
-    case "收成年": return "把過去幾年累積的資源與機會收網，該結算的結算。";
-    case "推進年": return "把十年主線往前推一步，該決策的決策、該扛的扛。";
-    case "開局年": return "把新階段的資源與方向定錨，不貪多、先站穩。";
-    case "轉折年": return "在轉折點上做出選擇，不隨波逐流、也不硬扛舊劇本。";
-    default: return "把今年當成十年裡的一個節點，該收的收、該推的推。";
-  }
-}
-
 const NATAL_SIHUA_KEYS = ["祿", "權", "科", "忌"] as const;
 const NATAL_SIHUA_LABELS: Record<string, string> = { 祿: "化祿", 權: "化權", 科: "化科", 忌: "化忌" };
 
@@ -1244,16 +1205,19 @@ function layerFromMutagen(
       }
     }
   }
+  const FALLBACK_PALACE = "落宮待核";
   const toStar = (key: "祿" | "權" | "科" | "忌", type: "lu" | "quan" | "ke" | "ji"): SiHuaStar | null => {
     const starName = mutagen[key];
     if (!starName || typeof starName !== "string") return null;
     const starId = (STAR_NAME_ZH_TO_ID as Record<string, string>)[starName];
     const pid = starId ? starToPalace[starId] : undefined;
     const raw = pid ? (palaceIdToName[pid] ?? pid) : "";
-    if (!raw?.trim()) return null;
-    const palaceKey = raw.replace(/宮$/, "") === "命" ? "命宮" : raw.endsWith("宮") ? raw : raw + "宮";
-    const palaceName = palaceKey.endsWith("宮") ? palaceKey : palaceKey + "宮";
-    return { starName, palaceKey, palaceName, transformType: type };
+    if (raw?.trim()) {
+      const palaceKey = raw.replace(/宮$/, "") === "命" ? "命宮" : raw.endsWith("宮") ? raw : raw + "宮";
+      const palaceName = palaceKey.endsWith("宮") ? palaceKey : palaceKey + "宮";
+      return { starName, palaceKey, palaceName, transformType: type };
+    }
+    return { starName, palaceKey: FALLBACK_PALACE, palaceName: FALLBACK_PALACE, transformType: type };
   };
   const lu = toStar("祿", "lu");
   const quan = toStar("權", "quan");
@@ -1628,8 +1592,12 @@ function fromMutagen(m: MutagenStars | undefined): { list: string; luStars: stri
 /**
  * 四化高階 context：供 s00／s03／12 宮 placeholder 使用。
  * 若 chartJson.sihuaLayers 存在則優先使用；否則由 fourTransformations + overlapAnalysis 推導。
+ * Phase 5B-5：12 宮迴圈優先使用傳入的 findings，僅無傳入時才 fallback createEmptyFindings()。
  */
-export function buildSiHuaContext(chartJson: Record<string, unknown> | undefined): SiHuaContext {
+export function buildSiHuaContext(
+  chartJson: Record<string, unknown> | undefined,
+  passedInFindings?: LifebookFindings
+): SiHuaContext {
   const emptyPalaceFlow: Record<string, string> = {};
   const palaceNames = PALACES.map((p) => p.name);
   for (const n of palaceNames) emptyPalaceFlow[n] = "（此宮暫無四化飛星摘要）";
@@ -1727,26 +1695,15 @@ export function buildSiHuaContext(chartJson: Record<string, unknown> | undefined
       perPalaceFlow[palaceName] = lines.length > 0 ? lines.join("；") + "。" : "（此宮暫無四化飛星摘要）";
     }
   } else {
+    const currentFindings = passedInFindings ?? createEmptyFindings();
     for (const p of palaceNames) {
       const key = p.replace(/宮$/, "") === "命" ? "命宮" : p.replace(/宮$/, "");
-      const summary = buildSihuaFlowSummary({ sectionKey: "", chartJson, palaceKey: key });
-      const flowBlock = summary.split("【四化能量總結】")[0]?.trim() ?? "";
-      const firstLine = flowBlock.split("\n").find((l) => l.startsWith("本命：") || l.startsWith("大限：") || l.startsWith("流年："));
-      if (flowBlock.includes("皆無明顯飛星")) perPalaceFlow[p] = "本命／大限／流年皆無明顯飛星進入此宮，此宮主要由星曜與三方四正主導。";
-      else if (firstLine) perPalaceFlow[p] = flowBlock.replace(/\n+/g, " ").trim();
-      else perPalaceFlow[p] = flowBlock || "（此宮暫無四化飛星摘要）";
+      const summary = buildSihuaFlowSummary({ currentPalace: key, findings: currentFindings });
+      perPalaceFlow[p] = summary || "（此宮暫無四化飛星摘要）";
     }
   }
 
-  let sihuaGlobalSummary = defaultCtx.sihuaGlobalSummary;
-  const allTrans = getAllOverlapTransformations(chartJson);
-  const toCount = new Map<string, number>();
-  for (const t of allTrans) {
-    const toName = toPalaceDisplayName(t.toPalaceName ?? t.toPalaceKey ?? "");
-    if (toName) toCount.set(toName, (toCount.get(toName) ?? 0) + 1);
-  }
-  const top = [...toCount.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([p]) => p);
-  if (top.length > 0) sihuaGlobalSummary = `今年四化的重點集中在 ${top.join("、")} 之間，形成連動題。祿星標示你最容易自動加碼的領域，忌星標示你最容易過度用力、又最怕失控的領域。`;
+  const sihuaGlobalSummary = defaultCtx.sihuaGlobalSummary;
 
   return {
     benMingSiHuaList: benMingList,
@@ -1894,8 +1851,7 @@ export function buildS03GlobalContext(
     starEnergySummary = parts.join("；");
     if (topTwo.length > 0) {
       const set = getStarGroupNarrative(topTwo[0].tag);
-      const idx = pickNarrativeIndex(topTwo[0].tag, set.message.length);
-      starClusterBehaviorSummary = set.message[idx] ?? set.message[0] ?? S03_MISSING;
+      starClusterBehaviorSummary = set.message[0] ?? S03_MISSING;
     } else {
       starClusterBehaviorSummary = "星曜分布均衡，你在四宮之間依情境切換節奏。";
     }
@@ -1953,7 +1909,7 @@ export function buildS03GlobalContext(
   const weightAnalysis = chartJson.weight_analysis as { top_focus_palaces?: string[]; risk_palaces?: string[] } | undefined;
   if (weightAnalysis?.top_focus_palaces?.[0]) {
     const p = weightAnalysis.top_focus_palaces[0];
-    strongPalace = `${p}：吉星或主星集中，是你最容易打開局面的舞台。`;
+    strongPalace = `${p}：吉星或主星集中，資源與機會較易在此宮。`;
   } else {
     let maxCount = 0;
     let maxId = "";
@@ -2149,14 +2105,14 @@ export function buildWholeChartContext(
   }
   const evidence = "四化多層命中";
   const mainlineParts: string[] = [];
-  if (topResource.length > 0) mainlineParts.push(`資源舞台：${[...new Set(topResource)].join("、")}（因：${evidence}）`);
-  if (topRelation.length > 0) mainlineParts.push(`關係舞台：${[...new Set(topRelation)].join("、")}（因：${evidence}）`);
-  if (topCareer.length > 0) mainlineParts.push(`事業舞台：${[...new Set(topCareer)].join("、")}（因：${evidence}）`);
-  if (topInner.length > 0) mainlineParts.push(`內在舞台：${[...new Set(topInner)].join("、")}（因：${evidence}）`);
+  if (topResource.length > 0) mainlineParts.push(`資源集中宮位：${[...new Set(topResource)].join("、")}（因：${evidence}）`);
+  if (topRelation.length > 0) mainlineParts.push(`關係相關宮位：${[...new Set(topRelation)].join("、")}（因：${evidence}）`);
+  if (topCareer.length > 0) mainlineParts.push(`事業相關宮位：${[...new Set(topCareer)].join("、")}（因：${evidence}）`);
+  if (topInner.length > 0) mainlineParts.push(`內在相關宮位：${[...new Set(topInner)].join("、")}（因：${evidence}）`);
   const wholeChartMainlineBlock =
     mainlineParts.length > 0
-      ? ["【全盤主線劇本】", "", mainlineParts.join("\n")].join("\n")
-      : "【全盤主線劇本】\n\n（依四化與星群，主舞台見各宮章節。）";
+      ? ["【全盤結構重點】", "", mainlineParts.join("\n")].join("\n")
+      : "【全盤結構重點】\n\n（依四化與星群，見各宮章節。）";
 
   const firstHitPalace =
     siHuaPatterns.length > 0 && siHuaPatterns[0].evidence
@@ -2248,7 +2204,7 @@ export function validateModuleOneOutput(structureAnalysis: string): { ok: boolea
   return { ok: true };
 }
 
-/** 從 chartJson 取得該星在本命四化中的標註（若有）；無則回傳空字串 */
+/** 從 chartJson 取得該星在本命四化中的標註（若有）；無則回傳空字串。Phase 5B-2：優先改用 getNatalSihuaForStarFromFindings。 */
 function getNatalSihuaForStar(starName: string, chartJson: Record<string, unknown> | undefined): string {
   if (!starName || !chartJson) return "";
   const ft = chartJson.fourTransformations as { benming?: { mutagenStars?: Record<string, string> } } | undefined;
@@ -2258,6 +2214,49 @@ function getNatalSihuaForStar(starName: string, chartJson: Record<string, unknow
     if (mutagen[k] === starName) return NATAL_SIHUA_LABELS[k] ?? `化${k}`;
   }
   return "";
+}
+
+/** Phase 5B-2：從 Findings 取得該星在本命四化中的標註（只讀 sihuaPlacementItems，layer === "natal"）。 */
+function getNatalSihuaForStarFromFindings(starName: string, findings: LifebookFindings): string {
+  if (!starName || !findings?.sihuaPlacementItems?.length) return "";
+  const natal = findings.sihuaPlacementItems.filter((item) => item.layer === "natal");
+  const hit = natal.find((item) => item.starName === starName);
+  return hit ? (NATAL_SIHUA_LABELS[hit.transform] ?? `化${hit.transform}`) : "";
+}
+
+/** Phase 5B-2：從 findings.natalFlowItems 產出單宮本命宮干飛化區塊（與 getFlowBlockForPalace 輸出等價）。 */
+function buildNatalFlowBlockFromFindings(findings: LifebookFindings, palaceNameOrKey: string): string {
+  const items = findings.natalFlowItems ?? [];
+  if (!items.length) return "";
+  const palaceCanon = toPalaceDisplayName((palaceNameOrKey ?? "").trim()) || (palaceNameOrKey ?? "").trim();
+  if (!palaceCanon) return "";
+  const relevant = items.filter(
+    (e) =>
+      toPalaceDisplayName(e.fromPalace) === palaceCanon ||
+      toPalaceDisplayName(e.toPalace) === palaceCanon ||
+      e.fromPalace === palaceCanon ||
+      e.toPalace === palaceCanon
+  );
+  if (!relevant.length) return "";
+  return relevant
+    .map((e) => {
+      const star = e.starName ?? "星";
+      return `本命${star}化${e.transform}：從${e.fromPalace}出，入${e.toPalace}`;
+    })
+    .join("\n");
+}
+
+/** Phase 5B-2：從 findings.natalFlowItems 產出 FLOW_DEBUG 結構（與 buildFlowDebugEntries 輸出等價）。 */
+function buildFlowDebugEntriesFromFindings(findings: LifebookFindings): FlowDebugEntry[] {
+  const items = findings.natalFlowItems ?? [];
+  return items.map((e) => ({
+    layer: "natal" as const,
+    star: e.starName ?? "星",
+    star_palace: e.fromPalace,
+    fromPalace: e.fromPalace,
+    toPalace: e.toPalace,
+    transform: e.transform,
+  }));
 }
 
 /** 星曜亮度／地勢：廟旺利陷（常見為廟、旺、利、陷四種，亦有派別用平、得、不） */
@@ -2273,10 +2272,10 @@ function getPalaceStarStrength(chartJson: Record<string, unknown> | undefined, p
   if (!Array.isArray(palaces)) return undefined;
   const palaceNameZh = (PALACE_ID_TO_NAME as Record<string, string>)[palaceId];
   if (!palaceNameZh) return undefined;
-  const FIXED_ORDER = ["命宮", "兄弟宮", "夫妻宮", "子女宮", "財帛宮", "疾厄宮", "遷移宮", "僕役宮", "官祿宮", "田宅宮", "福德宮", "父母宮"];
-  const idx = FIXED_ORDER.indexOf(palaceNameZh.endsWith("宮") ? palaceNameZh : palaceNameZh + "宮");
-  if (idx < 0) return undefined;
-  const p = palaces[idx];
+  const withSuffix = palaceNameZh.endsWith("宮") ? palaceNameZh : `${palaceNameZh}宮`;
+  const arrIdx = findZiweiPalaceSlotIndexForCanonical(chartJson, withSuffix);
+  const p = arrIdx != null && arrIdx < palaces.length ? palaces[arrIdx] : undefined;
+  if (!p) return undefined;
   const star = p?.majorStars?.[0];
   const raw = star?.brightness ?? star?.strength;
   if (typeof raw !== "string") return undefined;
@@ -2294,16 +2293,17 @@ function getPalaceStarsStrengthMap(
     palaces?: Array<{
       majorStars?: Array<{ name?: string; id?: string; brightness?: string; strength?: string }>;
       minorStars?: Array<{ name?: string; id?: string; brightness?: string; strength?: string }>;
+      adjectiveStars?: Array<{ name?: string; id?: string; brightness?: string; strength?: string }>;
     }>;
   } | undefined;
   const palaces = ziwei?.palaces;
   if (!Array.isArray(palaces)) return out;
   const palaceNameZh = (PALACE_ID_TO_NAME as Record<string, string>)[palaceId];
   if (!palaceNameZh) return out;
-  const FIXED_ORDER = ["命宮", "兄弟宮", "夫妻宮", "子女宮", "財帛宮", "疾厄宮", "遷移宮", "僕役宮", "官祿宮", "田宅宮", "福德宮", "父母宮"];
-  const idx = FIXED_ORDER.indexOf(palaceNameZh.endsWith("宮") ? palaceNameZh : palaceNameZh + "宮");
-  if (idx < 0) return out;
-  const p = palaces[idx];
+  const withSuffix = palaceNameZh.endsWith("宮") ? palaceNameZh : `${palaceNameZh}宮`;
+  const arrIdx = findZiweiPalaceSlotIndexForCanonical(chartJson, withSuffix);
+  const p = arrIdx != null && arrIdx < palaces.length ? palaces[arrIdx] : undefined;
+  if (!p) return out;
   const collect = (arr: Array<{ name?: string; id?: string; brightness?: string; strength?: string }> | undefined) => {
     if (!Array.isArray(arr)) return;
     for (const star of arr) {
@@ -2317,7 +2317,34 @@ function getPalaceStarsStrengthMap(
   };
   collect(p?.majorStars);
   collect(p?.minorStars);
+  collect(p?.adjectiveStars);
   return out;
+}
+
+/** S17 讀者宮位敘事：starByPalace 無亮度時，自 ziwei.palaces 合併每顆星的 brightness／strength（含 iztro miao/wang） */
+function mergeZiweiBrightnessIntoPalaceRaw(
+  raw: PalaceRawInput,
+  chartJson: Record<string, unknown>,
+  palaceCanon: string
+): PalaceRawInput {
+  const canon = (palaceCanon ?? "").trim();
+  if (!canon) return raw;
+  const withSuffix = canon.endsWith("宮") ? canon : `${canon}宮`;
+  const palaceId =
+    (PALACE_NAME_ZH_TO_ID as Record<string, string>)[withSuffix] ??
+    (PALACE_NAME_ZH_TO_ID as Record<string, string>)[canon.replace(/宮$/, "")];
+  if (!palaceId) return raw;
+  const fromChart = getPalaceStarsStrengthMap(chartJson, palaceId);
+  if (Object.keys(fromChart).length === 0) return raw;
+  type B = "廟" | "旺" | "得" | "平" | "陷";
+  const merged: Record<string, B> = { ...(raw.brightness as Record<string, B> | undefined) };
+  for (const [k, v] of Object.entries(fromChart)) {
+    if (v === "不" || !v?.trim()) continue;
+    const zh = (v === "利" ? "得" : v) as B | "不";
+    if (zh === "不") continue;
+    merged[k] = zh as B;
+  }
+  return Object.keys(merged).length > 0 ? { ...raw, brightness: merged } : raw;
 }
 
 // ============ 純紫微＋五行：共用宮位 context（GPT 版與技術版同一套底層） ============
@@ -2472,9 +2499,17 @@ export function getPlaceholderMapFromContext(
     forTechnicalOutput?: boolean;
     /** 為 true 或未傳時不輸出具體四化流向（驗證通過後傳 false） */
     flowsNotVerified?: boolean;
+    /** P2：單宮四化摘要只讀 findings（sihuaPlacementItems / natalFlowItems） */
+    findings?: LifebookFindings;
+    /** V2 Batch 1：s15a 優先讀 stackSignals / timeWindowScores / eventProbabilities */
+    findingsV2?: LifebookFindingsV2;
+    /** 統一架構：若提供則 S17/S18/S19 用 buildPalaceOverlayFromNormalizedChart，否則 fallback buildPalaceOverlay(chartJson) */
+    normalizedChart?: NormalizedChart;
   }
 ): Record<string, string> {
   const map: Record<string, string> = {};
+  let s15aV2Usable = false;
+  let s16V2Usable = false;
   const forTechnical = opts?.forTechnicalOutput === true;
   // 全盤章節（s15/s16/s17-s19/s21）無宮位：不顯示宮位，palace 相關 placeholder 填空字串
   if (!ctx && opts?.sectionKey && GLOBAL_SECTION_KEYS_NO_PALACE.has(opts.sectionKey)) {
@@ -2488,7 +2523,7 @@ export function getPlaceholderMapFromContext(
   map.tenGod = "";
   map.tenGodBehavior = "";
   if (opts?.chartJson) {
-    const sihuaContext = buildSiHuaContext(opts.chartJson);
+    const sihuaContext = buildSiHuaContext(opts.chartJson, opts.findings);
     map.benMingSiHuaList = sihuaContext.benMingSiHuaList;
     map.daXianSiHuaList = sihuaContext.daXianSiHuaList;
     map.liuNianSiHuaList = sihuaContext.liuNianSiHuaList;
@@ -2522,19 +2557,30 @@ export function getPlaceholderMapFromContext(
     map.hpSnippet = ctx.hpSnippet ?? "";
     map.highPressureSnippets = ctx.hpSnippet ?? "";
     const chartJson = opts?.chartJson;
-    // 12 宮【星曜結構】：諮詢式敘事（主星完整段，輔／煞／雜逐顆 1～2 句，無 ---）
-    const getNatalSihua = chartJson ? (starName: string) => getNatalSihuaForStar(starName, chartJson) : () => "";
-    const palaceContexts = (opts?.content as { palaceContexts?: Record<string, string> } | undefined)?.palaceContexts;
+    const findingsForSihua = opts?.findings ?? createEmptyFindings();
+    // Phase 5B-2：12 宮正文四化／飛化只讀 Findings；無 findings 時保留 chart 相容路徑。
+    const getNatalSihua =
+      opts?.findings != null
+        ? (starName: string) => getNatalSihuaForStarFromFindings(starName, findingsForSihua)
+        : chartJson
+          ? (starName: string) => getNatalSihuaForStar(starName, chartJson)
+          : () => "";
+    const narrativeContent = opts?.content as NarrativeContentLookup | undefined;
     map.palaceStarsOnlySnippet =
       ctx.stars.length > 0 && isPalaceSection
         ? buildPalaceStarNarrativeBlock(
             { palaceName: ctx.palaceName, stars: ctx.stars },
-            { getNatalSihua, palaceContexts }
+            { getNatalSihua, content: narrativeContent }
           )
         : ctx.stars.length > 0
           ? (() => {
               const pureStarLines = ctx.stars.map((s) => {
-                const natalSihua = chartJson ? getNatalSihuaForStar(s.name, chartJson) : "";
+                const natalSihua =
+                  opts?.findings != null
+                    ? getNatalSihuaForStarFromFindings(s.name, findingsForSihua)
+                    : chartJson
+                      ? getNatalSihuaForStar(s.name, chartJson)
+                      : "";
                 const base = (s.baseMeaning ?? "").trim();
                 const inPalace = (s.meaningInPalace ?? "").trim();
                 const action = (s.actionAdvice ?? "").trim();
@@ -2573,31 +2619,89 @@ export function getPlaceholderMapFromContext(
     map.palacePureStarsBlock = map.palaceStarsOnlySnippet;
     map.palaceStarDetailBlock = map.palaceStarsOnlySnippet;
     map.palaceStarTenGodBlock = map.palaceAllStarsSnippet;
-    // 本宮四化流向＋四化能量總結（供通用宮位模板 sihuaFlowSummary，含可判讀全文與能量總結）
+    // 本宮四化摘要（只讀 Findings；有傳 findings 時不得以 createEmptyFindings() 覆蓋）
     map.sihuaFlowSummary = buildSihuaFlowSummary({
-      sectionKey: opts?.sectionKey ?? "",
-      chartJson: opts?.chartJson,
-      palaceKey: ctx.palaceName ?? null,
-      flowsNotVerified: opts?.flowsNotVerified,
+      currentPalace: ctx.palaceName ?? "",
+      findings: opts?.findings ?? createEmptyFindings(),
     });
     map.fourTransformationsFlowBlock = map.sihuaFlowSummary;
 
-    // 12 宮專用：本宮四化提示／全盤關聯提示（pattern hits renderer）
-    if (isPalaceSection && opts?.chartJson) {
-      const s00Events = buildS00EventsFromChart(opts.chartJson);
-      const s00Hits = evaluateFourTransformPatterns(s00Events);
-      const moduleOneRuleIds = getModuleOneRuleIds(s00Hits, 5);
-      const palaceKeyForHints = ctx.palaceName ?? ctx.palaceKey ?? "";
-      const { globalLinkBlock, siHuaHintsBlock } = renderPatternHitsForPalace(
-        s00Hits,
-        palaceKeyForHints,
-        moduleOneRuleIds,
-        2,
-        3,
-        { forTechnicalOutput: forTechnical }
-      );
-      map.palaceGlobalLinkHints = globalLinkBlock;
-      map.palaceSiHuaHints = siHuaHintsBlock;
+    // 12 宮共通區塊：palaceOverview / 【星曜介紹】= palaceCoreTraits（逐一列出星曜介紹）/ 【星曜在本宮表現】= palaceStarBehavior / palaceSanFangAnalysis / palaceStarCombinationAnalysis / palaceAdvice
+    if (isPalaceSection && ctx) {
+      const palaceName = ctx.palaceName ?? "";
+      map.palaceContextBlock = buildPalaceContextThreeLines(palaceName, opts?.content as NarrativeContentLookup | undefined) || "此宮反映你在這個領域的慣性與表現。";
+      map.palaceStarNarrativeBlock = (map.palaceStarsOnlySnippet ?? "").trim() || "（本宮星曜說明見上方列表。）";
+      map.palaceOverview = map.palaceContextBlock;
+      map.palaceCoreTraits = buildPalaceStarIntroBlock(
+        { palaceName: ctx.palaceName ?? "", stars: ctx.stars },
+        { content: opts?.content as NarrativeContentLookup | undefined }
+      ) || "（本宮無星曜資料。）";
+      map.palaceStarBehavior = (map.palaceStarsOnlySnippet ?? "").trim() || "（本宮星曜說明見上方列表。）";
+      map.palaceSanFangAnalysis = buildSanFangAnalysis(palaceName);
+      map.palaceStarCombinationAnalysis = buildStarCombinationAnalysis(palaceName, opts?.findings);
+      const facadeForPalace = createNarrativeFacade(opts?.content as NarrativeContentLookup | undefined);
+      const mainStarsForAdvice = ctx.stars.filter((s) => MAIN_STAR_NAMES.has(s.name)).slice(0, 2);
+      const adviceParts: string[] = [];
+      for (const star of mainStarsForAdvice) {
+        const starSem = facadeForPalace.getStarSemantic(star.name);
+        const inPalaceBlock = facadeForPalace.getStarInPalaceSemantic(star.name, palaceName);
+        const risk = (starSem.risk ?? "").trim();
+        const advice = (starSem.advice ?? "").trim();
+        const actionAdvice = (inPalaceBlock.actionAdvice ?? "").trim();
+        if (risk) adviceParts.push(risk);
+        if (advice) adviceParts.push(advice);
+        if (actionAdvice) adviceParts.push(actionAdvice);
+      }
+      const joined = adviceParts.filter(Boolean).join("。").replace(/。+/g, "。").trim();
+      const adviceText = joined.replace(/^\u3002+|\u3002+$/g, "");
+      map.palaceAdviceBlock =
+        adviceText.length > 0 ? adviceText + "\u3002" : "可對照本宮星曜特質與四化引動，留意節奏與界線。";
+      map.palaceAdvice = map.palaceAdviceBlock;
+    }
+
+    // 命宮試點：保留 mingGong* 以相容舊引用（s02 已改為使用 palace*）
+    const isMingGong = (ctx.palaceName ?? "").replace(/宮$/, "") === "命" || ctx.palaceName === "命宮";
+    if (isMingGong) {
+      const facade = createNarrativeFacade(opts?.content as NarrativeContentLookup | undefined);
+      const palaceBlock = facade.getPalaceSemantic("命宮");
+      const core = (palaceBlock.core ?? "").trim();
+      const context = (palaceBlock.context ?? "").trim();
+      const theme = (palaceBlock.theme ?? "").trim();
+      const parts: string[] = [];
+      if (core) parts.push(`命宮掌管的是${core}。`);
+      const contextOverlapsCore =
+        context &&
+        core &&
+        (core.includes(context) ||
+          context.includes(core) ||
+          ["個性", "人生方向", "自我定位", "定位"].some((kw) => core.includes(kw) && context.includes(kw)));
+      if (theme && theme !== core) parts.push(theme);
+      if (context && !contextOverlapsCore) parts.push(`在你的「${context}」中，這一宮最能反映你的慣性與方向感。`);
+      map.mingGongContext = parts.length > 0 ? parts.join(" ") : "命宮反映你的自我定位與人生方向。";
+      map.mingGongStarNarrative = (map.palaceStarsOnlySnippet ?? "").trim() || "（本宮星曜說明見上方列表。）";
+      map.mingGongSihuaSummary = buildMingGongSihuaPlacementOnly(opts?.findings ?? createEmptyFindings());
+      const mainStarsForAdvice = ctx.stars.filter((s) => MAIN_STAR_NAMES.has(s.name)).slice(0, 2);
+      const adviceParts: string[] = [];
+      for (const star of mainStarsForAdvice) {
+        const starSem = facade.getStarSemantic(star.name);
+        const inPalace = facade.getStarInPalaceSemantic(star.name, "命宮");
+        const risk = (starSem.risk ?? "").trim();
+        const advice = (starSem.advice ?? "").trim();
+        const actionAdvice = (inPalace.actionAdvice ?? "").trim();
+        if (risk) adviceParts.push(risk);
+        if (advice) adviceParts.push(advice);
+        if (actionAdvice) adviceParts.push(actionAdvice);
+      }
+      const joined = adviceParts.filter(Boolean).join("。").replace(/。+/g, "。").trim();
+      const adviceText = joined.replace(/^\u3002+|\u3002+$/g, ""); // 去掉首尾全形句號
+      map.mingGongAdvice =
+        adviceText.length > 0 ? adviceText + "\u3002" : "可對照本宮星曜特質與四化引動，留意節奏與界線。";
+    }
+
+    // 12 宮 4 區塊骨架：不再輸出【本宮四化提示】與證據塊，一律留空避免幽靈區塊殘留
+    if (isPalaceSection) {
+      map.palaceGlobalLinkHints = "";
+      map.palaceSiHuaHints = "";
     }
 
     // 12 宮專用：宮位核心定義、主星星系區塊（有資料才一段）、主星／輔星／煞星摘要、亮度區塊、Phase 2 風險與主敘事
@@ -2753,20 +2857,13 @@ export function getPlaceholderMapFromContext(
           const palaceName = ctx?.palaceName ?? palaceKeyForNarrative + "宮";
           map.palaceStarOpening = `${palaceName}描述的是你在這個領域最自然的節奏與反應方式。`;
           map.palaceStarStrength = "";
-          const palaceTensionMature = getPalaceTensionMature(palaceKeyForNarrative, seed);
-          map.palaceStarTension = palaceTensionMature?.tension ?? "";
-          map.palaceStarMature = palaceTensionMature?.mature ?? "";
+          map.palaceStarTension = "";
+          map.palaceStarMature = "";
         } else {
           map.palaceStarOpening = buildPalaceStarNarrative(leadMainStarName, palaceKeyForNarrative, "opening", palaceStarOpts);
           map.palaceStarStrength = buildPalaceStarNarrative(leadMainStarName, palaceKeyForNarrative, "strength", palaceStarOpts);
-          const palaceTensionMature = getPalaceTensionMature(palaceKeyForNarrative, seed);
-          if (palaceTensionMature) {
-            map.palaceStarTension = palaceTensionMature.tension;
-            map.palaceStarMature = palaceTensionMature.mature;
-          } else {
-            map.palaceStarTension = buildPalaceStarNarrative(leadMainStarName, palaceKeyForNarrative, "tension", palaceStarOpts);
-            map.palaceStarMature = buildPalaceStarNarrative(leadMainStarName, palaceKeyForNarrative, "mature", palaceStarOpts);
-          }
+          map.palaceStarTension = buildPalaceStarNarrative(leadMainStarName, palaceKeyForNarrative, "tension", palaceStarOpts);
+          map.palaceStarMature = buildPalaceStarNarrative(leadMainStarName, palaceKeyForNarrative, "mature", palaceStarOpts);
         }
         map.palaceStarNarrative = map.palaceStarOpening;
         map.palaceSanfangInsight = getPalaceSanfangInsight(
@@ -2869,7 +2966,7 @@ export function getPlaceholderMapFromContext(
       if (strongD) {
         const palSem = getPalaceSemantic(strongD.palace);
         const core = palSem?.core ? `（${palSem.core}）` : "";
-        map.strongPalace = `${strongD.palace}${core}：吉星或主星集中，是你最容易打開局面的舞台。`;
+        map.strongPalace = `${strongD.palace}${core}：吉星或主星集中，資源與機會較易在此宮。`;
       }
       if (weakD) {
         const palSem = getPalaceSemantic(weakD.palace);
@@ -3020,10 +3117,9 @@ export function getPlaceholderMapFromContext(
       s00Hits.length > 0
         ? ["【全盤結構重點】", "", renderPatternHitsForModuleOne(s00Hits, 5, { forTechnicalOutput: false })].join("\n")
         : "";
-    const s00Corpus = (opts?.content as { narrativeCorpus?: { s00?: Record<string, { openers: string[]; explainers: string[]; advisers: string[]; connectors?: string[] }> } } | undefined)?.narrativeCorpus?.s00;
     map.s00NarrativeBlocks =
-      s00Hits.length > 0 && s00Corpus && Object.keys(s00Corpus).length > 0
-        ? renderNarrativeBlocksAsString({ hits: s00Hits, corpus: s00Corpus })
+      s00Hits.length > 0
+        ? renderPatternHitsForModuleOne(s00Hits, 5, { forTechnicalOutput: false })
         : "（本局四化重點見上方總表與下方判讀。）";
 
     if (opts.chartJson != null) {
@@ -3091,10 +3187,13 @@ export function getPlaceholderMapFromContext(
     const destinyName = ms?.命主?.name ?? "";
     const bodyName = ms?.身主?.name ?? "";
     const bodyPalaceKey = bp?.palace ?? "";
-    map.destinyStarCore = destinyName ? pickDestinyStarCore(destinyName, seed) : "";
-    map.bodyStarCore = bodyName ? pickBodyStarCore(bodyName, seed) : "";
-    map.bodyPalaceCore = bodyPalaceKey ? pickBodyPalaceCore(bodyPalaceKey, seed) : "";
-    map.bodyPalaceTension = bodyPalaceKey ? pickBodyPalaceTension(bodyPalaceKey, seed) : "";
+    const destinySem = destinyName ? getStarSemantic(destinyName) : null;
+    const bodySem = bodyName ? getStarSemantic(bodyName) : null;
+    const bodyPalSem = bodyPalaceKey ? getPalaceSemantic(bodyPalaceKey) : null;
+    map.destinyStarCore = destinySem ? `${destinyName}代表${destinySem.core}。` : "";
+    map.bodyStarCore = bodySem ? `${bodyName}代表${bodySem.core}。` : "";
+    map.bodyPalaceCore = bodyPalSem ? `${bodyPalaceKey?.endsWith("宮") ? bodyPalaceKey : bodyPalaceKey + "宮"}掌管${bodyPalSem.core}。` : "";
+    map.bodyPalaceTension = "";
     const core = (map.bodyPalaceCore ?? "").trim();
     const tension = (map.bodyPalaceTension ?? "").trim();
     map.bodyPalaceFocusBlock = core && tension ? `${core}\n\n${tension}` : core || tension || "";
@@ -3104,6 +3203,14 @@ export function getPlaceholderMapFromContext(
       ? buildS04StrategyIntegrated(destinyName, bodyName, bodyPalaceKey)
       : "你真正要練的，是讓命主的方向感、身主的行動方式與身宮的體感場域彼此配合，而不是彼此拉扯。";
   }
+  /**
+   * Time module section key 清單（本檔多處使用，僅整理註解，TODO: 日後可考慮抽成常數或共用以減少不一致）：
+   * - TIME_MODULE_SECTION_KEYS（本區塊）：全部時間模組但「不含 s15a」；用於大限／十年主線／decadalFourTransform 等。
+   * - timeModuleKeys（getPlaceholderMapFromContext 下方）：全部時間模組「含 s15a」；用於 s15a/s16 V2、overlap、minor 表、keyYears。
+   * - timeModuleYearKeys（同函式更下方）：全部時間模組「不含 s15a」；用於 flowYear、liunian、yearlyFourTransform、yearRoleInDecade（year logic）。
+   * - TIME_MODULE_KEYS（getSectionTechnicalBlocks）：僅 s15,s15a,s16,s17；供 technical blocks 的 underlyingParams 與 skeleton missing 判定。
+   * - timeModuleKeys（injectTimeModuleDataIntoSection）：同 getPlaceholderMapFromContext 的 timeModuleKeys，全部時間模組含 s15a。
+   */
   const TIME_MODULE_SECTION_KEYS = ["s15", "s16", "s17", "s18", "s19", "s20", "s21"] as const;
   if (TIME_MODULE_SECTION_KEYS.includes(opts?.sectionKey as typeof TIME_MODULE_SECTION_KEYS[number]) && opts?.chartJson) {
     const decadalLimits = (opts.chartJson.decadalLimits ?? (opts.chartJson.ziwei as Record<string, unknown>)?.decadalLimits) as Array<{ palace?: string; startAge?: number; endAge?: number; stem?: string; mutagenStars?: Record<string, string> }> | undefined;
@@ -3118,14 +3225,14 @@ export function getPlaceholderMapFromContext(
             .map(([k, v]) => `${v}化${k}`)
             .join("、") || ""
           : "";
-        return `大限${i + 1}：${palace} ${age} ${stem ? `天干${stem}` : ""} ${sihua ? `四化：${sihua}` : ""}`.trim();
+        return `大限${i + 1}（大限命宮：${palace}）${age}${stem ? `，天干${stem}` : ""}${sihua ? `；四化：${sihua}` : ""}`.trim();
       });
       map.decadalLimitsList = lines.join("\n");
     } else {
       map.decadalLimitsList = "";
     }
     // 【十年主線能量】大限四化 + 本命四化對大限的觸發（僅 s15 顯示）
-    const ft = (opts.chartJson.fourTransformations ?? (opts.chartJson.ziwei as Record<string, unknown>)?.fourTransformations) as { benming?: { mutagenStars?: Record<string, string> } } | undefined;
+    const ft = (opts.chartJson.fourTransformations ?? (opts.chartJson.ziwei as Record<string, unknown>)?.fourTransformations) as { benming?: { mutagenStars?: Record<string, string> }; decadal?: { mutagenStars?: Record<string, string> } } | undefined;
     const benmingSihua = ft?.benming?.mutagenStars && typeof ft.benming.mutagenStars === "object"
       ? Object.entries(ft.benming.mutagenStars)
         .filter(([, v]) => v)
@@ -3139,11 +3246,15 @@ export function getPlaceholderMapFromContext(
       : undefined;
     const currentLimit = getCurrentDecadalLimit(decadalLimits, currentAge);
     const firstLimit = currentLimit;
-    const dalimitSihua = firstLimit?.mutagenStars && typeof firstLimit.mutagenStars === "object"
-      ? Object.entries(firstLimit.mutagenStars)
-        .filter(([, v]) => v)
-        .map(([k, v]) => `${v}化${k}`)
-        .join("、") || ""
+    // 大限四化單一真值：優先 decadalLimits[當前].mutagenStars，缺則用 fourTransformations.decadal（禁止用 liunian）
+    const decadalMutagenForDisplay = firstLimit?.mutagenStars && typeof firstLimit.mutagenStars === "object"
+      ? firstLimit.mutagenStars
+      : (ft?.decadal?.mutagenStars && typeof ft.decadal.mutagenStars === "object" ? ft.decadal.mutagenStars : undefined);
+    const dalimitSihua = decadalMutagenForDisplay
+      ? Object.entries(decadalMutagenForDisplay)
+          .filter(([, v]) => v)
+          .map(([k, v]) => `${v}化${k}`)
+          .join("、") || ""
       : "";
     map.decadalMainLineEnergy =
       "【十年主線能量】\n" +
@@ -3154,15 +3265,44 @@ export function getPlaceholderMapFromContext(
     const currentPalaceName = firstLimit?.palace ?? "";
     const currentPalaceCanon = !currentPalaceName ? "" : currentPalaceName.endsWith("宮") ? currentPalaceName : currentPalaceName + "宮";
     const currentPalaceShort = currentPalaceName.replace(/宮$/, "") === "命" ? "命宮" : currentPalaceName.replace(/宮$/, "");
-    map.currentDecadalPalace = currentPalaceName || "（當前大限）";
+    // 模組二四項基礎（大限命宮／四化、流年命宮／四化）只允許由 buildTimeModuleDisplayFromChartJson 寫入，此處不寫入，避免與流年／本命混用
+    const M2_BASE_KEYS_ONLY_FROM_TIMEDISPLAY = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"];
+    if (!M2_BASE_KEYS_ONLY_FROM_TIMEDISPLAY.includes(opts?.sectionKey ?? "")) {
+      map.currentDecadalPalace = currentPalaceName || "（當前大限）";
+      map.currentDecadalSihuaLine = dalimitSihua || benmingSihua || "";
+    }
     const decadalThemeEntry = getDecadalPalaceTheme(currentPalaceCanon || currentPalaceName);
     map.currentDecadalTheme = (decadalThemeEntry?.theme ?? "這十年的主線場景") as string;
-    map.currentDecadalSihuaLine = dalimitSihua || benmingSihua || "";
+    // S17/S18/S19：統一架構 — 有 normalizedChart 用 buildPalaceOverlayFromNormalizedChart，否則 fallback buildPalaceOverlay(chartJson)
+    const needOverlay = opts?.sectionKey === "s17" || opts?.sectionKey === "s18" || opts?.sectionKey === "s19";
+    if (needOverlay) {
+      const flowYear = yearlyForAge?.year ?? (opts?.chartJson?.yearlyHoroscope as { year?: number } | undefined)?.year;
+      const overlay = opts?.normalizedChart
+        ? buildPalaceOverlayFromNormalizedChart(opts.normalizedChart)
+        : opts?.chartJson
+          ? buildPalaceOverlay(opts.chartJson, { currentAge, flowYear })
+          : [];
+      const useAdapter = !!opts?.normalizedChart;
+      if (overlay.length > 0) {
+        if (opts?.sectionKey === "s17") {
+          map.palaceOverlayBlocks = buildPalaceOverlayBlocks(overlay);
+        }
+        if (opts?.sectionKey === "s18") {
+          const signals = buildEventSignals(overlay, useAdapter ? undefined : opts?.chartJson);
+          map.s18SignalsBlocks = signalsToNarrative(signals);
+        }
+        if (opts?.sectionKey === "s19" && opts?.chartJson) {
+          const s18Signals = buildEventSignals(overlay, useAdapter ? undefined : opts.chartJson);
+          const s19Output = buildS19MonthlyOutput({ chartJson: opts.chartJson, s18Signals });
+          map.s19MonthlyBlocks = formatS19MonthlyOutputToCard(s19Output);
+        }
+      }
+    }
     // 第 1 段核心功課：命書敘事＝結論（十年主題）→ 原因（四化底色收束）→ 真正要學的（至少 3 句）
     const themeLabel = decadalThemeEntry?.theme ?? "這十年的主線";
     const homeworkSentences: string[] = [];
-    homeworkSentences.push(`這十年你要演的主題是「${themeLabel}」。`);
-    const mutagenStars = firstLimit?.mutagenStars && typeof firstLimit.mutagenStars === "object" ? firstLimit.mutagenStars : {};
+    homeworkSentences.push(`大限在${map.currentDecadalPalace ?? "當前大限"}，主題：${themeLabel}。`);
+    const mutagenStars = (firstLimit?.mutagenStars && typeof firstLimit.mutagenStars === "object" ? firstLimit.mutagenStars : null) ?? (ft?.decadal?.mutagenStars && typeof ft?.decadal.mutagenStars === "object" ? ft.decadal.mutagenStars : {});
     const transformPairs: Array<{ label: string; key: string }> = [
       { label: "祿", key: "lu" }, { label: "權", key: "quan" }, { label: "科", key: "ke" }, { label: "忌", key: "ji" },
     ];
@@ -3176,28 +3316,68 @@ export function getPlaceholderMapFromContext(
       if (key === "ji") hasJi = true;
     }
     if (sihuaLines.length > 0) {
-      homeworkSentences.push(sihuaLines.length === 1 ? sihuaLines[0] : `大限四化給你的底色是：${sihuaLines.join(" ")}`);
+      homeworkSentences.push(sihuaLines.length === 1 ? sihuaLines[0] : `大限四化：${sihuaLines.join(" ")}`);
     }
     if (hasJi) {
-      homeworkSentences.push("這十年真正要學的，是在壓力與修正點最明顯的地方先穩住，再往前推；忌星會反覆提醒你哪裡還沒畢業。");
+      homeworkSentences.push("忌星所在宮位宜先穩住、設停損再推。");
     } else if (sihuaLines.length > 0) {
-      homeworkSentences.push("這十年真正要學的，是把四化給你的資源與風格，用在對的戰場上。");
+      homeworkSentences.push("四化飛入的宮位見下方，可依宮位與星曜對應策略。");
     } else {
-      homeworkSentences.push("這十年真正要學的，是看清主戰場在哪裡，再把力氣放在那裡。");
+      homeworkSentences.push("四化飛入的宮位見下方。");
     }
     map.currentDecadalHomework = homeworkSentences.join(" ") as string;
     map.decadalMainLineEnergyHumanized =
       decadalThemeEntry?.narrative
-        ? `${decadalThemeEntry.narrative} 你的舞台與考題會具體落在被四化點亮的宮位；先看清主戰場，再決定力氣往哪裡放。`
+        ? `${decadalThemeEntry.narrative} 四化飛入的宮位見下方。`
         : (dalimitSihua || benmingSihua)
-          ? "這十年你的主線能量由大限宮位與四化牽動；你的舞台與考題會具體落在被四化點亮的宮位，先看清主戰場，再決定力氣往哪裡放。"
-          : "這十年由大限宮位定調主線場景；先看清主戰場，再決定力氣往哪裡放。";
-    // 本命＋大限四化飛星（s15）
-    const palaceKeyForFt = ctx?.palaceKey ?? ((firstLimit?.palace ?? "").replace(/宮$/, "") || (Array.isArray(decadalLimits) && decadalLimits[0] ? (decadalLimits[0].palace ?? "").replace(/宮$/, "") : "命宮"));
-    const decadalLines = collectFourTransformsForPalace(opts.chartJson, palaceKeyForFt, ["benming", "decadal"]);
+          ? "這十年主線由大限宮位與四化牽動；四化飛入的宮位見下方。"
+          : "這十年由大限宮位定調；四化飛入的宮位見下方。";
+    // 大限四化飛星（s15）：用「該步大限的宮干」(firstLimit.stem) 推十干四化，再飛入本命星所在宮。不可用本命盤該宮宮干。
+    const decadalPalaceForFormula = firstLimit?.palace ? toPalaceCanonical(String(firstLimit.palace).trim()) : "";
+    const decadalStemFromLimit = (firstLimit as { stem?: string } | undefined)?.stem?.trim() || "";
+    // 診斷用：確認命書生成時實際拿到的 currentLimit.stem（54–63 歲應為 甲，若為 丙 表示上游仍用 BaziCore）
+    if (opts?.sectionKey === "s15" && (decadalLimits?.length ?? 0) > 0) {
+      console.log("[life-book/s15] decadalLimits[5] =", JSON.stringify(decadalLimits[5]));
+      console.log("[life-book/s15] firstLimit (current) =", JSON.stringify(firstLimit));
+      console.log("[life-book/s15] decadalStemFromLimit =", decadalStemFromLimit || "(empty)");
+    }
+    const palaceStemMap = buildPalaceStemMap(opts.chartJson);
+    const starsByPalace = getStarByPalaceFromChart(opts.chartJson);
+    const formulaDecadalFlows = decadalPalaceForFormula && (decadalStemFromLimit || Object.keys(palaceStemMap).length > 0) && starsByPalace.size > 0
+      ? buildDecadalSihuaFlows({
+          palaceStemMap,
+          starsByPalace,
+          decadalPalace: decadalPalaceForFormula,
+          decadalStem: decadalStemFromLimit || undefined,
+        })
+      : [];
+    const decadalLines: FourTransformLine[] = formulaDecadalFlows.length > 0
+      ? formulaDecadalFlows.map((f) => ({
+          layer: "decadal" as const,
+          layerLabel: "大限",
+          starName: f.star,
+          type: (f.transform === "祿" ? "lu" : f.transform === "權" ? "quan" : f.transform === "科" ? "ke" : "ji") as "lu" | "quan" | "ke" | "ji",
+          typeLabel: f.transform === "祿" ? "化祿" : f.transform === "權" ? "化權" : f.transform === "科" ? "化科" : "化忌",
+          fromPalaceKey: f.fromPalace,
+          fromPalaceName: f.fromPalace,
+          toPalaceKey: f.toPalace,
+          toPalaceName: f.toPalace,
+        }))
+      : [];
     const decadalBlocks = buildFourTransformBlocksForPalace(decadalLines);
     map.decadalFourTransformBlocks = decadalBlocks.techBlock === "（本宮無四化飛星資料）" ? "" : decadalBlocks.techBlock;
     map.decadalFourTransformSummary = decadalBlocks.summary === "（無四化飛星資料）" ? "" : decadalBlocks.summary;
+    const decadalExplanations = decadalLines
+      .map((l) =>
+        buildFlyStarExplanation(
+          l.starName,
+          l.type,
+          l.fromPalaceName ?? l.fromPalaceKey ?? "",
+          l.toPalaceName ?? l.toPalaceKey ?? ""
+        )
+      )
+      .filter(Boolean);
+    map.decadalFourTransformExplanations = decadalExplanations.length ? decadalExplanations.join("\n\n") : "";
     if (opts?.sectionKey === "s15" || opts?.sectionKey === "s18") {
       const override = (opts.chartJson.recurringHomeworkNarrativeOverride ?? opts.chartJson.lifebookNarrativeOverrides?.recurringHomeworkNarrative) as string | undefined;
       if (override && typeof override === "string" && override.trim()) {
@@ -3211,21 +3391,36 @@ export function getPlaceholderMapFromContext(
         const rc = rootCauses[0];
         const surfaceDeep =
           rc?.symptomPalace && rc?.sourcePalace
-            ? `表面上看是${rc.symptomPalace}的議題，底層其實常跟${rc.sourcePalace}的壓力或慣性有關。`
-            : "表面上看是某類事件一再發生，底層其實是同一課還沒畢業、命盤在反覆提醒你。";
+            ? `壓力路徑：${rc.sourcePalace} → ${rc.symptomPalace}。`
+            : "四化反覆引動的宮位見上方結構。";
       map.recurringHomeworkNarrative =
-        (conclusion ? conclusion + " " : "你最容易重演的模式，是命盤中反覆被四化引動的宮位與星曜慣性。") + surfaceDeep;
+        (conclusion ? conclusion + " " : "四化反覆引動的宮位與星曜見上方結構。") + surfaceDeep;
       }
     }
     if (opts?.sectionKey === "s15") {
       map.keyYearsIntro = "不是每一年都一樣重要，以下標出這段時間裡的地雷區、機會區與震盪區，供你安排節奏。";
       if (!map.keyYearsMineLead) map.keyYearsMineLead = "這一年真正危險的，不是表面事件，而是壓力已經累積到會從這個宮位爆出來。";
-      if (!map.keyYearsWealthLead) map.keyYearsWealthLead = "這一年不是平白幸運，而是既有實力終於有了放大的舞台。";
+      if (!map.keyYearsWealthLead) map.keyYearsWealthLead = "此年該宮有資源匯聚，見四化。";
       if (!map.keyYearsShockLead) map.keyYearsShockLead = "這一年吉凶並見、成敗一線間，關鍵在節奏與選擇，不在命好不好。";
     }
   }
   const timeModuleKeys = ["s15a", "s15", "s16", "s17", "s18", "s19", "s20", "s21"];
   if (timeModuleKeys.includes(opts?.sectionKey ?? "") && opts?.chartJson) {
+    if (opts?.sectionKey === "s15a") {
+      const v2Result = buildS15aPlaceholderMapFromV2(opts.findingsV2);
+      if (v2Result.usable) {
+        for (const [k, v] of Object.entries(v2Result.map)) map[k] = v;
+        s15aV2Usable = true;
+      }
+    }
+    if (opts?.sectionKey === "s16") {
+      const v2Result = buildS16PlaceholderMapFromV2(opts.findingsV2);
+      if (v2Result.usable) {
+        for (const [k, v] of Object.entries(v2Result.map)) map[k] = v;
+        s16V2Usable = true;
+      }
+    }
+
     const minor = opts.chartJson.minorFortuneByPalace as Array<{ palace?: string; year?: number | null; nominalAge?: number | null; stem?: string | null; note?: string | null }> | undefined;
     const overlap = (opts.chartJson.overlapAnalysis ?? opts.chartJson.overlap) as Record<string, unknown> | undefined;
 
@@ -3233,6 +3428,7 @@ export function getPlaceholderMapFromContext(
     let mineCount = 0;
     let wealthCount = 0;
     const palaceToTag = new Map<string, "shock" | "mine" | "wealth">();
+    // P0.6：永遠計算 overlap 計數與 palaceToTag，供 s15a key-level fallback 與 s15／其他 section 使用。
     const newItems = Array.isArray(overlap?.items) ? (overlap.items as Array<{ palaceKey?: string; palaceName?: string; tag?: string }>) : [];
     if (newItems.length > 0) {
       for (const it of newItems) {
@@ -3287,7 +3483,9 @@ export function getPlaceholderMapFromContext(
             })
             .join("\n")
         : "";
-    map.minorFortuneTable = tableRows;
+    // M2-Truth Step 3：模組二正文與四化技術版不得出現小限；附錄/關鍵年份可保留。
+    const timeModuleKeysForNoMinor = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"];
+    map.minorFortuneTable = timeModuleKeysForNoMinor.includes(opts?.sectionKey ?? "") ? "" : tableRows;
 
     const timelineRows =
       Array.isArray(minor) && minor.length > 0
@@ -3302,28 +3500,57 @@ export function getPlaceholderMapFromContext(
             })
             .join("\n")
         : "";
-    map.minorFortuneTimelineTable = timelineRows;
+    map.minorFortuneTimelineTable = timeModuleKeysForNoMinor.includes(opts?.sectionKey ?? "") ? "" : timelineRows;
 
-    map.shockCount = String(shockCount);
-    map.mineCount = String(mineCount);
-    map.wealthCount = String(wealthCount);
-    map.overlapSummary = `劇烈震盪/吉凶並見：${shockCount} 個宮位；超級地雷區：${mineCount} 個宮位；大發財機會：${wealthCount} 個宮位`;
-    const detail = buildOverlapDetailBlocks(overlap, {
-      chartJson: opts.chartJson,
-      content: opts.content,
-      config: opts.config,
-      contentLocale: opts.contentLocale ?? "zh-TW",
-      minorFortuneByPalace: minor ?? undefined,
-    });
-    map.shockBlocks = detail.shockBlocks;
-    map.mineBlocks = detail.mineBlocks;
-    map.wealthBlocks = detail.wealthBlocks;
-    map.keyYearsMineLead = "這一年真正危險的，不是表面事件，而是壓力已經累積到會從這個宮位爆出來。";
-    map.keyYearsWealthLead = "這一年不是平白幸運，而是既有實力終於有了放大的舞台。";
-    map.keyYearsShockLead = "這一年吉凶並見、成敗一線間，關鍵在節奏與選擇，不在命好不好。";
-    map.volatileSection = detail.shockBlocks ? "⚡ 劇烈震盪/吉凶並見（成敗一線間）\n" + detail.shockBlocks : (shockCount > 0 ? "⚡ 劇烈震盪/吉凶並見\n" : "");
-    map.criticalRisksSection = detail.mineBlocks ? "⚠️ 超級地雷區（必須絕對避開）\n" + detail.mineBlocks : (mineCount > 0 ? "⚠️ 超級地雷區\n" : "");
-    map.opportunitiesSection = detail.wealthBlocks ? "✨ 大發財機會（建議積極把握）\n" + detail.wealthBlocks : (wealthCount > 0 ? "✨ 大發財機會\n" : "");
+    // P0.6：s15a 改為 key-level fallback（V2 有值不覆寫，缺 key 才用 overlap 補）；其餘 section 維持整段寫入。
+    const isEmpty = (v: string | undefined) => v === undefined || (typeof v === "string" && !v.trim());
+    if (opts?.sectionKey === "s15a") {
+      const detail = buildOverlapDetailBlocks(overlap, {
+        chartJson: opts.chartJson,
+        content: opts.content,
+        config: opts.config,
+        contentLocale: opts.contentLocale ?? "zh-TW",
+        minorFortuneByPalace: [], // M2-Truth Step 3：模組二四化技術版不輸出小限
+        findings: opts.findings ?? undefined,
+      });
+      if (isEmpty(map.overlapSummary)) map.overlapSummary = `劇烈震盪/吉凶並見：${shockCount} 個宮位；超級地雷區：${mineCount} 個宮位；大發財機會：${wealthCount} 個宮位`;
+      if (isEmpty(map.shockCount)) map.shockCount = String(shockCount);
+      if (isEmpty(map.mineCount)) map.mineCount = String(mineCount);
+      if (isEmpty(map.wealthCount)) map.wealthCount = String(wealthCount);
+      if (isEmpty(map.shockBlocks)) map.shockBlocks = detail.shockBlocks;
+      if (isEmpty(map.mineBlocks)) map.mineBlocks = detail.mineBlocks;
+      if (isEmpty(map.wealthBlocks)) map.wealthBlocks = detail.wealthBlocks;
+      if (isEmpty(map.keyYearsMineLead)) map.keyYearsMineLead = "這一年真正危險的，不是表面事件，而是壓力已經累積到會從這個宮位爆出來。";
+      if (isEmpty(map.keyYearsWealthLead)) map.keyYearsWealthLead = "此年該宮有資源匯聚，見四化。";
+      if (isEmpty(map.keyYearsShockLead)) map.keyYearsShockLead = "這一年吉凶並見、成敗一線間，關鍵在節奏與選擇，不在命好不好。";
+      if (isEmpty(map.volatileSection)) map.volatileSection = detail.shockBlocks ? "⚡ 劇烈震盪/吉凶並見（成敗一線間）\n" + detail.shockBlocks : (shockCount > 0 ? "⚡ 劇烈震盪/吉凶並見\n" : "");
+      if (isEmpty(map.criticalRisksSection)) map.criticalRisksSection = detail.mineBlocks ? "⚠️ 超級地雷區（必須絕對避開）\n" + detail.mineBlocks : (mineCount > 0 ? "⚠️ 超級地雷區\n" : "");
+      if (isEmpty(map.opportunitiesSection)) map.opportunitiesSection = detail.wealthBlocks ? "✨ 大發財機會（建議積極把握）\n" + detail.wealthBlocks : (wealthCount > 0 ? "✨ 大發財機會\n" : "");
+    } else {
+      // M2-Truth Step 6：禁止 fallback 覆寫已存在的 key（含 V2 寫入的 placeholder）
+      const isEmpty = (v: string | undefined) => v === undefined || (typeof v === "string" && !v.trim());
+      if (isEmpty(map.shockCount)) map.shockCount = String(shockCount);
+      if (isEmpty(map.mineCount)) map.mineCount = String(mineCount);
+      if (isEmpty(map.wealthCount)) map.wealthCount = String(wealthCount);
+      if (isEmpty(map.overlapSummary)) map.overlapSummary = `劇烈震盪/吉凶並見：${shockCount} 個宮位；超級地雷區：${mineCount} 個宮位；大發財機會：${wealthCount} 個宮位`;
+      const detail = buildOverlapDetailBlocks(overlap, {
+        chartJson: opts.chartJson,
+        content: opts.content,
+        config: opts.config,
+        contentLocale: opts.contentLocale ?? "zh-TW",
+        minorFortuneByPalace: [], // 疊宮清理：不再讓 minorFortune 參與疊宮主邏輯
+        findings: opts.findings ?? undefined,
+      });
+      if (isEmpty(map.shockBlocks)) map.shockBlocks = detail.shockBlocks;
+      if (isEmpty(map.mineBlocks)) map.mineBlocks = detail.mineBlocks;
+      if (isEmpty(map.wealthBlocks)) map.wealthBlocks = detail.wealthBlocks;
+      if (isEmpty(map.keyYearsMineLead)) map.keyYearsMineLead = "這一年真正危險的，不是表面事件，而是壓力已經累積到會從這個宮位爆出來。";
+      if (isEmpty(map.keyYearsWealthLead)) map.keyYearsWealthLead = "此年該宮有資源匯聚，見四化。";
+      if (isEmpty(map.keyYearsShockLead)) map.keyYearsShockLead = "這一年吉凶並見、成敗一線間，關鍵在節奏與選擇，不在命好不好。";
+      if (isEmpty(map.volatileSection)) map.volatileSection = detail.shockBlocks ? "⚡ 劇烈震盪/吉凶並見（成敗一線間）\n" + detail.shockBlocks : (shockCount > 0 ? "⚡ 劇烈震盪/吉凶並見\n" : "");
+      if (isEmpty(map.criticalRisksSection)) map.criticalRisksSection = detail.mineBlocks ? "⚠️ 超級地雷區（必須絕對避開）\n" + detail.mineBlocks : (mineCount > 0 ? "⚠️ 超級地雷區\n" : "");
+      if (isEmpty(map.opportunitiesSection)) map.opportunitiesSection = detail.wealthBlocks ? "✨ 大發財機會（建議積極把握）\n" + detail.wealthBlocks : (wealthCount > 0 ? "✨ 大發財機會\n" : "");
+    }
     if (opts?.sectionKey === "s17" || opts?.sectionKey === "s15") {
       const hasMinor = Array.isArray(minor) && minor.length > 0;
       const hasOverlap = (Array.isArray(overlap?.items) && (overlap?.items?.length ?? 0) > 0) ||
@@ -3361,6 +3588,13 @@ export function getPlaceholderMapFromContext(
   if (timeModuleYearKeys.includes(opts?.sectionKey ?? "") && opts?.chartJson) {
     const yearly = (opts.chartJson.yearlyHoroscope ?? (opts.chartJson.ziwei as Record<string, unknown>)?.yearlyHoroscope) as { year?: number; palaceNames?: string[]; mutagenStars?: Record<string, string> } | undefined;
     if (yearly && typeof yearly === "object" && yearly.year != null) map.flowYear = String(yearly.year);
+    // P0.4：時間軸與流年宮位／四化一律來自 buildTimeModuleDisplayFromChartJson，不 fallback 到大限；s17～s21 也需 flowYearMingPalace 等，故先統一寫入。
+    const timeDisplay = buildTimeModuleDisplayFromChartJson(opts.chartJson);
+    map.birthSihuaLine = timeDisplay.birthSihuaLine;
+    map.currentDecadalPalace = timeDisplay.currentDecadalPalace;
+    map.currentDecadeSihuaLine = timeDisplay.currentDecadeSihuaLine;
+    map.flowYearMingPalace = timeDisplay.flowYearMingPalace;
+    map.flowYearSihuaLine = timeDisplay.flowYearSihuaLine;
     let liunianMutagen: Record<string, string> | undefined;
     if (opts?.sectionKey === "s16" || opts?.sectionKey === "s15") {
       const ft16 = opts.chartJson.fourTransformations as { liunian?: { mutagenStars?: Record<string, string> } } | undefined;
@@ -3372,36 +3606,67 @@ export function getPlaceholderMapFromContext(
               .map(([k, v]) => `${v}化${k}`)
               .join("、") || ""
           : "";
-      let liunianStr = fmt(liunianMutagen);
-      if (!liunianStr) {
-        const overlap = (opts.chartJson.overlapAnalysis ?? opts.chartJson.overlap) as Record<string, unknown> | undefined;
-        const sources = [
-          ...(Array.isArray(overlap?.criticalRisks) ? (overlap.criticalRisks as Array<{ transformations?: Record<string, { star?: string; type?: string } | null> }>) : []),
-          ...(Array.isArray(overlap?.volatileAmbivalences) ? (overlap.volatileAmbivalences as Array<{ transformations?: Record<string, { star?: string; type?: string } | null> }>) : []),
-          ...(Array.isArray(overlap?.maxOpportunities) ? (overlap.maxOpportunities as Array<{ transformations?: Record<string, { star?: string; type?: string } | null> }>) : []),
-        ];
-        const liuParts: string[] = [];
-        for (const it of sources) {
-          const t = it?.transformations;
-          if (t?.liunian?.star && t.liunian.type) {
-            const line = `流年${t.liunian.star}化${t.liunian.type}`;
-            if (!liuParts.includes(line)) liuParts.push(line);
+      const liunianStr = fmt(liunianMutagen); // 疊宮清理：僅用 liunian/fourTransformations.liunian，不從 overlap 補
+      map.flowYearSihua = "【今年的四化】\n" + (liunianStr ? `流年四化：${liunianStr}\n` : "") + "這是命盤最靈敏的區域。";
+      if (opts?.sectionKey === "s16") {
+        // S16：流年四化飛星僅由公式產出，不依賴 overlap；資料不足則不輸出
+        const flowYearStem =
+          (yearly as { stem?: string })?.stem
+          ?? (opts.chartJson.liunian as { stem?: string })?.stem
+          ?? ((opts.chartJson.ziwei as Record<string, unknown>)?.yearlyHoroscope as { stem?: string } | undefined)?.stem;
+        const flowYearPalace = (map.flowYearMingPalace ?? "").trim();
+        const starsByPalace = getStarByPalaceFromChart(opts.chartJson);
+        if (flowYearStem && flowYearPalace && starsByPalace.size > 0) {
+          const formulaFlows = buildYearlySihuaFlows({
+            yearStem: flowYearStem.trim(),
+            flowYearPalace,
+            starsByPalace,
+          });
+          console.log("[life-book/s16] flowYearStem =", flowYearStem);
+          console.log("[life-book/s16] flowYearPalace =", flowYearPalace);
+          const mutagenStars = getMutagenStarsFromStem(flowYearStem);
+          console.log("[life-book/s16] 四化星名 =", JSON.stringify(mutagenStars));
+          formulaFlows.forEach((f, i) =>
+            console.log("[life-book/s16] flow[" + i + "] fromPalace =", f.fromPalace, "toPalace =", f.toPalace)
+          );
+          const yearlyLines: FourTransformLine[] = formulaFlows.map((f) => ({
+            layer: "yearly" as const,
+            layerLabel: "流年",
+            starName: f.star,
+            type: (f.transform === "祿" ? "lu" : f.transform === "權" ? "quan" : f.transform === "科" ? "ke" : "ji") as "lu" | "quan" | "ke" | "ji",
+            typeLabel: f.transform === "祿" ? "化祿" : f.transform === "權" ? "化權" : f.transform === "科" ? "化科" : "化忌",
+            fromPalaceKey: f.fromPalace,
+            fromPalaceName: f.fromPalace,
+            toPalaceKey: f.toPalace,
+            toPalaceName: f.toPalace,
+          }));
+          const yearlyBlocks = buildFourTransformBlocksForPalace(yearlyLines);
+          map.yearlyFourTransformBlocks = yearlyBlocks.techBlock === "（本宮無四化飛星資料）" ? "" : yearlyBlocks.techBlock;
+          map.yearlyFourTransformSummary = yearlyBlocks.summary === "（無四化飛星資料）" ? "" : yearlyBlocks.summary;
+          map.yearlyFourTransformExplanations = yearlyLines
+            .map((l) =>
+              buildFlyStarExplanation(
+                l.starName,
+                l.type,
+                l.fromPalaceName ?? l.fromPalaceKey ?? "",
+                l.toPalaceName ?? l.toPalaceKey ?? ""
+              )
+            )
+            .filter(Boolean)
+            .join("\n\n");
+        } else {
+          // 無公式資料時不覆寫，保留 V2 已寫入的 yearlyFourTransformBlocks（若有）
+          if (!s16V2Usable) {
+            map.yearlyFourTransformBlocks = "";
+            map.yearlyFourTransformSummary = "";
+            map.yearlyFourTransformExplanations = "";
           }
         }
-        if (liuParts.length > 0) liunianStr = liuParts.join("、");
+      } else if (!(opts?.sectionKey === "s16" && s16V2Usable)) {
+        map.yearlyFourTransformBlocks = "";
+        map.yearlyFourTransformSummary = "";
+        map.yearlyFourTransformExplanations = "";
       }
-      map.flowYearSihua = "【今年的四化】\n" + (liunianStr ? `流年四化：${liunianStr}\n` : "") + "這是命盤最靈敏的區域。";
-      map.flowYearSihuaLine = liunianStr || "（無流年四化資料）";
-      const timeDisplay = buildTimeModuleDisplayFromChartJson(opts.chartJson);
-      map.birthSihuaLine = timeDisplay.birthSihuaLine;
-      map.currentDecadeSihuaLine = timeDisplay.currentDecadeSihuaLine;
-      map.flowYearMingPalace = timeDisplay.flowYearMingPalace;
-      map.flowYearSihuaLine = timeDisplay.flowYearSihuaLine;
-      const yearPalaceKey = ctx?.palaceKey ?? yearly?.palaceNames?.[0] ?? "";
-      const yearlyLines = collectFourTransformsForPalace(opts.chartJson, yearPalaceKey, ["yearly"]);
-      const yearlyBlocks = buildFourTransformBlocksForPalace(yearlyLines);
-      map.yearlyFourTransformBlocks = yearlyBlocks.techBlock === "（本宮無四化飛星資料）" ? "" : yearlyBlocks.techBlock;
-      map.yearlyFourTransformSummary = yearlyBlocks.summary === "（無四化飛星資料）" ? "" : yearlyBlocks.summary;
       const decisionMatrix = (opts?.content as { decisionMatrix?: DecisionMatrixConfig } | undefined)?.decisionMatrix;
       if (decisionMatrix && yearly?.year != null) {
         const overlap = (opts.chartJson.overlapAnalysis ?? opts.chartJson.overlap) as Record<string, unknown> | undefined;
@@ -3447,9 +3712,11 @@ export function getPlaceholderMapFromContext(
           tag: tag ?? undefined,
         };
         const summary = buildYearDecisionSummary(currentYearItem, decisionMatrix);
-        map.yearDecisionSummaryBlock = formatYearDecisionSummaryBlock(summary);
+        if (!(opts?.sectionKey === "s16" && s16V2Usable)) {
+          map.yearDecisionSummaryBlock = formatYearDecisionSummaryBlock(summary);
+        }
       } else {
-        map.yearDecisionSummaryBlock = "";
+        if (!(opts?.sectionKey === "s16" && s16V2Usable)) map.yearDecisionSummaryBlock = "";
       }
     } else {
       const ft16 = opts.chartJson.fourTransformations as { liunian?: { mutagenStars?: Record<string, string> } } | undefined;
@@ -3464,6 +3731,14 @@ export function getPlaceholderMapFromContext(
       map.yearRoleInDecade = roleResult.role;
       map.yearRoleWhyShort = roleResult.why;
       map.yearOneLineAdvice = getRoleTakeaway(roleResult.role);
+      if (opts?.sectionKey === "s16") {
+        const parts = [
+          map.flowYearMingPalace ? `今年流年命宮在${map.flowYearMingPalace}` : "",
+          map.flowYearSihuaLine ? `四化：${map.flowYearSihuaLine}` : "",
+          map.yearOneLineAdvice ?? "",
+        ].filter(Boolean);
+        map.currentYearHomework = parts.join("。") || "今年流年命宮與四化已如上述，可依祿入宮位布局、對忌入宮位保持覺察。";
+      }
       const decadalTheme = map.currentDecadalTheme ?? "這十年的主線";
       map.yearRoleWhy =
         `這十年主線在「${decadalTheme}」，今年流年讓${roleResult.role}的感特別明顯。` +
@@ -3472,13 +3747,13 @@ export function getPlaceholderMapFromContext(
       const yearBlock = (map.yearDecisionSummaryBlock ?? "").trim();
       const nowBlock = yearBlock || "從今天起，先做一件對齊今年主線的小事，少做一件消耗自己的事。";
       const yearAdjust = "一年內，把力氣集中在與今年主線最相關的一兩個領域，其他先放著。";
-      const decadeRemember = `這十年都要記住：主戰場在${map.currentDecadalPalace ?? "當前大限"}，先把這裡穩住、再往外擴。`;
+      const decadeRemember = `這十年都要記住：大限在${map.currentDecadalPalace ?? "當前大限"}，四化見上方。`;
       map.actionNowLayers =
         "【立刻可做】\n" + nowBlock +
         "\n\n【一年內調整】\n" + yearAdjust +
         "\n\n【這十年都要記住】\n" + decadeRemember;
       map.closingNarrative =
-        "你現在站在當前大限與今年的交點上。接下來這段路真正的意義，不是預知吉凶，而是看清自己正在演哪一齣、主戰場在哪裡，然後把力氣放在對的地方。";
+        "大限與今年流年四化見上方；可依宮位與飛星 from→to 對應策略。";
     }
   }
   if (["s18", "s19", "s20", "s21"].includes(opts?.sectionKey ?? "") && opts?.chartJson) {
@@ -3490,13 +3765,11 @@ export function getPlaceholderMapFromContext(
     const recurring = (map.recurringHomeworkNarrative ?? "").trim();
     if (opts?.sectionKey === "s18") {
       if (rc?.sourcePalace && rc?.symptomPalace) {
-        map.blindSpotsDecadalNarrative =
-          `這段時間你最容易誤判的，是以為問題在${rc.symptomPalace}；逃避的，是承認壓力其實從${rc.sourcePalace}溢進來。很多人會把${rc.symptomPalace}的摩擦合理化，而不去看${rc.sourcePalace}才是源頭。`;
+        map.blindSpotsDecadalNarrative = `壓力路徑：${rc.sourcePalace} → ${rc.symptomPalace}。建議先檢視${rc.sourcePalace}再處理${rc.symptomPalace}。`;
       } else {
-        map.blindSpotsDecadalNarrative =
-          recurring
-            ? recurring.replace(/^你最容易重演的模式[，是]*/, "這段時間你最容易誤判的，是") + " 很多人會把表面問題合理化，而不去看底層是哪一條線在燒。"
-            : `這段時間你最容易誤判的，是把反覆發作的模式當成別人的問題；逃避的，是承認壓力其實從別宮溢進這裡。真正要修的，是看清源頭在哪、再設界線。`;
+        map.blindSpotsDecadalNarrative = recurring
+          ? recurring
+          : "四化飛入的宮位見上方；壓力來源可對照飛星 from→to。";
       }
     }
     if (opts?.sectionKey === "s19") {
@@ -3504,36 +3777,44 @@ export function getPlaceholderMapFromContext(
       const nowLine = actionNow.find((s) => s.includes("立刻可做"));
       const yearLine = actionNow.find((s) => s.includes("一年內"));
       const decadeLine = actionNow.find((s) => s.includes("這十年都要記住"));
-      map.s19ActionNow = nowLine ? nowLine.replace(/【立刻可做】\n?/, "").trim() : "從今天起，先做一件對齊今年主線的小事，少做一件消耗自己的事。";
-      map.s19LongTerm = yearLine ? yearLine.replace(/【一年內調整】\n?/, "").trim() : "一年內，把力氣集中在與今年主線最相關的一兩個領域，其他先放著。";
-      map.s19Avoid = decadeLine ? decadeLine.replace(/【這十年都要記住】\n?/, "").trim() : `主戰場在${decadalPalace}，先把這裡穩住、再往外擴。`;
+      map.s19ActionNow = nowLine ? nowLine.replace(/【立刻可做】\n?/, "").trim() : "";
+      map.s19LongTerm = yearLine ? yearLine.replace(/【一年內調整】\n?/, "").trim() : "";
+      map.s19Avoid = decadeLine ? decadeLine.replace(/【這十年都要記住】\n?/, "").trim() : (decadalPalace ? `大限在${decadalPalace}，四化見上方。` : "");
     }
     if (opts?.sectionKey === "s20") {
-      map.s20BenmingLine = "本命給你的，是在關係與互動裡的慣性——怎麼愛、怎麼疏離、怎麼防禦，早已寫在命盤主星與四化裡。";
-      map.s20DecadalLine = `大限在練的，是「${decadalTheme}」；這十年關係場的考題，會具體落在人際、界線與誰能一起走。`;
-      const flowPalace = map.flowYearMingPalace ?? "流年命宮";
+      map.s20BenmingLine = "本命夫妻宮與命宮主星、四化見上方結構。";
+      map.s20DecadalLine = `大限主題：${decadalTheme}。四化飛入的宮位見上方。`;
+      const flowPalace = map.flowYearMingPalace ?? "";
       if (rc?.sourcePalace && rc?.symptomPalace) {
         const srcShort = rc.sourcePalace.replace(/宮$/, "");
         const symShort = rc.symptomPalace.replace(/宮$/, "");
-        map.s20YearLine = `今年流年把焦點推到${flowPalace}，你最有感的會是一對一關係與界線；關係承壓其實源自${srcShort}壓力外溢到${symShort}，很多表面摩擦是這條線被放大的結果。`;
+        map.s20YearLine = flowPalace ? `今年：${flowPalace}。壓力路徑：${srcShort} → ${symShort}。` : `壓力路徑：${srcShort} → ${symShort}。`;
       } else {
-        map.s20YearLine = `今年流年把焦點推到${flowPalace}，你最有感的會是一對一關係、界線與承受度；很多表面摩擦，其實是這條線被放大的結果。`;
+        map.s20YearLine = flowPalace ? `今年：${flowPalace}。四化見上方。` : "四化見上方。";
       }
     }
     if (opts?.sectionKey === "s21") {
-      map.s21LifelongLesson = recurring
-        ? recurring.replace(/表面上看是.*?底層其實.*?。?$/, "").trim() || "你反覆在學的，是命盤中反覆被引動的那幾課。"
-        : "你反覆在學的，是命盤中反覆被引動的那幾課——哪裡被忌星點亮、哪裡被祿權科照到，哪裡就是你的主戰場與修練場。";
-      map.s21NowSee = `現在這段時間真正要看懂的，是主戰場在${decadalPalace}、今年是${map.yearRoleInDecade ?? "這十年裡的一個節點"}；先把界線站穩、壓力分清，再談放大。`;
+      map.s21LifelongLesson = recurring ? recurring : "四化反覆引動的宮位見上方結構。";
+      map.s21NowSee = decadalPalace
+        ? `大限在${decadalPalace}；今年角色：${map.yearRoleInDecade ?? "見上方"}。四化與飛星見上方。`
+        : `今年角色：${map.yearRoleInDecade ?? "見上方"}。四化見上方。`;
     }
   }
   return map;
 }
 
-/** 技術版：依 PalaceContext 列出此宮星曜與四化。compact 為 true 時（12 宮與骨架同步）只輸出宮位＋星曜名單一行＋迴路＋高壓＋四化提要，不重複完整星曜詳解（詳見下方骨架【星曜結構】）。 */
+/** 技術版：依 PalaceContext 列出此宮星曜與四化。Phase 5B-2：有 findings 時只讀 findings.natalFlowItems／sihuaPlacementItems，不讀 chart。 */
 export function buildTechDebugForPalace(
   ctx: PalaceContext | null,
-  opts?: { chartJson?: Record<string, unknown>; starPalacesAuxRisk?: Record<string, number>; compact?: boolean }
+  opts?: {
+    chartJson?: Record<string, unknown>;
+    findings?: LifebookFindings;
+    starPalacesAuxRisk?: Record<string, number>;
+    compact?: boolean;
+    flowsNotVerified?: boolean;
+    /** 僅在除錯／技術模式為 true 時輸出【FLOW_DEBUG】；正式命書不顯示。 */
+    includeFlowDebug?: boolean;
+  }
 ): string {
   const compact = opts?.compact === true;
   const lines: string[] = [];
@@ -3547,6 +3828,13 @@ export function buildTechDebugForPalace(
       const r = auxRisk[`${starName}_${palaceShort}`] ?? auxRisk[`${starName}_${ctx.palaceName}`];
       return typeof r === "number" && r >= 1 && r <= 5 ? `（風險${r}）` : "";
     };
+    const findingsForSihua = opts?.findings ?? createEmptyFindings();
+    const getNatalSihua =
+      opts?.findings != null
+        ? (starName: string) => getNatalSihuaForStarFromFindings(starName, findingsForSihua)
+        : opts?.chartJson
+          ? (starName: string) => getNatalSihuaForStar(starName, opts.chartJson)
+          : () => "";
     if (ctx.stars.length > 0) {
       if (compact) {
         const starList = ctx.stars
@@ -3556,14 +3844,13 @@ export function buildTechDebugForPalace(
             return s.strength ? `${name}（${s.strength}）` : name;
           })
           .join("、");
-        lines.push("本宮星曜（完整說明見下方【星曜結構】）：" + starList);
+        lines.push("本宮星曜：" + starList);
       } else {
         lines.push("星曜詳解（星曜說明與此宮表現）：");
-        const chartJson = opts?.chartJson;
         for (const s of ctx.stars) {
           const riskSuffix = getRiskSuffix(s.name);
           const nameWithRisk = riskSuffix ? `${s.name}${riskSuffix}` : s.name;
-          const natalSihua = chartJson ? getNatalSihuaForStar(s.name, chartJson) : "";
+          const natalSihua = getNatalSihua(s.name);
           const head = [nameWithRisk, s.strength ? `（${s.strength}）` : "", natalSihua].filter(Boolean).join(" ");
           const base = (s.baseMeaning ?? "").trim();
           const inPalace = (s.meaningInPalace ?? "").trim();
@@ -3580,25 +3867,51 @@ export function buildTechDebugForPalace(
     if (ctx.loopSnippet) lines.push(`迴路提示：${ctx.loopSnippet}`);
     if (ctx.hpSnippet) lines.push(`高壓情境：${ctx.hpSnippet}`);
   } else {
-    lines.push("（本題無對應宮位或無法解析）");
+    lines.push("（此宮暫無星曜與四化資料）");
   }
   const chartJson = opts?.chartJson;
-  if (chartJson && ctx) {
+  const hasFindings = opts?.findings != null;
+  if ((chartJson || hasFindings) && ctx) {
     if (compact) {
-      lines.push("", "四化流向與能量總結見下方【四化流向與能量總結】。");
+      // 四化與飛化詳見骨架區塊，此處不再輸出幽靈導覽句
     } else {
-      const flowsNotVerified = opts?.flowsNotVerified !== false;
+      const flowsNotVerified = opts?.flowsNotVerified === true;
       if (flowsNotVerified) {
         lines.push("");
-        lines.push("【四化流向（本命／大限／流年）】");
+        lines.push("【本命宮干飛化（本宮）】");
         lines.push("");
         lines.push(FLOWS_NOT_VERIFIED_MESSAGE);
-      } else {
+      } else if (hasFindings) {
+        const flowBlock = buildNatalFlowBlockFromFindings(opts!.findings!, ctx.palaceName ?? "");
+        lines.push("");
+        lines.push("【本命宮干飛化（本宮）】");
+        lines.push(flowBlock ? flowBlock : "（本宮無本命宮干飛化資訊）");
+        if (opts?.includeFlowDebug === true) {
+          const flowDebug = buildFlowDebugEntriesFromFindings(opts!.findings!);
+          if (flowDebug.length > 0) {
+            lines.push("");
+            lines.push("【FLOW_DEBUG】");
+            for (const e of flowDebug) {
+              lines.push(`layer: ${e.layer} | star: ${e.star} | star_palace: ${e.star_palace} | from: ${e.fromPalace} | to: ${e.toPalace} | transform: ${e.transform}`);
+            }
+          }
+        }
+      } else if (chartJson) {
         const chart = normalizeChart(chartJson);
         const flowBlock = getFlowBlockForPalace(chart, ctx.palaceName ?? "");
         lines.push("");
-        lines.push("【四化流向（本命／大限／流年）】");
-        lines.push(flowBlock ? flowBlock : "（本宮無四化流向資訊）");
+        lines.push("【本命宮干飛化（本宮）】");
+        lines.push(flowBlock ? flowBlock : "（本宮無本命宮干飛化資訊）");
+        if (opts?.includeFlowDebug === true) {
+          const flowDebug = buildFlowDebugEntries(chart);
+          if (flowDebug.length > 0) {
+            lines.push("");
+            lines.push("【FLOW_DEBUG】");
+            for (const e of flowDebug) {
+              lines.push(`layer: ${e.layer} | star: ${e.star} | star_palace: ${e.star_palace} | from: ${e.fromPalace} | to: ${e.toPalace} | transform: ${e.transform}`);
+            }
+          }
+        }
       }
     }
   }
@@ -3608,13 +3921,16 @@ export function buildTechDebugForPalace(
 /**
  * 僅組裝本題底層參數／高壓／骨架區塊文字，不呼叫 AI。供 output_mode === "technical" 時回傳技術版 section。
  * 底層資料來自 buildPalaceContext（星曜、亮度廟旺利陷、迴路、高壓、四化），無原型欄位。
+ * 傳入 findings 時單宮四化摘要只讀 findings，不覆蓋為 createEmptyFindings()。
  */
 export function getSectionTechnicalBlocks(
   sectionKey: string,
   chartJson: Record<string, unknown>,
   config: LifeBookConfig | null | undefined,
   content: AssembleContentLookup | undefined,
-  contentLocale: "zh-TW" | "zh-CN" | "en"
+  contentLocale: "zh-TW" | "zh-CN" | "en",
+  findings?: LifebookFindings,
+  findingsV2?: LifebookFindingsV2
 ): {
   underlyingParamsText?: string;
   riskBlockText?: string;
@@ -3622,9 +3938,15 @@ export function getSectionTechnicalBlocks(
   resolvedSkeleton?: { structure_analysis: string; behavior_pattern: string; blind_spots: string; strategic_advice: string };
   placeholderMap?: Record<string, string>;
 } {
+  if (!content) return {};
+  // s04 + 12 宮產出技術區塊與 skeleton；時間模組（s15～s21）也產出 skeleton（模板＋placeholder），否則技術版只會輸出標題、內容全空。
+  const isCoreSection = sectionKey === "s04" || PALACE_SECTION_KEYS.has(sectionKey);
+  const TIME_MODULE_SKELETON_KEYS = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"] as const;
+  if (!isCoreSection && !TIME_MODULE_SKELETON_KEYS.includes(sectionKey as (typeof TIME_MODULE_SKELETON_KEYS)[number])) return {};
+
   const templates = config?.templates?.length ? config.templates : SECTION_TEMPLATES;
   const template = templates.find((t) => t.section_key === sectionKey);
-  if (!template || !content) return {};
+  if (!template) return {};
 
   const ctx = buildPalaceContext(sectionKey, chartJson, config, content, contentLocale ?? "zh-TW");
 
@@ -3651,11 +3973,13 @@ export function getSectionTechnicalBlocks(
     config,
     contentLocale: contentLocale ?? "zh-TW",
     forTechnicalOutput: !skipDebugForSection,
+    findings,
+    findingsV2: findingsV2 ?? undefined,
   });
 
-  const TIME_MODULE_KEYS = ["s15", "s15a", "s16", "s17"];
+  const TIME_MODULE_KEYS = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"] as const;
   let underlyingParamsTextFinal: string;
-  if (TIME_MODULE_KEYS.includes(sectionKey)) {
+  if (TIME_MODULE_KEYS.includes(sectionKey as (typeof TIME_MODULE_KEYS)[number])) {
     underlyingParamsTextFinal = "";
   } else if (sectionKey === "s00") {
     underlyingParamsTextFinal = "";
@@ -3668,6 +3992,7 @@ export function getSectionTechnicalBlocks(
     const isPalaceSection = ["s01", "s02", "s05", "s06", "s07", "s08", "s09", "s10", "s11", "s12", "s13", "s14"].includes(sectionKey);
     underlyingParamsTextFinal = buildTechDebugForPalace(ctx, {
       chartJson,
+      findings,
       starPalacesAuxRisk: (content as { starPalacesAuxRisk?: Record<string, number> } | undefined)?.starPalacesAuxRisk,
       compact: isPalaceSection,
     });
@@ -3684,7 +4009,8 @@ export function getSectionTechnicalBlocks(
       underlyingParamsTextFinal += "\n星系重點：" + placeholderMap.sanfangFamilySummary;
     }
   }
-  if (!TIME_MODULE_KEYS.includes(sectionKey) && (sectionKey === "s15" || sectionKey === "s16" || sectionKey === "s15a")) {
+  // 原意：s15/s16/s15a 技術版要附加【四化飛星技術版】；先前條件寫反導致不可達，改為依 section 判斷。
+  if (sectionKey === "s15" || sectionKey === "s16" || sectionKey === "s15a") {
     let fourTech = "";
     if (sectionKey === "s15" && placeholderMap.decadalFourTransformBlocks) {
       fourTech = placeholderMap.decadalFourTransformBlocks;
@@ -3697,10 +4023,32 @@ export function getSectionTechnicalBlocks(
       if (placeholderMap.wealthBlocks) parts.push("✨ 大發財機會\n" + placeholderMap.wealthBlocks);
       fourTech = parts.join("\n\n");
     }
-    if (fourTech) underlyingParamsTextFinal += "\n\n【四化飛星技術版】\n" + fourTech;
+    if (fourTech) {
+      underlyingParamsTextFinal += "\n\n【四化飛星技術版】\n" + fourTech;
+      if (sectionKey === "s15" && placeholderMap.decadalFourTransformExplanations) {
+        underlyingParamsTextFinal += "\n\n" + placeholderMap.decadalFourTransformExplanations;
+      }
+      if (sectionKey === "s16" && placeholderMap.yearlyFourTransformExplanations) {
+        underlyingParamsTextFinal += "\n\n" + placeholderMap.yearlyFourTransformExplanations;
+      }
+    }
   }
 
-  const sectionSkeleton = content?.lifebookSection?.[sectionKey];
+  let sectionSkeleton = content?.lifebookSection?.[sectionKey];
+  // S16：不輸出【今年流年四化飛星】與【今年主線與功課】，避免與【四化飛星技術版】重複；無論 content 來自靜態 JSON 或 D1/KV 皆強制為空
+  if (sectionKey === "s16" && sectionSkeleton) {
+    sectionSkeleton = { ...sectionSkeleton, structure_analysis: "" };
+  }
+  // S17：疊宮分析一律用 buildPalaceOverlay 結果展示，不受 D1/KV 或快取舊文案覆蓋
+  if (sectionKey === "s17") {
+    sectionSkeleton = { ...(sectionSkeleton || {}), structure_analysis: "{palaceOverlayBlocks}" };
+  }
+  if (sectionKey === "s18") {
+    sectionSkeleton = { ...(sectionSkeleton || {}), structure_analysis: "{s18SignalsBlocks}" };
+  }
+  if (sectionKey === "s19") {
+    sectionSkeleton = { ...(sectionSkeleton || {}), structure_analysis: "{s19MonthlyBlocks}" };
+  }
   let skeletonBlockText: string | undefined;
   let resolvedSkeleton: { structure_analysis: string; behavior_pattern: string; blind_spots: string; strategic_advice: string } | undefined;
 
@@ -3765,16 +4113,90 @@ export function getSectionTechnicalBlocks(
  * 命書讀者版：取得 12 宮應追加的【星曜結構】區塊與 behavior_pattern／blind_spots／strategic_advice 的模板解析結果。
  * 用於 AI 回傳後強制補上星曜說明、並以當前模板覆寫三欄，避免讀者看到缺塊或舊版長句。
  */
+/**
+ * 傳入 findings 時單宮四化摘要只讀 findings；禁止以 createEmptyFindings() 覆蓋真實 findings。
+ */
 export function getPalaceSectionReaderOverrides(
   sectionKey: string,
   chartJson: Record<string, unknown>,
   config: LifeBookConfig | null | undefined,
   content: AssembleContentLookup | undefined,
-  contentLocale: "zh-TW" | "zh-CN" | "en"
-): { starBlockToAppend: string; behavior_pattern: string; blind_spots: string; strategic_advice: string } | null {
+  contentLocale: "zh-TW" | "zh-CN" | "en",
+  findings?: LifebookFindings,
+  /** 統一架構：若已 normalize 過可傳入，避免重複計算；缺則內部 normalizeChart(chartJson) */
+  normalizedChart?: NormalizedChart
+): { starBlockToAppend: string; behavior_pattern: string; blind_spots: string; strategic_advice: string; resolvedStructureAnalysis?: string } | null {
   if (!PALACE_SECTION_KEYS.has(sectionKey) || !content) return null;
+
+  /**
+   * 讀者敘事必須只依 sectionKey→宮位 + chart 組出，不可依賴 buildPalaceContext。
+   * 否則 assemble 異常時 ctx===null 會整段 return null，generate-section 就留下 AI 填的舊骨架（【這一宮正在發生什麼】）。
+   */
+  const palaceKeyFromSection = getPalaceKeyForSection(sectionKey);
+  const targetPalace = palaceKeyFromSection ? toPalaceCanonical(palaceKeyFromSection) : "";
+
+  let norm = normalizedChart;
+  if (!norm && chartJson && typeof chartJson === "object") {
+    try {
+      norm = normalizeChart(chartJson);
+    } catch (e) {
+      console.warn("[getPalaceSectionReaderOverrides] normalizeChart failed:", e);
+      norm = undefined;
+    }
+  }
+
+  let readerPalaceNarrative: string | undefined;
+  if (targetPalace && chartJson && typeof chartJson === "object") {
+    let ps = norm?.palaces?.find((p) => toPalaceCanonical(p.palace) === targetPalace);
+    if (!ps) {
+      try {
+        ps = buildPalaces(chartJson).find((p) => toPalaceCanonical(p.palace) === targetPalace);
+      } catch (e) {
+        console.warn("[getPalaceSectionReaderOverrides] buildPalaces fallback failed:", e);
+      }
+    }
+    if (ps) {
+      let raw = palaceStructureToPalaceRawInput(ps);
+      raw = enrichPalaceRawWithBenmingMutagen(raw, chartJson);
+      raw = mergeZiweiBrightnessIntoPalaceRaw(raw, chartJson, targetPalace);
+      const narrativeInput = buildPalaceNarrativeInput(raw, {
+        mingSoulBranch: norm?.mingSoulBranch,
+        behaviorAxisFlags: {
+          behaviorAxisV1: config?.behaviorAxisV1,
+          behaviorAxisConflictV1: config?.behaviorAxisConflictV1,
+          behaviorAxisLoopV1: config?.behaviorAxisLoopV1,
+        },
+        behaviorAxisWideOpen: config?.behaviorAxisWideOpen,
+      });
+      readerPalaceNarrative = renderPalaceNarrativeSample(narrativeInput, { raw }).trim();
+    } else {
+      console.warn(
+        "[getPalaceSectionReaderOverrides] no PalaceStructure for sectionKey=%s targetPalace=%s (norm.palaces=%s)",
+        sectionKey,
+        targetPalace,
+        norm?.palaces?.length ?? 0
+      );
+    }
+  }
+
   const ctx = buildPalaceContext(sectionKey, chartJson, config, content, contentLocale ?? "zh-TW");
-  if (!ctx) return null;
+  if (!ctx) {
+    if (readerPalaceNarrative) {
+      console.warn(
+        "[getPalaceSectionReaderOverrides] buildPalaceContext=null but reader narrative ok sectionKey=%s — 回傳敘事，三欄為空",
+        sectionKey
+      );
+      return {
+        starBlockToAppend: "",
+        behavior_pattern: "",
+        blind_spots: "",
+        strategic_advice: "",
+        resolvedStructureAnalysis: readerPalaceNarrative,
+      };
+    }
+    return null;
+  }
+
   const placeholderMap = getPlaceholderMapFromContext(ctx, {
     chartJson,
     sectionKey,
@@ -3782,160 +4204,151 @@ export function getPalaceSectionReaderOverrides(
     config,
     contentLocale: contentLocale ?? "zh-TW",
     forTechnicalOutput: false,
+    findings,
+    normalizedChart,
   });
   const sectionSkeleton = (content as { lifebookSection?: Record<string, { structure_analysis?: string; behavior_pattern?: string; blind_spots?: string; strategic_advice?: string }> }).lifebookSection?.[sectionKey];
+  // Phase 5B-10：確認 reader 路徑用的 skeleton 是新版還是舊版
+  if (["s01", "s09", "s11"].includes(sectionKey)) {
+    const sa = sectionSkeleton?.structure_analysis ?? "";
+    const hasNew = sa.includes("四化引動") && sa.includes("宮干飛化");
+    const hasOld = sa.includes("動態引動與根因");
+    console.log("[getPalaceSectionReaderOverrides Phase5B-10] sectionKey=%s skeletonHasNew=%s skeletonHasOld=%s structure_analysis(0..200)=%s", sectionKey, hasNew, hasOld, JSON.stringify(sa.slice(0, 200)));
+  }
   const snippet = (placeholderMap.palaceStarsOnlySnippet ?? "").trim();
   const clue = (placeholderMap.palaceChartClue ?? "").trim();
-  const starBlockToAppend =
-    "\n\n【星曜結構】\n\n以下說明本宮星曜的基本性質，以及它們在此宮位中的表現。\n\n" +
-    (snippet || "（本宮星曜說明見上方「本宮星曜」列表。）") +
-    (clue ? "\n\n命盤線索：" + clue : "");
+  const isPalaceFourBlock = PALACE_SECTION_KEYS.has(sectionKey);
+  const starBlockToAppend = isPalaceFourBlock
+    ? ""
+    : "\n\n【星曜結構】\n\n以下說明本宮星曜的基本性質，以及它們在此宮位中的表現。\n\n" +
+      (snippet || "（本宮星曜說明見上方「本宮星曜」列表。）") +
+      (clue ? "\n\n命盤線索：" + clue : "");
   const empty = "";
   const bp = sectionSkeleton?.behavior_pattern != null ? resolveSkeletonPlaceholders(sectionSkeleton.behavior_pattern, placeholderMap, { missingReplacement: empty }) : empty;
   const bl = sectionSkeleton?.blind_spots != null ? resolveSkeletonPlaceholders(sectionSkeleton.blind_spots, placeholderMap, { missingReplacement: empty }) : empty;
   const st = sectionSkeleton?.strategic_advice != null ? resolveSkeletonPlaceholders(sectionSkeleton.strategic_advice, placeholderMap, { missingReplacement: empty }) : empty;
-  return { starBlockToAppend, behavior_pattern: bp, blind_spots: bl, strategic_advice: st };
+
+  const resolvedStructureAnalysis =
+    readerPalaceNarrative ??
+    (sectionSkeleton?.structure_analysis != null
+      ? resolveSkeletonPlaceholders(sectionSkeleton.structure_analysis, placeholderMap, { missingReplacement: empty })
+      : undefined);
+  return { starBlockToAppend, behavior_pattern: bp, blind_spots: bl, strategic_advice: st, resolvedStructureAnalysis };
 }
 
-/** 依流年地支與命宮地支計算流年命宮。與前端 BRANCH_RING（寅=0…亥=9 子=10 丑=11）及 buildSlotsFromZiwei 一致。 */
-function computeLiunianPalaceFromBranch(
-  liunianBranch: string,
-  mingBranch: string
-): string | null {
-  const BRANCH_RING_INDEX: Record<string, number> = {
-    寅: 0, 卯: 1, 辰: 2, 巳: 3, 午: 4, 未: 5, 申: 6, 酉: 7, 戌: 8, 亥: 9, 子: 10, 丑: 11,
-  };
-  const PALACE_BY_OFFSET = [
-    "命宮", "兄弟宮", "夫妻宮", "子女宮", "財帛宮", "疾厄宮",
-    "遷移宮", "僕役宮", "官祿宮", "田宅宮", "福德宮", "父母宮",
+/** ② 四化落宮（核心資料段）：M2-Truth 僅讀 chartJson.fourTransformations；本命／大限／流年各一組，格式「星名化X落在Y宮，」；不得為空。 */
+function buildSihuaFallByPalaceBlock(chartJson: Record<string, unknown> | undefined): string {
+  if (!chartJson) return "（尚無四化落宮資料）";
+  const ft = chartJson.fourTransformations as Record<string, { mutagenStars?: Record<string, string> }> | undefined;
+  const layers = buildSiHuaLayers(chartJson); // buildSiHuaLayers 已以 fourTransformations 為主
+  const lines: string[] = [];
+  const layerOrder: Array<{ label: string; data: SiHuaLayer | null | undefined }> = [
+    { label: "本命", data: layers.benming },
+    { label: "大限", data: layers.decadal },
+    { label: "流年", data: layers.yearly },
   ];
-  const mingIndex = BRANCH_RING_INDEX[mingBranch ?? ""];
-  const liunianIndex = BRANCH_RING_INDEX[liunianBranch ?? ""];
-  if (mingIndex == null || mingIndex === undefined || liunianIndex == null || liunianIndex === undefined) return null;
-  const offset = (mingIndex - liunianIndex + 12) % 12;
-  return PALACE_BY_OFFSET[offset] ?? null;
+  for (const { label, data } of layerOrder) {
+    lines.push(`${label}：`);
+    if (!data) {
+      lines.push("（無四化落宮資料）");
+      lines.push("");
+      continue;
+    }
+    const part = (s: SiHuaStar | null | undefined, transform: "祿" | "權" | "科" | "忌") => {
+      if (!s) return null;
+      const palace = toPalaceDisplayName(s.palaceName ?? s.palaceKey);
+      if (!palace || palace === "落宮待核") return null;
+      return `${s.starName}化${transform}落在${palace}，`;
+    };
+    const parts = [part(data.lu, "祿"), part(data.quan, "權"), part(data.ke, "科"), part(data.ji, "忌")].filter(Boolean) as string[];
+    lines.push(parts.length > 0 ? parts.join("\n") : "（無四化落宮資料）");
+    lines.push("");
+  }
+  const out = lines.join("\n").trimEnd();
+  return out || (ft ? "（四化落宮見上方本命／大限／流年區塊）" : "（尚無四化落宮資料）");
+}
+
+/** ③ 四化能量集中（摘要）：M2-Truth 僅讀 chartJson.fourTransformations；祿／權／科／忌 各一列；不得為空。 */
+function buildSihuaEnergyFocusBlock(chartJson: Record<string, unknown> | undefined): string {
+  if (!chartJson) return "（尚無四化能量集中資料）";
+  const { luPalaces, quanPalaces, kePalaces, jiPalaces } = getSihuaPalaceListsFromLayers(chartJson);
+  const lines: string[] = [];
+  if (luPalaces.length > 0) lines.push(`祿主要落在：${luPalaces.join("、")}`);
+  if (quanPalaces.length > 0) lines.push(`權主要落在：${quanPalaces.join("、")}`);
+  if (kePalaces.length > 0) lines.push(`科主要落在：${kePalaces.join("、")}`);
+  if (jiPalaces.length > 0) lines.push(`忌主要落在：${jiPalaces.join("、")}`);
+  const out = lines.join("\n\n");
+  return out || "（尚無四化能量集中資料）";
 }
 
 /**
- * 僅從 chartJson 組裝「流年宮位／流年四化」顯示用字串，供模組二 s15/s16 使用。流年四化僅來自 liunian（禁止 fallback 到大限）。
+ * 從 chartJson 產出時間軸與四化區塊（契約：命理運算集中於此，僅 Worker 產出 Findings 時呼叫）。
+ * 命書組裝層只讀 LifebookFindings，不得再呼叫此函式做正式版產出。
  */
-function buildTimeModuleDisplayFromChartJson(chartJson: Record<string, unknown>): {
-  birthSihuaLine: string;
-  currentDecadeSihuaLine: string;
-  flowYearMingPalace: string;
-  flowYearSihuaLine: string;
-} {
-  const ziwei = chartJson.ziwei as Record<string, unknown> | undefined;
-  const yearly = (chartJson.yearlyHoroscope ?? ziwei?.yearlyHoroscope) as { year?: number; mutagenStars?: Record<string, string> } | undefined;
-  const ft = (chartJson.fourTransformations ?? ziwei?.fourTransformations) as {
-    benming?: { mutagenStars?: Record<string, string> };
-    decadal?: { mutagenStars?: Record<string, string> };
-    liunian?: { mutagenStars?: Record<string, string> };
-  } | undefined;
-  const fmt = (m: Record<string, string> | undefined) =>
-    m && typeof m === "object"
-      ? Object.entries(m)
-          .filter(([, v]) => v)
-          .map(([k, v]) => `${v}化${k}`)
-          .join("、") || ""
-      : "";
-  const birthSihuaLine = fmt(ft?.benming?.mutagenStars) || "（無生年四化資料）";
-  // 大限四化：優先從「當前大限」的 mutagenStars（與核心功課同源），無則用 fourTransformations.decadal
-  const decadalLimitsForDisplay = (chartJson.decadalLimits ?? ziwei?.decadalLimits) as Array<{ startAge?: number; endAge?: number; mutagenStars?: Record<string, string> }> | undefined;
-  const yearlyForAge = (chartJson.yearlyHoroscope ?? ziwei?.yearlyHoroscope) as { nominalAge?: number; age?: number } | undefined;
-  const nominalAgeForDisplay = yearlyForAge?.nominalAge ?? yearlyForAge?.age;
-  const currentLimitForDisplay =
-    Array.isArray(decadalLimitsForDisplay) && decadalLimitsForDisplay.length > 0
-      ? nominalAgeForDisplay != null && !Number.isNaN(nominalAgeForDisplay)
-        ? decadalLimitsForDisplay.find(
-            (lim) =>
-              lim.startAge != null &&
-              lim.endAge != null &&
-              nominalAgeForDisplay >= lim.startAge &&
-              nominalAgeForDisplay <= lim.endAge
-          ) ?? decadalLimitsForDisplay[0]
-        : decadalLimitsForDisplay[0]
-      : undefined;
-  const currentDecadeSihuaLine = fmt(currentLimitForDisplay?.mutagenStars ?? ft?.decadal?.mutagenStars) || "（無大限四化資料）";
-
-  const liunian = (chartJson.liunian ?? ziwei?.liunian) as {
-    palace?: string;
-    destinyPalace?: string;
-    palaceName?: string;
-    branch?: string;
-    mutagenStars?: Record<string, string>;
-  } | undefined;
-  const overlap = (chartJson.overlapAnalysis ?? chartJson.overlap) as {
-    criticalRisks?: Array<{ transformations?: Record<string, { star?: string; type?: string } | null> }>;
-    volatileAmbivalences?: Array<{ transformations?: Record<string, { star?: string; type?: string } | null> }>;
-    maxOpportunities?: Array<{ transformations?: Record<string, { star?: string; type?: string } | null> }>;
-  } | undefined;
-
-  // Ticket 1：流年命宮依「命宮地支旋轉」推算；有 liunian.branch + 命宮地支時優先用推算結果，再 fallback 到 liunian.palace
-  const mingBranch = (chartJson?.ziwei as { core?: { minggongBranch?: string } } | undefined)?.core?.minggongBranch ?? "";
-  const derivedPalace =
-    liunian?.branch && mingBranch ? computeLiunianPalaceFromBranch(liunian.branch, mingBranch) : null;
-  const palaceName =
-    (chartJson?.liunian as { palace?: string } | undefined)?.palace ??
-    (chartJson?.liunian as { destinyPalace?: string } | undefined)?.destinyPalace ??
-    (chartJson?.liunian as { palaceName?: string } | undefined)?.palaceName ??
-    null;
-  const year = yearly?.year;
-  const flowYearMingPalace = derivedPalace
-    ? derivedPalace
-    : palaceName
-      ? (String(palaceName).trim().endsWith("宮") ? String(palaceName).trim() : `${String(palaceName).trim()}宮`)
-      : liunian?.branch && year != null
-        ? `${year}年${liunian.branch}位`
-        : "（無流年命宮資料）";
-
-  if (typeof console !== "undefined" && console.log) {
-    console.log("FLOW_YEAR_DEBUG", {
-      liunian: chartJson?.liunian,
-      yearlyHoroscope: (chartJson as { yearlyHoroscope?: unknown }).yearlyHoroscope,
-      flowYearMingPalace,
-    });
-  }
-
-  // Ticket 2：流年四化僅來自 liunian.mutagenStars | fourTransformations.liunian | overlap.transformations.liunian；禁止 decadal/currentDecade
-  const flowYearTransforms =
-    liunian?.mutagenStars ??
-    ft?.liunian?.mutagenStars ??
-    (overlap as { transformations?: { liunian?: Record<string, string> } } | undefined)?.transformations?.liunian ??
-    null;
-  let liunianStr = fmt(flowYearTransforms ?? undefined);
-  if (!liunianStr && overlap) {
-    const sources = [
-      ...(Array.isArray(overlap.criticalRisks) ? overlap.criticalRisks : []),
-      ...(Array.isArray(overlap.volatileAmbivalences) ? overlap.volatileAmbivalences : []),
-      ...(Array.isArray(overlap.maxOpportunities) ? overlap.maxOpportunities : []),
-    ];
-    const liuParts: string[] = [];
-    for (const it of sources) {
-      const t = it?.transformations;
-      if (t?.liunian?.star && t.liunian.type) {
-        const line = `流年${t.liunian.star}化${t.liunian.type}`;
-        if (!liuParts.includes(line)) liuParts.push(line);
-      }
-    }
-    if (liuParts.length > 0) liunianStr = liuParts.join("、");
-  }
-
-  const decadeMutagenStars = currentLimitForDisplay?.mutagenStars ?? ft?.decadal?.mutagenStars ?? null;
-  if (typeof console !== "undefined" && console.log) {
-    console.log("FLOW_YEAR_SIHUA_DEBUG", {
-      liunianMutagenStars: liunian?.mutagenStars ?? null,
-      fourTransformationsLiuNian: ft?.liunian?.mutagenStars ?? null,
-      decadeMutagenStars,
-      finalFlowYearSihuaLine: liunianStr || "（無流年四化資料）",
-    });
-  }
-
+export function buildSihuaTimeBlocksFromChart(chartJson: Record<string, unknown> | undefined): SihuaTimeBlocks {
+  const empty = {
+    timelineSummary: "",
+    sihuaPlacement: "",
+    sihuaEnergy: "",
+    natalFlows: "",
+    timeAxis: {
+      birthSihuaLine: "",
+      currentDecadalPalace: "（當前大限）",
+      currentDecadeSihuaLine: "",
+      flowYearMingPalace: "",
+      flowYearSihuaLine: "",
+      flowYearSihuaNote: "",
+      flowYearSihuaFlyBlock: "",
+      flowYearSihuaFlyExplanations: "",
+    },
+  };
+  if (!chartJson || typeof chartJson !== "object") return empty;
+  const display = buildTimeModuleDisplayFromChartJson(chartJson);
+  const sameSihua = display.currentDecadeSihuaLine && display.flowYearSihuaLine &&
+    display.currentDecadeSihuaLine === display.flowYearSihuaLine && !display.flowYearSihuaLine.startsWith("（無");
+  const flowYearSihuaNote = sameSihua ? "（大限與流年同天干，四化相同）" : "";
+  const yearlyLines = getYearlyFourTransformLinesFromFormula(chartJson);
+  const flowYearSihuaFlyBlock = buildFourTransformBlocksForPalace(yearlyLines).techBlock;
+  const flowYearSihuaFlyExplanations = yearlyLines
+    .map((l) =>
+      buildFlyStarExplanation(
+        l.starName,
+        l.type,
+        l.fromPalaceName ?? l.fromPalaceKey ?? "",
+        l.toPalaceName ?? l.toPalaceKey ?? ""
+      )
+    )
+    .filter(Boolean)
+    .join("\n\n");
+  const timeAxis = {
+    birthSihuaLine: display.birthSihuaLine,
+    currentDecadalPalace: display.currentDecadalPalace,
+    currentDecadeSihuaLine: display.currentDecadeSihuaLine,
+    flowYearMingPalace: display.flowYearMingPalace,
+    flowYearSihuaLine: display.flowYearSihuaLine,
+    flowYearSihuaNote,
+    flowYearSihuaFlyBlock: flowYearSihuaFlyBlock === "（本宮無四化飛星資料）" ? "" : flowYearSihuaFlyBlock,
+    flowYearSihuaFlyExplanations: flowYearSihuaFlyExplanations || "",
+  };
+  const timelineSummary = [
+    "生年四化：",
+    timeAxis.birthSihuaLine,
+    "",
+    "目前大限：",
+    `宮位：${timeAxis.currentDecadalPalace}`,
+    `四化：${timeAxis.currentDecadeSihuaLine}`,
+    "",
+    "目前流年：",
+    `命宮：${timeAxis.flowYearMingPalace}`,
+    `四化：${timeAxis.flowYearSihuaLine}`,
+    timeAxis.flowYearSihuaNote,
+  ].filter(Boolean).join("\n");
   return {
-    birthSihuaLine,
-    currentDecadeSihuaLine,
-    flowYearMingPalace,
-    flowYearSihuaLine: liunianStr || "（無流年四化資料）",
+    timelineSummary,
+    sihuaPlacement: buildSihuaFallByPalaceBlock(chartJson),
+    sihuaEnergy: buildSihuaEnergyFocusBlock(chartJson),
+    natalFlows: buildNatalGongganFlowBlock(chartJson),
+    timeAxis,
   };
 }
 
@@ -3944,6 +4357,8 @@ export interface InjectTimeModuleOptions {
   findings?: LifebookFindings;
   timeContext?: { currentDecadePalace?: string; shenGong?: string; year?: number; nominalAge?: number };
   timelineValidationIssues?: TimelineValidationIssue[];
+  /** V2 reason 產出；傳入後 s15a/s16 會合併 overlapSummary、timeWindowScoresSummary、yearEventProbabilitiesSummary 等 placeholder。 */
+  findingsV2?: LifebookFindingsV2 | null;
 }
 
 /** 模組二（s15/s15a/s16/s17/s18/s19/s20/s21）：用 chartJson 與 content 或 P2 findings 產出 placeholder map，注入 structure_analysis。P2 時傳入 options.findings 則只讀 findings；流年宮位／四化仍由 chartJson 組裝並與小限分開。 */
@@ -3960,27 +4375,70 @@ export function injectTimeModuleDataIntoSection(
   const timeModuleKeys = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"];
   if (!timeModuleKeys.includes(sectionKey)) return structureAnalysis;
   let map: Record<string, string>;
-  if (options?.findings) {
-    const fromFindings = assembleTimeModuleFromFindings(options.findings, options.timeContext ?? {});
-    map = { ...fromFindings } as Record<string, string>;
-    const display = buildTimeModuleDisplayFromChartJson(chartJson);
-    const timeContext = options.timeContext ?? {};
-    map.birthSihuaLine = display.birthSihuaLine;
-    map.currentDecadeSihuaLine = display.currentDecadeSihuaLine;
-    map.flowYearMingPalace = display.flowYearMingPalace;
-    map.flowYearSihuaLine = display.flowYearSihuaLine;
-    if (options.timelineValidationIssues && hasTimelineErrors(options.timelineValidationIssues)) {
-      map.flowYearSihuaLine = "（時間軸驗證未通過，暫不顯示流年四化）";
+  if (options?.findings && (options.findings.timeAxis != null || options.findings.sihuaPlacement != null)) {
+    // 契約：命書正式版只讀 LifebookFindings；builder 不計算命理，僅組裝。
+    map = assembleTimeModuleFromFindings(options.findings, options.timeContext ?? {}) as Record<string, string>;
+    const axis = options.findings.timeAxis;
+    if (axis) {
+      map.birthSihuaLine = axis.birthSihuaLine;
+      map.currentDecadalPalace = axis.currentDecadalPalace;
+      map.currentDecadeSihuaLine = axis.currentDecadeSihuaLine;
+      map.flowYearMingPalace = axis.flowYearMingPalace;
+      map.flowYearSihuaLine = options.timelineValidationIssues && hasTimelineErrors(options.timelineValidationIssues)
+        ? "（時間軸驗證未通過，暫不顯示流年四化）" : axis.flowYearSihuaLine;
+      map.flowYearSihuaNote = axis.flowYearSihuaNote;
+      map.flowYearSihuaFlyBlock = axis.flowYearSihuaFlyBlock ?? "";
+      map.flowYearSihuaFlyExplanations = axis.flowYearSihuaFlyExplanations ?? "";
     }
-  } else {
-    map = getPlaceholderMapFromContext(null, {
-      chartJson,
-      sectionKey,
-      content,
-      config,
-      contentLocale,
-    });
+    map.sihuaFallByPalaceBlock = options.findings.sihuaPlacement ?? "";
+    map.sihuaEnergyFocusBlock = options.findings.sihuaEnergy ?? "";
+    map.natalGongganFlowBlock = options.findings.natalFlows ?? "";
+    // P0.2：合併 V2 placeholder（overlapSummary、timeWindowScoresSummary、yearEventProbabilitiesSummary 等），讓 template 新欄位有值。
+    if (options.findingsV2) {
+      if (sectionKey === "s15a") {
+        const v2Result = buildS15aPlaceholderMapFromV2(options.findingsV2);
+        if (v2Result.usable) for (const [k, v] of Object.entries(v2Result.map)) map[k] = v;
+      }
+      if (sectionKey === "s16") {
+        const v2Result = buildS16PlaceholderMapFromV2(options.findingsV2);
+        if (v2Result.usable) for (const [k, v] of Object.entries(v2Result.map)) map[k] = v;
+      }
+    }
+    // P0.4：P2 路徑下 s20YearLine 可能來自 assembleS20 的 fallback「流年命宮」，改為使用 timeAxis.flowYearMingPalace。
+    if (sectionKey === "s20" && map.flowYearMingPalace && map.s20YearLine?.includes("流年命宮")) {
+      map.s20YearLine = map.s20YearLine.replace(/流年命宮/g, map.flowYearMingPalace);
+    }
+    return resolveSkeletonPlaceholders(structureAnalysis, map, { missingReplacement: "" });
   }
+
+  // 相容層：無 findings 或無 timeAxis 時，仍從 chartJson 計算（僅供非正式／除錯路徑）。若有 findingsV2 則一併傳入，讓 s15a/s16 顯示 V2 欄位。
+  const display = buildTimeModuleDisplayFromChartJson(chartJson);
+  const sameSihua = display.currentDecadeSihuaLine && display.flowYearSihuaLine && display.currentDecadeSihuaLine === display.flowYearSihuaLine && !display.flowYearSihuaLine.startsWith("（無");
+  const flowYearSihuaNote = sameSihua ? "（大限與流年同天干，四化相同）" : "";
+  map = getPlaceholderMapFromContext(null, { chartJson, sectionKey, content, config, contentLocale, findingsV2: options?.findingsV2 ?? undefined });
+  map.birthSihuaLine = display.birthSihuaLine;
+  map.currentDecadeSihuaLine = display.currentDecadeSihuaLine;
+  map.flowYearMingPalace = display.flowYearMingPalace;
+  map.flowYearSihuaLine = display.flowYearSihuaLine;
+  map.flowYearSihuaNote = flowYearSihuaNote;
+  map.currentDecadalPalace = display.currentDecadalPalace;
+  const yearlyFlyLines = getYearlyFourTransformLinesFromFormula(chartJson);
+  const flowYearFlyTech = buildFourTransformBlocksForPalace(yearlyFlyLines).techBlock;
+  map.flowYearSihuaFlyBlock = flowYearFlyTech === "（本宮無四化飛星資料）" ? "" : flowYearFlyTech;
+  map.flowYearSihuaFlyExplanations = yearlyFlyLines
+    .map((l) =>
+      buildFlyStarExplanation(
+        l.starName,
+        l.type,
+        l.fromPalaceName ?? l.fromPalaceKey ?? "",
+        l.toPalaceName ?? l.toPalaceKey ?? ""
+      )
+    )
+    .filter(Boolean)
+    .join("\n\n");
+  map.sihuaFallByPalaceBlock = buildSihuaFallByPalaceBlock(chartJson);
+  map.sihuaEnergyFocusBlock = buildSihuaEnergyFocusBlock(chartJson);
+  map.natalGongganFlowBlock = buildNatalGongganFlowBlock(chartJson);
   return resolveSkeletonPlaceholders(structureAnalysis, map, { missingReplacement: "" });
 }
 
@@ -4327,7 +4785,12 @@ export function getDefaultConfig(): LifeBookConfig {
     shishen: { ...SHISHEN_PHRASES },
     wuxing: { ...WUXING_WEAK_PHRASES },
     model: MODEL_CONFIG.default,
+    behaviorAxisV1: false,
+    behaviorAxisConflictV1: false,
+    behaviorAxisLoopV1: false,
+    behaviorAxisWideOpen: false,
   };
 }
 
 export { SECTION_ORDER };
+export type { SihuaTimeBlocks } from "./lifebook/sihuaTimeBuilders.js";

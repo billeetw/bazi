@@ -5,9 +5,15 @@
 
 import { toPalaceCanonical } from "../canonicalKeys.js";
 import type { NormalizedChart, BodyPalaceSource, TransformEdge, TransformDisplay } from "../normalizedChart.js";
-import { computeFlowYearPalaceFromBranch } from "../../palace-map.js";
-import { buildPalaces } from "./normalizePalaces.js";
-import { getTransformsByLayer } from "./normalizeTransforms.js";
+import { buildPalaceByBranch, getFlowYearPalace } from "../../palace-map.js";
+import {
+  buildPalaceStemMap,
+  buildGongGanFlows,
+  gongGanFlowsToTransformEdges,
+  buildDecadalSihuaFlows,
+  buildYearlySihuaFlows,
+} from "../../gonggan-flows.js";
+import { buildPalaces, getStarByPalaceFromChart, readZiweiSoulBranch } from "./normalizePalaces.js";
 import {
   resolveCurrentDecade,
   resolveYearlyHoroscope,
@@ -66,10 +72,12 @@ export function normalizeChart(chartJson: Record<string, unknown> | undefined): 
   const flowYear = (chartJson?.yearlyHoroscope as RawYearlyHoroscope | undefined)?.year;
 
   const palaces = buildPalaces(chartJson);
-  const { natal: natalTransforms, decade: decadeTransforms, year: yearTransforms } = getTransformsByLayer(chartJson);
-  assignEdgesToPalaces(palaces, natalTransforms, "natal");
-  assignEdgesToPalaces(palaces, decadeTransforms, "decade");
-  assignEdgesToPalaces(palaces, yearTransforms, "year");
+  const palaceStemMap = buildPalaceStemMap(chartJson);
+  const starsByPalace = getStarByPalaceFromChart(chartJson);
+  const natalFlowEdges = gongGanFlowsToTransformEdges(
+    buildGongGanFlows({ layer: "natal", palaceStemMap, starsByPalace })
+  );
+  assignEdgesToPalaces(palaces, natalFlowEdges, "natal");
 
   const decadalLimitsRaw = chartJson?.decadalLimits as RawDecadalLimit[] | undefined;
   const decadalLimits = Array.isArray(decadalLimitsRaw)
@@ -82,29 +90,49 @@ export function normalizeChart(chartJson: Record<string, unknown> | undefined): 
       }))
     : [];
   const currentDecade = resolveCurrentDecade(decadalLimitsRaw, nominalAge);
+  const decadalPalace = currentDecade?.palace ? toPalaceCanonical(String(currentDecade.palace).trim()) : "";
+  const decadalStem = currentDecade?.stem?.trim();
+  const hasDecadal = decadalPalace && (decadalStem || (palaceStemMap[decadalPalace] ?? "").trim());
+  const decadeFlowEdges = hasDecadal
+    ? gongGanFlowsToTransformEdges(
+        buildDecadalSihuaFlows({ palaceStemMap, starsByPalace, decadalPalace, decadalStem: decadalStem ?? undefined })
+      )
+    : [];
+  assignEdgesToPalaces(palaces, decadeFlowEdges, "decade");
   if (currentDecade) {
-    currentDecade.transforms = decadeTransforms;
-    currentDecade.transformSource = "overlap.decade";
-    overwriteEdgeStarNames(decadeTransforms, currentDecade.mutagenStars);
-    currentDecade.flows = [...decadeTransforms];
+    currentDecade.transforms = decadeFlowEdges;
+    currentDecade.transformSource = "gonggan-formula";
+    overwriteEdgeStarNames(decadeFlowEdges, currentDecade.mutagenStars);
+    currentDecade.flows = decadeFlowEdges;
   }
 
-  const liunian = chartJson?.liunian as { palace?: string; branch?: string } | undefined;
+  const liunian = chartJson?.liunian as { palace?: string; branch?: string; stem?: string } | undefined;
   const ziweiCore = (chartJson?.ziwei as { core?: { minggongBranch?: string } } | undefined)?.core;
-  const mingBranch = ziweiCore?.minggongBranch ?? "";
-  const computedFlowYearPalace = liunian?.branch && mingBranch ? computeFlowYearPalaceFromBranch(liunian.branch, mingBranch) : null;
-  const flowYearDestinyPalace = computedFlowYearPalace
-    ? toPalaceCanonical(computedFlowYearPalace)
+  const mingBranch = (ziweiCore?.minggongBranch ?? "").trim() || readZiweiSoulBranch(chartJson as Record<string, unknown>);
+  const mingSoulBranch = mingBranch.trim() || undefined;
+  const palaceByBranch = mingBranch ? buildPalaceByBranch(mingBranch) : undefined;
+  const flowYearPalaceLookup = liunian?.branch && palaceByBranch ? getFlowYearPalace(liunian.branch, palaceByBranch) : null;
+  const flowYearDestinyPalace = flowYearPalaceLookup
+    ? toPalaceCanonical(flowYearPalaceLookup)
     : (liunian?.palace ? toPalaceCanonical(liunian.palace) : undefined);
   const yearlyHoroscope = resolveYearlyHoroscope(
     chartJson?.yearlyHoroscope as RawYearlyHoroscope | undefined,
     flowYearDestinyPalace
   );
+  const flowYearPalace = flowYearDestinyPalace ?? "";
+  const yearStem =
+    (yearlyHoroscope as { stem?: string } | undefined)?.stem?.trim() ??
+    (liunian?.stem ?? (chartJson?.yearlyHoroscope as { stem?: string } | undefined)?.stem ?? "").trim();
+  const hasYearly = flowYearPalace && yearStem;
+  const yearFlowEdges = hasYearly
+    ? gongGanFlowsToTransformEdges(buildYearlySihuaFlows({ yearStem, flowYearPalace, starsByPalace }))
+    : [];
+  assignEdgesToPalaces(palaces, yearFlowEdges, "year");
   if (yearlyHoroscope) {
-    yearlyHoroscope.transforms = yearTransforms;
-    yearlyHoroscope.transformSource = "liunian.mutagenStars|fourTransformations.liunian|overlap.year";
-    overwriteEdgeStarNames(yearTransforms, yearlyHoroscope.mutagenStars);
-    yearlyHoroscope.flows = [...yearTransforms];
+    yearlyHoroscope.transforms = yearFlowEdges;
+    yearlyHoroscope.transformSource = "gonggan-formula";
+    overwriteEdgeStarNames(yearFlowEdges, yearlyHoroscope.mutagenStars);
+    yearlyHoroscope.flows = yearFlowEdges;
   }
 
   const shenGongSource = chartJson ? resolveShenGongSource(chartJson) : undefined;
@@ -125,9 +153,12 @@ export function normalizeChart(chartJson: Record<string, unknown> | undefined): 
     shenGongSource: shenGong ? shenGongSource : undefined,
     lifeLord: chartJson?.lifeLord as string | undefined,
     bodyLord: chartJson?.bodyLord as string | undefined,
+    mingSoulBranch,
+    palaceByBranch,
+    palaceStemMap: Object.keys(palaceStemMap).length > 0 ? palaceStemMap : undefined,
     palaces,
-    natalTransforms,
-    natal: { birthTransforms: natalTransforms, flows: [...natalTransforms] },
+    natalTransforms: natalFlowEdges,
+    natal: { birthTransforms: natalFlowEdges, flows: natalFlowEdges },
     decadalLimits,
     currentDecade,
     yearlyHoroscope,

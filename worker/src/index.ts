@@ -4,7 +4,8 @@
  * content/2026: 優先從 D1 ui_copy_texts 讀取，DB 無資料時用靜態 JSON fallback。
  */
 import { astro } from "iztro";
-import { palaceNameToZhTW, FIXED_PALACES_ZH_TW, BRANCH_RING, computeFlowYearPalaceFromBranch } from "./palace-map.js";
+import { palaceNameToZhTW, FIXED_PALACES_ZH_TW, BRANCH_RING, buildPalaceByBranch, getFlowYearPalace } from "./palace-map.js";
+import { getMutagenStarsFromStem } from "./sihua-stem-table.js";
 import { toEnStarKey, toZhStarKey } from "./star-map.js";
 import { buildContentFromRows, mergeContent, emptyDbContent, type DbContent } from "./content-from-d1.js";
 
@@ -44,6 +45,8 @@ import {
   getSectionTechnicalBlocks,
   getPalaceSectionReaderOverrides,
   injectTimeModuleDataIntoSection,
+  buildSihuaTimeBlocksFromChart,
+  getSihuaPlacementItemsFromChart,
   validateModuleOneOutput,
   filterStablePalacesByDominant,
   dedupeParagraphsAcrossBlocks,
@@ -53,7 +56,9 @@ import {
   MODEL_CONFIG,
   type LifeBookConfig,
 } from "./lifeBookPrompts.js";
-import { buildLifebookFindingsFromChartAndContent, type LifebookContentLookup } from "./lifebook/index.js";
+import { normalizeChart, createEmptyFindings, buildLifebookFindingsFromChartAndContent, hasTimelineErrors, type LifebookContentLookup } from "./lifebook/index.js";
+import { reasonFromChart } from "./lifebook/v2/reason/reasonFromChart.js";
+import type { LifebookFindingsV2 } from "./lifebook/v2/schema/findingsV2.js";
 import { SECTION_TEMPLATES } from "./lifeBookTemplates.js";
 import { INFER_SYSTEM_PROMPT, buildInferUserPrompt, type InferOutput, type SectionInsight } from "./lifeBookInfer.js";
 import { NARRATE_MODEL, buildNarrateSystemPrompt, buildNarrateUserPrompt } from "./lifeBookNarrate.js";
@@ -83,6 +88,25 @@ function trySanitizeJsonString(jsonStr: string): string {
     parts[i] = parts[i].replace(/\r\n/g, "\\n").replace(/\n/g, "\\n").replace(/\r/g, "\\n");
   }
   return parts.join('"');
+}
+
+/** monthlyHoroscope 完整性檢查：S19 與 debug 用。與 /compute/all、/compute/horoscope 輸出格式一致。 */
+function monthlyHoroscopeCompleteness(m: {
+  stem?: string | null;
+  branch?: string | null;
+  palace?: string | null;
+  mutagenStars?: Record<string, string> | null;
+  stars?: unknown;
+}): { isComplete: boolean; missing?: string[] } {
+  const missing: string[] = [];
+  if (!m.stem) missing.push("stem");
+  if (!m.branch) missing.push("branch");
+  if (!m.palace) missing.push("palace");
+  const requiredMutagen = ["祿", "權", "科", "忌"];
+  if (!m.mutagenStars) missing.push("mutagenStars");
+  else requiredMutagen.forEach((k) => { if (!m.mutagenStars![k]) missing.push(`mutagenStars.${k}`); });
+  if (m.stars == null) missing.push("stars");
+  return { isComplete: missing.length === 0, missing: missing.length ? missing : undefined };
 }
 
 /** 從 OpenAI 回傳內容擷取命書章節 JSON（支援 ```json ... ``` 或裸 {...}） */
@@ -134,25 +158,144 @@ const P2_CONTENT = {
   },
 } as LifebookContentLookup;
 
-/** P2：只吃 chartJson + contentLookup，產出 LifebookFindings + timeContext；模組二只讀 findings。 */
-function buildP2FindingsAndContext(chartJson: Record<string, unknown> | undefined): {
+/** Phase 2：僅時間模組章節（s15～s21）才組 P2 findings 與 inject；目前 SECTION_ORDER 僅含 s04+12 宮，故不呼叫。 */
+const TIME_MODULE_SECTION_KEYS = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"] as const;
+
+function emptyP2(): {
   findings: import("./lifebook/index.js").LifebookFindings | null;
+  findingsV2: LifebookFindingsV2 | null;
   timeContext: { currentDecadePalace?: string; shenGong?: string; year?: number; nominalAge?: number };
   timelineValidationIssues?: import("./lifebook/index.js").TimelineValidationIssue[];
+  normalizedChart?: import("./lifebook/normalizedChart.js").NormalizedChart;
 } {
-  if (!chartJson || typeof chartJson !== "object") return { findings: null, timeContext: {} };
+  return { findings: null, findingsV2: null, timeContext: {} };
+}
+
+/** P2：只吃 chartJson + contentLookup，產出 LifebookFindings + timeContext + findingsV2；模組二只讀 findings。時間／四化區塊於此寫入 findings；V2 reasoner 產出併入 findingsV2。 */
+function buildP2FindingsAndContext(chartJson: Record<string, unknown> | undefined): {
+  findings: import("./lifebook/index.js").LifebookFindings | null;
+  findingsV2: LifebookFindingsV2 | null;
+  timeContext: { currentDecadePalace?: string; shenGong?: string; year?: number; nominalAge?: number };
+  timelineValidationIssues?: import("./lifebook/index.js").TimelineValidationIssue[];
+  /** 與 findings 同源 normalizeChart，供 12 宮新模板／S17 overlay 等重用 */
+  normalizedChart?: import("./lifebook/normalizedChart.js").NormalizedChart;
+} {
+  if (!chartJson || typeof chartJson !== "object") return { findings: null, findingsV2: null, timeContext: {} };
+  let normalizedChart: import("./lifebook/normalizedChart.js").NormalizedChart | undefined;
+  try {
+    normalizedChart = normalizeChart(chartJson);
+  } catch (e) {
+    console.warn("[buildP2FindingsAndContext] normalizeChart failed:", e);
+  }
   const result = buildLifebookFindingsFromChartAndContent({ chartJson, content: P2_CONTENT });
-  if (!result) return { findings: null, timeContext: {} };
+  if (!result) {
+    return { findings: null, findingsV2: null, timeContext: {}, normalizedChart };
+  }
+  const sihuaTime = buildSihuaTimeBlocksFromChart(chartJson);
+  result.findings.timelineSummary = sihuaTime.timelineSummary;
+  result.findings.sihuaPlacement = sihuaTime.sihuaPlacement;
+  result.findings.sihuaEnergy = sihuaTime.sihuaEnergy;
+  result.findings.natalFlows = sihuaTime.natalFlows;
+  result.findings.timeAxis = sihuaTime.timeAxis;
+  result.findings.sihuaPlacementItems = getSihuaPlacementItemsFromChart(chartJson);
+  if (result.timelineValidationIssues?.length && hasTimelineErrors(result.timelineValidationIssues)) {
+    if (result.findings.timeAxis) result.findings.timeAxis.flowYearSihuaLine = "（時間軸驗證未通過，暫不顯示流年四化）";
+  }
+  if (!normalizedChart) {
+    try {
+      normalizedChart = normalizeChart(chartJson);
+    } catch (e) {
+      console.warn("[buildP2FindingsAndContext] normalizeChart retry failed:", e);
+    }
+  }
+  const v2 = normalizedChart ? reasonFromChart(normalizedChart) : null;
+  if (result.findings && v2) {
+    result.findings.transformEdges = v2.transformEdges;
+    result.findings.triggeredPaths = v2.triggeredPaths;
+    result.findings.stackSignals = v2.stackSignals;
+    result.findings.timeWindowScores = v2.timeWindowScores;
+    result.findings.eventProbabilities = v2.eventProbabilities;
+  }
   return {
     findings: result.findings,
+    findingsV2: result.findings ? (result.findings as LifebookFindingsV2) : null,
     timeContext: result.timeContext,
     timelineValidationIssues: result.timelineValidationIssues,
+    normalizedChart,
   };
 }
 
 /** G6：production 清洗 — structure_analysis 專用，等同 sanitizeForReader */
 function sanitizeStructureAnalysis(text: string): string {
   return sanitizeForReader(text);
+}
+
+type LifeBookLocaleNarrate = "zh-TW" | "zh-CN" | "en";
+
+/**
+ * 12 宮讀者版：與 generate-section 同源套用 getPalaceSectionReaderOverrides。
+ * infer→narrate 管線先前未帶此步驟，會一直顯示 AI 填的舊骨架（【這一宮正在發生什麼】）。
+ */
+async function applyPalaceReaderOverridesForSection(
+  env: Env | undefined,
+  sectionKey: string,
+  chartJson: Record<string, unknown>,
+  locale: LifeBookLocaleNarrate,
+  four: { structure_analysis: string; behavior_pattern: string; blind_spots: string; strategic_advice: string }
+): Promise<{ structure_analysis: string; behavior_pattern: string; blind_spots: string; strategic_advice: string }> {
+  if (!PALACE_SECTION_KEYS.has(sectionKey)) return four;
+  const dbLocale = locale === "en" ? "en" : locale === "zh-CN" ? "zh-CN" : "zh-TW";
+  const { content: lookup } = await getContentForLocale(env, dbLocale);
+  const p2 = buildP2FindingsAndContext(chartJson);
+  let findingsForPalace = p2.findings ?? createEmptyFindings();
+  if (!findingsForPalace.natalFlowItems || findingsForPalace.natalFlowItems.length === 0) {
+    let extractedFlows: unknown[] =
+      (chartJson?.natal as { flows?: unknown[]; birthTransforms?: unknown[] } | undefined)?.flows ||
+      (chartJson?.natal as { birthTransforms?: unknown[] } | undefined)?.birthTransforms ||
+      (chartJson?.natalTransforms as unknown[] | undefined) ||
+      [];
+    if ((!extractedFlows || extractedFlows.length === 0) && typeof normalizeChart === "function") {
+      try {
+        const normalized = normalizeChart(chartJson);
+        extractedFlows = (normalized?.natal as { flows?: unknown[] } | undefined)?.flows ?? [];
+      } catch (err) {
+        console.warn("[applyPalaceReaderOverridesForSection] normalizeChart flows", err);
+      }
+    }
+    if (Array.isArray(extractedFlows) && extractedFlows.length > 0) {
+      const validTransform = (t: string | undefined): "祿" | "權" | "科" | "忌" =>
+        t === "祿" || t === "權" || t === "科" || t === "忌" ? t : "祿";
+      findingsForPalace.natalFlowItems = extractedFlows
+        .map((e: unknown) => {
+          const x = e as { fromPalace?: string; toPalace?: string; starName?: string; transform?: string };
+          return { fromPalace: x.fromPalace ?? "", toPalace: x.toPalace ?? "", starName: x.starName, transform: validTransform(x.transform) };
+        })
+        .filter((item) => Boolean(item.fromPalace && item.toPalace && item.transform)) as Array<{
+        fromPalace: string;
+        toPalace: string;
+        starName?: string;
+        transform: "祿" | "權" | "科" | "忌";
+      }>;
+    }
+  }
+  const overrides = getPalaceSectionReaderOverrides(
+    sectionKey,
+    chartJson,
+    null,
+    lookup as import("./lifebook/assembler.js").AssembleContentLookup,
+    locale,
+    findingsForPalace,
+    p2.normalizedChart
+  );
+  if (!overrides?.resolvedStructureAnalysis || overrides.resolvedStructureAnalysis.trim() === "") {
+    return four;
+  }
+  return {
+    structure_analysis: sanitizeStructureAnalysis(overrides.resolvedStructureAnalysis),
+    behavior_pattern: sanitizeForReader(overrides.behavior_pattern),
+    blind_spots: sanitizeForReader(overrides.blind_spots),
+    strategic_advice: sanitizeForReader(overrides.strategic_advice),
+  };
 }
 
 /** 從已解析物件取出四欄位字串，缺的補空字串；若至少有一欄有內容則回傳可用 section */
@@ -405,15 +548,28 @@ function extractZiweiMainStars(astrolabe: unknown, language: Lang): Record<strin
   return out;
 }
 
-/** 命書亮度區塊用：依 FIXED_ORDER（命宮、兄弟宮…）回傳 12 宮，每宮含 majorStars/minorStars 的 name + brightness（iztro 鍵名如 miao, wang）。 */
+/** 命書亮度區塊用：依 FIXED_ORDER（命宮、兄弟宮…）回傳 12 宮；每宮含 name + major/minor/adjective（含 brightness）。 */
 function extractZiweiPalacesWithBrightness(astrolabe: unknown): Array<{
+  name: string;
   majorStars: Array<{ name: string; brightness?: string }>;
   minorStars: Array<{ name: string; brightness?: string }>;
+  adjectiveStars: Array<{ name: string; brightness?: string }>;
 }> {
   const FIXED_ORDER_LEN = 12;
-  const out: Array<{ majorStars: Array<{ name: string; brightness?: string }>; minorStars: Array<{ name: string; brightness?: string }> }> = [];
+  const out: Array<{
+    name: string;
+    majorStars: Array<{ name: string; brightness?: string }>;
+    minorStars: Array<{ name: string; brightness?: string }>;
+    adjectiveStars: Array<{ name: string; brightness?: string }>;
+  }> = [];
   for (let j = 0; j < FIXED_ORDER_LEN; j++) {
-    out.push({ majorStars: [], minorStars: [] });
+    const p = FIXED_PALACES_ZH_TW[j];
+    out.push({
+      name: p === "命宮" ? p : `${p}宮`,
+      majorStars: [],
+      minorStars: [],
+      adjectiveStars: [],
+    });
   }
 
   const a = astrolabe as {
@@ -421,6 +577,7 @@ function extractZiweiPalacesWithBrightness(astrolabe: unknown): Array<{
     palaces?: Array<{
       majorStars?: Array<{ name?: string; brightness?: string }>;
       minorStars?: Array<{ name?: string; brightness?: string }>;
+      adjectiveStars?: Array<{ name?: string; brightness?: string }>;
     }>;
   };
   const palaces = a?.palaces ?? [];
@@ -444,7 +601,10 @@ function extractZiweiPalacesWithBrightness(astrolabe: unknown): Array<{
     const minorStars = (palace?.minorStars ?? [])
       .map(toStar)
       .filter((x): x is { name: string; brightness?: string } => x != null);
-    out[j] = { majorStars, minorStars };
+    const adjectiveStars = (palace?.adjectiveStars ?? [])
+      .map(toStar)
+      .filter((x): x is { name: string; brightness?: string } => x != null);
+    out[j] = { ...out[j], majorStars, minorStars, adjectiveStars };
   }
   return out;
 }
@@ -575,7 +735,7 @@ async function getContentForLocale(
   locale: string
 ): Promise<{ content: DbContent; source: "kv" | "d1" | "static" }> {
   const dbLocale = ["en", "zh-CN", "zh-TW"].includes(locale) ? locale : "zh-TW";
-  const cacheKey = `content:${dbLocale}`;
+  const cacheKey = `content:${dbLocale}:v2`;
   const staticContent: DbContent =
     dbLocale === "en"
       ? ({ ...(contentEn as unknown as DbContent), decisionMatrix: decisionMatrixJson as DbContent["decisionMatrix"] })
@@ -651,6 +811,16 @@ async function getContentForLocale(
       const content = JSON.parse(cached) as DbContent;
       if (content && typeof content === "object") {
         console.log("[getContentForLocale] locale=%s source=kv", dbLocale);
+        // Phase 5B-10：確認實際 render 用的 skeleton 來源（兄弟 s01、僕役 s09、官祿 s11）
+        if (dbLocale === "zh-TW" && content.lifebookSection) {
+          for (const sk of ["s01", "s09", "s11"] as const) {
+            const sa = content.lifebookSection?.[sk]?.structure_analysis ?? "";
+            const snippet = sa.slice(0, 180);
+            const hasNew = snippet.includes("四化引動") && snippet.includes("宮干飛化");
+            const hasOld = snippet.includes("動態引動與根因");
+            console.log("[getContentForLocale Phase5B-10] source=kv sectionKey=%s hasNew=%s hasOld=%s snippet=%s", sk, hasNew, hasOld, JSON.stringify(snippet));
+          }
+        }
         return { content, source: "kv" };
       }
     } catch {
@@ -678,6 +848,16 @@ async function getContentForLocale(
         source,
         Object.keys(content.starPalaces ?? {}).length
       );
+      // Phase 5B-10：skeleton 診斷（s01/s09/s11）
+      if (dbLocale === "zh-TW" && content.lifebookSection) {
+        for (const sk of ["s01", "s09", "s11"] as const) {
+          const sa = content.lifebookSection?.[sk]?.structure_analysis ?? "";
+          const snippet = sa.slice(0, 180);
+          const hasNew = snippet.includes("四化引動") && snippet.includes("宮干飛化");
+          const hasOld = snippet.includes("動態引動與根因");
+          console.log("[getContentForLocale Phase5B-10] source=%s sectionKey=%s hasNew=%s hasOld=%s snippet=%s", source, sk, hasNew, hasOld, JSON.stringify(snippet));
+        }
+      }
       if (source === "d1" && content.starPalaces) {
         const sample = "紫微_命宮";
         if (!(sample in content.starPalaces)) {
@@ -693,8 +873,17 @@ async function getContentForLocale(
     }
   }
 
-  // 3. 靜態 fallback，保證至少結構存在
+  // 3. 靜態 fallback
   console.log("[getContentForLocale] locale=%s source=static (fallback)", dbLocale);
+  if (dbLocale === "zh-TW" && staticContent.lifebookSection) {
+    for (const sk of ["s01", "s09", "s11"] as const) {
+      const sa = staticContent.lifebookSection?.[sk]?.structure_analysis ?? "";
+      const snippet = sa.slice(0, 180);
+      const hasNew = snippet.includes("四化引動") && snippet.includes("宮干飛化");
+      const hasOld = snippet.includes("動態引動與根因");
+      console.log("[getContentForLocale Phase5B-10] source=static sectionKey=%s hasNew=%s hasOld=%s snippet=%s", sk, hasNew, hasOld, JSON.stringify(snippet));
+    }
+  }
   const safeContent =
     staticContent &&
     typeof staticContent === "object" &&
@@ -875,13 +1064,44 @@ export default {
       }
 
       const ageData = horoscope?.age;
-      const decadalPalace = palaceFromItem(horoscope?.decadal);
-      // 流年命宮：依命宮地支旋轉（offset = mingIndex - liunianIndex），不用 iztro 的 palaceNames[index]
+      // 流年命宮：僅查表 palaceByBranch[branch]，禁止再用 offset 公式
       const yearlyBranch = horoscope?.yearly?.earthlyBranch ?? null;
       const mingBranchForYearly = aZhTw?.earthlyBranchOfSoulPalace ?? "";
+      const palaceByBranch = mingBranchForYearly ? buildPalaceByBranch(mingBranchForYearly) : undefined;
+      const decadalBranch = horoscope?.decadal?.earthlyBranch ?? null;
+      const decadalPalace = (decadalBranch && palaceByBranch?.[decadalBranch]) ? palaceByBranch[decadalBranch] : palaceFromItem(horoscope?.decadal);
       const yearlyPalace =
-        (yearlyBranch && mingBranchForYearly && computeFlowYearPalaceFromBranch(yearlyBranch, mingBranchForYearly))
+        (yearlyBranch && palaceByBranch && getFlowYearPalace(yearlyBranch, palaceByBranch))
         ?? palaceFromItem(horoscope?.yearly);
+
+      // 流月：直接使用 iztro horoscope().monthly（不自行用月干重算四化）
+      const horoscopeForMonthly = (astrolabeZhTw as { horoscope?: (d?: Date, ti?: number) => unknown }).horoscope?.(new Date(dateStr), timeIndex) as {
+        monthly?: {
+          heavenlyStem?: string; // 月干
+          earthlyBranch?: string; // 月支
+          palaceNames?: string[];
+          mutagen?: string[]; // [祿,權,科,忌] 對應的星名
+          stars?: unknown; // 流耀
+          index?: number;
+        };
+      } | undefined;
+
+      const monthlyBranch = (horoscopeForMonthly?.monthly?.earthlyBranch ?? "").trim() || null;
+      const flowMonthPalace = monthlyBranch && palaceByBranch?.[monthlyBranch] ? palaceByBranch[monthlyBranch] : null;
+
+      const monthlyHoroscopeRaw =
+        horoscopeForMonthly?.monthly && flowMonthPalace
+          ? {
+              stem: (horoscopeForMonthly.monthly.heavenlyStem ?? "").trim() || null,
+              branch: monthlyBranch,
+              palace: flowMonthPalace,
+              mutagenStars: buildMutagenStars(horoscopeForMonthly.monthly.mutagen) ?? undefined,
+              stars: horoscopeForMonthly.monthly.stars ?? undefined,
+            }
+          : undefined;
+      const monthlyHoroscope = monthlyHoroscopeRaw
+        ? { ...monthlyHoroscopeRaw, ...monthlyHoroscopeCompleteness(monthlyHoroscopeRaw) }
+        : undefined;
 
       // horoscopeByYear 改為延遲載入（點擊進階時再算），減少 CPU 避免 1102
       const horoscopeByYear: Record<number, { nominalAge: number | null; palace: string | null; stem: string | null }> = {};
@@ -892,20 +1112,20 @@ export default {
         yearlyStem: ageData?.heavenlyStem ?? null,
         yearlyBranch: ageData?.earthlyBranch ?? null,
         yearlyIndex: ageData?.index ?? null,
-        mutagenStars: buildMutagenStars(ageData?.mutagen),
+        mutagenStars: getMutagenStarsFromStem(ageData?.heavenlyStem ?? "") ?? buildMutagenStars(ageData?.mutagen),
         decadal: horoscope?.decadal ? {
           stem: horoscope.decadal.heavenlyStem ?? null,
           branch: horoscope.decadal.earthlyBranch ?? null,
           palace: decadalPalace,
           palaceIndex: horoscope.decadal.index,
-          mutagenStars: buildMutagenStars(horoscope.decadal.mutagen),
+          mutagenStars: getMutagenStarsFromStem(horoscope.decadal.heavenlyStem ?? "") ?? buildMutagenStars(horoscope.decadal.mutagen),
         } : null,
         yearly: horoscope?.yearly ? {
           stem: horoscope.yearly.heavenlyStem ?? null,
           branch: horoscope.yearly.earthlyBranch ?? null,
           palace: yearlyPalace,
           palaceIndex: horoscope.yearly.index,
-          mutagenStars: buildMutagenStars(horoscope.yearly.mutagen),
+          mutagenStars: getMutagenStarsFromStem(horoscope.yearly.heavenlyStem ?? "") ?? buildMutagenStars(horoscope.yearly.mutagen),
         } : null,
         horoscopeByYear,
       } : null;
@@ -955,6 +1175,40 @@ export default {
 
       const ziweiPalaces = extractZiweiPalacesWithBrightness(astrolabeZhTw);
 
+      // 從 iztro 產出 12 步大限（每步含該步大限宮干 stem + 地支 branch），命書單一資料來源，避免與 BaziCore 順推宮干混用。
+      // 大限宮位名必須依「命盤宮序」（命宮地支旋轉後的 地支→宮位）取 palaceByBranch[branch]，不可用 iztro 的 palaceNames（可能為固定人事宮序，會錯成夫妻宮等）。
+      const wuxingjuStr = String(ziweiCore.wuxingju ?? "").trim() || "金四局";
+      const baseStartMatch = wuxingjuStr.match(/[水木金土火]([二三四五六])局/);
+      const WUXINGJU_BASE: Record<string, number> = { 二: 2, 三: 3, 四: 4, 五: 5, 六: 6 };
+      const baseStartAge: number = baseStartMatch ? (WUXINGJU_BASE[baseStartMatch[1]] ?? 4) : 4;
+      const birthYear = typeof year === "number" && !Number.isNaN(year) ? year : new Date().getFullYear();
+      const mingBranch = String(ziweiCore.minggongBranch ?? "").trim();
+      const decadalPalaceByBranch = mingBranch ? buildPalaceByBranch(mingBranch) : {};
+      const decadalLimitsFromIztro: Array<{ palace?: string; startAge: number; endAge: number; stem?: string; branch?: string; mutagenStars?: Record<string, string> }> = [];
+      for (let step = 0; step < 12; step++) {
+        const midAge = baseStartAge + step * 10 + 5;
+        const targetDate = new Date(birthYear + midAge, 5, 15);
+        const hStep = (astrolabeZhTw as { horoscope?: (d?: Date, ti?: number) => unknown }).horoscope?.(targetDate, timeIndex) as {
+          decadal?: { index: number; heavenlyStem?: string; earthlyBranch?: string; palaceNames?: string[]; mutagen?: string[] };
+        } | undefined;
+        const dec = hStep?.decadal;
+        const branch = (dec?.earthlyBranch ?? "").trim() || undefined;
+        const palaceFromBranch = branch && decadalPalaceByBranch[branch] ? decadalPalaceByBranch[branch] : null;
+        const palaceNameFallback = dec?.palaceNames?.[0] ? (palaceNameToZhTW(dec.palaceNames[0]) ?? dec.palaceNames[0]) : null;
+        const stem = (dec?.heavenlyStem ?? "").trim() || undefined;
+        const mutagenStars = stem ? getMutagenStarsFromStem(stem) : undefined;
+        decadalLimitsFromIztro.push({
+          palace: (palaceFromBranch ?? palaceNameFallback) ?? undefined,
+          startAge: baseStartAge + step * 10,
+          endAge: baseStartAge + step * 10 + 9,
+          stem,
+          branch,
+          mutagenStars: mutagenStars ?? undefined,
+        });
+      }
+      // 診斷用：確認 54–63 歲（index 5，金四局）大限應為僕役／交友宮、甲辰
+      console.log("[compute/all] features.ziwei.decadalLimits[5] (54–63歲) =", JSON.stringify(decadalLimitsFromIztro[5]));
+
       return json({
         ok: true,
         language,
@@ -972,7 +1226,9 @@ export default {
             basic: ziweiBasic,
             mainStars,
             horoscope: ziweiHoroscope,
+            monthlyHoroscope,
             palaces: ziweiPalaces,
+            decadalLimits: decadalLimitsFromIztro,
           },
         },
       });
@@ -1037,12 +1293,36 @@ export default {
         yearlyStem: ageData?.heavenlyStem ?? null,
         yearlyBranch: ageData?.earthlyBranch ?? null,
         yearlyIndex: ageData?.index ?? null,
-        mutagenStars: buildMutagenStars(ageData?.mutagen),
-        decadal: horoscope?.decadal ? { stem: horoscope.decadal.heavenlyStem ?? null, branch: horoscope.decadal.earthlyBranch ?? null, palace: decadalPalace, palaceIndex: horoscope.decadal.index, mutagenStars: buildMutagenStars(horoscope.decadal.mutagen) } : null,
-        yearly: horoscope?.yearly ? { stem: horoscope.yearly.heavenlyStem ?? null, branch: horoscope.yearly.earthlyBranch ?? null, palace: yearlyPalace, palaceIndex: horoscope.yearly.index, mutagenStars: buildMutagenStars(horoscope.yearly.mutagen) } : null,
+        mutagenStars: getMutagenStarsFromStem(ageData?.heavenlyStem ?? "") ?? buildMutagenStars(ageData?.mutagen),
+        decadal: horoscope?.decadal ? { stem: horoscope.decadal.heavenlyStem ?? null, branch: horoscope.decadal.earthlyBranch ?? null, palace: decadalPalace, palaceIndex: horoscope.decadal.index, mutagenStars: getMutagenStarsFromStem(horoscope.decadal.heavenlyStem ?? "") ?? buildMutagenStars(horoscope.decadal.mutagen) } : null,
+        yearly: horoscope?.yearly ? { stem: horoscope.yearly.heavenlyStem ?? null, branch: horoscope.yearly.earthlyBranch ?? null, palace: yearlyPalace, palaceIndex: horoscope.yearly.index, mutagenStars: getMutagenStarsFromStem(horoscope.yearly.heavenlyStem ?? "") ?? buildMutagenStars(horoscope.yearly.mutagen) } : null,
         horoscopeByYear,
       };
-      return json({ ok: true, horoscope: ziweiHoroscope });
+
+      // 流月：與 /compute/all 同一格式，供 S19 與單獨呼叫時使用
+      const aZhTw = astrolabeZhTw as { earthlyBranchOfSoulPalace?: string };
+      const mingBranchForMonthly = aZhTw?.earthlyBranchOfSoulPalace ?? "";
+      const palaceByBranchMonthly = mingBranchForMonthly ? buildPalaceByBranch(mingBranchForMonthly) : undefined;
+      const horoscopeForMonthly = (astrolabeZhTw as { horoscope?: (d?: Date, ti?: number) => unknown }).horoscope?.(new Date(dateStr), timeIndex) as {
+        monthly?: { heavenlyStem?: string; earthlyBranch?: string; mutagen?: string[]; stars?: unknown };
+      } | undefined;
+      const monthlyBranch = (horoscopeForMonthly?.monthly?.earthlyBranch ?? "").trim() || null;
+      const flowMonthPalace = monthlyBranch && palaceByBranchMonthly?.[monthlyBranch] ? palaceByBranchMonthly[monthlyBranch] : null;
+      const monthlyHoroscopeRaw =
+        horoscopeForMonthly?.monthly && flowMonthPalace
+          ? {
+              stem: (horoscopeForMonthly.monthly.heavenlyStem ?? "").trim() || null,
+              branch: monthlyBranch,
+              palace: flowMonthPalace,
+              mutagenStars: buildMutagenStars(horoscopeForMonthly.monthly.mutagen) ?? undefined,
+              stars: horoscopeForMonthly.monthly.stars ?? undefined,
+            }
+          : undefined;
+      const monthlyHoroscope = monthlyHoroscopeRaw
+        ? { ...monthlyHoroscopeRaw, ...monthlyHoroscopeCompleteness(monthlyHoroscopeRaw) }
+        : undefined;
+
+      return json({ ok: true, horoscope: ziweiHoroscope, monthlyHoroscope });
     }
 
     const LIFEBOOK_CONFIG_KEY = "lifebook:config";
@@ -1264,7 +1544,15 @@ export default {
       if (!apiKey) {
         return json({ ok: false, error: "OPENAI_API_KEY 未設定" }, { status: 500 });
       }
-      let body: { section_key?: string; insight?: SectionInsight; model?: string; temperature?: number };
+      let body: {
+        section_key?: string;
+        insight?: SectionInsight;
+        model?: string;
+        temperature?: number;
+        /** infer→narrate 時一併傳入，12 宮才能套用讀者版 palace narrative（與 generate-section 一致） */
+        chart_json?: unknown;
+        locale?: string;
+      };
       try {
         body = (await req.json()) as typeof body;
       } catch {
@@ -1346,14 +1634,32 @@ export default {
         typeof parsed.strategic_advice === "string";
 
       if (hasFourFields && parsed) {
+        let four = {
+          structure_analysis: parsed.structure_analysis as string,
+          behavior_pattern: parsed.behavior_pattern as string,
+          blind_spots: parsed.blind_spots as string,
+          strategic_advice: parsed.strategic_advice as string,
+        };
+        const narrateChart = body.chart_json as Record<string, unknown> | undefined;
+        if (narrateChart && typeof narrateChart === "object" && PALACE_SECTION_KEYS.has(sectionKey)) {
+          const locRaw = typeof body.locale === "string" ? body.locale : "zh-TW";
+          const narrLocale: LifeBookLocaleNarrate =
+            locRaw === "en" || locRaw === "en-US" ? "en" : locRaw === "zh-CN" ? "zh-CN" : "zh-TW";
+          four = await applyPalaceReaderOverridesForSection(env, sectionKey, narrateChart, narrLocale, four);
+        } else if (PALACE_SECTION_KEYS.has(sectionKey) && (!narrateChart || typeof narrateChart !== "object")) {
+          console.warn(
+            "[life-book/narrate] 12宮 sectionKey=%s 未附 chart_json，無法套用讀者版敘事（請前端 infer→narrate 一併傳 chart_json）",
+            sectionKey
+          );
+        }
         const section = {
           section_key: typeof parsed.section_key === "string" ? parsed.section_key : sectionKey,
           title: typeof parsed.title === "string" ? parsed.title : template.title,
           importance_level: (typeof parsed.importance_level === "string" && ["high", "medium", "low"].includes(parsed.importance_level)) ? parsed.importance_level : "medium",
-          structure_analysis: parsed.structure_analysis,
-          behavior_pattern: parsed.behavior_pattern,
-          blind_spots: parsed.blind_spots,
-          strategic_advice: parsed.strategic_advice,
+          structure_analysis: four.structure_analysis,
+          behavior_pattern: four.behavior_pattern,
+          blind_spots: four.blind_spots,
+          strategic_advice: four.strategic_advice,
         };
         return json({ ok: true, section });
       }
@@ -1415,6 +1721,18 @@ export default {
         if (features.ziwei) normalizedChart.ziwei = features.ziwei;
         if (features.bazi) normalizedChart.bazi = features.bazi;
       }
+      // 大限單一來源：優先 iztro（features.ziwei.decadalLimits / ziwei.decadalLimits），避免 BaziCore 覆蓋
+      const featuresZiweiSection = (chartJson as Record<string, unknown>)?.features && typeof (chartJson as Record<string, unknown>).features === "object"
+        ? ((chartJson as Record<string, unknown>).features as Record<string, unknown>)?.ziwei as Record<string, unknown> | undefined
+        : undefined;
+      const iztroDecadalSection = (featuresZiweiSection?.decadalLimits ?? (normalizedChart.ziwei as Record<string, unknown>)?.decadalLimits) as Array<{ stem?: string; branch?: string }> | undefined;
+      const decadalForSection = Array.isArray(iztroDecadalSection) && iztroDecadalSection.length > 0 ? iztroDecadalSection : (normalizedChart.decadalLimits as Array<unknown> | undefined);
+      if (Array.isArray(decadalForSection) && decadalForSection.length > 0) {
+        normalizedChart.decadalLimits = decadalForSection;
+        if (normalizedChart.ziwei && typeof normalizedChart.ziwei === "object") {
+          (normalizedChart.ziwei as Record<string, unknown>).decadalLimits = decadalForSection;
+        }
+      }
       const chartForSection = normalizedChart;
 
       let lifeBookConfig: LifeBookConfig | null = null;
@@ -1469,12 +1787,17 @@ export default {
         const genSectionTemplate = SECTION_TEMPLATES.find((t) => t.section_key === sectionKey);
         const sectionTitle = genSectionTemplate?.title ?? `[${sectionKey}]`;
         const chartSlice = getChartSlice(chartForSection, genSectionTemplate?.slice_types ?? []);
+        const p2Technical = TIME_MODULE_SECTION_KEYS.includes(sectionKey as (typeof TIME_MODULE_SECTION_KEYS)[number])
+          ? buildP2FindingsAndContext(chartForSection ?? undefined)
+          : emptyP2();
         const blocks = getSectionTechnicalBlocks(
           sectionKey,
           chartForSection,
           sectionConfigWithStarPalaces,
           sectionContent as Parameters<typeof getSectionTechnicalBlocks>[3],
-          sectionLocale === "zh-TW" ? "zh-TW" : sectionLocale === "zh-CN" ? "zh-CN" : "en"
+          sectionLocale === "zh-TW" ? "zh-TW" : sectionLocale === "zh-CN" ? "zh-CN" : "en",
+          p2Technical.findings ?? undefined,
+          p2Technical.findingsV2 ?? undefined
         );
         const technicalParts: string[] = [];
         const skipDebugBlocks = sectionKey === "s00" || sectionKey === "s03" || sectionKey === "s04";
@@ -1489,7 +1812,12 @@ export default {
         let structureAnalysisFinal = sanitizeStructureAnalysis(technicalParts.join("\n"));
         if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
           const p2 = buildP2FindingsAndContext(chartForSection ?? undefined);
-          const injectOpts = p2.findings ? { findings: p2.findings, timeContext: p2.timeContext, timelineValidationIssues: p2.timelineValidationIssues } : undefined;
+          const injectOpts = {
+            findings: p2.findings ?? undefined,
+            timeContext: p2.timeContext,
+            timelineValidationIssues: p2.timelineValidationIssues,
+            findingsV2: p2.findingsV2 ?? undefined,
+          };
           structureAnalysisFinal = injectTimeModuleDataIntoSection(
             sectionKey,
             structureAnalysisFinal,
@@ -1500,14 +1828,38 @@ export default {
             injectOpts
           );
         }
+        /** 資料庫技術版（output_mode=technical）先前只吃技術骨架，未套用 12 宮讀者敘事；與 AI 版一致 */
+        let technicalBp = resolved?.behavior_pattern ?? "";
+        let technicalBl = resolved?.blind_spots ?? "";
+        let technicalSt = resolved?.strategic_advice ?? "";
+        if (PALACE_SECTION_KEYS.has(sectionKey)) {
+          const locTech: LifeBookLocaleNarrate =
+            sectionLocale === "en" ? "en" : sectionLocale === "zh-CN" ? "zh-CN" : "zh-TW";
+          const mergedTech = await applyPalaceReaderOverridesForSection(
+            env,
+            sectionKey,
+            chartForSection,
+            locTech,
+            {
+              structure_analysis: structureAnalysisFinal,
+              behavior_pattern: technicalBp,
+              blind_spots: technicalBl,
+              strategic_advice: technicalSt,
+            }
+          );
+          structureAnalysisFinal = mergedTech.structure_analysis;
+          technicalBp = mergedTech.behavior_pattern;
+          technicalBl = mergedTech.blind_spots;
+          technicalSt = mergedTech.strategic_advice;
+        }
         const technicalSection: Record<string, unknown> = {
           section_key: sectionKey,
           title: sectionTitle,
           importance_level: genSectionTemplate?.importance_level ?? "medium",
           structure_analysis: structureAnalysisFinal,
-          behavior_pattern: resolved?.behavior_pattern ?? "",
-          blind_spots: resolved?.blind_spots ?? "",
-          strategic_advice: resolved?.strategic_advice ?? "",
+          behavior_pattern: technicalBp,
+          blind_spots: technicalBl,
+          strategic_advice: technicalSt,
           output_mode: "technical",
           technical: {
             chart_slice: chartSlice,
@@ -1611,6 +1963,11 @@ export default {
         four.strategic_advice !== "(未提供)";
 
       if (parsed && four && (hasFullFour || four.structure_analysis || four.behavior_pattern || four.blind_spots || four.strategic_advice)) {
+        const p2 =
+          TIME_MODULE_SECTION_KEYS.includes(sectionKey as (typeof TIME_MODULE_SECTION_KEYS)[number]) ||
+          PALACE_SECTION_KEYS.has(sectionKey)
+            ? buildP2FindingsAndContext(chartForSection ?? undefined)
+            : emptyP2();
         let structureAnalysisOut = four.structure_analysis;
         let behaviorPatternOut = four.behavior_pattern;
         let blindSpotsOut = four.blind_spots;
@@ -1633,8 +1990,12 @@ export default {
           strategicAdviceOut = normalizePunctuation(strategicAdviceOut);
         }
         if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
-          const p2 = buildP2FindingsAndContext(chartForSection ?? undefined);
-          const injectOpts = p2.findings ? { findings: p2.findings, timeContext: p2.timeContext, timelineValidationIssues: p2.timelineValidationIssues } : undefined;
+          const injectOpts = {
+            findings: p2.findings ?? undefined,
+            timeContext: p2.timeContext,
+            timelineValidationIssues: p2.timelineValidationIssues,
+            findingsV2: p2.findingsV2 ?? undefined,
+          };
           structureAnalysisOut = injectTimeModuleDataIntoSection(
             sectionKey,
             structureAnalysisOut,
@@ -1645,24 +2006,62 @@ export default {
             injectOpts
           );
         }
+        let palaceResolvedStructure: string | undefined;
         if (PALACE_SECTION_KEYS.has(sectionKey)) {
+          // 12 宮與 s00/s03/模組二同源：若 p2.findings 為 null（例如 buildLifebookFindingsFromChartAndContent 失敗），
+          // 仍用 chart 水合出 natalFlowItems，讓【宮干飛化】有資料（與模組二 getFlowBlockForPalace(chart) 同源）
+          let findingsForPalace = p2.findings ?? createEmptyFindings();
+          if (!findingsForPalace.natalFlowItems || findingsForPalace.natalFlowItems.length === 0) {
+            let extractedFlows: unknown[] =
+              (chartForSection?.natal as { flows?: unknown[]; birthTransforms?: unknown[] } | undefined)?.flows ||
+              (chartForSection?.natal as { birthTransforms?: unknown[] } | undefined)?.birthTransforms ||
+              (chartForSection?.natalTransforms as unknown[] | undefined) ||
+              [];
+            if ((!extractedFlows || extractedFlows.length === 0) && typeof normalizeChart === "function") {
+              try {
+                const normalized = normalizeChart(chartForSection as Record<string, unknown>);
+                extractedFlows = (normalized?.natal as { flows?: unknown[] } | undefined)?.flows ?? [];
+              } catch (err) {
+                console.warn("[Hydration Warning] normalizeChart 無法生成 natal flows", err);
+              }
+            }
+            if (Array.isArray(extractedFlows) && extractedFlows.length > 0) {
+              const validTransform = (t: string | undefined): "祿" | "權" | "科" | "忌" =>
+                (t === "祿" || t === "權" || t === "科" || t === "忌" ? t : "祿");
+              findingsForPalace.natalFlowItems = extractedFlows
+                .map((e: unknown) => {
+                  const x = e as { fromPalace?: string; toPalace?: string; starName?: string; transform?: string };
+                  return { fromPalace: x.fromPalace ?? "", toPalace: x.toPalace ?? "", starName: x.starName, transform: validTransform(x.transform) };
+                })
+                .filter((item) => Boolean(item.fromPalace && item.toPalace && item.transform)) as Array<{ fromPalace: string; toPalace: string; starName?: string; transform: "祿" | "權" | "科" | "忌" }>;
+            }
+          }
+          console.log("[Hydration Debug] sectionKey:", sectionKey);
+          console.log("[Hydration Debug] natalFlowItems length:", findingsForPalace?.natalFlowItems?.length ?? 0);
+          console.log("[Hydration Debug] natalFlowItems first:", JSON.stringify(findingsForPalace?.natalFlowItems?.[0] ?? null));
           const overrides = getPalaceSectionReaderOverrides(
             sectionKey,
             chartForSection ?? {},
             sectionConfigWithStarPalaces,
             sectionContent as Parameters<typeof getPalaceSectionReaderOverrides>[3],
-            sectionLocale === "zh-TW" ? "zh-TW" : sectionLocale === "zh-CN" ? "zh-CN" : "en"
+            sectionLocale === "zh-TW" ? "zh-TW" : sectionLocale === "zh-CN" ? "zh-CN" : "en",
+            findingsForPalace,
+            p2.normalizedChart
           );
           if (overrides) {
-            // 一律以我們產生的星曜區塊覆蓋，確保「星曜說明＋在本宮表現」一定出現（不依賴 AI 是否寫了該段）
-            const block = overrides.starBlockToAppend;
-            const idx = structureAnalysisOut.indexOf("【星曜結構】");
-            if (idx >= 0) {
-              const after = structureAnalysisOut.slice(idx);
-              const nextReminder = after.indexOf("【此宮提醒】");
-              structureAnalysisOut = structureAnalysisOut.slice(0, idx) + block + (nextReminder >= 0 ? "\n\n" + after.slice(nextReminder) : "");
+            if (overrides.resolvedStructureAnalysis != null && overrides.resolvedStructureAnalysis !== "") {
+              structureAnalysisOut = overrides.resolvedStructureAnalysis;
+              palaceResolvedStructure = overrides.resolvedStructureAnalysis;
             } else {
-              structureAnalysisOut = structureAnalysisOut + block;
+              const block = overrides.starBlockToAppend;
+              const idx = structureAnalysisOut.indexOf("【星曜結構】");
+              if (idx >= 0) {
+                const after = structureAnalysisOut.slice(idx);
+                const nextReminder = after.indexOf("【此宮提醒】");
+                structureAnalysisOut = structureAnalysisOut.slice(0, idx) + block + (nextReminder >= 0 ? "\n\n" + after.slice(nextReminder) : "");
+              } else {
+                structureAnalysisOut = structureAnalysisOut + block;
+              }
             }
             behaviorPatternOut = overrides.behavior_pattern;
             blindSpotsOut = overrides.blind_spots;
@@ -1673,6 +2072,17 @@ export default {
         behaviorPatternOut = sanitizeForReader(behaviorPatternOut);
         blindSpotsOut = sanitizeForReader(blindSpotsOut);
         strategicAdviceOut = sanitizeForReader(strategicAdviceOut);
+        // 12 宮最終防呆：強制使用 override 組裝的 structure_analysis，避免被 AI 或舊 merge 覆蓋
+        if (PALACE_SECTION_KEYS.has(sectionKey) && palaceResolvedStructure != null && palaceResolvedStructure.length > 0) {
+          structureAnalysisOut = palaceResolvedStructure;
+        }
+        // Phase 5B-10：最終送進 render 的 structure_analysis（兄弟 s01、僕役 s09、官祿 s11）
+        if (PALACE_SECTION_KEYS.has(sectionKey) && ["s01", "s09", "s11"].includes(sectionKey)) {
+          const snippet = structureAnalysisOut.slice(0, 400);
+          const hasNew = snippet.includes("四化引動") && snippet.includes("宮干飛化");
+          const hasOld = snippet.includes("動態引動與根因");
+          console.log("[life-book/generate-section Phase5B-10] sectionKey=%s finalHasNew=%s finalHasOld=%s structure_analysis(0..400)=%s", sectionKey, hasNew, hasOld, JSON.stringify(snippet));
+        }
         const section: Record<string, unknown> = {
           section_key: typeof parsed.section_key === "string" ? parsed.section_key : sectionKey,
           title: typeof parsed.title === "string" ? parsed.title : sectionTitle,
@@ -1694,7 +2104,12 @@ export default {
         : "(AI 回傳格式異常，請重試該章)";
       if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
         const p2 = buildP2FindingsAndContext(chartForSection ?? undefined);
-        const injectOpts = p2.findings ? { findings: p2.findings, timeContext: p2.timeContext, timelineValidationIssues: p2.timelineValidationIssues } : undefined;
+        const injectOpts = {
+          findings: p2.findings ?? undefined,
+          timeContext: p2.timeContext,
+          timelineValidationIssues: p2.timelineValidationIssues,
+          findingsV2: p2.findingsV2 ?? undefined,
+        };
         fallbackStructure = injectTimeModuleDataIntoSection(
           sectionKey,
           fallbackStructure,
@@ -1755,6 +2170,18 @@ export default {
         if (features.ziwei) chartForGenerate.ziwei = features.ziwei;
         if (features.bazi) chartForGenerate.bazi = features.bazi;
       }
+      // 大限單一來源：僅用 iztro 的 decadalLimits；無 iztro 則設為 []，不接受 BaziCore 或 chart 頂層
+      const featuresZiwei = (chartJson as Record<string, unknown>)?.features && typeof (chartJson as Record<string, unknown>).features === "object"
+        ? ((chartJson as Record<string, unknown>).features as Record<string, unknown>)?.ziwei as Record<string, unknown> | undefined
+        : undefined;
+      const iztroDecadalLimits = (featuresZiwei?.decadalLimits ?? (chartForGenerate.ziwei as Record<string, unknown>)?.decadalLimits) as Array<{ stem?: string; branch?: string; palace?: string; startAge?: number; endAge?: number }> | undefined;
+      const decadalLimitsForLifebook = Array.isArray(iztroDecadalLimits) && iztroDecadalLimits.length > 0 ? iztroDecadalLimits : [];
+      chartForGenerate.decadalLimits = decadalLimitsForLifebook;
+      if (chartForGenerate.ziwei && typeof chartForGenerate.ziwei === "object") {
+        (chartForGenerate.ziwei as Record<string, unknown>).decadalLimits = decadalLimitsForLifebook;
+      }
+      console.log("[life-book/generate] chart_json.decadalLimits source =", iztroDecadalLimits ? "iztro" : "none (empty)");
+      console.log("[life-book/generate] chart_json.decadalLimits[5] =", JSON.stringify(decadalLimitsForLifebook[5] ?? null));
 
       const apiKey = env?.OPENAI_API_KEY;
       if (body?.output_mode !== "technical" && !apiKey) {
@@ -1810,7 +2237,10 @@ export default {
           const genSectionTemplate = SECTION_TEMPLATES.find((t) => t.section_key === sectionKey);
           const sectionTitle = genSectionTemplate?.title ?? `[${sectionKey}]`;
           const chartSlice = getChartSlice(chartForGenerate, genSectionTemplate?.slice_types ?? []);
-          const blocks = getSectionTechnicalBlocks(sectionKey, chartForGenerate, generateConfig, generateContent as Parameters<typeof getSectionTechnicalBlocks>[3], localeForTechnical);
+          const p2Technical = TIME_MODULE_SECTION_KEYS.includes(sectionKey as (typeof TIME_MODULE_SECTION_KEYS)[number])
+            ? buildP2FindingsAndContext(chartForGenerate ?? undefined)
+            : emptyP2();
+          const blocks = getSectionTechnicalBlocks(sectionKey, chartForGenerate, generateConfig, generateContent as Parameters<typeof getSectionTechnicalBlocks>[3], localeForTechnical, p2Technical.findings ?? undefined, p2Technical.findingsV2 ?? undefined);
           const technicalParts: string[] = [];
           const skipDebugBlocks = sectionKey === "s00" || sectionKey === "s03" || sectionKey === "s04";
           if (blocks.underlyingParamsText && !skipDebugBlocks) technicalParts.push("", blocks.underlyingParamsText);
@@ -1824,7 +2254,12 @@ export default {
           let structureAnalysisFinal = sanitizeStructureAnalysis(technicalParts.join("\n"));
           if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
             const p2 = buildP2FindingsAndContext(chartForGenerate ?? undefined);
-            const injectOpts = p2.findings ? { findings: p2.findings, timeContext: p2.timeContext, timelineValidationIssues: p2.timelineValidationIssues } : undefined;
+            const injectOpts = {
+              findings: p2.findings ?? undefined,
+              timeContext: p2.timeContext,
+              timelineValidationIssues: p2.timelineValidationIssues,
+              findingsV2: p2.findingsV2 ?? undefined,
+            };
             structureAnalysisFinal = injectTimeModuleDataIntoSection(
               sectionKey,
               structureAnalysisFinal,
@@ -1952,13 +2387,22 @@ export default {
         const four = parsed ? toSectionFourFields(parsed, sectionKey, batchTitle) : null;
         const hasUsable = four && (four.structure_analysis !== "(未提供)" || four.behavior_pattern !== "(未提供)" || four.blind_spots !== "(未提供)" || four.strategic_advice !== "(未提供)");
 
+        const p2 =
+          TIME_MODULE_SECTION_KEYS.includes(sectionKey as (typeof TIME_MODULE_SECTION_KEYS)[number]) ||
+          PALACE_SECTION_KEYS.has(sectionKey)
+            ? buildP2FindingsAndContext(chartForGenerate ?? undefined)
+            : emptyP2();
         const rawFallback = content.trim().slice(0, 4000);
         let structureAnalysisOut = hasUsable && four && parsed ? four.structure_analysis : (rawFallback
           ? `${rawFallback}${rawFallback.length >= 4000 ? "…" : ""}\n\n（原始回傳未符四欄位 JSON，建議重試該章。）`
           : "(AI 回傳格式異常，請重試)");
         if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
-          const p2 = buildP2FindingsAndContext(chartForGenerate ?? undefined);
-          const injectOpts = p2.findings ? { findings: p2.findings, timeContext: p2.timeContext, timelineValidationIssues: p2.timelineValidationIssues } : undefined;
+          const injectOpts = {
+            findings: p2.findings ?? undefined,
+            timeContext: p2.timeContext,
+            timelineValidationIssues: p2.timelineValidationIssues,
+            findingsV2: p2.findingsV2 ?? undefined,
+          };
           structureAnalysisOut = injectTimeModuleDataIntoSection(
             sectionKey,
             structureAnalysisOut,
@@ -1972,16 +2416,52 @@ export default {
         let behaviorPatternOut: string;
         let blindSpotsOut: string;
         let strategicAdviceOut: string;
+        let batchPalaceResolved: string | undefined;
         if (PALACE_SECTION_KEYS.has(sectionKey)) {
+          // 12 宮與 s00/s03/模組二同源：p2.findings 為 null 時仍用 chart 水合，讓【宮干飛化】有資料
+          let findingsForPalace = p2.findings ?? createEmptyFindings();
+          if (!findingsForPalace.natalFlowItems || findingsForPalace.natalFlowItems.length === 0) {
+            let extractedFlows: unknown[] =
+              (chartForGenerate?.natal as { flows?: unknown[]; birthTransforms?: unknown[] } | undefined)?.flows ||
+              (chartForGenerate?.natal as { birthTransforms?: unknown[] } | undefined)?.birthTransforms ||
+              (chartForGenerate?.natalTransforms as unknown[] | undefined) ||
+              [];
+            if ((!extractedFlows || extractedFlows.length === 0) && typeof normalizeChart === "function") {
+              try {
+                const normalized = normalizeChart(chartForGenerate as Record<string, unknown>);
+                extractedFlows = (normalized?.natal as { flows?: unknown[] } | undefined)?.flows ?? [];
+              } catch (err) {
+                console.warn("[Hydration Warning] normalizeChart 無法生成 natal flows", err);
+              }
+            }
+            if (Array.isArray(extractedFlows) && extractedFlows.length > 0) {
+              const validTransform = (t: string | undefined): "祿" | "權" | "科" | "忌" =>
+                (t === "祿" || t === "權" || t === "科" || t === "忌" ? t : "祿");
+              findingsForPalace.natalFlowItems = extractedFlows
+                .map((e: unknown) => {
+                  const x = e as { fromPalace?: string; toPalace?: string; starName?: string; transform?: string };
+                  return { fromPalace: x.fromPalace ?? "", toPalace: x.toPalace ?? "", starName: x.starName, transform: validTransform(x.transform) };
+                })
+                .filter((item) => Boolean(item.fromPalace && item.toPalace && item.transform)) as Array<{ fromPalace: string; toPalace: string; starName?: string; transform: "祿" | "權" | "科" | "忌" }>;
+            }
+          }
+          console.log("[Hydration Debug] sectionKey:", sectionKey);
+          console.log("[Hydration Debug] natalFlowItems length:", findingsForPalace?.natalFlowItems?.length ?? 0);
+          console.log("[Hydration Debug] natalFlowItems first:", JSON.stringify(findingsForPalace?.natalFlowItems?.[0] ?? null));
           const overrides = getPalaceSectionReaderOverrides(
             sectionKey,
             chartForGenerate ?? {},
             generateConfig,
             generateContent as Parameters<typeof getPalaceSectionReaderOverrides>[3],
-            localeForTechnical
+            localeForTechnical,
+            findingsForPalace,
+            p2.normalizedChart
           );
           if (overrides) {
-            if (!structureAnalysisOut.includes("【星曜結構】")) {
+            if (overrides.resolvedStructureAnalysis != null && overrides.resolvedStructureAnalysis !== "") {
+              structureAnalysisOut = overrides.resolvedStructureAnalysis;
+              batchPalaceResolved = overrides.resolvedStructureAnalysis;
+            } else if (!structureAnalysisOut.includes("【星曜結構】")) {
               structureAnalysisOut = structureAnalysisOut + overrides.starBlockToAppend;
             }
             behaviorPatternOut = overrides.behavior_pattern;
@@ -2014,6 +2494,17 @@ export default {
           behaviorPatternOut = normalizePunctuation(behaviorPatternOut);
           blindSpotsOut = normalizePunctuation(blindSpotsOut);
           strategicAdviceOut = normalizePunctuation(strategicAdviceOut);
+        }
+        // 12 宮最終防呆（batch）：強制使用 override 組裝的 structure_analysis
+        if (PALACE_SECTION_KEYS.has(sectionKey) && batchPalaceResolved != null && batchPalaceResolved.length > 0) {
+          structureAnalysisOut = batchPalaceResolved;
+        }
+        // Phase 5B-10：batch 路徑最終 structure_analysis（s01/s09/s11）
+        if (PALACE_SECTION_KEYS.has(sectionKey) && ["s01", "s09", "s11"].includes(sectionKey)) {
+          const snippet = structureAnalysisOut.slice(0, 400);
+          const hasNew = snippet.includes("四化引動") && snippet.includes("宮干飛化");
+          const hasOld = snippet.includes("動態引動與根因");
+          console.log("[life-book/generate Phase5B-10] sectionKey=%s finalHasNew=%s finalHasOld=%s structure_analysis(0..400)=%s", sectionKey, hasNew, hasOld, JSON.stringify(snippet));
         }
         const sectionPayload: Record<string, unknown> = hasUsable && four && parsed
           ? {

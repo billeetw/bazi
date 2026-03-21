@@ -124,6 +124,48 @@ export const STAR_SEMANTIC_DICTIONARY: Record<string, StarSemantic> = {
     risk: "容易為了突破而破壞過多，或還沒站穩就急著翻新。",
     advice: "把改變當策略，不要把破壞當答案。",
   },
+  天馬: {
+    core: "移動、外出與節奏轉換",
+    plain: "你容易受環境與行程牽動，事情也常隨空間、移動而變化。",
+    themes: ["移動", "外出", "節奏", "變動"],
+    risk: "容易在變動、搬遷或外在節奏下，判斷跟著起伏。",
+    advice: "重大決定盡量在節奏穩定後再做。",
+  },
+  旬空: {
+    core: "空缺、未完與心理上的不踏實",
+    plain: "表面穩定時，仍可能覺得哪裡卡住、少了實感。",
+    themes: ["空落", "不踏實", "未完感"],
+    risk: "容易出現空落感或「好像還差一點」的心理空缺感。",
+    advice: "用小里程碑把進度具體化，拉回踏實感。",
+  },
+  截空: {
+    core: "中斷、繞路與需要重接的段落",
+    plain: "事情走到一半，容易遇到斷點或要改道。",
+    themes: ["中斷", "繞路", "改道"],
+    risk: "計畫與節奏容易出現中斷、繞路或阻斷感。",
+    advice: "保留彈性與備案，避免把所有資源押在單一路徑。",
+  },
+  截路: {
+    core: "中斷、繞路與需要重接的段落",
+    plain: "事情走到一半，容易遇到斷點或要改道。",
+    themes: ["中斷", "繞路", "改道"],
+    risk: "計畫與節奏容易出現中斷、繞路或阻斷感。",
+    advice: "保留彈性與備案，避免把所有資源押在單一路徑。",
+  },
+  孤辰: {
+    core: "獨處需求與人際距離",
+    plain: "你常需要自己的空間，在人際上也容易傾向疏離或慢熱。",
+    themes: ["獨處", "距離", "內省"],
+    risk: "在需要協作時仍習慣獨處處理，節奏不易對齊。",
+    advice: "刻意安排可預期的協作節點，別只靠默契。",
+  },
+  天刑: {
+    core: "規範、壓力與是非界線",
+    plain: "你對規則、界線與對錯較敏感，情境一緊就容易繃緊。",
+    themes: ["規範", "壓力", "界線"],
+    risk: "在責任與規範上對自己要求較高，壓力感易升高。",
+    advice: "區分「原則」與「可彈性」，別把所有摩擦都當成失敗。",
+  },
 };
 
 export const PALACE_SEMANTIC_DICTIONARY: Record<string, PalaceSemantic> = {
@@ -157,6 +199,7 @@ function normStarKey(name: string): string {
 
 /**
  * 取得星曜語義，供敘事替換使用。若無對應則回傳原星名與空語義。
+ * @deprecated 請改用 narrativeFacade.getStarSemantic（createNarrativeFacade(content).getStarSemantic）
  */
 export function getStarSemantic(starName: string): StarSemantic | null {
   const key = normStarKey(starName);
@@ -194,7 +237,10 @@ export function getStarThemesSentenceLead(starName: string): string {
   return themes ? `與「${themes}」相關的事情` : `與「${sem.core}」相關的事情`;
 }
 
-/** 宮位語義，key 支援「XX宮」或「XX」 */
+/**
+ * 宮位語義，key 支援「XX宮」或「XX」。
+ * @deprecated 請改用 narrativeFacade.getPalaceSemantic（createNarrativeFacade(content).getPalaceSemantic）
+ */
 export function getPalaceSemantic(palaceName: string): PalaceSemantic | null {
   const s = (palaceName ?? "").trim();
   if (!s) return null;
@@ -202,7 +248,10 @@ export function getPalaceSemantic(palaceName: string): PalaceSemantic | null {
   return PALACE_SEMANTIC_DICTIONARY[withSuffix] ?? PALACE_SEMANTIC_DICTIONARY[s] ?? null;
 }
 
-/** 四化語義，key: lu | quan | ke | ji */
+/**
+ * 四化語義，key: lu | quan | ke | ji。
+ * @deprecated 請改用 narrativeFacade.getTransformSemantic（createNarrativeFacade().getTransformSemantic）
+ */
 export function getTransformSemantic(transformKey: string): TransformSemantic | null {
   const k = (transformKey ?? "").trim().toLowerCase();
   if (k === "lu" || k === "quan" || k === "ke" || k === "ji") return TRANSFORM_SEMANTIC_DICTIONARY[k];

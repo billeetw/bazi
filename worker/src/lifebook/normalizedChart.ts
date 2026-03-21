@@ -84,6 +84,7 @@ export type BodyPalaceSource = "chart.shenGong" | "chart.bodyPalace" | "derived"
 /**
  * Layer 1 輸出：標準化命盤。
  * 時間層：natal、currentDecade、yearlyHoroscope（本命／大限／流年）。禁止 yearlyTransforms = decadalTransforms 作為 fallback。
+ * palaceByBranch：地支→宮位唯一權威，由命宮地支建表一次，流年命宮等一律查表。
  */
 export interface NormalizedChart {
   chartId: string;
@@ -95,6 +96,12 @@ export interface NormalizedChart {
   shenGongSource?: BodyPalaceSource;
   lifeLord?: string;
   bodyLord?: string;
+  /** 地支→宮位唯一權威（寅…丑 → 宮名）；流年命宮 = palaceByBranch[liunian.branch] */
+  palaceByBranch?: Record<string, string>;
+  /** 命宮地支（單字，如 寅）；供 Behavior Axis v1 等，與 `readZiweiSoulBranch` 同源 */
+  mingSoulBranch?: string;
+  /** 宮干飛化用：每宮宮干（命宮、兄弟宮… → 甲乙丙…） */
+  palaceStemMap?: Record<string, string>;
   palaces: PalaceStructure[];
   natalTransforms: TransformEdge[];
   natal?: NatalScope;
@@ -128,12 +135,24 @@ export function toPalaceCanonical(p: string): string {
   return PALACE_ALIAS[t] ?? t + PALACE_SUFFIX;
 }
 
-/** 亮度正規化：得→利，其餘接受 廟|旺|利|平|陷|不 */
+/** 亮度正規化：得→利；接受中文廟旺利平陷不；iztro 常見英文鍵 miao/wang/li/xian/ping/de/bu */
 export function toBrightnessCanonical(b: string | undefined): PalaceStructure["mainStars"][0]["brightness"] | undefined {
   if (b == null || b === "") return undefined;
   const s = (b as string).trim();
   if (s === "得") return "利";
   if (["廟", "旺", "利", "平", "陷", "不"].includes(s)) return s as StarInPalace["brightness"];
+  const lower = s.toLowerCase();
+  const iztro: Record<string, StarInPalace["brightness"]> = {
+    miao: "廟",
+    wang: "旺",
+    li: "利",
+    xian: "陷",
+    ping: "平",
+    de: "利", // 得 → 內部用利
+    bu: "不",
+  };
+  const mapped = iztro[lower];
+  if (mapped) return mapped;
   return undefined;
 }
 

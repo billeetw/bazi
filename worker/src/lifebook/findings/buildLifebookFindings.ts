@@ -10,7 +10,7 @@
 
 import { createEmptyFindings } from "../lifebookFindings.js";
 import type { NormalizedChart } from "../normalizedChart.js";
-import type { LifebookFindings } from "../lifebookFindings.js";
+import type { LifebookFindings, NatalFlowItem } from "../lifebookFindings.js";
 import { normalizeChart } from "../normalize/index.js";
 import {
   validateTimelineConsistency,
@@ -194,6 +194,14 @@ export function buildLifebookFindings(input: BuildLifebookFindingsInput): Lifebo
   f.keyYears = timeLayer.keyYears;
   f.lifeLessons = actionLayer.lifeLessons;
   f.actionItems = actionLayer.actionItems;
+
+  const natalFlows = chart.natal?.flows ?? chart.natal?.birthTransforms ?? chart.natalTransforms;
+  f.natalFlowItems = (natalFlows ?? []).map((e): NatalFlowItem => ({
+    fromPalace: e.fromPalace,
+    toPalace: e.toPalace,
+    starName: e.starName,
+    transform: e.transform,
+  }));
 
   return f;
 }

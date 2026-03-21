@@ -130,6 +130,8 @@ export interface StarCombinationFinding {
   shockLevel: number;
   bodySignals?: string[];
   narrativeHint?: string;
+  /** 定盤提問：命中時在【星曜組合】區塊第一句輸出此問句 */
+  rectificationQuestion?: string;
   source: "combination";
 }
 
@@ -152,8 +154,47 @@ export interface PalacePatternFinding {
 }
 
 /**
+ * 時間軸校對總覽之原子欄位（供模板 placeholder 替換；契約：僅由 Worker 產出 Findings 時寫入）。
+ */
+export interface TimeAxisSummary {
+  birthSihuaLine: string;
+  currentDecadalPalace: string;
+  currentDecadeSihuaLine: string;
+  flowYearMingPalace: string;
+  flowYearSihuaLine: string;
+  flowYearSihuaNote: string;
+  /** 流年四化飛星：自X宮出、飛入Y宮（與四化飛星技術版同源） */
+  flowYearSihuaFlyBlock?: string;
+  /** 流年四化飛星解釋段：星+四化+路徑組句（星象徵、化X帶來、代表從A到B、因此…） */
+  flowYearSihuaFlyExplanations?: string;
+}
+
+/**
+ * 單筆四化落宮（本命／大限／流年）：供單宮 contextual filtering 使用。
+ * 不得從字串反解析；僅由產出 Findings 的 pipeline 寫入。
+ */
+export interface SihuaPlacementItem {
+  layer: "natal" | "decade" | "year";
+  transform: "祿" | "權" | "科" | "忌";
+  starName: string;
+  targetPalace: string;
+}
+
+/**
+ * 本命宮干飛化單筆（from→to）：供單宮 contextual filtering 使用。
+ * 僅本命層；來源為 NormalizedChart.natal.flows。
+ */
+export interface NatalFlowItem {
+  fromPalace: string;
+  toPalace: string;
+  starName?: string;
+  transform: "祿" | "權" | "科" | "忌";
+}
+
+/**
  * Layer 4 定稿：全系統唯一 findings 結構。
  * Chart 只進 normalize 與 inference engine；章節、模板、輸出一律只讀 findings。
+ * 命書正式版只准讀取 LifebookFindings；timelineSummary / sihuaPlacement / sihuaEnergy / natalFlows 為預先計算區塊。
  */
 export interface LifebookFindings {
   mainBattlefields: MainBattlefield[];
@@ -166,6 +207,20 @@ export interface LifebookFindings {
   actionItems: ActionItem[];
   starCombinations: StarCombinationFinding[];
   palacePatterns: PalacePatternFinding[];
+  /** 時間軸校對總覽（生年／大限／流年四化來源）；預先計算，模板僅組裝。 */
+  timelineSummary?: string;
+  /** 本命／大限／流年四化落宮核心資料段；預先計算。 */
+  sihuaPlacement?: string;
+  /** 四化能量集中摘要；預先計算。 */
+  sihuaEnergy?: string;
+  /** 本命宮干飛化區塊（唯一來源 natal.flows）；預先計算。 */
+  natalFlows?: string;
+  /** 時間軸原子欄位（供既有 placeholder 如 birthSihuaLine 等）；預先計算。 */
+  timeAxis?: TimeAxisSummary;
+  /** 四化落宮結構化（本命／大限／流年各筆）；供單宮過濾，不得從字串反解析。 */
+  sihuaPlacementItems?: SihuaPlacementItem[];
+  /** 本命宮干飛化結構化（僅 natal.flows）；供單宮過濾。 */
+  natalFlowItems?: NatalFlowItem[];
 }
 
 export function createEmptyFindings(): LifebookFindings {

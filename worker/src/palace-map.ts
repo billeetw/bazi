@@ -90,6 +90,7 @@ const PALACE_BY_OFFSET = [
 /**
  * 依流年地支與命宮地支計算流年命宮（紫微斗數：以命宮地支旋轉）。
  * 驗證：1972-08-02 申時男、命宮亥、2026 丙午 → 疾厄宮。
+ * 僅用於「建表」；流年命宮應改為 getFlowYearPalace(branch, chart.palaceByBranch) 查表。
  */
 export function computeFlowYearPalaceFromBranch(yearlyBranch: string, mingBranch: string): string | null {
   const mingIndex = BRANCH_RING_INDEX[mingBranch ?? ""];
@@ -97,4 +98,44 @@ export function computeFlowYearPalaceFromBranch(yearlyBranch: string, mingBranch
   if (mingIndex == null || mingIndex === undefined || liunianIndex == null || liunianIndex === undefined) return null;
   const offset = (mingIndex - liunianIndex + 12) % 12;
   return PALACE_BY_OFFSET[offset] ?? null;
+}
+
+/**
+ * 由命宮地支建出整張「地支 → 宮位」對應，為系統唯一權威。
+ * 算法：寅起地支環 + 命宮旋轉；僅此處使用 offset 公式，其餘一律查表。
+ */
+export function buildPalaceByBranch(mingBranch: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  const mingIndex = BRANCH_RING_INDEX[mingBranch ?? ""];
+  if (mingIndex == null || mingIndex === undefined) return {};
+  for (let i = 0; i < BRANCH_RING.length; i++) {
+    const branch = BRANCH_RING[i];
+    const offset = (mingIndex - i + 12) % 12;
+    out[branch] = PALACE_BY_OFFSET[offset] ?? "";
+  }
+  return out;
+}
+
+/**
+ * iztro `ziwei.palaces[i]` 為地支環（寅=0…丑=11）。命宮地支為 soulBranch 時，
+ * 傳入命宮系統宮名（如「財帛」「疾厄」，可帶「宮」），回傳應讀取的陣列索引 i。
+ * 與 worker `extractZiweiMainStars` / `mergeStarNamesFromZiweiPalaces` 之
+ * `(soulIndex - i + 12) % 12` 對應一致。
+ */
+export function ziweiPalacesArrayIndexForNamedPalace(soulBranch: string, palaceNameZh: string): number | null {
+  const soulIdx = BRANCH_RING.indexOf(soulBranch as (typeof BRANCH_RING)[number]);
+  if (soulIdx < 0) return null;
+  const base = palaceNameZh.replace(/宮$/, "").trim();
+  const namedIdx = (FIXED_PALACES_ZH_TW as readonly string[]).indexOf(base);
+  if (namedIdx < 0) return null;
+  return (soulIdx - namedIdx + 12) % 12;
+}
+
+/**
+ * 流年命宮：僅能查表，禁止再用 offset／palaceOrder[branchIndex]。
+ */
+export function getFlowYearPalace(branch: string, palaceByBranch: Record<string, string>): string | null {
+  if (!branch || !palaceByBranch || typeof palaceByBranch !== "object") return null;
+  const palace = palaceByBranch[branch];
+  return palace && palace.trim() ? palace : null;
 }
