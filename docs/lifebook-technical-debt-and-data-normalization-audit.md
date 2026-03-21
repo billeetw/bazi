@@ -6,6 +6,8 @@
 - **本期正式採路線 B。**  
 - **模組二所有四化流向與統計，一律只讀 NormalizedChart.\*.flows。**
 
+**進階規格評估**：命盤唯一基礎資料模型（NatalChart.palaceByBranch、流年命宮查表、四化僅由天干、每層 4 條、FLOW_DEBUG）見 **docs/lifebook-chart-unified-model-evaluation.md**。
+
 ---
 
 ## 一、引擎與模組清單（可能技術債來源）

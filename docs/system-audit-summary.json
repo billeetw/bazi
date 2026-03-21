@@ -1,0 +1,67 @@
+{
+  "system_audit": {
+    "version": "1.0",
+    "project": "bazi-project",
+    "audit_date": "2026-03-11",
+    "audit_focus": ["worker", "lifebook", "content", "docs"],
+    "entry_points": {
+      "worker": "worker/src/index.ts",
+      "lifebook_facade": "worker/src/lifebook/index.ts",
+      "findings_orchestrator": "worker/src/lifebook/findings/buildLifebookFindings.ts"
+    },
+    "data_flow": [
+      "chartJson -> normalizeChart -> NormalizedChart",
+      "NormalizedChart + P2_CONTENT -> buildLifebookFindingsFromChartAndContent -> LifebookFindings",
+      "LifebookFindings + section skeleton -> getPlaceholderMapFromContext -> resolveSkeletonPlaceholders -> section text"
+    ],
+    "core_models": [
+      "NormalizedChart (normalizedChart.ts)",
+      "LifebookFindings (lifebookFindings.ts)",
+      "PalaceStructure, TransformEdge, StarInPalace (normalizedChart.ts)",
+      "StarCombinationFinding, PalacePatternFinding, SpilloverFinding, CrossChartFinding (lifebookFindings.ts)"
+    ],
+    "engines": [
+      "starCombinationEngine",
+      "palaceInferenceEngine",
+      "spilloverEngine",
+      "crossChartEngine"
+    ],
+    "content_sources": [
+      "worker/content/*.json",
+      "D1 ui_copy_texts",
+      "KV content:${locale}:v2"
+    ],
+    "api_routes": [
+      "GET /",
+      "GET /content/2026",
+      "POST /api/log-usage",
+      "POST /compute/all",
+      "POST /compute/horoscope",
+      "GET/POST /api/life-book/config",
+      "POST /api/life-book/ask",
+      "POST /api/life-book/infer",
+      "POST /api/life-book/narrate",
+      "POST /api/life-book/generate-section",
+      "POST /api/life-book/generate"
+    ],
+    "reusable_assets": [
+      "normalizeChart + NormalizedChart",
+      "LifebookFindings + buildLifebookFindings",
+      "CCL3 tables",
+      "findingsSelectors + weights",
+      "narrativeFacade + corpus"
+    ],
+    "tech_debt": [
+      "lifeBookPrompts.ts size and duplication",
+      "Dual sihua paths (engine/ vs lifebook)",
+      "Existing TS errors across codebase",
+      "Content multi-source debugging"
+    ],
+    "scoring_and_weights": {
+      "PATTERN_TYPE_WEIGHT": { "pressure": 4, "power": 3, "correction": 2, "growth": 1 },
+      "SIGNAL_COLOR_WEIGHT": { "red": 3, "yellow": 2, "green": 1 },
+      "KEY_YEAR_LABEL_WEIGHT": { "mine": 3, "shock": 2, "opportunity": 1 },
+      "main_battlefield_bonus": { "currentDecade": 3, "flowYearPalace": 2, "patternShock2": 2, "spilloverTo": 2, "starCombo": 1, "crossChart": 2 }
+    }
+  }
+}
