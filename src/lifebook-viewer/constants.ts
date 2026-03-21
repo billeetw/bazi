@@ -1,9 +1,10 @@
 /**
- * 命書章節順序與模組分組（與 worker lifeBookTemplates + lifeBookEngine 一致）
+ * 命書章節順序與模組分組（與 worker lifeBookTemplates SECTION_ORDER 一致）
+ * 命主・身主・身宮（s04）須在命宮（s02）之前。
  */
 
 export const SECTION_ORDER = [
-  "s00", "s03", "s02", "s10", "s01", "s05", "s06", "s07", "s08", "s04", "s09",
+  "s00", "s03", "s04", "s02", "s10", "s01", "s05", "s06", "s07", "s08", "s09",
   "s11", "s12", "s13", "s14", "s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21",
 ] as const;
 
@@ -12,11 +13,11 @@ export type SectionKey = (typeof SECTION_ORDER)[number];
 /** 命盤與五行 iframe 嵌入的示範頁 URL（主站路由，可自行改為實際路徑） */
 export const LIFEBOOK_DEMO_CHART_URL = "/ziwei/demo-lifebook";
 
-/** 模組標題 → 該組 section_key 列表（與 worker lifeBookTemplates 書目一致） */
+/** 模組標題 → 該組 section_key 列表（s04 在 s02 前，與 worker SECTION_ORDER 一致） */
 export const MODULE_MAP: Record<string, readonly string[]> = {
   "開場": ["s00"],
-  "模組一：核心作業系統": ["s03", "s02", "s10", "s01"],
-  "人生十二課題": ["s05", "s06", "s07", "s08", "s04", "s09", "s11", "s12", "s13", "s14"],
+  "模組一：核心作業系統": ["s03", "s04", "s02", "s10", "s01"],
+  "人生十二課題": ["s05", "s06", "s07", "s08", "s09", "s11", "s12", "s13", "s14"],
   "模組二：時間主線與功課": ["s15", "s15a", "s16", "s17", "s18", "s19", "s20"],
   "收束": ["s21"],
 };
@@ -73,7 +74,7 @@ export const SECTION_GROUPS: Record<
   },
   HIDDEN: {
     label: "隱形壓力",
-    sections: ["s11", "s04", "s05"],
+    sections: ["s11", "s04", "s05"], // s04 命主・身主・身宮
   },
   TIME_AND_CLOSING: {
     label: "時間與收束",

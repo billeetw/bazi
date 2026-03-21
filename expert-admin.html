@@ -212,6 +212,7 @@
         <div class="flex flex-wrap items-center gap-2 mb-3">
           <label class="flex items-center gap-2 text-sm text-slate-400 cursor-pointer">
             <input type="checkbox" id="lifeBookUsePipeline" class="rounded border-white/20" />
+            <span class="text-xs text-slate-500 ml-1">（勾選時會走 infer→narrate；已附 chart_json 以套用 12 宮讀者版模板）</span>
             <span>Phase 3：三層分離（推論→敘事）</span>
           </label>
           <select id="lifeBookModelSelect" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200" title="命書生成模型（gpt-4.1 含 temperature；gpt-5.x 由 Worker 自動略過 temperature）">
@@ -222,7 +223,7 @@
             <option value="gpt-5.2">gpt-5.2</option>
           </select>
           <span class="text-xs text-slate-500">模型</span>
-          <select id="lifeBookOutputMode" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200" title="命書版本：AI 渲染給用戶，或資料庫技術版自用">
+          <select id="lifeBookOutputMode" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200" title="AI 版呼叫 OpenAI；技術版不呼叫 OpenAI，但 12 宮 structure_analysis 仍會套用讀者版模板（底層參數在 section.technical）">
             <option value="ai" selected>AI 渲染（給用戶）</option>
             <option value="technical">資料庫技術版（自用）</option>
           </select>
@@ -1514,7 +1515,7 @@
     }
 
     /** 一鍵生成命書：依序呼叫 generate-section 或 infer+narrate，組 HTML 並儲存 */
-    var SECTION_ORDER = ['s00','s03','s02','s10','s01','s05','s06','s07','s08','s04','s09','s11','s12','s13','s14','s15','s16','s17','s18','s19','s20','s21'];
+    var SECTION_ORDER = ['s00','s03','s04','s02','s10','s01','s05','s06','s07','s08','s09','s11','s12','s13','s14','s15','s15a','s16','s17','s18','s19','s20','s21'];
     async function generateLifeBook() {
       if (!window.AdminExport || !window.LifeBookEngine) {
         alert('尚未計算，請先輸入出生資訊並計算');
@@ -1558,6 +1559,12 @@
       if (window.contract?.ziwei?.palaces && Array.isArray(window.contract.ziwei.palaces) && (!chartForApi.ziwei || !chartForApi.ziwei.palaces)) {
         if (!chartForApi.ziwei) chartForApi.ziwei = {};
         chartForApi.ziwei.palaces = window.contract.ziwei.palaces;
+      }
+      // 大限單一來源：命書必須用 iztro 的 decadalLimits（每步 stem/branch 正確），不可用 BaziCore 順推宮干
+      if (window.contract?.ziwei?.decadalLimits && Array.isArray(window.contract.ziwei.decadalLimits) && window.contract.ziwei.decadalLimits.length > 0) {
+        chartForApi.decadalLimits = toSerializable(window.contract.ziwei.decadalLimits);
+        if (!chartForApi.ziwei) chartForApi.ziwei = {};
+        chartForApi.ziwei.decadalLimits = chartForApi.decadalLimits;
       }
       if (chartJson.overlapAnalysis != null) chartForApi.overlapAnalysis = toSerializable(chartJson.overlapAnalysis);
       if (window.LifeBookPalaceConstants && chartJson.bazi) {
@@ -1667,7 +1674,7 @@
           for (var i = 0; i < SECTION_ORDER.length; i++) {
             var sk = SECTION_ORDER[i];
             setProgress('敘事 ' + (i + 1) + '/' + SECTION_ORDER.length + '…');
-            var narratePayload = { section_key: sk, insight: insight[sk] || {}, model: model, temperature: 0.7 };
+            var narratePayload = { section_key: sk, insight: insight[sk] || {}, model: model, temperature: 0.7, chart_json: chartForApi, locale: 'zh-TW' };
             console.log('📡 API REQUEST', apiBase + '/api/life-book/narrate', JSON.stringify(narratePayload, null, 2));
             var nResp = await fetch(apiBase + '/api/life-book/narrate', {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
