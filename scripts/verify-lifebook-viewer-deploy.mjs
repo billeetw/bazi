@@ -49,7 +49,10 @@ async function main() {
           "  ⚠️  線上 dist/lifebook-viewer.html 與本機 npm run build:lifebook-viewer 產物不一致。"
         );
         console.log(
-          "     請確認 deploy 目錄含「最新」dist/lifebook-viewer.html（約 4k+ bytes），並 Purge /dist/lifebook-viewer.html。"
+          "     若 body 很大且像主站 index（含 <base href=\"/\" />），代表 /dist/lifebook-viewer.html 未命中靜態檔（SPA fallback）；"
+        );
+        console.log(
+          "     Cloudflare Pages 請勿用會失敗的 npm run build（tsc）；改用 npm run build:pages，成功後再 Purge /dist/lifebook-viewer*。"
         );
       }
       console.log("");

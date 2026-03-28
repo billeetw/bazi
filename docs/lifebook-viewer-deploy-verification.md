@@ -66,7 +66,7 @@ LIFEBOOK_E2E_PROD=1 npm run test:e2e:lifebook-prod
 
 1. **你到底用哪一種方式上線？**
    - **A. 本機 `wrangler pages deploy .`**：必須在**含最新 `dist/` 的專案根目錄**執行，且 `--project-name` 須為**綁定該網域**的專案（例如 `deploy.sh` 裡的 `bazi`）。在別台電腦、子目錄、或沒先 build 就 deploy，線上都不會變。
-   - **B. Git 連動 Cloudflare Pages（push 後自動建置）**：線上 `dist/` 來自 **Cloudflare 遠端 build**，**不是**你筆電裡的 `dist/`。若 **Build command** 沒跑 `npm run build:lifebook-viewer`，或 **`npm run build` 在 CI 因 `tsc` 失敗而從未完成**，產物會一直是舊的或缺檔。請到 **Workers & Pages → 專案 → Settings → Builds** 看 **Build command / Output**，並看最近一次 **Build logs** 是否成功、是否執行到 lifebook-viewer 的 build。
+   - **B. Git 連動 Cloudflare Pages（push 後自動建置）**：線上 `dist/` 來自 **Cloudflare 遠端 build**，**不是**你筆電裡的 `dist/`。若 **Build command** 沒跑 `npm run build:lifebook-viewer`，或 **`npm run build` 在 CI 因 `tsc` 失敗而從未完成**，產物會一直是舊的或缺檔；此時 **`/dist/lifebook-viewer.html` 可能不存在**，請求會被 **SPA fallback 成主站 `index.html`**（body 約數萬 bytes、無 `lifebook-viewer.js`）。請在 **Settings → Builds** 將 **Build command** 設為 **`npm run build:pages`**（與 `deploy.sh` 靜態段對齊、**不含**會失敗的 `tsc`），並確認 **Build logs** 成功且含 `build:lifebook-viewer`。
 
 2. **網域是否指到同一個 Pages 專案？**  
    在 **Custom domains** 確認 `www.17gonplay.com` 綁在**你正在 deploy 的那個**專案上；若有多個 Pages 專案，可能改錯專案。
