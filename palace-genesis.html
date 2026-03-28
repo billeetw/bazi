@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Arcana I: The Genesis Seed (極致流動版)</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Share+Tech+Mono&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --void-base: #030408;
+      --womb-glow: rgba(14, 165, 233, 0.15);
+      --core-light: #38bdf8;
+      --core-aura: rgba(56, 189, 248, 0.4);
+      --text-divine: #f8fafc;
+      --text-body: #cbd5e1;
+      --text-muted: rgba(148, 163, 184, 0.5);
+      --gold-holy: #d4af37;
+      --crimson-blood: #e11d48;
+      --warning-orange: #f59e0b;
+    }
+
+    body, html {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background-color: var(--void-base); font-family: 'Noto Sans TC', sans-serif;
+      overflow: hidden;
+      background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+
+    .abyssal-womb { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+    .womb-breath {
+      position: absolute; top: 15%; left: 50%; transform: translate(-50%, -50%);
+      width: 150vw; height: 100vh;
+      background: radial-gradient(ellipse at center, var(--womb-glow) 0%, transparent 60%);
+      filter: blur(50px); animation: womb-breathe 10s ease-in-out infinite alternate;
+    }
+
+    .divine-pillar {
+      position: absolute; top: 0; bottom: 0; left: 50%; transform: translateX(-50%);
+      width: 1px; background: linear-gradient(180deg, transparent, var(--core-aura) 20%, rgba(212, 175, 55, 0.2) 80%, transparent);
+      box-shadow: 0 0 15px var(--core-light); z-index: 1;
+    }
+
+    .app-container {
+      position: relative; z-index: 10; width: 100%; max-width: 480px; margin: 0 auto;
+      height: 100%; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth;
+      padding: 60px 24px 150px 24px;
+    }
+
+    .genesis-header { display: flex; flex-direction: column; align-items: center; margin-bottom: 48px; position: relative; }
+
+    .core-wrapper {
+      position: relative; width: 140px; height: 140px;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .sacred-rings {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      animation: spin-slow 30s linear infinite; pointer-events: none;
+    }
+    .sacred-rings.reverse { animation: spin-slow 40s linear infinite reverse; opacity: 0.6; }
+
+    .soul-core {
+      position: relative; width: 50px; height: 50px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, var(--core-light) 30%, #0369a1 80%);
+      box-shadow: 0 0 40px var(--core-aura), inset 0 0 15px rgba(255,255,255,0.9);
+      animation: core-pulse 4s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+      z-index: 2;
+    }
+
+    .core-title { margin-top: -10px; font-family: 'Noto Serif TC', serif; font-size: 26px; font-weight: 600; color: var(--text-divine); letter-spacing: 6px; text-shadow: 0 0 15px var(--core-aura); }
+
+    .resonance-dashboard {
+      display: flex; flex-direction: column; gap: 32px; margin-bottom: 60px; position: relative;
+    }
+
+    .calibration-state {
+      align-self: center; display: inline-flex; align-items: center; gap: 10px;
+      padding: 8px 20px; border-radius: 30px;
+      background: linear-gradient(90deg, transparent, rgba(225, 29, 72, 0.15), transparent);
+      border-top: 1px solid rgba(225, 29, 72, 0.3); border-bottom: 1px solid rgba(225, 29, 72, 0.3);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    .c-icon { font-size: 14px; animation: blink 2s infinite; text-shadow: 0 0 10px var(--crimson-blood); }
+    .c-text { font-family: 'Noto Sans TC', sans-serif; font-size: 12px; color: #fecdd3; letter-spacing: 1px; }
+
+    .ethereal-block {
+      position: relative; padding: 16px 0 16px 24px;
+      border-left: 2px solid rgba(255,255,255,0.1);
+    }
+
+    .ethereal-block::before {
+      content: ''; position: absolute; top: 0; left: -2px; width: 2px; height: 30%;
+      background: var(--gold-holy); box-shadow: 0 0 10px var(--gold-holy);
+    }
+    .ethereal-block.alert::before { background: var(--crimson-blood); box-shadow: 0 0 10px var(--crimson-blood); }
+    .ethereal-block.calm::before { background: var(--core-light); box-shadow: 0 0 10px var(--core-light); }
+
+    .e-tag { font-family: 'Share Tech Mono', sans-serif; font-size: 10px; color: var(--text-muted); letter-spacing: 3px; margin-bottom: 8px; text-transform: uppercase; }
+    .e-quote { font-family: 'Noto Serif TC', serif; font-size: 16px; color: var(--text-divine); line-height: 1.7; }
+
+    .ethereal-block.alert .e-quote { color: #fecdd3; }
+    .ethereal-block.alert .e-tag { color: rgba(225, 29, 72, 0.8); }
+
+    .situational-triggers { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 16px; }
+    .s-trigger {
+      padding: 6px 16px; font-size: 11px; color: rgba(255,255,255,0.6);
+      border: 1px dashed rgba(255,255,255,0.2); border-radius: 20px;
+      background: transparent; cursor: pointer; transition: 0.3s; letter-spacing: 1px;
+    }
+    .s-trigger:hover { background: rgba(255,255,255,0.06); color: var(--text-divine); }
+    .s-trigger:active { background: rgba(255,255,255,0.1); transform: scale(0.95); }
+
+    .section-divider { text-align: center; margin: 60px 0 40px; position: relative; z-index: 2; }
+    .section-divider::before { content: '✧ CORE_ARCHIVES ✧'; font-family: 'Share Tech Mono', sans-serif; font-size: 11px; color: var(--text-muted); letter-spacing: 6px; }
+
+    .sacred-slate { display: flex; flex-direction: column; gap: 48px; }
+    .s-block { position: relative; padding-left: 24px; }
+    .s-block::before { content: ''; position: absolute; top: 6px; bottom: 0; left: 0; width: 1px; background: linear-gradient(to bottom, rgba(255,255,255,0.2), transparent); }
+    .s-label { font-family: 'Share Tech Mono', 'Noto Sans TC', sans-serif; font-size: 10px; color: var(--text-muted); letter-spacing: 3px; margin-bottom: 12px; }
+    .s-text { font-family: 'Noto Serif TC', serif; font-size: 15px; line-height: 1.8; color: var(--text-body); text-align: justify; }
+    .s-text strong { color: var(--text-divine); font-weight: 600; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .womb-breath,
+      .sacred-rings,
+      .soul-core,
+      .c-icon {
+        animation: none !important;
+      }
+    }
+
+    @keyframes womb-breathe { 0% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.95); } 100% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.05); } }
+    @keyframes core-pulse { 0% { box-shadow: 0 0 20px var(--core-aura), inset 0 0 10px rgba(255,255,255,0.6); transform: scale(0.95); } 100% { box-shadow: 0 0 50px var(--core-aura), inset 0 0 25px rgba(255,255,255,0.9); transform: scale(1.05); } }
+    @keyframes spin-slow { 100% { transform: rotate(360deg); } }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  </style>
+</head>
+<body>
+
+  <div class="abyssal-womb">
+    <div class="womb-breath"></div>
+    <div class="divine-pillar"></div>
+  </div>
+
+  <div class="app-container">
+
+    <div class="genesis-header">
+      <div class="core-wrapper">
+        <svg class="sacred-rings" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(56, 189, 248, 0.2)" stroke-width="0.5" stroke-dasharray="2 4" />
+          <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(212, 175, 55, 0.4)" stroke-width="1" stroke-dasharray="8 4" />
+          <circle cx="50" cy="10" r="2" fill="#d4af37" filter="blur(1px)" />
+        </svg>
+        <svg class="sacred-rings reverse" viewBox="0 0 100 100" aria-hidden="true">
+          <circle cx="50" cy="50" r="32" fill="none" stroke="rgba(255, 255, 255, 0.15)" stroke-width="1" stroke-dasharray="1 6" />
+        </svg>
+        <div class="soul-core"></div>
+      </div>
+      <div class="core-title">命宮</div>
+    </div>
+
+    <div class="resonance-dashboard">
+
+      <div class="calibration-state" role="status">
+        <div class="c-icon">🔥</div>
+        <div class="c-text">你現在不是沒能力，是能量不足還在硬撐</div>
+      </div>
+
+      <div class="ethereal-block calm">
+        <div class="e-tag">DAILY_WHISPER // 今日提醒</div>
+        <div class="e-quote">今天適合先穩住節奏，不適合急著向外界證明自己。</div>
+      </div>
+
+      <div class="ethereal-block">
+        <div class="e-tag">WEEKLY_ANCHOR // 本週指令</div>
+        <div class="e-quote">這週先顧睡眠與邊界，不要拿意志力去填補團隊的漏洞。</div>
+      </div>
+
+      <div class="ethereal-block alert">
+        <div class="e-tag">MONTHLY_DRIFT // 偏移警報</div>
+        <div class="e-quote">本月三合引動，你極容易把自身的焦慮，投射到合作夥伴的效率上。</div>
+      </div>
+
+      <div class="situational-triggers">
+        <button class="s-trigger" type="button" data-scroll="block-directive">我最近一直想硬撐</button>
+        <button class="s-trigger" type="button" data-scroll="block-inertia">我不知道要不要做決定</button>
+        <button class="s-trigger" type="button" data-scroll="block-base">我最近感到非常焦慮</button>
+      </div>
+
+    </div>
+
+    <div class="section-divider"></div>
+
+    <div class="sacred-slate">
+      <div class="s-block" id="block-base">
+        <div class="s-label">靈魂底色 ✧ BASE_TRAITS</div>
+        <div class="s-text">你的靈魂帶著<strong>「無畏的開拓者」</strong>印記降生。你不是來享受平庸的，你是來衝破雲霧、建立新秩序的。</div>
+      </div>
+      <div class="s-block" id="block-inertia">
+        <div class="s-label">慣性盲點 ✧ THE_INERTIA</div>
+        <div class="s-text">你習慣將責任獨自吞嚥，容易因過度施壓導致體力透支。這不是缺陷，這是你選擇卓越必須背負的十字架。</div>
+      </div>
+      <div class="s-block" id="block-directive">
+        <div class="s-label">降世指引 ✧ DIRECTIVE</div>
+        <div class="s-text">請學會溫柔地接納自己的脆弱，保留補給線，才走得遠。</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    document.querySelectorAll('.s-trigger[data-scroll]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var id = btn.getAttribute('data-scroll');
+        var el = id ? document.getElementById(id) : null;
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+  </script>
+
+</body>
+</html>

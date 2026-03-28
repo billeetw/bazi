@@ -23,6 +23,28 @@ describe("buildS19MonthlyOutput", () => {
     expect(out.meta?.confidence).toBe("low");
   });
 
+  it("monthDisplay uses flowMonthSolarDate + 西曆 when monthly lacks solar (no 斗數月序/舊版)", () => {
+    const chartJson = {
+      flowMonthSolarDate: "2025-03-15",
+      features: {
+        ziwei: {
+          monthlyHoroscope: {
+            year: 2025,
+            month: 10,
+            branch: "亥",
+          },
+        },
+      },
+    } as Record<string, unknown>;
+    const out = buildS19MonthlyOutput({
+      chartJson,
+      monthlyFlowsOverride: [monthFlow()],
+    });
+    expect(out.monthDisplay).toContain("2025年3月（西曆）");
+    expect(out.monthDisplay).not.toMatch(/斗數月序/);
+    expect(out.monthDisplay).not.toContain("舊版");
+  });
+
   it("caps scenarios at 3 and single-line actionHint", () => {
     const monthly: GongGanFlow[] = [
       monthFlow({

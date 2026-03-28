@@ -1,0 +1,173 @@
+.panel {
+  margin-top: 3vh;
+  margin-bottom: 20px;
+  width: 100%;
+  max-width: 400px;
+  background: rgba(6, 9, 19, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 28px 24px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+  pointer-events: auto;
+  animation: lbPanelFloatUp 2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.anchor {
+  text-align: center;
+  font-size: 10px;
+  color: rgba(203, 213, 225, 0.4);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.timeProgress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin: -4px 0 20px 0;
+}
+
+.pText {
+  font-size: 10px;
+  color: rgba(212, 175, 55, 0.7);
+  letter-spacing: 2px;
+}
+
+.pTrack {
+  width: 40%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  position: relative;
+  overflow: visible;
+}
+
+.pFill {
+  position: absolute;
+  left: 0;
+  top: -0.5px;
+  height: 2px;
+  background: var(--lb-trunk-core);
+  box-shadow: 0 0 8px 1px rgba(212, 175, 55, 0.8);
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--lb-text-main);
+  text-align: center;
+  margin: 0 0 24px;
+  letter-spacing: 2px;
+}
+
+.prophecy {
+  font-size: 15px;
+  line-height: 1.8;
+  color: #cbd5e1;
+  position: relative;
+  padding: 0 16px;
+  margin-bottom: 32px;
+  text-align: justify;
+}
+
+.prophecy::before,
+.prophecy::after {
+  content: "✦";
+  position: absolute;
+  color: rgba(212, 175, 55, 0.4);
+  font-size: 12px;
+}
+
+.prophecy::before {
+  top: 0;
+  left: 0;
+}
+
+.prophecy::after {
+  bottom: 0;
+  right: 0;
+}
+
+.matrix {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.col {
+  flex: 1;
+  min-width: 0;
+}
+
+.colTitle {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.colTitle::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.do .colTitle {
+  color: rgba(52, 211, 153, 0.85);
+}
+
+.dont .colTitle {
+  color: rgba(225, 29, 72, 0.85);
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: block;
+}
+
+.list li {
+  font-size: 13px;
+  color: rgba(203, 213, 225, 0.75);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+:global(.lb-home-root.lb-low-power) .panel {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(6, 9, 19, 0.92);
+  animation: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+@keyframes lbPanelFloatUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

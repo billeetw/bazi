@@ -1,0 +1,122 @@
+{
+  "$schemaNote": "Single source for static demos; TS mirrors types in palaceThemePresets.ts",
+  "lifelineFamilies": {
+    "balanced": {
+      "yangTrunk": "M260 980 Q300 760 245 520 T 260 140",
+      "yangFlow": "M260 980 Q300 760 245 520 T 260 140",
+      "yinTrunk": "M260 980 Q220 760 275 520 T 260 140",
+      "yinFlow": "M260 980 Q220 760 275 520 T 260 140"
+    },
+    "sharp": {
+      "yangTrunk": "M260 980 Q285 750 268 520 Q268 260 260 120",
+      "yangFlow": "M260 980 Q285 750 268 520 Q268 260 260 120",
+      "yinTrunk": "M260 980 Q235 750 252 520 Q252 260 260 120",
+      "yinFlow": "M260 980 Q235 750 252 520 Q252 260 260 120"
+    },
+    "wave": {
+      "yangTrunk": "M260 980 Q320 820 240 640 Q200 480 280 340 Q320 220 260 120",
+      "yangFlow": "M260 980 Q320 820 240 640 Q200 480 280 340 Q320 220 260 120",
+      "yinTrunk": "M260 980 Q200 820 280 640 Q320 480 240 340 Q200 220 260 120",
+      "yinFlow": "M260 980 Q200 820 280 640 Q320 480 240 340 Q200 220 260 120"
+    },
+    "spiral": {
+      "yangTrunk": "M260 980 Q340 780 220 580 Q300 400 245 260 Q310 160 260 120",
+      "yangFlow": "M260 980 Q340 780 220 580 Q300 400 245 260 Q310 160 260 120",
+      "yinTrunk": "M260 980 Q180 780 300 580 Q220 400 275 260 Q210 160 260 120",
+      "yinFlow": "M260 980 Q180 780 300 580 Q220 400 275 260 Q210 160 260 120"
+    },
+    "broken": {
+      "yangTrunk": "M260 980 Q300 760 262 620 M262 520 Q240 380 260 200 L260 140",
+      "yangFlow": "M260 980 Q300 760 262 620 M262 520 Q240 380 260 200 L260 140",
+      "yinTrunk": "M260 980 Q220 760 258 620 M258 520 Q280 380 260 200 L260 140",
+      "yinFlow": "M260 980 Q220 760 258 620 M258 520 Q280 380 260 200 L260 140"
+    }
+  },
+  "palaces": {
+    "ming": {
+      "displayNameZh": "命宮",
+      "subtitleZh": "你現在怎麼使用自己，會從這裡看得最清楚",
+      "lifelineFamily": "balanced",
+      "coreOrbVariant": "ming",
+      "symbolGlyph": "◎"
+    },
+    "xiongdi": {
+      "displayNameZh": "兄弟宮",
+      "subtitleZh": "同儕、平行、競合與並肩而行",
+      "lifelineFamily": "spiral",
+      "coreOrbVariant": "xiongdi",
+      "symbolGlyph": "⎔"
+    },
+    "fuqi": {
+      "displayNameZh": "夫妻宮",
+      "subtitleZh": "互映、拉扯、關係中的共振",
+      "lifelineFamily": "wave",
+      "coreOrbVariant": "fuqi",
+      "symbolGlyph": "☽"
+    },
+    "zinv": {
+      "displayNameZh": "子女宮",
+      "subtitleZh": "生發、創造、延續與教養",
+      "lifelineFamily": "wave",
+      "coreOrbVariant": "zinv",
+      "symbolGlyph": "✦"
+    },
+    "caibo": {
+      "displayNameZh": "財帛宮",
+      "subtitleZh": "聚合、資源、累積與配置",
+      "lifelineFamily": "balanced",
+      "coreOrbVariant": "caibo",
+      "symbolGlyph": "◉",
+      "lifelineModifiers": { "aggregateMid": true }
+    },
+    "jie": {
+      "displayNameZh": "疾厄宮",
+      "subtitleZh": "修復、耗損、身心警訊",
+      "lifelineFamily": "broken",
+      "coreOrbVariant": "jie",
+      "symbolGlyph": "⌁"
+    },
+    "qianyi": {
+      "displayNameZh": "遷移宮",
+      "subtitleZh": "外拓、移動、遠方與外在際遇",
+      "lifelineFamily": "spiral",
+      "coreOrbVariant": "qianyi",
+      "symbolGlyph": "☄"
+    },
+    "nuppu": {
+      "displayNameZh": "僕役宮",
+      "subtitleZh": "網絡、團隊、協力與服務",
+      "lifelineFamily": "spiral",
+      "coreOrbVariant": "nuppu",
+      "symbolGlyph": "⎈"
+    },
+    "guanlu": {
+      "displayNameZh": "官祿宮",
+      "subtitleZh": "角色、位置、權責與成就路徑",
+      "lifelineFamily": "sharp",
+      "coreOrbVariant": "guanlu",
+      "symbolGlyph": "♔"
+    },
+    "tianzhai": {
+      "displayNameZh": "田宅宮",
+      "subtitleZh": "容器、根基、安放與歸屬",
+      "lifelineFamily": "balanced",
+      "coreOrbVariant": "tianzhai",
+      "symbolGlyph": "⌂"
+    },
+    "fude": {
+      "displayNameZh": "福德宮",
+      "subtitleZh": "內在、安定、精神氣候",
+      "lifelineFamily": "wave",
+      "coreOrbVariant": "fude",
+      "symbolGlyph": "☁"
+    },
+    "fumu": {
+      "displayNameZh": "父母宮",
+      "subtitleZh": "權威、來源、規訓與承接",
+      "lifelineFamily": "sharp",
+      "coreOrbVariant": "fumu",
+      "symbolGlyph": "⌒"
+    }
+  }
+}

@@ -24,14 +24,14 @@
 ### 既有 chart 來源
 
 - **前端**：`adminExport.exportCalculationResults()` → `chart_json`（含 `ziwei`, `bazi`, `fourTransformations`, `overlapAnalysis`, `decadalLimits`, `yearlyHoroscope`, `minorFortuneByPalace` 等）。
-- **Worker**：同一 `chart_json`；若無 `sihuaLayers` 則用 `buildSiHuaLayers(chartJson)` 推四化；宮位星曜來自 `ziwei.mainStars` 或 `ziwei.palaces`（majorStars/minorStars/adjectiveStars）。
+- **Worker**：同一 `chart_json`；四化顯示層一律 **`buildSiHuaLayers(chartJson)`**（normalize + `fourTransformations`）；`sihuaLayers` wire 已 deprecated（僅 diff）。宮位星曜來自 `ziwei.mainStars` 或 `ziwei.palaces`（majorStars/minorStars/adjectiveStars）。
 
 ### 目標 NormalizedChart 與缺口
 
 - **已有**：`chartId`（可從 options 帶入）、`locale`、`nominalAge`/`yearlyHoroscope.age`、`decadalLimits`（需統一 `startAge`/`endAge`/`palace`）、`yearlyHoroscope`、小限可從 `minorFortuneByPalace` + 當年推算。
 - **需補**：
   - **mingGong / shenGong**：需從 `ziwei.basic` 或等同欄位明確產出；若目前只有命宮起宮，身宮要從既有邏輯抽一層。
-  - **palaces: PalaceStructure[]**：目前星曜在 `ziwei.mainStars`（宮名→星名[]），四化在 `fourTransformations`/`sihuaLayers`，**沒有「單一宮位物件內含 mainStars + assistantStars + shaStars + transformsIn/Out」**。需由現有資料組出 12 個 `PalaceStructure`，且 **四化必須掛在宮位結構上**（現有 edges 可依 toPalace/fromPalace 分到各宮）。
+  - **palaces: PalaceStructure[]**：目前星曜在 `ziwei.mainStars`（宮名→星名[]），四化在 **`fourTransformations` + `buildSiHuaLayers`／NormalizedChart**（**不**以 `sihuaLayers` wire 為權威），**沒有「單一宮位物件內含 mainStars + assistantStars + shaStars + transformsIn/Out」**。需由現有資料組出 12 個 `PalaceStructure`，且 **四化必須掛在宮位結構上**（現有 edges 可依 toPalace/fromPalace 分到各宮）。
   - **natalTransforms / decadalTransforms**：已有 `buildS00EventsFromChart` → `buildSihuaEdges`；可產出 edge 陣列，再按宮位分為 In/Out。
 - **正規化**：宮位 key 統一（例如一律 `命宮`、`僕役宮`）；星曜建議統一用中文名或 star_id 一種為主，與 CCL3 的 `star` 對齊。
 

@@ -47,7 +47,7 @@
 
 - 所以只要 `buildP2FindingsAndContext(chartJson)` 被呼叫且 `chartJson` 有效，**findings.sihuaPlacementItems** 一定會被賦值（可能為 `[]`）。
 - **sihuaPlacementItems 的內容** 完全來自 **getSihuaPlacementItemsFromChart(chartJson)**，而該函式內部用 **buildSiHuaLayers(chartJson)** 產出各層祿權科忌，再依 `toPalaceNameForSummary(s.palaceName ?? s.palaceKey)` 得到 `targetPalace`。
-- 若 **chart 沒有提供** `fourTransformations` / `sihuaLayers` 等 buildSiHuaLayers 需要的結構，**getSihuaPlacementItemsFromChart** 會回傳 **[]**，於是所有宮位在 buildSihuaFlowSummary 裡都會 0 筆符合，輸出固定句。
+- 若 **chart 沒有提供** `fourTransformations`（等 buildSiHuaLayers 需要的結構），**getSihuaPlacementItemsFromChart** 會回傳 **[]**，於是所有宮位在 buildSihuaFlowSummary 裡都會 0 筆符合，輸出固定句。（已廢止的 `sihuaLayers` wire **不**補此缺口。）
 
 ---
 
@@ -58,7 +58,7 @@
 | 現象 | 解讀 |
 |------|------|
 | **findingsExists === false** | 該路徑沒傳 findings（依上面追蹤，技術版應不會發生）。 |
-| **findings.sihuaPlacementItems.length === 0** | **沒傳 findings** 或 **getSihuaPlacementItemsFromChart(chartJson) 回傳 []**。多數情況是 chart 格式沒有四化資料（缺少 `fourTransformations` / `sihuaLayers` 等），或 buildSiHuaLayers 沒產出任何一筆。 |
+| **findings.sihuaPlacementItems.length === 0** | **沒傳 findings** 或 **getSihuaPlacementItemsFromChart(chartJson) 回傳 []**。多數情況是 chart 格式沒有四化資料（缺少 `fourTransformations` 等），或 buildSiHuaLayers 沒產出任何一筆。 |
 | **targetPalace 陣列有值，但 matchedItemsLengthRaw 與 matchedItemsLengthNormalized 都是 0** | **宮名比對失敗**。例如 targetPalace 是 `"財帛宮"` 而 currentPalace 是 `"財帛"`（少「宮」），或反過來；或一端是英文 key（如 `cai`）另一端是中文。 |
 | **matchedItemsLengthNormalized > 0** | 比對有過，不應再出現固定空白句；若仍出現，請再確認是否看錯區塊或另有覆寫。 |
 
@@ -76,8 +76,8 @@
 1. **若 debug 顯示 sihuaPlacementItems.length === 0**
    - **原因**：chart 未帶四化結構，或 buildSiHuaLayers / getSihuaPlacementItemsFromChart 依的欄位名與前端/CL3 輸出一致。
    - **最小修正**：  
-     - 確認正式請求的 `chart_json` 是否包含 `fourTransformations`（或 `sihuaLayers`），且結構與 `buildSiHuaLayers` 預期一致（例如 `benming.mutagenStars`、各層 `toPalace` 等）。  
-     - 若 chart 來自別處（例如 CL3），在寫入 findings 前先轉成 buildSiHuaLayers 能吃的格式，或改為從已有結構（如 `sihuaLayers`）直接組出 sihuaPlacementItems，避免依賴不存在的欄位。
+     - 確認正式請求的 `chart_json` 是否包含 `fourTransformations`，且結構與 `buildSiHuaLayers` 預期一致（例如 `benming.mutagenStars`、normalize 落宮 等）。  
+     - 若 chart 來自別處（例如 CL3），在寫入 findings 前先轉成 buildSiHuaLayers 能吃的格式（**勿**依賴已廢止 client `sihuaLayers` wire）。
 
 2. **若 debug 顯示 targetPalace 與 currentPalace 格式不一致**
    - **原因**：一邊是「財帛宮」、一邊是「財帛」，或英文 key 與中文名混用。

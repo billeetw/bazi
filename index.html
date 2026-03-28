@@ -189,6 +189,17 @@
         <h2 class="home-section-title text-2xl md:text-3xl font-semibold text-amber-300 mb-2 tracking-tight" data-i18n="home.heroHeadline">紫微｜八字 命運分析</h2>
         <p class="text-sm md:text-base text-slate-400 italic" data-i18n="home.heroSubheadline">解構靈魂格局，預見人生運勢</p>
       </div>
+      <div class="rounded-xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100/90 leading-relaxed">
+        送出後可查看你的命盤解讀、五行節奏與流月資訊；也可進一步體驗
+        <span class="font-bold text-amber-300">人生說明書 2.0（Beta）</span>。
+      </div>
+      <div id="lifebookBetaNotice" class="rounded-lg border border-amber-300/45 bg-amber-400/10 px-4 py-2.5">
+        <div class="flex items-center gap-2 text-xs">
+          <span aria-hidden="true">🔔</span>
+          <span class="tracking-widest uppercase text-amber-300/90">System Notice</span>
+          <span class="text-amber-200/90">命書封測已開放（需邀請碼）</span>
+        </div>
+      </div>
 
       <!-- 第一行：年、月、日 -->
       <div class="destiny-bar-row grid-cols-3">
@@ -252,6 +263,46 @@
 
     <!-- SYSTEM WORKSPACES -->
     <section id="system" class="hidden space-y-8">
+      <!-- LifeBook 2.0 Beta 分層入口（結果頁頂部） -->
+      <section id="lifebookBetaCard" class="glass dashboard-card p-5 md:p-6 border border-amber-400/35">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <div class="text-xs tracking-widest uppercase text-amber-300/80">LifeBook 2.0 Beta</div>
+            <h2 class="text-lg md:text-xl font-black text-amber-300 mt-1">人生說明書分層體驗</h2>
+            <p class="text-sm text-slate-300 mt-1">
+              目前為封測入口：需先通過邀請碼驗證，再開啟命書測試頁。
+            </p>
+          </div>
+          <div class="text-sm rounded-lg border border-white/15 bg-white/5 px-3 py-2">
+            目前狀態：<span id="lifebookTierBadge" class="font-bold text-amber-300">待驗證</span>
+          </div>
+        </div>
+        <div class="mt-4 flex flex-col md:flex-row gap-2 md:items-center">
+          <button
+            id="lifebookOpenViewerBtn"
+            type="button"
+            class="px-4 py-2 rounded-lg bg-emerald-500/20 border border-emerald-400/50 text-emerald-300 font-bold text-sm hover:bg-emerald-500/30 transition"
+          >
+            開啟命書 Beta
+          </button>
+          <input
+            id="lifebookInviteCodeInput"
+            type="text"
+            placeholder="輸入命書封測邀請碼"
+            class="flex-1 bg-black/30 border border-amber-400/35 rounded-lg px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 outline-none focus:border-amber-300/60"
+          />
+          <button
+            id="lifebookBetaUnlockBtn"
+            type="button"
+            class="px-4 py-2 rounded-lg bg-amber-500/20 border border-amber-400/50 text-amber-300 font-bold text-sm hover:bg-amber-500/30 transition"
+          >
+            驗證邀請碼
+          </button>
+        </div>
+        <p id="lifebookBetaHint" class="mt-2 text-xs text-slate-400">
+          Beta 封測期間需邀請碼；未驗證前無法查看命書內容。
+        </p>
+      </section>
 
       <!-- Chart language mismatch banner (EN mode + chart in Chinese) -->
       <div id="chartLangMismatchBanner" class="hidden p-4 rounded-xl border border-amber-400/50 bg-amber-500/10 flex flex-wrap items-center justify-between gap-3">
@@ -451,7 +502,7 @@
               <div class="section-subtitle mb-1" data-i18n="flow.yearStrategyNav">2026 戰略導航</div>
               <h2 class="text-xl md:text-2xl font-black text-amber-400 tracking-tight" data-i18n="flow.monthlyStrategyTitle">流月戰略（12）</h2>
               <p class="text-sm md:text-base text-slate-400 mt-1" data-i18n="flow.monthlyHint">點月份卡片展開十神參數與李伯彥助推建議</p>
-              <p class="text-xs text-amber-400/70 mt-2">進階：<a href="expert-admin.html" class="underline hover:text-amber-300">大限／小限／流年詳表</a>（點擊「載入大限／小限／流年」取得各宮位小限年份）</p>
+              <p class="text-xs text-amber-400/70 mt-2">進階：<a href="/expert-admin" class="underline hover:text-amber-300">大限／小限／流年詳表</a>（點擊「載入大限／小限／流年」取得各宮位小限年份）</p>
             </div>
             <div id="monthGrid" class="space-y-2 max-h-[70vh] overflow-y-auto liuyue-nav"></div>
             <div id="liuyueConsultCta" class="pt-4 border-t border-white/10"></div>
@@ -860,6 +911,43 @@
 
   <script src="js/bootstrap.js"></script>
   <script type="module" src="/dist/app.js"></script>
+  <script>
+    (function () {
+      "use strict";
+      function byId(id) { return document.getElementById(id); }
+      function setTierBadge() {
+        var badge = byId("lifebookTierBadge");
+        if (!badge) return;
+        var verified = false;
+        try {
+          verified = localStorage.getItem("lifebook_v2_beta_invite_verified") === "1";
+        } catch (_) {}
+        var tier = "free";
+        try {
+          tier = localStorage.getItem("lifebook_v2_tier") === "pro" ? "pro" : "free";
+        } catch (_) {}
+        if (!verified) {
+          badge.textContent = "待驗證";
+          badge.className = "font-bold text-amber-300";
+          return;
+        }
+        badge.textContent = tier === "pro" ? "已驗證 · 進階版（模組二）" : "已驗證 · 基本版（模組一）";
+        badge.className = tier === "pro" ? "font-bold text-amber-300" : "font-bold text-emerald-300";
+      }
+      document.addEventListener("DOMContentLoaded", function () {
+        setTierBadge();
+        var unlockBtn = byId("lifebookBetaUnlockBtn");
+        var openBtn = byId("lifebookOpenViewerBtn");
+        if (unlockBtn && !unlockBtn.dataset.fallbackBound) {
+          unlockBtn.dataset.fallbackBound = "1";
+        }
+        if (openBtn && !openBtn.dataset.fallbackBound) {
+          openBtn.dataset.fallbackBound = "1";
+          /** 勿在此另綁導向 viewer：邀請碼／命盤種子檢查由 js/ui.js 委派處理，重複綁定會繞過驗證。 */
+        }
+      });
+    })();
+  </script>
   <div id="startup-root"></div>
 
 </body>

@@ -76,6 +76,26 @@ describe("PalaceNarrativeBuilder v1 田宅宮 pilot", () => {
     expect((ph.match(/日常運作中，重點會落在/g) ?? []).length).toBeLessThanOrEqual(1);
   });
 
+  it("疾厄宮：主星區只輸五行臟腑線索，不輸一般星性「代表…」與亮度套語", () => {
+    const raw: PalaceRawInput = {
+      palace: "疾厄宮",
+      mainStars: ["天機", "巨門"],
+      minorStars: [],
+      miscStars: [],
+      brightness: { 天機: "旺", 巨門: "廟" },
+      relatedPalaces: ["命宮"],
+    };
+    const input = buildPalaceNarrativeInput(raw);
+    const text = renderPalaceNarrativeSample(input, { raw });
+    expect(text).toContain("主星五行／體質線索");
+    expect(text).toContain("五行以木為主");
+    expect(text).toContain("巨門可論水亦論土");
+    expect(text).not.toContain("代表思考、策略、變化與判斷");
+    expect(text).not.toContain("因為亮度為「旺」");
+    expect(text).not.toContain("因為亮度為「廟」");
+    expect(text).not.toContain("代表觀點、溝通、辯證與理解真相");
+  });
+
   it("兄弟宮：多顆現象／坑星時「日常運作中…」「最常見的坑…」長前綴各至多一次", () => {
     const raw: PalaceRawInput = {
       palace: "兄弟宮",
@@ -167,7 +187,7 @@ describe("PalaceNarrativeBuilder v1 田宅宮 pilot", () => {
     expect(text).toContain("【斷語】");
     expect(text).toContain("【想先問你】");
     expect(text).toContain("【鏡像】");
-    expect(text).toContain("【轉個念，力就出來】");
+    expect(text).toContain("【轉個念，就不一樣】");
     expect(text).toMatch(/撐住|扛|界線/);
   });
 
@@ -372,7 +392,7 @@ describe("PalaceNarrativeBuilder v1 田宅宮 pilot", () => {
     expect(idxMirror).toBeGreaterThan(idxDuan);
     expect(idxStar).toBeGreaterThan(idxMirror);
     expect(idxCore).toBeGreaterThan(idxStar);
-    expect(text).toContain("【轉個念，力就出來】");
+    expect(text).toContain("【轉個念，就不一樣】");
   });
 
   it("官祿宮：batch-1 premium 順序與轉念層", () => {
@@ -394,7 +414,7 @@ describe("PalaceNarrativeBuilder v1 田宅宮 pilot", () => {
     expect(idxMirror).toBeGreaterThan(idxDuan);
     expect(idxStar).toBeGreaterThan(idxMirror);
     expect(idxCore).toBeGreaterThan(idxStar);
-    expect(text).toContain("【轉個念，力就出來】");
+    expect(text).toContain("【轉個念，就不一樣】");
   });
 
   it("兄弟宮：batch-2 schema premium 順序（斷語→鏡像→星曜→核心）", () => {
@@ -416,7 +436,7 @@ describe("PalaceNarrativeBuilder v1 田宅宮 pilot", () => {
     expect(idxMirror).toBeGreaterThan(idxDuan);
     expect(idxStar).toBeGreaterThan(idxMirror);
     expect(idxCore).toBeGreaterThan(idxStar);
-    expect(text).toContain("【轉個念，力就出來】");
+    expect(text).toContain("【轉個念，就不一樣】");
   });
 
   it("福德宮：天同＋巨門專屬語料、無深讀前綴／無決策星曜前綴／無問句主題尾註", () => {

@@ -2,6 +2,8 @@
 
 目的：盤點 repo 內所有「星曜介紹、星曜語義、星曜在宮位中的表現」的資料來源、使用位置與資料結構，避免重複建設；並區分可直接重用、需 adapter、應淘汰三類。
 
+**延伸（多狀態選版 → S22/S23 欄位）**：見 **`docs/lifebook-star-state-sources-sot.md`**（SoT 清單 + `buildStarStateNarrativeSlice`）。
+
 ---
 
 ## 1. 星曜語義字典

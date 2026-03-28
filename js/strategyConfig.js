@@ -26,7 +26,9 @@
    * @returns {Promise<string>}
    */
   function getStrategyNoteFromAPI(palace, strength, sihuaList) {
-    const base = typeof window !== "undefined" && window.location && window.location.origin ? window.location.origin : "";
+    const base = (typeof window !== "undefined" && window.Config && window.Config.API_BASE)
+      ? window.Config.API_BASE
+      : (typeof window !== "undefined" && window.location && window.location.origin ? window.location.origin : "");
     const hostname = typeof window !== "undefined" && window.location && window.location.hostname ? window.location.hostname : "";
     const port = typeof window !== "undefined" && window.location && window.location.port ? window.location.port : "";
     

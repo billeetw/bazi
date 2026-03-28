@@ -20,7 +20,7 @@
 | **resolveCurrentTimeContext** | 解析當前大限、流年 | decadalLimits, yearlyHoroscope, liunian → currentDecade, YearScope | 時間層僅 natal / decade / year |
 | **buildLifebookFindings** | 協調四引擎產出 LifebookFindings | chart + content → LifebookFindings | P2 主路徑 |
 | **spilloverEngine / crossChartEngine** | 壓力溢流、跨盤綜述 | NormalizedChart, rules → findings | 依賴 chart 的 transforms／flows |
-| **diagnosticEngine / buildPiercingDiagnosticBundle** | 張力、根因、重構敘事 | chartJson／sihuaLayers → DiagnosticBundle | 與 normalizeChart 不同源 |
+| **diagnosticEngine / buildPiercingDiagnosticBundle** | 張力、根因、重構敘事 | chartJson（**不**含已廢止 sihuaLayers 權威）→ DiagnosticBundle | 與 normalizeChart 對齊時以 findings／四化單一契約為準 |
 | **buildSiHuaContext / buildSiHuaLayers** | 四化層級（benming/decadal/yearly） | chartJson → SiHuaContext / SiHuaLayers | 與 overlap 並行，建議收斂或降級 |
 | **buildSihuaFlowSummary** | 單宮「四化流向 + 四化能量總結」 | chartJson, palaceKey → 字串 | 已用 getFlowBlockForPalace；能量總結仍用 overlap |
 | **buildTimeModuleDisplayFromChartJson** | 模組二時間／四化**顯示**字串 | chartJson → birth/decade/flowYear 四化 + 宮位 | **顯示層單一產出**，不讀 overlap；小限已移除 |
@@ -192,7 +192,7 @@ interface TimeScopeWithFlows {
 ### 5.5 中長期
 
 1. **邊產出擇一落實**：要麼 API 權威（overlap.items 完整且通過 validateTransformEdgeConsistency），要麼 worker 權威重建 edge；徹底廢除「overlap 邊 + mutagenStars 覆寫星名」。
-2. **sihuaLayers 收斂或降級**：若暫不刪除，至少降級為 view model／debug 用，並與 NormalizedChart **同源**產出，不再獨立推導。
+2. **sihuaLayers 收斂或降級**：worker 已改為 **wire 不驅動正文**、僅 diff；與 NormalizedChart **同源**的顯示層為 `buildSiHuaLayers`（見 `lifebook-sihua-single-source-phase1.md`）。
 3. **模組二只吃 Findings + 單一時間顯示**：時間章節 placeholder 盡量來自 LifebookFindings + timeContext；顯示字串唯一經 buildTimeModuleDisplayFromChartJson 寫入。
 
 ---
@@ -204,7 +204,7 @@ interface TimeScopeWithFlows {
 | **P0** | 立約：寫一份簡短契約，只講三件事——(1) 宮位顯示權威是誰、(2) 四化星名權威是誰、(3) 四化流向 edge 權威是誰（二選一）；三件事不再模糊。 |
 | **P1** | 止混源：程式上**全面禁止**「overlap 給 from/to + mutagenStars 補 starName」；若目前仍存在此路徑，改為報錯或降級，不產出流向。 |
 | **P2** | 拍板 edge 由誰產：要麼上游權威生成 edge（並實作驗證），要麼 worker 權威生成 edge；不能兩邊各出一半。 |
-| **P3** | sihuaLayers 收掉或降級：改為 view model／debug／與 NormalizedChart 同源生成，不再獨立推導。 |
+| **P3** | **Phase 1–3（worker）已完成**：`buildSiHuaLayers` 為權威；`sihuaLayers` wire 已 deprecated（僅 diff）；顯式覆寫用 `lifebookSiHuaDisplayOverride`（見 `docs/lifebook-sihua-single-source-phase1.md`）。**剩餘**：前端／API 停止把 `sihuaLayers` 當權威送進來；舊文件與呼叫端全面改指單一契約。 |
 
 ---
 

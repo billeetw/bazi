@@ -116,7 +116,11 @@ function normStarName(name: string, starIdToName: Record<string, string>): strin
 }
 
 /**
- * 從命盤組裝輸入取得四化節奏用資料：哪些星有四化、四化落宮是否在命財官遷
+ * 從命盤組裝輸入取得四化節奏用資料：哪些星有四化、四化落宮是否在命財官遷。
+ * 不依賴 chartJson.sihuaLayers（Phase 1）；權威為 fourTransformations.mutagenStars。
+ *
+ * @deprecated 僅填 `starNames`，**不填** `toPalaceNames`（落宮需 normalize 後與命財官遷比對）。新程式碼請用
+ * {@link extractSihuaFromEvents}，事件來自 `buildS00EventsFromChart`（於 `lifeBookPrompts` 組裝，避免本模組 import 該檔造成循環）。
  */
 export function extractSihuaRhythmInput(
   chartJson: Record<string, unknown>,
@@ -124,33 +128,16 @@ export function extractSihuaRhythmInput(
 ): SihuaRhythmInput {
   const starNames = new Set<string>();
   const toPalaceNames = new Set<string>();
-  const layers = chartJson.sihuaLayers as {
-    benMing?: { transforms?: Array<{ starId: string; type?: string; toPalace?: string }> };
-    daXianCurrent?: { transforms?: Array<{ starId: string; type?: string; toPalace?: string }> };
-    liuNianCurrent?: { transforms?: Array<{ starId: string; type?: string; toPalace?: string }> };
+  const ft = chartJson.fourTransformations as {
+    benming?: { mutagenStars?: Record<string, string> };
+    decadal?: { mutagenStars?: Record<string, string> };
+    yearly?: { mutagenStars?: Record<string, string> };
   } | undefined;
-  const layerKeys = ["benMing", "daXianCurrent", "liuNianCurrent"] as const;
-  for (const key of layerKeys) {
-    const arr = layers?.[key]?.transforms;
-    if (!Array.isArray(arr)) continue;
-    for (const t of arr) {
-      const starName = normStarName(starIdToName[t.starId] ?? t.starId, starIdToName);
-      if (starName) starNames.add(starName);
-      const toRaw = t.toPalace ?? "";
-      const toName = normPalaceName(toRaw || (starIdToName ? "" : ""));
-      if (toName && RHYTHM_PALACE_NAMES.has(toName)) {
-        toPalaceNames.add(toName);
-        const noSuffix = toName.replace(/宮$/, "");
-        if (noSuffix !== toName) toPalaceNames.add(noSuffix);
-      }
-    }
-  }
-  const ft = chartJson.fourTransformations as { benming?: { mutagenStars?: Record<string, string> }; decadal?: { mutagenStars?: Record<string, string> }; yearly?: { mutagenStars?: Record<string, string> } } | undefined;
   for (const layer of ["benming", "decadal", "yearly"] as const) {
     const mutagen = layer === "benming" ? ft?.benming?.mutagenStars : layer === "decadal" ? ft?.decadal?.mutagenStars : ft?.yearly?.mutagenStars;
     if (mutagen && typeof mutagen === "object") {
-      for (const starName of Object.keys(mutagen)) {
-        const n = normStarName(starName, starIdToName);
+      for (const v of Object.values(mutagen)) {
+        const n = normStarName(String(v), starIdToName);
         if (n) starNames.add(n);
       }
     }

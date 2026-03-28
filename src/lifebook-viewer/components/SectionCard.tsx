@@ -4,6 +4,7 @@
  */
 
 import React from "react";
+import { getSectionDomAnchorId } from "../constants";
 import type { SectionPayload } from "../types";
 
 interface SectionCardProps {
@@ -33,9 +34,11 @@ export function SectionCard({ section, id, className = "" }: SectionCardProps) {
     strategic_advice,
   } = section;
 
+  const domAnchorId = id ?? getSectionDomAnchorId(section.section_key);
   return (
     <article
-      id={id ?? section.section_key}
+      id={domAnchorId}
+      data-lifebook-section={section.section_key}
       className={`rounded-xl border border-slate-700/50 bg-slate-800/20 p-5 scroll-mt-4 ${className}`}
     >
       <header className="mb-4">

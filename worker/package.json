@@ -8,12 +8,16 @@
     "deploy": "wrangler deploy",
     "build": "wrangler deploy --dry-run --outdir=dist",
     "test": "vitest run",
+    "test:ci": "vitest run",
+    "test:lifebook": "vitest run tests/sectionOrderSource.test.ts tests/sectionKeyValidation.test.ts tests/lifeModelStructureFlow.test.ts tests/s22s23NarrativeSnapshot.test.ts tests/starStateNarrativeSlice.test.ts",
     "test:watch": "vitest",
+    "validate:transform-edges": "vitest run tests/validateTransformEdgeConsistency.test.ts",
     "gen:canonical-md": "WRITE_CANONICAL_DOC=1 vitest run tests/lifebookCanonicalChart.test.ts"
   },
   "dependencies": {
     "iztro": "^2.5.0",
-    "lunar-lite": "^0.2.8"
+    "lunar-lite": "^0.2.8",
+    "lunar-typescript": "^1.8.6"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241127.0",

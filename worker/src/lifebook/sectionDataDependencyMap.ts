@@ -20,7 +20,7 @@ export interface SectionDataDependency {
 
 export type SectionKey =
   | "s00" | "s03" | "s04" | "s02" | "s10" | "s01" | "s05" | "s06" | "s07" | "s08" | "s09"
-  | "s11" | "s12" | "s13" | "s14" | "s15" | "s15a" | "s16" | "s17" | "s18" | "s19" | "s20" | "s21";
+  | "s11" | "s12" | "s13" | "s14" | "s15" | "s15a" | "s16" | "s17" | "s18" | "s19" | "s20" | "s22" | "s23" | "s21";
 
 export const SECTION_DATA_DEPENDENCY_MAP: Record<SectionKey, SectionDataDependency> = {
   // ── 第一部分：關於命主 ──
@@ -35,14 +35,14 @@ export const SECTION_DATA_DEPENDENCY_MAP: Record<SectionKey, SectionDataDependen
   // ── 第二部分：運勢 ──
   s00: {
     primaryFindings: ["(可選) mainBattlefields"],
-    secondaryChartContent: ["chartJson.overlapAnalysis", "chartJson.fourTransformations", "chartJson.decadalLimits", "chartJson.yearlyHoroscope", "chartJson.ziwei", "chartJson.sihuaLayers"],
+    secondaryChartContent: ["chartJson.overlapAnalysis", "chartJson.fourTransformations", "chartJson.decadalLimits", "chartJson.yearlyHoroscope", "chartJson.ziwei", "chartJson.sihuaLayers (deprecated wire, compare-only)", "chartJson.lifebookSiHuaDisplayOverride (optional Phase 3)"],
     hasPromptRecalc: true,
     canSwitchFindingsV2Only: false,
     refactorPriority: "high",
   },
   s03: {
     primaryFindings: ["crossChartFindings", "palacePatterns", "(可選) mainBattlefields"],
-    secondaryChartContent: ["chartJson.ziwei", "chartJson.overlapAnalysis", "chartJson.fourTransformations", "chartJson.decadalLimits", "chartJson.sihuaLayers", "config (assembleInput)"],
+    secondaryChartContent: ["chartJson.ziwei", "chartJson.overlapAnalysis", "chartJson.fourTransformations", "chartJson.decadalLimits", "chartJson.sihuaLayers (deprecated)", "config (assembleInput)"],
     hasPromptRecalc: true,
     canSwitchFindingsV2Only: false,
     refactorPriority: "high",
@@ -69,8 +69,19 @@ export const SECTION_DATA_DEPENDENCY_MAP: Record<SectionKey, SectionDataDependen
     refactorPriority: "high",
   },
   s17: {
-    primaryFindings: ["keyYears", "yearSignals"],
-    secondaryChartContent: ["chartJson.minorFortuneByPalace", "chartJson.overlapAnalysis", "chartJson.decadalLimits", "chartJson.yearlyHoroscope"],
+    primaryFindings: [
+      "keyYears",
+      "yearSignals",
+      "timeModuleS17S19ReaderSnapshot.palaceOverlayBlocks（P2 快照；疊宮邊：NormalizedChart.*.flows→buildPalaceOverlayFromNormalizedChart，不讀 overlap 推邊）",
+    ],
+    secondaryChartContent: [
+      "NormalizedChart.natal.flows | currentDecade.flows | yearlyHoroscope.flows（primary；禁止 overlap 推邊）",
+      "chartJson.minorFortuneByPalace",
+      "chartJson.decadalLimits",
+      "chartJson.yearlyHoroscope",
+      "map.s17EdgeAuthority（normalizedChart_flows | chartJson_overlay_only）",
+      "chartJson.overlapAnalysis（secondary：僅他章／標籤；S17 疊宮正文不讀；見 ADR-0001）",
+    ],
     hasPromptRecalc: true,
     canSwitchFindingsV2Only: false,
     refactorPriority: "high",
@@ -106,8 +117,21 @@ export const SECTION_DATA_DEPENDENCY_MAP: Record<SectionKey, SectionDataDependen
     refactorPriority: "medium",
   },
   s05: {
-    primaryFindings: ["sihuaPlacementItems", "natalFlowItems", "starCombinations", "palacePatterns", "mainBattlefields", "pressureOutlets"],
-    secondaryChartContent: ["chartJson.ziwei.palaces", "chartJson.overlap", "content.starPalacesMain", "content (narrativeFacade)", "config"],
+    primaryFindings: [
+      "sihuaPlacementItems",
+      "natalFlowItems（來自 NormalizedChart.natal.flows / buildLifebookFindings；四化邊權威，非 overlap.items）",
+      "starCombinations",
+      "palacePatterns",
+      "mainBattlefields",
+      "pressureOutlets",
+    ],
+    secondaryChartContent: [
+      "chartJson.ziwei.palaces",
+      "chartJson.overlap（secondary：迴路／高壓標籤；非四化邊權威；見 ADR-0001）",
+      "content.starPalacesMain",
+      "content (narrativeFacade)",
+      "config",
+    ],
     hasPromptRecalc: true,
     canSwitchFindingsV2Only: false,
     refactorPriority: "medium",
@@ -134,8 +158,21 @@ export const SECTION_DATA_DEPENDENCY_MAP: Record<SectionKey, SectionDataDependen
     refactorPriority: "medium",
   },
   s09: {
-    primaryFindings: ["sihuaPlacementItems", "natalFlowItems", "starCombinations", "palacePatterns", "mainBattlefields", "pressureOutlets"],
-    secondaryChartContent: ["chartJson.ziwei.palaces", "chartJson.overlap", "content.starPalacesMain", "content (narrativeFacade)", "config"],
+    primaryFindings: [
+      "sihuaPlacementItems",
+      "natalFlowItems（來自 NormalizedChart.natal.flows / buildLifebookFindings；四化邊權威，非 overlap.items）",
+      "starCombinations",
+      "palacePatterns",
+      "mainBattlefields",
+      "pressureOutlets",
+    ],
+    secondaryChartContent: [
+      "chartJson.ziwei.palaces",
+      "chartJson.overlap（secondary：迴路／高壓標籤；非四化邊權威；見 ADR-0001）",
+      "content.starPalacesMain",
+      "content (narrativeFacade)",
+      "config",
+    ],
     hasPromptRecalc: true,
     canSwitchFindingsV2Only: false,
     refactorPriority: "medium",
@@ -171,18 +208,52 @@ export const SECTION_DATA_DEPENDENCY_MAP: Record<SectionKey, SectionDataDependen
 
   // ── 第四部分：此生任務 ──
   s18: {
-    primaryFindings: ["lifeLessons", "crossChartFindings"],
-    secondaryChartContent: ["chartJson (buildPiercingDiagnosticBundle)", "map.recurringHomeworkNarrative", "map.currentDecadalPalace"],
+    primaryFindings: [
+      "lifeLessons",
+      "crossChartFindings",
+      "timeModuleS17S19ReaderSnapshot.s18SignalsBlocks（P2 快照；訊號來自與 S17 相同的 overlay；邊：NormalizedChart.*.flows→overlay，不讀 overlap 推邊）",
+    ],
+    secondaryChartContent: [
+      "NormalizedChart.*.flows（經 buildPalaceOverlayFromNormalizedChart，primary）",
+      "chartJson（buildPiercingDiagnosticBundle 等診斷脈絡）",
+      "map.s18EdgeAuthority（normalizedChart_flows | chartJson_overlay_only）",
+      "map.recurringHomeworkNarrative",
+      "map.currentDecadalPalace",
+      "chartJson.overlapAnalysis（secondary：僅他章／標籤；S18 正文不讀 overlap 推邊；見 ADR-0001）",
+    ],
     hasPromptRecalc: true,
     canSwitchFindingsV2Only: false,
     refactorPriority: "medium",
   },
   s19: {
-    primaryFindings: ["actionItems"],
-    secondaryChartContent: ["map.actionNowLayers (來自 s15/s16 脈絡)", "chartJson (year/decade context)", "content.decisionMatrix"],
+    primaryFindings: [
+      "actionItems",
+      "timeModuleS17S19ReaderSnapshot.s19MonthlyBlocks（P2 快照；邊：NormalizedChart.*.flows→overlay→S18，流月：monthlyHoroscope+GongGan）",
+    ],
+    secondaryChartContent: [
+      "NormalizedChart.natal.flows | currentDecade.flows | yearlyHoroscope.flows（primary；禁止 overlap 推邊）",
+      "chartJson.features.ziwei.monthlyHoroscope（流月錨點／mutagen；GongGan 產月層 flows）",
+      "map.actionNowLayers（s15/s16 脈絡）",
+      "content.decisionMatrix",
+      "chartJson.overlapAnalysis（secondary：僅他章／標籤；S19 不讀；保留原因：舊管線與 dependency 對照，見 ADR-0001）",
+    ],
     hasPromptRecalc: false,
     canSwitchFindingsV2Only: false,
     refactorPriority: "medium",
+  },
+  s22: {
+    primaryFindings: [],
+    secondaryChartContent: ["NormalizedChart → getStructureLines(chart)（本命靜態）"],
+    hasPromptRecalc: false,
+    canSwitchFindingsV2Only: false,
+    refactorPriority: "low",
+  },
+  s23: {
+    primaryFindings: [],
+    secondaryChartContent: ["NormalizedChart → getTransformationFlows(chart)（本命靜態）"],
+    hasPromptRecalc: false,
+    canSwitchFindingsV2Only: false,
+    refactorPriority: "low",
   },
   s21: {
     primaryFindings: ["lifeLessons"],
@@ -244,6 +315,8 @@ export const HIGH_PRIORITY_MIGRATION_BATCH: Record<SectionKey, MigrationBatch | 
   s14: undefined,
   s18: undefined,
   s19: undefined,
+  s22: undefined,
+  s23: undefined,
   s21: undefined,
 };
 
@@ -303,7 +376,7 @@ export const SECTION_V2_TARGET_MAP: Partial<Record<SectionKey, SectionV2Target>>
   },
   s00: {
     primary: ["transformEdges", "triggeredPaths", "pathNarratives", "stackSignals", "mainBattlefields"],
-    fallback: ["chartJson.overlapAnalysis", "chartJson.fourTransformations", "chartJson.decadalLimits", "chartJson.yearlyHoroscope", "chartJson.ziwei", "chartJson.sihuaLayers"],
+    fallback: ["chartJson.overlapAnalysis", "chartJson.fourTransformations", "chartJson.decadalLimits", "chartJson.yearlyHoroscope", "chartJson.ziwei", "chartJson.sihuaLayers (deprecated)"],
     removePromptRecalc: [
       "runS00Pipeline from chartJson",
       "buildFourTransformPersonality from chartJson",
@@ -313,7 +386,7 @@ export const SECTION_V2_TARGET_MAP: Partial<Record<SectionKey, SectionV2Target>>
   },
   s03: {
     primary: ["triggeredPaths", "pathNarratives", "stackSignals", "transformEdges", "crossChartFindings", "palacePatterns"],
-    fallback: ["chartJson.ziwei", "chartJson.overlapAnalysis", "chartJson.fourTransformations", "chartJson.decadalLimits", "chartJson.sihuaLayers", "config (assembleInput)"],
+    fallback: ["chartJson.ziwei", "chartJson.overlapAnalysis", "chartJson.fourTransformations", "chartJson.decadalLimits", "chartJson.sihuaLayers (deprecated)", "config (assembleInput)"],
     removePromptRecalc: [
       "buildS03GlobalContext from chartJson",
       "buildWholeChartContext for wholeChartMainlineBlock, siHuaPatternTopBlocks, loopSummaryBlock",

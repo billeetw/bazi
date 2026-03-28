@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>命宮預覽（星曜 + 原文 + 三方四正）</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Share+Tech+Mono&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #05070d;
+      --card: rgba(255,255,255,0.04);
+      --line: rgba(255,255,255,0.14);
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --gold: #d4af37;
+      --cyan: #38bdf8;
+      --red: #fb7185;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--text);
+      background: radial-gradient(circle at 50% 10%, rgba(56,189,248,0.15), transparent 40%), var(--bg);
+      font-family: "Noto Sans TC", system-ui, sans-serif;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; padding: 28px 18px 80px; }
+    .hero { text-align: center; margin-bottom: 24px; }
+    .hero h1 { margin: 0; font-size: 32px; letter-spacing: 6px; font-family: "Noto Serif TC", serif; }
+    .hero p { margin: 8px 0 0; color: var(--muted); }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
+      backdrop-filter: blur(6px);
+    }
+
+    .title {
+      font-family: "Share Tech Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: var(--gold);
+      margin-bottom: 10px;
+    }
+
+    .star-main {
+      border-left: 3px solid var(--cyan);
+      padding: 10px 12px;
+      background: rgba(56,189,248,0.08);
+      border-radius: 8px;
+    }
+    .star-main h3 { margin: 0 0 6px; font-size: 18px; }
+    .star-main p { margin: 8px 0; line-height: 1.8; }
+
+    .star-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; margin-top: 12px; }
+    details.star {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.03);
+      padding: 8px 10px;
+    }
+    details.star summary {
+      list-style: none;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    details.star summary::-webkit-details-marker { display: none; }
+    .glyph { color: var(--gold); }
+    .star p { margin: 8px 0 4px; color: #cbd5e1; line-height: 1.7; font-size: 14px; }
+
+    .notes p { margin: 0 0 12px; line-height: 1.9; }
+    .notes strong { color: #fff; }
+
+    .link-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .pal-link {
+      text-decoration: none;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      background: rgba(255,255,255,0.02);
+    }
+    .pal-link:hover { border-color: var(--cyan); }
+    .pal-link .k { color: #fff; }
+    .pal-link .v { color: var(--muted); font-size: 13px; text-align: right; }
+
+    .mini {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 700px) {
+      .star-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="hero">
+      <h1>命宮</h1>
+      <p>星曜圖譜 + 原文保留 + 三方四正跳轉（獨立預覽）</p>
+    </header>
+
+    <section class="panel">
+      <div class="title">主定調星</div>
+      <div class="star-main">
+        <h3>廉貞（廟）</h3>
+        <p>廉貞（廟）：代表慾望、權力、界線與突破。因為亮度為「廟」，這份特質通常表現得更自然、完整，也較容易成為你可倚重的穩定能力。</p>
+        <p>補充一句：妳為什麼會如此糾結？因為妳既有高傲的靈魂，又有強烈的慾望。妳是天生的外交官，也是不安份的囚徒。</p>
+        <p>👉 這顆主星形塑了你「自我結構」的主軸：你怎麼解讀自己、怎麼對外站穩，從這裡出發。</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="title">其他星曜（點開看詳解）</div>
+      <div class="star-grid">
+        <details class="star"><summary><span class="glyph">◇</span> 天鉞</summary><p>代表暗助、後台與檯面下的支持。在自我結構，有些事不用大聲張揚，也會有人私下幫你一把。容易被放大成：以為永遠有人兜底，忽略自己該補的功課。</p></details>
+        <details class="star"><summary><span class="glyph">◈</span> 地空</summary><p>你腦中常有「換一種可能」的空白與跳躍，計畫容易被靈感打斷。在自我結構常表現在：期待飄太高、執行接不住，或做完仍覺得空。</p></details>
+        <details class="star"><summary><span class="glyph">♥</span> 紅鸞</summary><p>你對緣分、好感與關係訊號較敏感，氛圍一對就容易被帶動心情。</p></details>
+        <details class="star"><summary><span class="glyph">◇</span> 恩光</summary><p>你容易因表現被看見而得到機會，適合把專長亮在對的地方。</p></details>
+        <details class="star"><summary><span class="glyph">◇</span> 天貴</summary><p>你在正式場合、長輩或體制內較容易得到禮遇或提攜。</p></details>
+        <details class="star"><summary><span class="glyph">◈</span> 天巫</summary><p>你對儀式感、轉折與心靈層面的暗示較敏感。</p></details>
+        <details class="star"><summary><span class="glyph">◈</span> 天廚</summary><p>你對飲食、生活品味與口腹之福較有感，資源也常花在「吃得好、過得好」。</p></details>
+        <details class="star"><summary><span class="glyph">◈</span> 天空</summary><p>你常有理想化或「再等等更好」的空隙，落地與執行要設停損。</p></details>
+        <details class="star"><summary><span class="glyph">◈</span> 截路</summary><p>你的人生推進方式，不一定直線，常需要邊走邊修正。</p></details>
+        <details class="star"><summary><span class="glyph">◈</span> 孤辰</summary><p>你需要自己的節奏與空間，才能重新站穩自己。</p></details>
+        <details class="star"><summary><span class="glyph">◈</span> 陰煞</summary><p>你偶爾會莫名心裡發毛或多疑，需要分辨直覺與焦慮。</p></details>
+      </div>
+    </section>
+
+    <section class="panel notes">
+      <div class="title">原命書評語（完整保留）</div>
+      <p><strong>【這一宮的核心結構】</strong><br/>你的人格主題是邊界與控制，對關係與權力的拿捏特別敏感。你的人格是高想像與高內在世界，抽象思維與靈感很強。這條線，現在主要由廉貞、地空帶著你走。</p>
+      <p><strong>【你會怎麼做決策】</strong><br/>- （定調主星｜廉貞）你做決策時重掌控感，會同時考量局勢、面子與主導權。<br/>- 你會優先選擇可長期穩定的做法。</p>
+      <p><strong>【這一宮的真實運作】</strong><br/>- 日常運作中，重點會落在「壓力下的變化與平常維持自己的方式」。<br/>- 「廉貞」常表現在容易在想要與克制之間拉扯，或因為太想突破而把自己逼太緊。<br/>- 「地空」常表現在容易期待飄太高、執行接不住，或做完仍覺得空。</p>
+      <p><strong>【最容易踩的坑】</strong><br/>- 你最大的風險往往不是做錯判斷，而是心裡一不安，就先把自己的觸角收回——前景未必不行，只是你更不敢在沒站穩時伸手。<br/>- 「廉貞」容易把「慾望、權力、界線與突破」這條線推到過頭，現場摩擦與壓力感會更難降溫。</p>
+      <p><strong>【轉個念，就不一樣】</strong><br/>這不代表你軟弱，而是你把「先穩住心」看得比「先出手」更優先。挑一件你正在拖的事，只寫兩行：若不做，你怕什麼；若做了，你怕什麼。</p>
+    </section>
+
+    <section class="panel">
+      <div class="title">三方四正（可點跳轉）</div>
+      <div class="link-grid">
+        <a class="pal-link" href="/lifebook-viewer.html?view=viewer#s10"><span class="k">財帛宮</span><span class="v">影響你怎麼賺錢</span></a>
+        <a class="pal-link" href="/lifebook-viewer.html?view=viewer#s08"><span class="k">官祿宮</span><span class="v">影響你怎麼做事</span></a>
+        <a class="pal-link" href="/lifebook-viewer.html?view=viewer#s12"><span class="k">遷移宮</span><span class="v">影響你在外部舞台的發展</span></a>
+      </div>
+    </section>
+
+    <div class="mini">這頁是獨立預覽，不依賴 React Viewer 快取。</div>
+  </div>
+</body>
+</html>

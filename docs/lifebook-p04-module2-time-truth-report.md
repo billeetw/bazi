@@ -42,7 +42,7 @@
 
 ### 4. buildSihuaFallByPalaceBlock / buildSihuaEnergyFocusBlock / buildNatalGongganFlowBlock 資料來源
 
-- **靜態結論**：buildSihuaFallByPalaceBlock、buildSihuaEnergyFocusBlock 使用 buildSiHuaLayers(chartJson)（chartJson.sihuaLayers、fourTransformations、decadalLimits、yearlyHoroscope、liunian）。buildNatalGongganFlowBlock（sihuaTimeBuilders）使用 normalizeChart(chartJson) 與 chart.natal?.flows。目前未發現與 normalized chart 契約不符的寫法；s15 四化落宮／能量集中／本命宮干飛化在相容層由 injectTimeModuleDataIntoSection 呼叫 buildSihuaFallByPalaceBlock(chartJson)、buildSihuaEnergyFocusBlock(chartJson)、buildNatalGongganFlowBlock(chartJson) 寫入 map，未改動。
+- **靜態結論**：buildSihuaFallByPalaceBlock、buildSihuaEnergyFocusBlock 使用 `buildSiHuaLayers(chartJson)`（**權威**：fourTransformations、decadalLimits、yearlyHoroscope、liunian；**不**讀已廢止 `chartJson.sihuaLayers` wire）。buildNatalGongganFlowBlock（sihuaTimeBuilders）使用 normalizeChart(chartJson) 與 chart.natal?.flows。目前未發現與 normalized chart 契約不符的寫法；s15 四化落宮／能量集中／本命宮干飛化在相容層由 injectTimeModuleDataIntoSection 呼叫 buildSihuaFallByPalaceBlock(chartJson)、buildSihuaEnergyFocusBlock(chartJson)、buildNatalGongganFlowBlock(chartJson) 寫入 map，未改動。
 
 ### 5. 小限／minor／xiaoxian 混入 s15～s21 正文與四化技術版
 

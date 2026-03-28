@@ -3,8 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "npm run sync:palace-static",
     "dev": "vite",
-    "build": "tsc && vite build && npm run build:main",
+    "dev:lifebook": "vite --open /lifebook-viewer.html",
+    "build": "tsc && vite build && npm run build:main && npm run build:lifebook-viewer",
     "build:tailwind": "npx tailwindcss -i ./css/tailwind-input.css -o ./dist/tailwind.css --minify",
     "dev:tailwind": "npx tailwindcss -i ./css/tailwind-input.css -o ./dist/tailwind.css --watch",
     "build:startup": "vite build --config vite.startup.config.ts",
@@ -17,15 +19,28 @@
     "deploy": "npm run deploy:worker && npm run deploy:pages",
     "test:e2e": "npm run build:main && npx playwright test --config=playwright.config.cjs",
     "test:e2e:ui": "npm run build:main && npx playwright test --config=playwright.config.cjs --ui",
+    "test:e2e:lifebook-viewer": "npx playwright test --config=playwright.lifebook-viewer.config.cjs",
+    "test:e2e:lifebook-prod": "LIFEBOOK_E2E_PROD=1 npx playwright test --config=playwright.lifebook-prod.config.cjs",
+    "verify:lifebook-viewer-deploy": "node scripts/verify-lifebook-viewer-deploy.mjs",
     "test:wuxing": "node scripts/test-wuxing-pipeline.js",
     "build:divination": "vite build --config vite.divination.config.ts",
-    "build:lifebook-viewer": "vite build --config vite.lifebook-viewer.config.ts"
+    "build:lifebook-viewer": "vite build --config vite.lifebook-viewer.config.ts",
+    "sync:palace-static": "mkdir -p public/palace-templates && cp palace-templates/palace-theme-presets.json palace-templates/palace-section-shell.css palace-templates/palace-section-themes.css palace-templates/palace-theme-apply.js public/palace-templates/",
+    "sync:palace-presets": "npm run sync:palace-static",
+    "sync:section-order": "node scripts/sync-lifebook-section-order.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify:timeline-decision": "vitest run tests/buildTimelineDecisionTask.test.ts tests/timelineDecisionChain.e2e.test.ts",
+    "verify:sihua-edge": "cd worker && npx vitest run tests/s17EdgeAuthority.test.ts tests/s18EdgeAuthority.test.ts tests/s19EdgeAuthority.test.ts tests/palaceFlowsAuthority.test.ts tests/flowTransformAuthority.test.ts",
+    "verify:lifebook": "npm run sync:section-order && cd worker && npx vitest run tests/sectionOrderSource.test.ts tests/sectionKeyValidation.test.ts tests/lifeModelStructureFlow.test.ts tests/s22s23NarrativeSnapshot.test.ts tests/starStateNarrativeSlice.test.ts",
+    "verify:palace-preview": "cd worker && npx vitest run tests/gateFixturesPalacePreview.test.ts"
   },
   "dependencies": {
     "framer-motion": "^11.11.17",
     "jose": "^5.10.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-focus-lock": "^2.13.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
@@ -38,6 +53,7 @@
     "tailwindcss": "^3.4.19",
     "typescript": "^5.6.3",
     "vite": "^7.3.1",
+    "vitest": "^3.2.4",
     "wrangler": "^4.65.0"
   }
 }

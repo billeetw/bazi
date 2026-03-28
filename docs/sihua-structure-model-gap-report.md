@@ -1,5 +1,7 @@
 # 四化結構模型（Flow / Sink / Loop / Conflict）差異盤點報告
 
+> **歷史備註（2026-03）**：下表若仍出現「優先使用 `chartJson.sihuaLayers`」敘述，以現況為準：**顯示層**由 `buildSiHuaLayers`（normalize + `fourTransformations`）產出；client `sihuaLayers` wire 已 deprecated（僅 diff／除錯）。見 `docs/lifebook-sihua-single-source-phase1.md`。
+
 ## 目標
 
 對照「四化結構模型」目標能力，盤點現有系統具備的項目、資料流、輸出位置，列出差異（gap）、成本與風險，並提出分階段施作方案。
@@ -12,9 +14,9 @@
 
 | 項目 | 位置 | 說明 |
 |------|------|------|
-| **本命/大限/流年四化生成** | `worker/src/lifeBookPrompts.ts` | `buildSiHuaLayers(chartJson)`（約 999–1090 行）：若 `chartJson.sihuaLayers` 有 `benMing` / `daXianCurrent` / `liuNianCurrent` 的 `transforms[]`，直接使用；否則由 `chartJson.fourTransformations`（benming/decadal/yearly 的 `mutagenStars`）＋ `layerFromMutagen()` 推導每層祿/權/科/忌的星與落宮。 |
-| **事件陣列（給引擎/規則用）** | 同上 | `buildS00EventsFromChart(chartJson)`（約 1105–1166 行）：產出 `SiHuaEvent[]`，每筆含 `layer`（natal/decade/year）、`transform`（lu/quan/ke/ji）、`starName`、`fromPalace`、`toPalace`。優先讀 `sihuaLayers.*.transforms`（含 `fromPalace`/`toPalace`）；若無則用 `buildSiHuaLayers` 結果，`fromPalace`＝星所在宮、`toPalace`＝`getOppositePalaceName(fromPalace)`。 |
-| **星名化X → from宮/to宮** | 多處 | **有**：`buildS00EventsFromChart` 每筆即「星＋化X＋from/to」；`buildSiHuaLayers` 產出每層的 star+宮（palaceKey/palaceName）。**來源是否一致**：s00/s03 主要用 `buildSiHuaLayers` 與 `buildS00EventsFromChart`；s03 的 `sihuaMapping` 先看 `chartJson.sihuaLayers.benMing.transforms`（有 toPalace），否則用 `buildSiHuaLayers`＋`getOppositePalaceName`，兩路可能在不同 chart 結構下給出不同結果。 |
+| **本命/大限/流年四化生成** | `worker/src/lifeBookPrompts.ts` | `buildSiHuaLayers(chartJson)`：`fourTransformations.mutagenStars` + `normalizeChart` 落宮；**不**採用 `chartJson.sihuaLayers` wire（見單一權威文件）。可選 `lifebookSiHuaDisplayOverride` 合併顯示層。 |
+| **事件陣列（給引擎/規則用）** | 同上 | `buildS00EventsFromChart(chartJson)`：產出 `SiHuaEvent[]`，每筆含 `layer`、`transform`、`starName`、`fromPalace`、`toPalace`；事件來自 **`buildSiHuaLayers` 結果** 推導（非 client wire）。 |
+| **星名化X → from宮/to宮** | 多處 | **有**：`buildS00EventsFromChart` 每筆即「星＋化X＋from/to」；`buildSiHuaLayers` 產出每層的 star+宮（palaceKey/palaceName）。s00/s03 以 `buildSiHuaLayers`／findings 為準；**勿**再與 `sihuaLayers` wire 混源。 |
 | **Normalize（星名/宮名）** | 多處 | **星名**：`worker/src/lifebook/canonicalKeys.ts` 的 `toStarName`；`STAR_ID_TO_DISPLAY_NAME` / `STAR_NAME_ZH_TO_ID` 用於 id↔顯示名。**宮名**：`normPalaceIdToName()`（lifeBookPrompts 約 1192 行）、`toPalaceCanonical()`（canonicalKeys）、engine 的 `toPalaceCanonical`；`PALACE_ID_TO_NAME` 做 id→中文。事件進入 engine 前會經 `normalizeSiHuaEvents`（`worker/src/engine/normalizeSiHuaEvents.ts`）轉成 canonical 宮/星。 |
 
 ### A.2 四化結構相關輸出
@@ -24,7 +26,7 @@
 | **s00MainNarrative** | `lifeBookPrompts.ts` 約 2504–2506 行 | `generateNarrative(rawEvents)`（engine）→ `mainText`。Engine 用 `getMainHits` 取 Top1 R01、Top1 R02、最多 2 條 R11，組主文；**無** R03/R30 主文。 |
 | **s00DominantPalaces** | 同上 2519–2524 行 | `detectDominantPalaces(chartJson, config, events)`（`dominantPalaceDetector.ts`）→ `formatDominantPalacesBlock(dominant)`。計分僅用「飛入該宮」的疊加（toPalace 方向），**無**「從該宮飛出」的 outScore。 |
 | **siHuaPatternTopBlocks** | 同上 1894–1896 行 | `evaluateFourTransformPatterns(siHuaEvents)`（lifebook `s00PatternEngine.ts`，20 條規則 R01_SAME_STAR_OVERLAP～R20）+ `renderPatternHitsForModuleOne(..., 5, { forTechnicalOutput })`。s03 使用，標題「【四化慣性】」在 block 內。 |
-| **sihuaMapping** | 同上 1615–1647 行 | 本命層：若存在 `chartJson.sihuaLayers.benMing.transforms` 則用其 `toPalace`；否則 `buildSiHuaLayers`＋`getOppositePalaceName(fromPalace)`。每行「星名化祿/權/科/忌 → 宮名」。`fromPalace` 為空或含「未知」則**跳過該行**，不輸出「未知宮位」。 |
+| **sihuaMapping** | `buildS03GlobalContext` | 本命層：由 **`buildSiHuaLayers`** 的 benming 層＋`getOppositePalaceName(fromPalace)` 組行（**不**讀 client wire）。每行「星名化祿/權/科/忌 → 宮名」。`fromPalace` 為空或含「未知」則**跳過該行**。 |
 
 **A宮→B宮敘述**：
 
@@ -38,7 +40,7 @@
 | **[Rxx_*] 是否進入 production** | **有條件**：`renderPatternHitsForModuleOne` 僅在 `forTechnicalOutput === true` 時在每條前加 `[${hit.ruleId}]`（patternHitRenderer 約 160、207、223 行）。s00/s03 組裝時 `skipDebugForSection = (sectionKey === "s00" \|\| sectionKey === "s03")`，故 `forTechnicalOutput: false`，**正常情境下不會**在 s00/s03 出現 ruleId。**額外防線**：`worker/src/index.ts` 在產出 s03 的 `structure_analysis` 時會再 filter 掉整行符合 `^\[R\d+_.*\]$` 的內容（約 1422、1707 行）。 |
 | **「模組一驗收未通過」** | 同上，index 在 s03 會過濾整行符合 `^（模組一驗收未通過：.*）$`。若仍有他處寫入該字串，僅在未經此 filter 的 path 可能漏出。 |
 | **未知宮位** | sihuaMapping 組裝時 `if (!fromPalace \|\| fromPalace.includes("未知")) continue`，**不輸出該行**。`layerFromMutagen` 在無法解析宮位時回傳 `null`，不寫入「未知」字樣。 |
-| **Fallback 策略** | 無 toPalace 時：sihuaMapping 該條略過。buildS00EventsFromChart 在無 sihuaLayers 時用 `getOppositePalaceName(fromPalace)` 推 to；若 from 也無則 to 為空，事件仍會進陣列（engine normalizer 會記入 diagnostics）。 |
+| **Fallback 策略** | 無 toPalace 時：sihuaMapping 該條略過。`buildS00EventsFromChart` 由 `buildSiHuaLayers` 推導，用 `getOppositePalaceName(fromPalace)` 推 to；若 from 也無則 to 為空，事件仍會進陣列（engine normalizer 會記入 diagnostics）。 |
 
 ---
 

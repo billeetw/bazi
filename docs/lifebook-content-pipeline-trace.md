@@ -17,9 +17,7 @@ birth chart (前端/API) → buildPalaceContext → getPlaceholderMapFromContext
 
 1. **perPalaceFlow（各宮四化摘要）**  
    - 來源：`buildSiHuaContext(chartJson).perPalaceFlow["夫妻"]` 或 `["夫妻宮"]`。  
-   - 有兩種填法：  
-     - **A. chartJson.sihuaLayers** 存在時：從 `sihuaLayers.benMing.transforms` / `daXianCurrent.transforms` / `liuNianCurrent.transforms` 讀取，每筆含 `starId`、`type`（lu/quan/ke/ji）、`fromPalace`、`toPalace`。依 `toPalace` 對應宮位寫入 `perPalaceFlow`。  
-     - **B. 無 sihuaLayers** 時：對每個宮位呼叫 `buildSihuaFlowSummary`，其內部用 **collectFourTransformsForPalace(chartJson, palaceKey)**。
+   - **現況**：由 **findings + `buildSihuaFlowSummary`**（或相容路徑的 `collectFourTransformsForPalace`）組裝；**不**以 `chartJson.sihuaLayers` wire 為權威（該欄位已 deprecated，見 `lifebook-sihua-single-source-phase1.md`）。
 
 2. **collectFourTransformsForPalace**  
    - 只從 **overlapAnalysis.items**（或舊格式 overlap 的 criticalRisks / maxOpportunities / volatileAmbivalences）讀取。  
@@ -29,13 +27,13 @@ birth chart (前端/API) → buildPalaceContext → getPlaceholderMapFromContext
 
 | 層級 | 可能原因 |
 |------|----------|
-| birth chart | 前端/計算未提供 `sihuaLayers`，或 overlap 只輸出「非 normal」宮位，夫妻宮未進 items。 |
-| buildSiHuaContext | 若無 sihuaLayers，perPalaceFlow 依 buildSihuaFlowSummary → collectFourTransformsForPalace；夫妻宮不在 overlap.items 則為空。 |
+| birth chart | overlap 只輸出「非 normal」宮位時，夫妻宮未進 items；與是否送 `sihuaLayers` wire 無關（wire 不驅動正文）。 |
+| buildSiHuaContext | perPalaceFlow 依 buildSihuaFlowSummary → collectFourTransformsForPalace；夫妻宮不在 overlap.items 則為空。 |
 | placeholder map | sihuaFlowForPalace / fourTransformSummaryForPalace 直接來自 perPalaceFlow 或 buildSihuaFlowSummary，上游空則此地也空。 |
 | 模板 | 有使用 {fourTransformSummaryForPalace}，非斷層點。 |
 
 **建議**：  
-- 若要「左輔化科在夫妻宮」穩定出現，需在**計算層**產出並傳入 **sihuaLayers**（含本命/大限/流年 transforms，且每筆含 starId、type、fromPalace、toPalace），或擴充 overlap 結構，讓 **items 涵蓋 12 宮**（含 normal），並在每宮的 transformations 中列出該宮四化（含權、科）。
+- 若要「左輔化科在夫妻宮」穩定出現，需在**計算層**擴充 **overlap** 結構，讓 **items 涵蓋 12 宮**（含 normal），並在每宮的 transformations 中列出該宮四化（含權、科）；或確保 findings 內 natal／flow 資料完整。**不要**依賴已廢止的 `sihuaLayers` wire。
 
 ---
 

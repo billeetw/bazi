@@ -1,0 +1,23 @@
+/**
+ * 首頁殼設計權杖（掛在 .lb-home-root 下，避免汙染全域）
+ * 色值優先繼承 src/design-system/tokens.css 之 :root，便於單一 token 來源。
+ */
+.lb-home-root {
+  --lb-void-base: var(--lb-core-void-base, #020408);
+  --lb-glow-abyss: var(--lb-glow-abyss, rgba(12, 38, 50, 0.5));
+  --lb-glow-spore: var(--lb-glow-spore, rgba(212, 175, 55, 0.08));
+  --lb-trunk-core: var(--lb-palace-trunk-core, #d4af37);
+  --lb-trunk-pulse: var(--lb-palace-trunk-pulse, rgba(255, 255, 255, 0.8));
+  --lb-bg-space: var(--lb-core-space, #020617);
+  --lb-glass-panel: var(--lb-glass-panel, rgba(15, 23, 42, 0.45));
+  --lb-glass-border: var(--lb-glass-border, rgba(255, 255, 255, 0.06));
+  --lb-text-main: var(--lb-core-text-main, #f8fafc);
+  --lb-text-muted: var(--lb-core-text-muted, #94a3b8);
+  --lb-gold-primary: var(--lb-gate-teaser-amber, #f59e0b);
+  --lb-gold-light: #fde047;
+  --lb-gold-glow: var(--lb-glow-gold, rgba(245, 158, 11, 0.4));
+  --lb-red: #ef4444;
+  --lb-red-glow: rgba(239, 68, 68, 0.4);
+  --lb-blue: #3b82f6;
+  --lb-yellow: #fbbf24;
+}

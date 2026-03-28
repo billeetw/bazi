@@ -7,12 +7,13 @@
   "use strict";
 
   const ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
+  const API_BASE = typeof window !== "undefined" && window.Config?.API_BASE ? window.Config.API_BASE : ORIGIN;
   const PENDING_LAMP_FORM = "pendingLampFormData";
   const PENDING_LAMP_ACTION = "pendingLampAction";
   const PENDING_LAMP_YEAR = "pendingLampYear";
 
   function getApiUrl(path) {
-    return ORIGIN + (path.startsWith("/") ? path : "/" + path);
+    return API_BASE + (path.startsWith("/") ? path : "/" + path);
   }
 
   function getAuthHeaders() {

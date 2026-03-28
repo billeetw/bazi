@@ -86,7 +86,7 @@
 
 **仍需保留的 chart/content fallback**
 
-- **chart**：在 V2 未覆蓋前，保留 `overlapAnalysis`、`fourTransformations`、`decadalLimits`、`yearlyHoroscope`、`ziwei`、`sihuaLayers` 的唯讀 fallback，僅用於補齊缺失、不新增判斷。
+- **chart**：在 V2 未覆蓋前，保留 `overlapAnalysis`、`fourTransformations`、`decadalLimits`、`yearlyHoroscope`、`ziwei` 的唯讀 fallback，僅用於補齊缺失、不新增判斷。`sihuaLayers` 若仍存在於 wire，僅作 **deprecated 比對／除錯**（見 `lifebook-sihua-single-source-phase1.md`）；**有意覆寫顯示**請用 `lifebookSiHuaDisplayOverride`。
 - **content**：星曜群性、宮位語義等靜態文案保留；config（assembleInput）在 s03 可保留至 V2 能產出等價「主線劇本」摘要為止。
 
 **預估重構風險**

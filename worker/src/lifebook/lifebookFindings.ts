@@ -3,6 +3,10 @@
  * 全書唯一真相來源。章節、模板、section assembler 一律只讀 LifebookFindings，不准直接讀 chart。
  */
 
+import type { DiagnosticBundle } from "./diagnosticTypes.js";
+import type { TimeModuleDecisionSnapshot } from "./timeModuleDecisionSnapshot.js";
+import type { TimeModuleS17S19ReaderSnapshot } from "./timeModuleS17S19ReaderSnapshot.js";
+
 /** 主戰場：宮位 + 分數 + 理由 + 層級（施工圖 v1：score, reasons[], source） */
 export interface MainBattlefield {
   palace: string;
@@ -221,6 +225,49 @@ export interface LifebookFindings {
   sihuaPlacementItems?: SihuaPlacementItem[];
   /** 本命宮干飛化結構化（僅 natal.flows）；供單宮過濾。 */
   natalFlowItems?: NatalFlowItem[];
+  /**
+   * 模組二：疊宮／計數／區塊字串快照（建置 findings 時自 chart 只算一次）。
+   * placeholder 層：有則只讀此欄位；無則明確 fallback 至 chart-only builder（禁止同段混讀 findings + overlap + chart）。
+   */
+  timeModuleOverlap?: TimeModuleOverlapSnapshot;
+  /**
+   * 模組二：決策矩陣產出（keyYearsDecisionTimeline、yearDecisionSummaryBlock）建置時只算一次；
+   * 與 timeModuleOverlap.palaceOverlapTags 同源，placeholder 禁止再讀 overlap。
+   */
+  timeModuleDecision?: TimeModuleDecisionSnapshot;
+  /**
+   * 穿透式診斷包（buildPiercingDiagnosticBundle）：建置 findings 時只算一次；
+   * placeholder 層有則只讀此欄位，無則 fallback chart-only builder。
+   */
+  piercingDiagnosticBundle?: DiagnosticBundle;
+  /**
+   * s17–s19 技術版／讀者版骨架欄位（palaceOverlayBlocks、s18SignalsBlocks、s19MonthlyBlocks）單次預算；
+   * 與 getPlaceholderMapFromContext／inject P2 共用，禁止與現場 overlay 重算混讀。
+   */
+  timeModuleS17S19ReaderSnapshot?: TimeModuleS17S19ReaderSnapshot;
+}
+
+/** 模組二疊宮 placeholder 快照（與 getPlaceholderMapFromContext 之 shock/mine/wealth 區塊對齊） */
+export interface TimeModuleOverlapSnapshot {
+  shockCount: string;
+  mineCount: string;
+  wealthCount: string;
+  overlapSummary: string;
+  shockBlocks: string;
+  mineBlocks: string;
+  wealthBlocks: string;
+  volatileSection: string;
+  criticalRisksSection: string;
+  opportunitiesSection: string;
+  keyYearsMineLead: string;
+  keyYearsWealthLead: string;
+  keyYearsShockLead: string;
+  /** 建置時 chart 是否含小限列（供 overlapDataMissingNotice） */
+  hasMinorFortuneRows: boolean;
+  /** 建置時 chart 是否含疊宮 payload */
+  hasOverlapPayload: boolean;
+  /** 小限時間軸／決策矩陣：正規化宮名 → 疊宮 tag（與 chart 路徑同源，只建置一次） */
+  palaceOverlapTags: Record<string, "shock" | "mine" | "wealth">;
 }
 
 export function createEmptyFindings(): LifebookFindings {

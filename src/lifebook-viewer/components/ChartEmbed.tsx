@@ -1,9 +1,8 @@
 /**
- * 命盤與五行：有 chart_json.bazi.wuxing 時內嵌五行雷達圖；否則以 iframe 嵌入主站示範頁。
+ * 命盤與五行：有 chart_json.bazi.wuxing 時顯示五行雷達圖；無資料時顯示提示，不再嵌入首頁。
  */
 
 import React from "react";
-import { LIFEBOOK_DEMO_CHART_URL } from "../constants";
 import { WuxingRadar } from "./WuxingRadar";
 
 export interface ChartEmbedProps {
@@ -34,18 +33,9 @@ export function ChartEmbed({ chartJson, className = "" }: ChartEmbedProps) {
           <WuxingRadar wx={wx} size={220} className="mx-auto" />
         </>
       ) : (
-        <>
-          <p className="text-sm text-slate-500 mb-3">
-            此區塊會嵌入主站的紫微命盤與五行雷達圖示範頁。
-          </p>
-          <iframe
-            src={LIFEBOOK_DEMO_CHART_URL}
-            title="紫微命盤與五行雷達圖"
-            className="w-full min-h-[540px] border-0 rounded-xl bg-slate-900/50"
-            loading="lazy"
-            sandbox="allow-scripts allow-same-origin"
-          />
-        </>
+        <p className="text-sm text-slate-500">
+          此命書未附帶可視化五行資料，故不顯示雷達圖。
+        </p>
       )}
     </section>
   );

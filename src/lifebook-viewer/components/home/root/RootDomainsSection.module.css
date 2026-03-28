@@ -1,0 +1,60 @@
+.wrap {
+  width: 100%;
+  max-width: 32rem;
+  margin: 3rem auto 0;
+  padding: 0 0.5rem;
+}
+
+.kicker {
+  text-align: center;
+  font-family: "Share Tech Mono", ui-monospace, monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.22);
+  margin-bottom: 1.5rem;
+}
+
+.entryWrap {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.entryLink {
+  display: inline-block;
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  color: rgba(125, 211, 252, 0.95);
+  text-decoration: none;
+  padding: 0.5rem 0.875rem;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.06);
+  transition: background 0.25s ease;
+}
+
+.entryLink:hover {
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.domainsAnchor {
+  padding: 0.25rem 0 0.5rem;
+  border-radius: 1.25rem;
+  outline: none;
+}
+
+.domainsAnchorActive {
+  padding: 0.25rem 0 0.5rem;
+  border-radius: 1.25rem;
+  outline: 1px solid rgba(56, 189, 248, 0.12);
+  outline-offset: 4px;
+}
+
+.empty {
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--lb-core-text-muted);
+  padding: 1.5rem 1rem;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 1rem;
+}

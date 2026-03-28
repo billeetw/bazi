@@ -21,10 +21,10 @@
  * 流月：明確排除在 S18 外
  */
 
-import type { GongGanFlow } from "../../gonggan-flows.js";
+import { findPalaceByStar, type GongGanFlow } from "../../gonggan-flows.js";
+import { getStarByPalaceFromChart } from "../normalize/index.js";
 import type { PalaceOverlayEntry } from "../palaceOverlay.js";
 import { getPalaceShortLabel, PALACE_SHORT_LABEL_MAP } from "./palaceShortLabels.js";
-import { buildSiHuaLayers, type SiHuaLayer } from "../../lifeBookPrompts.js";
 
 // ========== 常數 ==========
 
@@ -525,31 +525,45 @@ export function formatFlowNarrative(flow: GongGanFlow): string {
   return header + body;
 }
 
-// ========== 本命四化轉換 ==========
+// ========== 本命四化（生年四化落點）==========
+// 須由 fourTransformations.benming.mutagenStars + 星曜落宮決定「哪顆星化什麼在何宮」，
+// 不可誤用宮干飛化邊（會出現廉貞／文昌文曲等錯置與重複）。
 
-/** 從 SiHuaLayer 建構本命四化 flows */
-function buildNatalFlows(benmingLayer: SiHuaLayer | undefined): GongGanFlow[] {
-  if (!benmingLayer) return [];
-  const flows: GongGanFlow[] = [];
-  const transformMap: Array<{ key: keyof SiHuaLayer; transform: string }> = [
-    { key: "lu", transform: "祿" },
-    { key: "quan", transform: "權" },
-    { key: "ke", transform: "科" },
-    { key: "ji", transform: "忌" },
-  ];
-  for (const { key, transform } of transformMap) {
-    const entry = benmingLayer[key];
-    if (entry?.starName && entry?.palaceName) {
-      flows.push({
-        layer: "natal",
-        star: entry.starName,
-        transform,
-        fromPalace: entry.palaceName,
-        toPalace: entry.palaceName,
-      });
-    }
+function starFromBenmingMutagen(
+  mutagenStars: Record<string, string>,
+  transform: "祿" | "權" | "科" | "忌"
+): string | undefined {
+  const direct = mutagenStars[transform]?.trim();
+  if (direct) return direct;
+  const alt = transform === "祿" ? "lu" : transform === "權" ? "quan" : transform === "科" ? "ke" : "ji";
+  const v = mutagenStars[alt]?.trim();
+  return v || undefined;
+}
+
+/** 生年四化：每化一條，toPalace = 該星在本命盤所在宮（靜態結構） */
+function buildBenmingMutagenGongGanFlows(
+  mutagenStars: Record<string, string> | undefined,
+  starsByPalace: Map<string, string[]>
+): GongGanFlow[] {
+  if (!mutagenStars || typeof mutagenStars !== "object") return [];
+  const keys = ["祿", "權", "科", "忌"] as const;
+  const out: GongGanFlow[] = [];
+  for (const k of keys) {
+    const star = starFromBenmingMutagen(mutagenStars as Record<string, string>, k);
+    if (!star) continue;
+    const toPalace = findPalaceByStar(starsByPalace, star);
+    if (!toPalace) continue;
+    out.push({
+      layer: "natal",
+      fromPalace: toPalace,
+      toPalace,
+      star,
+      transform: k,
+      triggerStem: "",
+      sourceOfTruth: "gonggan-fly",
+    });
   }
-  return flows;
+  return out;
 }
 
 // ========== 收集各宮飛星 ==========
@@ -674,18 +688,22 @@ function buildMainThemeAndChallenge(palaceSignals: PalaceSignal[]): { mainTheme:
 /**
  * 建構 S18 訊號：本命 + 大限 + 流年四化
  * @param overlay - 12 宮 overlay（含 decadalIncoming, yearlyIncoming；若來自 NormalizedChart 則含 natalIncoming）
- * @param chartJson - 可選，用於讀取本命四化（fourTransformations.benming）；若 overlay 來自 buildPalaceOverlayFromNormalizedChart 則可省略，改從 overlay 取 natalIncoming
+ * @param chartJson - 建議必傳：用 benming.mutagenStars + 星曜落宮建本命四化；無 mutagen 時才退回 overlay.natalIncoming
  */
 export function buildEventSignals(
   overlay: PalaceOverlayEntry[],
   chartJson?: Record<string, unknown>
 ): S18Signals {
-  // 本命四化：優先 chartJson；若無則從 overlay 的 natalIncoming 彙總（overlay 來自 NormalizedChart 時）
   let natalFlows: GongGanFlow[] = [];
   if (chartJson) {
-    const sihuaLayers = buildSiHuaLayers(chartJson);
-    natalFlows = sihuaLayers?.benming ? buildNatalFlows(sihuaLayers.benming) : [];
-  } else {
+    const ft = chartJson.fourTransformations as { benming?: { mutagenStars?: Record<string, string> } } | undefined;
+    const mutagen = ft?.benming?.mutagenStars;
+    if (mutagen && typeof mutagen === "object") {
+      const starsByPalace = getStarByPalaceFromChart(chartJson as Record<string, unknown>);
+      natalFlows = buildBenmingMutagenGongGanFlows(mutagen, starsByPalace);
+    }
+  }
+  if (natalFlows.length === 0) {
     natalFlows = (overlay ?? []).flatMap((e) => e.natalIncoming ?? []);
   }
 

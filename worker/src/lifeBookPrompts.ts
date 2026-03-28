@@ -43,8 +43,21 @@ import {
   type TimelineValidationIssue,
   normalizeChart,
   createEmptyFindings,
+  mergeInjectP2TimeModuleS17S19Snapshot,
+  isTimeModuleS17S19ReaderSnapshotStale,
 } from "./lifebook/index.js";
+import { mergeS22S23BlocksIntoMap } from "./lifebook/timeModule/s22s23LifeModelPlaceholders.js";
 import type { NormalizedChart } from "./lifebook/normalizedChart.js";
+import {
+  applyTimeModuleOverlapPlaceholdersToMap,
+  buildTimeModuleOverlapSnapshotFromChartJson,
+  mergeInjectP2TimeModuleOverlapSnapshot,
+} from "./lifebook/timeModuleOverlapSnapshot.js";
+import {
+  buildTimeModuleDecisionSnapshotFromChart,
+  mergeInjectP2TimeModuleDecisionSnapshot,
+  type TimeModuleDecisionSnapshot,
+} from "./lifebook/timeModuleDecisionSnapshot.js";
 import type { LifebookFindingsV2 } from "./lifebook/v2/schema/findingsV2.js";
 import { buildS15aPlaceholderMapFromV2 } from "./lifebook/v2/assembler/buildS15aMapFromV2.js";
 import { buildS16PlaceholderMapFromV2 } from "./lifebook/v2/assembler/buildS16MapFromV2.js";
@@ -60,6 +73,24 @@ import { getSanfangFamilyForPalace } from "./utils/starSanfangFamilies.js";
 import { buildDecadalSihuaFlows, buildPalaceStemMap, buildYearlySihuaFlows } from "./gonggan-flows.js";
 import { getMutagenStarsFromStem } from "./sihua-stem-table.js";
 import { getStarByPalaceFromChart } from "./lifebook/normalize/index.js";
+import {
+  buildStarNameToPalaceFromNormalizedChart,
+  layerFromMutagenWithStarMap,
+  resolveDecadalMutagenStars,
+  resolveYearlyMutagenStars,
+} from "./lifebook/sihuaLayersFromNormalizedChart.js";
+import {
+  applySiHuaDisplayOverride,
+  logSiHuaDisplayOverrideApplied,
+} from "./lifebook/sihuaDisplayOverride.js";
+import {
+  isClientSihuaLayersDiffLogEnabled,
+  maybeLogClientSihuaLayersDiff,
+  omitClientSihuaWireForCompute,
+} from "./lifebook/sihuaLayersClientDiff.js";
+import type { Deprecated } from "./lifebook/sihuaLayersClientDiff.js";
+export type { Deprecated } from "./lifebook/sihuaLayersClientDiff.js";
+export type { BuiltSiHuaLayer, BuiltSiHuaLayers, BuiltSiHuaStar } from "./lifebook/builtSiHuaTypes.js";
 import { buildPalaces, findZiweiPalaceSlotIndexForCanonical } from "./lifebook/normalize/normalizePalaces.js";
 import { toPalaceCanonical } from "./lifebook/canonicalKeys.js";
 import { buildPalaceOverlay, buildPalaceOverlayBlocks, buildPalaceOverlayFromNormalizedChart } from "./lifebook/palaceOverlay.js";
@@ -74,9 +105,6 @@ import { enrichPalaceRawWithBenmingMutagen } from "./lifebook/s17/palaceNarrativ
 import { buildS19MonthlyOutput, formatS19MonthlyOutputToCard } from "./lifebook/s19/index.js";
 import { aggregatePalaceWeightRisk, type StarMetadataInput } from "./lifebook/palaceWeightRiskAggregator.js";
 import {
-  buildYearDecisionSummary,
-  formatYearDecisionSummaryBlock,
-  formatXiaoXianDecisionTimeline,
   evaluateFourTransformPatterns,
   formatPatternNarrative,
   formatPatternActions,
@@ -104,7 +132,6 @@ import {
   detectLifeArchetype,
   formatLifeArchetypeBlock,
   type DecisionMatrixConfig,
-  type XiaoXianYearItem,
   type SiHuaEvent,
   type PatternHit,
   buildTopFlowsBlock,
@@ -476,7 +503,7 @@ function getSihuaByLayerLines(chartJson: Record<string, unknown> | undefined): s
   if (!chartJson) return [];
   const layers = buildSiHuaLayers(chartJson);
   const lines: string[] = [];
-  const layerOrder: Array<{ label: string; data: SiHuaLayer | null | undefined }> = [
+  const layerOrder: Array<{ label: string; data: BuiltSiHuaLayer | null | undefined }> = [
     { label: "本命", data: layers.benming },
     { label: "大限", data: layers.decadal },
     { label: "流年", data: layers.yearly },
@@ -486,7 +513,7 @@ function getSihuaByLayerLines(chartJson: Record<string, unknown> | undefined): s
       lines.push(`- ${label}：無四化落宮資料`);
       continue;
     }
-    const part = (s: SiHuaStar | null | undefined, key: string) => {
+    const part = (s: BuiltSiHuaStar | null | undefined, key: string) => {
       if (!s) return `${key}→（無）`;
       const p = toPalaceNameForSummary(s.palaceName);
       return p && p !== "落宮待核" ? `${key}→${p}` : `${key}→${s.starName}（落宮待核）`;
@@ -507,7 +534,7 @@ export function getSihuaPlacementItemsFromChart(
   if (!chartJson) return [];
   const layers = buildSiHuaLayers(chartJson);
   const items: SihuaPlacementItem[] = [];
-  const layerEntries: Array<{ key: keyof SiHuaLayers; layer: "natal" | "decade" | "year" }> = [
+  const layerEntries: Array<{ key: keyof BuiltSiHuaLayers; layer: "natal" | "decade" | "year" }> = [
     { key: "benming", layer: "natal" },
     { key: "decadal", layer: "decade" },
     { key: "yearly", layer: "year" },
@@ -515,12 +542,12 @@ export function getSihuaPlacementItemsFromChart(
   for (const { key, layer } of layerEntries) {
     const data = layers[key];
     if (!data) continue;
-    const stars: Array<{ t: "祿" | "權" | "科" | "忌"; s: SiHuaStar }> = [
+    const stars: Array<{ t: "祿" | "權" | "科" | "忌"; s: BuiltSiHuaStar }> = [
       data.lu && { t: "祿", s: data.lu },
       data.quan && { t: "權", s: data.quan },
       data.ke && { t: "科", s: data.ke },
       data.ji && { t: "忌", s: data.ji },
-    ].filter((x): x is { t: "祿" | "權" | "科" | "忌"; s: SiHuaStar } => Boolean(x));
+    ].filter((x): x is { t: "祿" | "權" | "科" | "忌"; s: BuiltSiHuaStar } => Boolean(x));
     for (const { t, s } of stars) {
       const raw = String(s.palaceName ?? s.palaceKey ?? "").trim();
       if (!raw || raw.includes("待核") || raw.includes("未知")) continue;
@@ -826,39 +853,6 @@ export const SIHUA_TECH_NOTE =
     "命書正文只呈現「飛到哪裡、引動哪個宮位與主題」，演算法細節保留在專家系統與內部設定中。",
   ].join("\n");
 
-/** 把 transformations 轉成「祿從哪宮出，入哪宮」的自然語句，多行字串。同宮同類型可合併；無 toPalace 則跳過。 */
-export function getFlowTransformationsText(transformations: FlowTransformationEntry[]): string {
-  if (!Array.isArray(transformations) || transformations.length === 0) return "";
-  const valid = transformations.filter(
-    (t) => t && (t.fromPalaceName || t.fromPalaceKey) && (t.toPalaceName || t.toPalaceKey)
-  );
-  if (valid.length === 0) return "";
-  const ensureGong = (s: string | undefined) => {
-    if (!s) return "";
-    const t = (s || "").trim().replace(/宮$/, "");
-    return t === "命" ? "命宮" : t ? t + "宮" : "";
-  };
-  const lines: string[] = [];
-  const key = (t: FlowTransformationEntry) =>
-    `${t.layerLabel}|${t.typeLabel}|${ensureGong(t.fromPalaceName || t.fromPalaceKey)}|${ensureGong(t.toPalaceName || t.toPalaceKey)}`;
-  const byKey = new Map<string, string[]>();
-  for (const t of valid) {
-    const k = key(t);
-    if (!byKey.has(k)) byKey.set(k, []);
-    byKey.get(k)!.push(t.starName || "");
-  }
-  byKey.forEach((starNames, k) => {
-    const [layerLabel, typeLabel, fromDisplay, toDisplay] = k.split("|");
-    if (!toDisplay) return;
-    const stars = starNames.filter(Boolean).join("、");
-    if (!stars) return;
-    const fromShort = (fromDisplay || "").replace(/宮$/, "") || fromDisplay;
-    const toShort = (toDisplay || "").replace(/宮$/, "") || toDisplay;
-    lines.push(`${layerLabel}${stars}${typeLabel}：從${fromShort}宮出，入${toShort}宮`);
-  });
-  return lines.join("\n");
-}
-
 /** 疊宮一筆：新格式（前端可產出）或由 Worker 從舊格式轉出；可含 s15a 專用擴充 */
 interface OverlapItemForBlock {
   palaceName: string;
@@ -891,7 +885,7 @@ const TAG_FEELING_ADVICE: Record<"shock" | "mine" | "wealth", { feeling: string;
 };
 
 /** 單一疊宮項：產出【宮名】+ 四化詳細文字（祿從何來、忌往哪裡）+ 化忌/化祿重數；若有 year/age/natal/feeling/advice 則加時間診斷三小段。
- * Phase 5B-2：有 findings 時本命宮干飛化只讀 findings.natalFlowItems；無 findings 時才用 chart。 */
+ * 四化流向正文只讀 findings.natalFlowItems 或 NormalizedChart.*.flows（經 getFlowBlockForPalace），不回頭讀 overlap.items[].transformations。 */
 function formatOverlapBlockItem(
   item: OverlapItemForBlock,
   chart?: NormalizedChart | null,
@@ -899,8 +893,10 @@ function formatOverlapBlockItem(
 ): string {
   const flowText =
     findings != null
-      ? (buildNatalFlowBlockFromFindings(findings, item.palaceName) || getFlowTransformationsText(item.transformations))
-      : (chart ? getFlowBlockForPalace(chart, item.palaceName) : "") || getFlowTransformationsText(item.transformations);
+      ? buildNatalFlowBlockFromFindings(findings, item.palaceName) || ""
+      : chart
+        ? getFlowBlockForPalace(chart, item.palaceName) || ""
+        : "";
   const fourDesc = flowText ? flowText : "（本宮無四化疊加）";
   const countLine = `化忌：${item.jiCount} 重 | 化祿：${item.luCount} 重`;
   const block = ["【" + item.palaceName + "】", fourDesc, countLine].join("\n");
@@ -948,27 +944,8 @@ function getSectionKeyForPalace(palaceName: string): string | undefined {
   return t?.section_key;
 }
 
-export interface BuildOverlapDetailBlocksOpts {
-  chartJson?: Record<string, unknown>;
-  content?: AssembleContentLookup;
-  config?: LifeBookConfig | null;
-  contentLocale?: "zh-TW" | "zh-CN" | "en";
-  minorFortuneByPalace?: Array<{ palace?: string; year?: number | null; nominalAge?: number | null; stem?: string | null }>;
-  /** Phase 5B-2：有則本命宮干飛化只讀 findings.natalFlowItems，不讀 chart。 */
-  findings?: LifebookFindings | null;
-}
-
-/** 從 overlay 產出三組疊宮區塊。疊宮清理：暫不讀舊 overlap 預算 transformations，恆回傳空；待 buildPalaceOverlay 接上後改為讀新資料。 */
-function buildOverlapDetailBlocks(
-  _overlap: Record<string, unknown> | undefined,
-  _opts?: BuildOverlapDetailBlocksOpts
-): {
-  shockBlocks: string;
-  mineBlocks: string;
-  wealthBlocks: string;
-} {
-  return { shockBlocks: "", mineBlocks: "", wealthBlocks: "" };
-}
+export type { BuildOverlapDetailBlocksOpts } from "./lifebook/overlapDetailBlocks.js";
+export { buildOverlapDetailBlocks } from "./lifebook/overlapDetailBlocks.js";
 
 export const MODEL_CONFIG = {
   default: "gpt-4.1",
@@ -1152,33 +1129,17 @@ type MutagenStars = Record<string, string>;
 
 // ============ 四化層級結構（祿／權／科／忌全套，供 s00／s03 使用） ============
 
-/** 單一化星：星名＋落宮（從哪顆星 → 飛到／落在哪一宮） */
-export type SiHuaStar = {
-  starName: string;
-  palaceKey: string;
-  palaceName: string;
-  transformType: "lu" | "quan" | "ke" | "ji";
-};
-
-/** 一層四化：祿／權／科／忌 各一顆（可為 null） */
-export type SiHuaLayer = {
-  lu?: SiHuaStar | null;
-  quan?: SiHuaStar | null;
-  ke?: SiHuaStar | null;
-  ji?: SiHuaStar | null;
-};
-
-/** 本命／大限／流年 四化層級 */
-export type SiHuaLayers = {
-  benming?: SiHuaLayer;
-  decadal?: SiHuaLayer;
-  yearly?: SiHuaLayer;
-};
+/** @deprecated 改用 BuiltSiHuaStar（worker 權威顯示層） */
+export type SiHuaStar = BuiltSiHuaStar;
+/** @deprecated 改用 BuiltSiHuaLayer */
+export type SiHuaLayer = BuiltSiHuaLayer;
+/** @deprecated 改用 BuiltSiHuaLayers */
+export type SiHuaLayers = BuiltSiHuaLayers;
 
 const SIHUA_PLACEHOLDER_MISSING = "[此處資料缺失，可略過]";
 
 /** 把某一層四化變成一行句子（天梁化祿、紫微化權、…） */
-export function formatSiHuaLine(layer?: SiHuaLayer | null): string {
+export function formatSiHuaLine(layer?: BuiltSiHuaLayer | null): string {
   if (!layer) return SIHUA_PLACEHOLDER_MISSING;
   const parts: string[] = [];
   if (layer.lu) parts.push(`${layer.lu.starName}化祿`);
@@ -1194,7 +1155,7 @@ function layerFromMutagen(
   starByPalace: Partial<Record<string, string[]>> | undefined,
   starIdToName: Record<string, string>,
   palaceIdToName: Record<string, string>
-): SiHuaLayer | null {
+): BuiltSiHuaLayer | null {
   if (!mutagen || typeof mutagen !== "object") return null;
   const starToPalace: Record<string, string> = {};
   if (starByPalace && typeof starByPalace === "object") {
@@ -1206,7 +1167,7 @@ function layerFromMutagen(
     }
   }
   const FALLBACK_PALACE = "落宮待核";
-  const toStar = (key: "祿" | "權" | "科" | "忌", type: "lu" | "quan" | "ke" | "ji"): SiHuaStar | null => {
+  const toStar = (key: "祿" | "權" | "科" | "忌", type: "lu" | "quan" | "ke" | "ji"): BuiltSiHuaStar | null => {
     const starName = mutagen[key];
     if (!starName || typeof starName !== "string") return null;
     const starId = (STAR_NAME_ZH_TO_ID as Record<string, string>)[starName];
@@ -1227,133 +1188,84 @@ function layerFromMutagen(
   return { lu: lu ?? null, quan: quan ?? null, ke: ke ?? null, ji: ji ?? null };
 }
 
-/** 從 chartJson 既有四化資料整理成本命／大限／流年／小限的 SiHuaLayers，供 s00／s03 共用 */
-export function buildSiHuaLayers(chartJson: Record<string, unknown> | undefined): SiHuaLayers {
-  const out: SiHuaLayers = {};
+/**
+ * 從 chartJson 整理本命／大限／流年的 SiHuaLayers（供 s00／s03／findings）。
+ * 權威：fourTransformations.mutagenStars + normalizeChart 落宮；**不**採用 chartJson.sihuaLayers（僅觀測比對）。
+ * Phase 3：可經 chartJson.lifebookSiHuaDisplayOverride 顯式覆寫部分層（需 audit，見 sihuaDisplayOverride）。
+ * 計算路徑預設省略已廢止的 `chartJson.sihuaLayers` wire（見 `omitClientSihuaWireForCompute`）；diff log 仍用原始 chart 比對。
+ */
+export function buildSiHuaLayers(chartJson: Record<string, unknown> | undefined): BuiltSiHuaLayers {
+  const out: BuiltSiHuaLayers = {};
   if (!chartJson) return out;
 
-  const layers = chartJson.sihuaLayers as SihuaLayers | undefined;
-  const ft = chartJson.fourTransformations as {
+  const chartForCompute = omitClientSihuaWireForCompute(chartJson);
+
+  let normalizedChartForSiHua: NormalizedChart | undefined;
+  try {
+    normalizedChartForSiHua = normalizeChart(chartForCompute);
+  } catch {
+    /* 仍可走 legacy assembleInput 落宮 */
+  }
+  const starNameToPalace =
+    normalizedChartForSiHua && normalizedChartForSiHua.palaces.length > 0
+      ? buildStarNameToPalaceFromNormalizedChart(normalizedChartForSiHua)
+      : undefined;
+  const useStarMap = Boolean(starNameToPalace && Object.keys(starNameToPalace).length > 0);
+
+  const ft = chartForCompute.fourTransformations as {
     benming?: { mutagenStars?: MutagenStars };
     dalimit?: { mutagenStars?: MutagenStars };
     decadal?: { mutagenStars?: MutagenStars };
     liunian?: { mutagenStars?: MutagenStars };
     yearly?: { mutagenStars?: MutagenStars };
   } | undefined;
-  const decadalLimits = chartJson.decadalLimits as Array<{ mutagenStars?: MutagenStars }> | undefined;
-  const yearlyHoroscope = chartJson.yearlyHoroscope as { year?: number; mutagenStars?: MutagenStars } | undefined;
-  const liunian = chartJson.liunian as { mutagenStars?: MutagenStars } | undefined;
 
   const starIdToName = STAR_ID_TO_DISPLAY_NAME as Record<string, string>;
   const palaceIdToName = PALACE_ID_TO_NAME as Record<string, string>;
-  const assembleInput = buildAssembleInput(chartJson, undefined, "zh-TW");
-  const starByPalace = assembleInput.starByPalace as Partial<Record<string, string[]>> | undefined;
+  let starByPalace: Partial<Record<string, string[]>> | undefined;
+  if (!useStarMap) {
+    const assembleInput = buildAssembleInput(chartForCompute, undefined, "zh-TW");
+    starByPalace = assembleInput.starByPalace as Partial<Record<string, string[]>> | undefined;
+  }
 
-  const toPalaceName = (id: string) => {
-    const n = normPalaceIdToName(id);
-    return n.endsWith("宮") ? n : n + "宮";
-  };
-  const toPalaceKey = (id: string) => normPalaceIdToName(id);
-
-  if (layers?.benMing?.transforms?.length) {
-    const t = layers.benMing.transforms;
-    const byType: SiHuaLayer = { lu: null, quan: null, ke: null, ji: null };
-    for (const x of t) {
-      const starName = starIdToName[x.starId] ?? x.starId;
-      const palaceKey = toPalaceKey(x.toPalace);
-      const palaceName = toPalaceName(x.toPalace);
-      const s: SiHuaStar = { starName, palaceKey, palaceName, transformType: x.type };
-      if (x.type === "lu") byType.lu = s;
-      else if (x.type === "quan") byType.quan = s;
-      else if (x.type === "ke") byType.ke = s;
-      else if (x.type === "ji") byType.ji = s;
-    }
-    out.benming = byType;
+  if (useStarMap && starNameToPalace) {
+    const lm = layerFromMutagenWithStarMap(ft?.benming?.mutagenStars, starNameToPalace);
+    out.benming = (lm as BuiltSiHuaLayer) ?? undefined;
   } else {
     const benmingLayer = layerFromMutagen(ft?.benming?.mutagenStars, starByPalace, starIdToName, palaceIdToName);
     out.benming = benmingLayer ?? undefined;
   }
 
-  if (layers?.daXianCurrent?.transforms?.length) {
-    const t = layers.daXianCurrent.transforms;
-    const byType: SiHuaLayer = { lu: null, quan: null, ke: null, ji: null };
-    for (const x of t) {
-      const starName = starIdToName[x.starId] ?? x.starId;
-      const palaceKey = toPalaceKey(x.toPalace);
-      const palaceName = toPalaceName(x.toPalace);
-      const s: SiHuaStar = { starName, palaceKey, palaceName, transformType: x.type };
-      if (x.type === "lu") byType.lu = s;
-      else if (x.type === "quan") byType.quan = s;
-      else if (x.type === "ke") byType.ke = s;
-      else if (x.type === "ji") byType.ji = s;
-    }
-    out.decadal = byType;
+  const decadalMut = resolveDecadalMutagenStars(chartForCompute, normalizedChartForSiHua);
+  if (useStarMap && starNameToPalace) {
+    const lm = layerFromMutagenWithStarMap(decadalMut, starNameToPalace);
+    out.decadal = (lm as BuiltSiHuaLayer) ?? undefined;
   } else {
-    const decadal = ft?.dalimit?.mutagenStars ?? ft?.decadal?.mutagenStars ?? decadalLimits?.[0]?.mutagenStars;
-    const decadalLayer = layerFromMutagen(decadal, starByPalace, starIdToName, palaceIdToName);
+    const decadalLayer = layerFromMutagen(decadalMut, starByPalace, starIdToName, palaceIdToName);
     out.decadal = decadalLayer ?? undefined;
   }
 
-  if (layers?.liuNianCurrent?.transforms?.length) {
-    const t = layers.liuNianCurrent.transforms;
-    const byType: SiHuaLayer = { lu: null, quan: null, ke: null, ji: null };
-    for (const x of t) {
-      const starName = starIdToName[x.starId] ?? x.starId;
-      const palaceKey = toPalaceKey(x.toPalace);
-      const palaceName = toPalaceName(x.toPalace);
-      const s: SiHuaStar = { starName, palaceKey, palaceName, transformType: x.type };
-      if (x.type === "lu") byType.lu = s;
-      else if (x.type === "quan") byType.quan = s;
-      else if (x.type === "ke") byType.ke = s;
-      else if (x.type === "ji") byType.ji = s;
-    }
-    out.yearly = byType;
+  const yearlyMut = resolveYearlyMutagenStars(chartForCompute, normalizedChartForSiHua);
+  if (useStarMap && starNameToPalace) {
+    const lm = layerFromMutagenWithStarMap(yearlyMut, starNameToPalace);
+    out.yearly = (lm as BuiltSiHuaLayer) ?? undefined;
   } else {
-    const yearly = ft?.liunian?.mutagenStars ?? ft?.yearly?.mutagenStars ?? yearlyHoroscope?.mutagenStars ?? liunian?.mutagenStars;
-    const yearlyLayer = layerFromMutagen(yearly, starByPalace, starIdToName, palaceIdToName);
+    const yearlyLayer = layerFromMutagen(yearlyMut, starByPalace, starIdToName, palaceIdToName);
     out.yearly = yearlyLayer ?? undefined;
   }
 
-  return out;
+  const overrideResult = applySiHuaDisplayOverride(chartJson, out);
+  if (overrideResult.applied && overrideResult.audit) {
+    logSiHuaDisplayOverrideApplied(overrideResult.audit);
+  }
+  if (isClientSihuaLayersDiffLogEnabled()) maybeLogClientSihuaLayersDiff(chartJson, overrideResult.layers);
+  return overrideResult.layers;
 }
 
 /** s00 判讀引擎用：從 chartJson 產出三層四化事件陣列（layer, transform, starName, fromPalace, toPalace） */
 export function buildS00EventsFromChart(chartJson: Record<string, unknown> | undefined): SiHuaEvent[] {
   const events: SiHuaEvent[] = [];
   if (!chartJson) return events;
-
-  type TransformItem = { starId: string; type: string; fromPalace?: string; toPalace?: string };
-  const layers = chartJson.sihuaLayers as {
-    benMing?: { transforms?: TransformItem[] };
-    daXianCurrent?: { transforms?: TransformItem[] };
-    liuNianCurrent?: { transforms?: TransformItem[] };
-  } | undefined;
-  const layerMap = [
-    ["benMing", "natal" as const],
-    ["daXianCurrent", "decade" as const],
-    ["liuNianCurrent", "year" as const],
-  ] as const;
-
-  if (layers?.benMing?.transforms?.length || layers?.daXianCurrent?.transforms?.length || layers?.liuNianCurrent?.transforms?.length) {
-    for (const [key, layer] of layerMap) {
-      const arr = key === "benMing" ? layers?.benMing?.transforms : key === "daXianCurrent" ? layers?.daXianCurrent?.transforms : layers?.liuNianCurrent?.transforms;
-      if (!Array.isArray(arr)) continue;
-      for (const t of arr) {
-        const starName = (STAR_ID_TO_DISPLAY_NAME as Record<string, string>)[t.starId] ?? t.starId;
-        const fromPalace = normPalaceIdToName(t.fromPalace ?? "");
-        const toPalace = normPalaceIdToName(t.toPalace ?? "");
-        const transform = (t.type === "lu" || t.type === "quan" || t.type === "ke" || t.type === "ji") ? t.type : "lu";
-        events.push({
-          layer,
-          transform,
-          starName,
-          fromPalace: fromPalace || (toPalace ? getOppositePalaceName(toPalace) : ""),
-          toPalace: toPalace || (fromPalace ? getOppositePalaceName(fromPalace) : ""),
-        });
-      }
-    }
-    return events;
-  }
 
   const sihuaLayers = buildSiHuaLayers(chartJson);
   const layerKeys = [
@@ -1381,8 +1293,8 @@ export function buildS00EventsFromChart(chartJson: Record<string, unknown> | und
   return events;
 }
 
-/** 從 chartJson + config 產出穿透式診斷包（供 s00／s03 共用）。 */
-function buildPiercingDiagnosticBundle(
+/** 從 chartJson + config 產出穿透式診斷包（供 s00／s03／模組二共用）。 */
+export function buildPiercingDiagnosticBundle(
   chartJson: Record<string, unknown> | undefined,
   config: LifeBookConfig | null | undefined
 ) {
@@ -1422,19 +1334,42 @@ function buildPiercingDiagnosticBundle(
   });
 }
 
-/** 若前端／domain 提供 chart_json.sihuaLayers，則採用此結構；否則 Worker 由 fourTransformations / overlapAnalysis 推導 */
-export interface SiHuaLayerTransform {
+function piercingBundleFromFindingsOrChart(
+  findings: LifebookFindings | undefined,
+  chartJson: Record<string, unknown> | undefined,
+  config: LifeBookConfig | null | undefined
+) {
+  return findings?.piercingDiagnosticBundle ?? buildPiercingDiagnosticBundle(chartJson, config);
+}
+
+/**
+ * 客戶端請求可附帶的 sihuaLayers 單筆飛星（wire）。
+ * @deprecated Phase 2：僅供比對／除錯；正式管線不讀取。覆寫請用 chartJson.lifebookSiHuaDisplayOverride。
+ */
+export interface ClientSihuaLayerTransform {
   starId: string;
   type: "lu" | "quan" | "ke" | "ji";
   fromPalace: string;
   toPalace: string;
 }
 
-export interface SihuaLayers {
-  benMing?: { yearStem?: string; transforms: SiHuaLayerTransform[] };
-  daXianCurrent?: { decadeRange?: [number, number]; stem?: string; transforms: SiHuaLayerTransform[] };
-  liuNianCurrent?: { year?: number; stem?: string; transforms: SiHuaLayerTransform[] };
+/**
+ * 客戶端請求可附帶的三層四化（wire，chartJson.sihuaLayers）。
+ * @deprecated Phase 2：僅供比對／除錯；權威為 {@link BuiltSiHuaLayers}（buildSiHuaLayers）。
+ */
+export interface ClientSihuaLayers {
+  benMing?: { yearStem?: string; transforms: ClientSihuaLayerTransform[] };
+  daXianCurrent?: { decadeRange?: [number, number]; stem?: string; transforms: ClientSihuaLayerTransform[] };
+  liuNianCurrent?: { year?: number; stem?: string; transforms: ClientSihuaLayerTransform[] };
 }
+
+/** 型別標記：欄位仍相容，但不得再當作權威四化來源。 */
+export type DeprecatedClientSihuaLayers = Deprecated<ClientSihuaLayers>;
+
+/** @deprecated 改用 ClientSihuaLayerTransform */
+export type SiHuaLayerTransform = ClientSihuaLayerTransform;
+/** @deprecated 改用 ClientSihuaLayers（舊名與 BuiltSiHuaLayers 易混淆） */
+export type SihuaLayers = ClientSihuaLayers;
 
 /** 星曜 id → 中文名（14 主星 + 常用輔星，供 sihuaLayers.starId 顯示） */
 const STAR_ID_TO_DISPLAY_NAME: Record<string, string> = {
@@ -1561,21 +1496,6 @@ export interface SiHuaContext {
 
 const SIHUA_MISSING = "（無四化資料）";
 
-/** 從 sihuaLayers.transforms 組「星名化祿、星名化權…」列表與祿／忌星名 */
-function fromLayerTransforms(transforms: SiHuaLayerTransform[]): { list: string; luStars: string; jiStars: string } {
-  const typeLabel: Record<string, string> = { lu: "化祿", quan: "化權", ke: "化科", ji: "化忌" };
-  const parts: string[] = [];
-  let luStars = "";
-  let jiStars = "";
-  for (const t of transforms) {
-    const name = STAR_ID_TO_DISPLAY_NAME[t.starId] ?? t.starId;
-    parts.push(`${name}${typeLabel[t.type] ?? "化忌"}`);
-    if (t.type === "lu") luStars = luStars ? `${luStars}、${name}` : name;
-    if (t.type === "ji") jiStars = jiStars ? `${jiStars}、${name}` : name;
-  }
-  return { list: parts.length > 0 ? parts.join("、") : SIHUA_MISSING, luStars: luStars || SIHUA_MISSING, jiStars: jiStars || SIHUA_MISSING };
-}
-
 /** 從 mutagenStars（祿／權／科／忌 → 星名）組列表與祿／忌星名 */
 function fromMutagen(m: MutagenStars | undefined): { list: string; luStars: string; jiStars: string } {
   if (!m || typeof m !== "object") return { list: SIHUA_MISSING, luStars: SIHUA_MISSING, jiStars: SIHUA_MISSING };
@@ -1591,7 +1511,7 @@ function fromMutagen(m: MutagenStars | undefined): { list: string; luStars: stri
 
 /**
  * 四化高階 context：供 s00／s03／12 宮 placeholder 使用。
- * 若 chartJson.sihuaLayers 存在則優先使用；否則由 fourTransformations + overlapAnalysis 推導。
+ * 權威來源：fourTransformations + normalizeChart（resolveDecadal/Yearly）；不依賴 chartJson.sihuaLayers。
  * Phase 5B-5：12 宮迴圈優先使用傳入的 findings，僅無傳入時才 fallback createEmptyFindings()。
  */
 export function buildSiHuaContext(
@@ -1618,7 +1538,13 @@ export function buildSiHuaContext(
 
   if (!chartJson) return defaultCtx;
 
-  const layers = chartJson.sihuaLayers as SihuaLayers | undefined;
+  let normalizedForSiHuaCtx: NormalizedChart | undefined;
+  try {
+    normalizedForSiHuaCtx = normalizeChart(chartJson);
+  } catch {
+    /* fromMutagen 仍可用 */
+  }
+
   const ft = chartJson.fourTransformations as {
     benming?: { mutagenStars?: MutagenStars };
     dalimit?: { mutagenStars?: MutagenStars };
@@ -1626,81 +1552,30 @@ export function buildSiHuaContext(
     liunian?: { mutagenStars?: MutagenStars };
     yearly?: { mutagenStars?: MutagenStars };
   } | undefined;
-  const decadalLimits = chartJson.decadalLimits as Array<{ mutagenStars?: MutagenStars }> | undefined;
-  const yearlyHoroscope = chartJson.yearlyHoroscope as { mutagenStars?: MutagenStars } | undefined;
-  const liunian = chartJson.liunian as { mutagenStars?: MutagenStars } | undefined;
 
-  let benMingList: string, benMingLu: string, benMingJi: string;
-  let daXianList: string, daXianLu: string, daXianJi: string;
-  let liuNianList: string, liuNianLu: string, liuNianJi: string;
+  const b0 = fromMutagen(ft?.benming?.mutagenStars);
+  const benMingList = b0.list;
+  const benMingLu = b0.luStars;
+  const benMingJi = b0.jiStars;
 
-  if (layers?.benMing?.transforms?.length) {
-    const b = fromLayerTransforms(layers.benMing.transforms);
-    benMingList = b.list;
-    benMingLu = b.luStars;
-    benMingJi = b.jiStars;
-  } else {
-    const b = fromMutagen(ft?.benming?.mutagenStars);
-    benMingList = b.list;
-    benMingLu = b.luStars;
-    benMingJi = b.jiStars;
-  }
+  const decadalMutCtx = resolveDecadalMutagenStars(chartJson, normalizedForSiHuaCtx);
+  const d0 = fromMutagen(decadalMutCtx);
+  const daXianList = d0.list;
+  const daXianLu = d0.luStars;
+  const daXianJi = d0.jiStars;
 
-  if (layers?.daXianCurrent?.transforms?.length) {
-    const d = fromLayerTransforms(layers.daXianCurrent.transforms);
-    daXianList = d.list;
-    daXianLu = d.luStars;
-    daXianJi = d.jiStars;
-  } else {
-    const decadal = ft?.dalimit?.mutagenStars ?? ft?.decadal?.mutagenStars ?? decadalLimits?.[0]?.mutagenStars;
-    const d = fromMutagen(decadal);
-    daXianList = d.list;
-    daXianLu = d.luStars;
-    daXianJi = d.jiStars;
-  }
-
-  if (layers?.liuNianCurrent?.transforms?.length) {
-    const y = fromLayerTransforms(layers.liuNianCurrent.transforms);
-    liuNianList = y.list;
-    liuNianLu = y.luStars;
-    liuNianJi = y.jiStars;
-  } else {
-    const yearly = ft?.liunian?.mutagenStars ?? ft?.yearly?.mutagenStars ?? yearlyHoroscope?.mutagenStars ?? liunian?.mutagenStars;
-    const y = fromMutagen(yearly);
-    liuNianList = y.list;
-    liuNianLu = y.luStars;
-    liuNianJi = y.jiStars;
-  }
+  const yearlyMutCtx = resolveYearlyMutagenStars(chartJson, normalizedForSiHuaCtx);
+  const y0 = fromMutagen(yearlyMutCtx);
+  const liuNianList = y0.list;
+  const liuNianLu = y0.luStars;
+  const liuNianJi = y0.jiStars;
 
   const perPalaceFlow: Record<string, string> = { ...emptyPalaceFlow };
-  if (layers?.benMing?.transforms?.length || layers?.daXianCurrent?.transforms?.length || layers?.liuNianCurrent?.transforms?.length) {
-    const allTrans: Array<{ layer: string; starName: string; type: string; fromPalace: string; toPalace: string }> = [];
-    for (const [layerKey, label] of [["benMing", "本命"], ["daXianCurrent", "大限"], ["liuNianCurrent", "流年"]] as const) {
-      const arr = layers?.[layerKey]?.transforms;
-      if (!Array.isArray(arr)) continue;
-      for (const t of arr) {
-        const starName = STAR_ID_TO_DISPLAY_NAME[t.starId] ?? t.starId;
-        const fromName = normPalaceIdToName(t.fromPalace);
-        const toName = normPalaceIdToName(t.toPalace);
-        const typeLabel = t.type === "lu" ? "化祿" : t.type === "quan" ? "化權" : t.type === "ke" ? "化科" : "化忌";
-        allTrans.push({ layer: label, starName, type: typeLabel, fromPalace: fromName, toPalace: toName });
-      }
-    }
-    for (const palaceName of palaceNames) {
-      const into = allTrans.filter((t) => t.toPalace === palaceName || t.toPalace.replace(/宮$/, "") === palaceName.replace(/宮$/, ""));
-      const out = allTrans.filter((t) => t.fromPalace === palaceName || t.fromPalace.replace(/宮$/, "") === palaceName.replace(/宮$/, ""));
-      const lines: string[] = [];
-      for (const t of into) lines.push(`${t.layer}${t.starName}${t.type}自${t.fromPalace}飛入${palaceName}`);
-      for (const t of out) lines.push(`${t.layer}${t.starName}${t.type}自${palaceName}飛出至${t.toPalace}`);
-      perPalaceFlow[palaceName] = lines.length > 0 ? lines.join("；") + "。" : "（此宮暫無四化飛星摘要）";
-    }
-  } else {
-    const currentFindings = passedInFindings ?? createEmptyFindings();
-    for (const p of palaceNames) {
-      const key = p.replace(/宮$/, "") === "命" ? "命宮" : p.replace(/宮$/, "");
-      const summary = buildSihuaFlowSummary({ currentPalace: key, findings: currentFindings });
-      perPalaceFlow[p] = summary || "（此宮暫無四化飛星摘要）";
-    }
+  const currentFindings = passedInFindings ?? createEmptyFindings();
+  for (const p of palaceNames) {
+    const key = p.replace(/宮$/, "") === "命" ? "命宮" : p.replace(/宮$/, "");
+    const summary = buildSihuaFlowSummary({ currentPalace: key, findings: currentFindings });
+    perPalaceFlow[p] = summary || "（此宮暫無四化飛星摘要）";
   }
 
   const sihuaGlobalSummary = defaultCtx.sihuaGlobalSummary;
@@ -1861,17 +1736,7 @@ export function buildS03GlobalContext(
   const benming = ft?.benming?.mutagenStars;
 
   const sihuaMappingLines: string[] = [];
-  const typeToLabel = (t: string) => (t === "lu" ? "祿" : t === "quan" ? "權" : t === "ke" ? "科" : "忌");
-  const layers = chartJson.sihuaLayers as { benMing?: { transforms?: Array<{ starId: string; type: string; toPalace?: string }> } } | undefined;
-  if (layers?.benMing?.transforms?.length) {
-    for (const t of layers.benMing.transforms) {
-      const toPalaceRaw = t.toPalace ?? "";
-      const palaceName = toPalaceRaw ? (normPalaceIdToName(toPalaceRaw).endsWith("宮") ? normPalaceIdToName(toPalaceRaw) : normPalaceIdToName(toPalaceRaw) + "宮") : "";
-      if (!palaceName) continue;
-      const starName = (STAR_ID_TO_DISPLAY_NAME as Record<string, string>)[t.starId] ?? t.starId;
-      sihuaMappingLines.push(`${starName}化${typeToLabel(t.type)} → ${palaceName}`);
-    }
-  } else {
+  {
     const siHuaLayers = buildSiHuaLayers(chartJson);
     const benmingLayer = siHuaLayers.benming;
     if (benmingLayer) {
@@ -2508,6 +2373,8 @@ export function getPlaceholderMapFromContext(
   }
 ): Record<string, string> {
   const map: Record<string, string> = {};
+  let module2TimeSnapCache: ReturnType<typeof buildTimeModuleOverlapSnapshotFromChartJson> | undefined;
+  let module2DecisionSnapCache: TimeModuleDecisionSnapshot | undefined;
   let s15aV2Usable = false;
   let s16V2Usable = false;
   const forTechnical = opts?.forTechnicalOutput === true;
@@ -2993,7 +2860,7 @@ export function getPlaceholderMapFromContext(
       map.benmingJiStar = bm.ji.starName;
       map.benmingJiPalace = bm.ji.palaceName;
     }
-    const piercingS03 = buildPiercingDiagnosticBundle(opts.chartJson, opts.config ?? null);
+    const piercingS03 = piercingBundleFromFindingsOrChart(opts.findings, opts.chartJson, opts.config ?? null);
     const t03 = piercingS03.tensions[0];
     const rc03 = piercingS03.rootCauses[0];
     const partsS03: string[] = [];
@@ -3081,7 +2948,7 @@ export function getPlaceholderMapFromContext(
     const s00Events = buildS00EventsFromChart(opts.chartJson);
     const s00Hits = evaluateFourTransformPatterns(s00Events);
     const { hotStars, hotPalaces } = getHotStarsAndPalaces(s00Events);
-    const piercingS00 = buildPiercingDiagnosticBundle(opts.chartJson, opts.config ?? null);
+    const piercingS00 = piercingBundleFromFindingsOrChart(opts.findings, opts.chartJson, opts.config ?? null);
     const rc = piercingS00.rootCauses[0];
     const t0 = piercingS00.tensions[0];
     const linesS00: string[] = [];
@@ -3204,14 +3071,14 @@ export function getPlaceholderMapFromContext(
       : "你真正要練的，是讓命主的方向感、身主的行動方式與身宮的體感場域彼此配合，而不是彼此拉扯。";
   }
   /**
-   * Time module section key 清單（本檔多處使用，僅整理註解，TODO: 日後可考慮抽成常數或共用以減少不一致）：
+   * Time module section key 清單（本檔多處使用；若抽共用常數請一併搜尋 TIME_MODULE_KEYS、timeModuleKeys、TIME_MODULE_SECTION_KEYS）：
    * - TIME_MODULE_SECTION_KEYS（本區塊）：全部時間模組但「不含 s15a」；用於大限／十年主線／decadalFourTransform 等。
    * - timeModuleKeys（getPlaceholderMapFromContext 下方）：全部時間模組「含 s15a」；用於 s15a/s16 V2、overlap、minor 表、keyYears。
    * - timeModuleYearKeys（同函式更下方）：全部時間模組「不含 s15a」；用於 flowYear、liunian、yearlyFourTransform、yearRoleInDecade（year logic）。
    * - TIME_MODULE_KEYS（getSectionTechnicalBlocks）：僅 s15,s15a,s16,s17；供 technical blocks 的 underlyingParams 與 skeleton missing 判定。
    * - timeModuleKeys（injectTimeModuleDataIntoSection）：同 getPlaceholderMapFromContext 的 timeModuleKeys，全部時間模組含 s15a。
    */
-  const TIME_MODULE_SECTION_KEYS = ["s15", "s16", "s17", "s18", "s19", "s20", "s21"] as const;
+  const TIME_MODULE_SECTION_KEYS = ["s15", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"] as const;
   if (TIME_MODULE_SECTION_KEYS.includes(opts?.sectionKey as typeof TIME_MODULE_SECTION_KEYS[number]) && opts?.chartJson) {
     const decadalLimits = (opts.chartJson.decadalLimits ?? (opts.chartJson.ziwei as Record<string, unknown>)?.decadalLimits) as Array<{ palace?: string; startAge?: number; endAge?: number; stem?: string; mutagenStars?: Record<string, string> }> | undefined;
     if (Array.isArray(decadalLimits) && decadalLimits.length > 0) {
@@ -3266,35 +3133,57 @@ export function getPlaceholderMapFromContext(
     const currentPalaceCanon = !currentPalaceName ? "" : currentPalaceName.endsWith("宮") ? currentPalaceName : currentPalaceName + "宮";
     const currentPalaceShort = currentPalaceName.replace(/宮$/, "") === "命" ? "命宮" : currentPalaceName.replace(/宮$/, "");
     // 模組二四項基礎（大限命宮／四化、流年命宮／四化）只允許由 buildTimeModuleDisplayFromChartJson 寫入，此處不寫入，避免與流年／本命混用
-    const M2_BASE_KEYS_ONLY_FROM_TIMEDISPLAY = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"];
+    const M2_BASE_KEYS_ONLY_FROM_TIMEDISPLAY = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"];
     if (!M2_BASE_KEYS_ONLY_FROM_TIMEDISPLAY.includes(opts?.sectionKey ?? "")) {
       map.currentDecadalPalace = currentPalaceName || "（當前大限）";
       map.currentDecadalSihuaLine = dalimitSihua || benmingSihua || "";
     }
     const decadalThemeEntry = getDecadalPalaceTheme(currentPalaceCanon || currentPalaceName);
     map.currentDecadalTheme = (decadalThemeEntry?.theme ?? "這十年的主線場景") as string;
-    // S17/S18/S19：統一架構 — 有 normalizedChart 用 buildPalaceOverlayFromNormalizedChart，否則 fallback buildPalaceOverlay(chartJson)
+    // S17/S18/S19：P2 與技術版共用 findings.timeModuleS17S19ReaderSnapshot（buildP2FindingsAndContext 只算一次）；有則只讀快照，無則即場算（舊路徑／無 findings）。
     const needOverlay = opts?.sectionKey === "s17" || opts?.sectionKey === "s18" || opts?.sectionKey === "s19";
     if (needOverlay) {
-      const flowYear = yearlyForAge?.year ?? (opts?.chartJson?.yearlyHoroscope as { year?: number } | undefined)?.year;
-      const overlay = opts?.normalizedChart
-        ? buildPalaceOverlayFromNormalizedChart(opts.normalizedChart)
-        : opts?.chartJson
-          ? buildPalaceOverlay(opts.chartJson, { currentAge, flowYear })
-          : [];
-      const useAdapter = !!opts?.normalizedChart;
-      if (overlay.length > 0) {
-        if (opts?.sectionKey === "s17") {
-          map.palaceOverlayBlocks = buildPalaceOverlayBlocks(overlay);
+      const snap = opts.findings?.timeModuleS17S19ReaderSnapshot;
+      const snapStale =
+        snap &&
+        opts.chartJson &&
+        isTimeModuleS17S19ReaderSnapshotStale(snap, opts.chartJson as Record<string, unknown>);
+      if (snap && !snapStale) {
+        if (opts.sectionKey === "s17") {
+          map.palaceOverlayBlocks = snap.palaceOverlayBlocks;
+          if (snap.s17EdgeAuthority) map.s17EdgeAuthority = snap.s17EdgeAuthority;
         }
-        if (opts?.sectionKey === "s18") {
-          const signals = buildEventSignals(overlay, useAdapter ? undefined : opts?.chartJson);
-          map.s18SignalsBlocks = signalsToNarrative(signals);
+        if (opts.sectionKey === "s18") {
+          map.s18SignalsBlocks = snap.s18SignalsBlocks;
+          if (snap.s18EdgeAuthority) map.s18EdgeAuthority = snap.s18EdgeAuthority;
         }
-        if (opts?.sectionKey === "s19" && opts?.chartJson) {
-          const s18Signals = buildEventSignals(overlay, useAdapter ? undefined : opts.chartJson);
-          const s19Output = buildS19MonthlyOutput({ chartJson: opts.chartJson, s18Signals });
-          map.s19MonthlyBlocks = formatS19MonthlyOutputToCard(s19Output);
+        if (opts.sectionKey === "s19") map.s19MonthlyBlocks = snap.s19MonthlyBlocks;
+      } else {
+        const flowYear = yearlyForAge?.year ?? (opts?.chartJson?.yearlyHoroscope as { year?: number } | undefined)?.year;
+        const overlay = opts?.normalizedChart
+          ? buildPalaceOverlayFromNormalizedChart(opts.normalizedChart)
+          : opts?.chartJson
+            ? buildPalaceOverlay(opts.chartJson, { currentAge, flowYear })
+            : [];
+        if (overlay.length > 0) {
+          if (opts?.sectionKey === "s17") {
+            map.palaceOverlayBlocks = buildPalaceOverlayBlocks(overlay);
+            map.s17EdgeAuthority = opts?.normalizedChart ? "normalizedChart_flows" : "chartJson_overlay_only";
+          }
+          if (opts?.sectionKey === "s18") {
+            const signals = buildEventSignals(overlay, opts?.chartJson as Record<string, unknown> | undefined);
+            map.s18SignalsBlocks = signalsToNarrative(signals);
+            map.s18EdgeAuthority = opts?.normalizedChart ? "normalizedChart_flows" : "chartJson_overlay_only";
+          }
+          if (opts?.sectionKey === "s19" && opts?.chartJson) {
+            const s18Signals = buildEventSignals(overlay, opts?.chartJson as Record<string, unknown> | undefined);
+            const s19Output = buildS19MonthlyOutput({
+              chartJson: opts.chartJson,
+              normalizedChart: opts.normalizedChart ?? undefined,
+              s18Signals,
+            });
+            map.s19MonthlyBlocks = formatS19MonthlyOutputToCard(s19Output);
+          }
         }
       }
     }
@@ -3383,7 +3272,7 @@ export function getPlaceholderMapFromContext(
       if (override && typeof override === "string" && override.trim()) {
         map.recurringHomeworkNarrative = override.trim();
       } else {
-        const bundle = buildPiercingDiagnosticBundle(opts.chartJson, opts.config ?? null);
+        const bundle = piercingBundleFromFindingsOrChart(opts.findings, opts.chartJson, opts.config ?? null);
         const reframes = bundle.reframes ?? [];
         const rootCauses = bundle.rootCauses ?? [];
         const tensions = bundle.tensions ?? [];
@@ -3404,7 +3293,7 @@ export function getPlaceholderMapFromContext(
       if (!map.keyYearsShockLead) map.keyYearsShockLead = "這一年吉凶並見、成敗一線間，關鍵在節奏與選擇，不在命好不好。";
     }
   }
-  const timeModuleKeys = ["s15a", "s15", "s16", "s17", "s18", "s19", "s20", "s21"];
+  const timeModuleKeys = ["s15a", "s15", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"];
   if (timeModuleKeys.includes(opts?.sectionKey ?? "") && opts?.chartJson) {
     if (opts?.sectionKey === "s15a") {
       const v2Result = buildS15aPlaceholderMapFromV2(opts.findingsV2);
@@ -3422,44 +3311,17 @@ export function getPlaceholderMapFromContext(
     }
 
     const minor = opts.chartJson.minorFortuneByPalace as Array<{ palace?: string; year?: number | null; nominalAge?: number | null; stem?: string | null; note?: string | null }> | undefined;
-    const overlap = (opts.chartJson.overlapAnalysis ?? opts.chartJson.overlap) as Record<string, unknown> | undefined;
-
-    let shockCount = 0;
-    let mineCount = 0;
-    let wealthCount = 0;
-    const palaceToTag = new Map<string, "shock" | "mine" | "wealth">();
-    // P0.6：永遠計算 overlap 計數與 palaceToTag，供 s15a key-level fallback 與 s15／其他 section 使用。
-    const newItems = Array.isArray(overlap?.items) ? (overlap.items as Array<{ palaceKey?: string; palaceName?: string; tag?: string }>) : [];
-    if (newItems.length > 0) {
-      for (const it of newItems) {
-        const tag = it.tag === "shock" || it.tag === "mine" || it.tag === "wealth" ? it.tag : null;
-        if (!tag) continue;
-        if (tag === "shock") shockCount++;
-        else if (tag === "mine") mineCount++;
-        else if (tag === "wealth") wealthCount++;
-        const pNorm = normPalaceForMatch(it.palaceName ?? it.palaceKey ?? "");
-        if (pNorm) palaceToTag.set(pNorm, tag);
-      }
-    } else {
-      const risks = (overlap?.criticalRisks ?? []) as Array<{ palace?: string }>;
-      const opps = (overlap?.maxOpportunities ?? []) as Array<{ palace?: string }>;
-      const vol = (overlap?.volatileAmbivalences ?? []) as Array<{ palace?: string }>;
-      shockCount = vol.length;
-      mineCount = risks.length;
-      wealthCount = opps.length;
-      for (const r of risks) {
-        const pNorm = normPalaceForMatch(r.palace ?? "");
-        if (pNorm) palaceToTag.set(pNorm, "mine");
-      }
-      for (const o of opps) {
-        const pNorm = normPalaceForMatch(o.palace ?? "");
-        if (pNorm) palaceToTag.set(pNorm, "wealth");
-      }
-      for (const v of vol) {
-        const pNorm = normPalaceForMatch(v.palace ?? "");
-        if (pNorm) palaceToTag.set(pNorm, "shock");
-      }
-    }
+    // 模組二疊宮：有 findings.timeModuleOverlap 則只讀快照；否則明確走 chart-only builder（禁止同段混讀 findings + overlap + chart）。
+    const timeSnap =
+      opts.findings?.timeModuleOverlap ??
+      buildTimeModuleOverlapSnapshotFromChartJson(opts.chartJson, {
+        content: opts.content,
+        config: opts.config ?? null,
+        contentLocale: opts.contentLocale ?? "zh-TW",
+      });
+    const palaceToTag = new Map<string, "shock" | "mine" | "wealth">(
+      Object.entries(timeSnap.palaceOverlapTags) as [string, "shock" | "mine" | "wealth"][]
+    );
 
     const tagSuffix = (p: string) => {
       const norm = normPalaceForMatch(p);
@@ -3484,7 +3346,7 @@ export function getPlaceholderMapFromContext(
             .join("\n")
         : "";
     // M2-Truth Step 3：模組二正文與四化技術版不得出現小限；附錄/關鍵年份可保留。
-    const timeModuleKeysForNoMinor = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"];
+    const timeModuleKeysForNoMinor = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"];
     map.minorFortuneTable = timeModuleKeysForNoMinor.includes(opts?.sectionKey ?? "") ? "" : tableRows;
 
     const timelineRows =
@@ -3503,88 +3365,20 @@ export function getPlaceholderMapFromContext(
     map.minorFortuneTimelineTable = timeModuleKeysForNoMinor.includes(opts?.sectionKey ?? "") ? "" : timelineRows;
 
     // P0.6：s15a 改為 key-level fallback（V2 有值不覆寫，缺 key 才用 overlap 補）；其餘 section 維持整段寫入。
-    const isEmpty = (v: string | undefined) => v === undefined || (typeof v === "string" && !v.trim());
-    if (opts?.sectionKey === "s15a") {
-      const detail = buildOverlapDetailBlocks(overlap, {
-        chartJson: opts.chartJson,
-        content: opts.content,
-        config: opts.config,
-        contentLocale: opts.contentLocale ?? "zh-TW",
-        minorFortuneByPalace: [], // M2-Truth Step 3：模組二四化技術版不輸出小限
-        findings: opts.findings ?? undefined,
-      });
-      if (isEmpty(map.overlapSummary)) map.overlapSummary = `劇烈震盪/吉凶並見：${shockCount} 個宮位；超級地雷區：${mineCount} 個宮位；大發財機會：${wealthCount} 個宮位`;
-      if (isEmpty(map.shockCount)) map.shockCount = String(shockCount);
-      if (isEmpty(map.mineCount)) map.mineCount = String(mineCount);
-      if (isEmpty(map.wealthCount)) map.wealthCount = String(wealthCount);
-      if (isEmpty(map.shockBlocks)) map.shockBlocks = detail.shockBlocks;
-      if (isEmpty(map.mineBlocks)) map.mineBlocks = detail.mineBlocks;
-      if (isEmpty(map.wealthBlocks)) map.wealthBlocks = detail.wealthBlocks;
-      if (isEmpty(map.keyYearsMineLead)) map.keyYearsMineLead = "這一年真正危險的，不是表面事件，而是壓力已經累積到會從這個宮位爆出來。";
-      if (isEmpty(map.keyYearsWealthLead)) map.keyYearsWealthLead = "此年該宮有資源匯聚，見四化。";
-      if (isEmpty(map.keyYearsShockLead)) map.keyYearsShockLead = "這一年吉凶並見、成敗一線間，關鍵在節奏與選擇，不在命好不好。";
-      if (isEmpty(map.volatileSection)) map.volatileSection = detail.shockBlocks ? "⚡ 劇烈震盪/吉凶並見（成敗一線間）\n" + detail.shockBlocks : (shockCount > 0 ? "⚡ 劇烈震盪/吉凶並見\n" : "");
-      if (isEmpty(map.criticalRisksSection)) map.criticalRisksSection = detail.mineBlocks ? "⚠️ 超級地雷區（必須絕對避開）\n" + detail.mineBlocks : (mineCount > 0 ? "⚠️ 超級地雷區\n" : "");
-      if (isEmpty(map.opportunitiesSection)) map.opportunitiesSection = detail.wealthBlocks ? "✨ 大發財機會（建議積極把握）\n" + detail.wealthBlocks : (wealthCount > 0 ? "✨ 大發財機會\n" : "");
-    } else {
-      // M2-Truth Step 6：禁止 fallback 覆寫已存在的 key（含 V2 寫入的 placeholder）
-      const isEmpty = (v: string | undefined) => v === undefined || (typeof v === "string" && !v.trim());
-      if (isEmpty(map.shockCount)) map.shockCount = String(shockCount);
-      if (isEmpty(map.mineCount)) map.mineCount = String(mineCount);
-      if (isEmpty(map.wealthCount)) map.wealthCount = String(wealthCount);
-      if (isEmpty(map.overlapSummary)) map.overlapSummary = `劇烈震盪/吉凶並見：${shockCount} 個宮位；超級地雷區：${mineCount} 個宮位；大發財機會：${wealthCount} 個宮位`;
-      const detail = buildOverlapDetailBlocks(overlap, {
-        chartJson: opts.chartJson,
-        content: opts.content,
-        config: opts.config,
-        contentLocale: opts.contentLocale ?? "zh-TW",
-        minorFortuneByPalace: [], // 疊宮清理：不再讓 minorFortune 參與疊宮主邏輯
-        findings: opts.findings ?? undefined,
-      });
-      if (isEmpty(map.shockBlocks)) map.shockBlocks = detail.shockBlocks;
-      if (isEmpty(map.mineBlocks)) map.mineBlocks = detail.mineBlocks;
-      if (isEmpty(map.wealthBlocks)) map.wealthBlocks = detail.wealthBlocks;
-      if (isEmpty(map.keyYearsMineLead)) map.keyYearsMineLead = "這一年真正危險的，不是表面事件，而是壓力已經累積到會從這個宮位爆出來。";
-      if (isEmpty(map.keyYearsWealthLead)) map.keyYearsWealthLead = "此年該宮有資源匯聚，見四化。";
-      if (isEmpty(map.keyYearsShockLead)) map.keyYearsShockLead = "這一年吉凶並見、成敗一線間，關鍵在節奏與選擇，不在命好不好。";
-      if (isEmpty(map.volatileSection)) map.volatileSection = detail.shockBlocks ? "⚡ 劇烈震盪/吉凶並見（成敗一線間）\n" + detail.shockBlocks : (shockCount > 0 ? "⚡ 劇烈震盪/吉凶並見\n" : "");
-      if (isEmpty(map.criticalRisksSection)) map.criticalRisksSection = detail.mineBlocks ? "⚠️ 超級地雷區（必須絕對避開）\n" + detail.mineBlocks : (mineCount > 0 ? "⚠️ 超級地雷區\n" : "");
-      if (isEmpty(map.opportunitiesSection)) map.opportunitiesSection = detail.wealthBlocks ? "✨ 大發財機會（建議積極把握）\n" + detail.wealthBlocks : (wealthCount > 0 ? "✨ 大發財機會\n" : "");
-    }
-    if (opts?.sectionKey === "s17" || opts?.sectionKey === "s15") {
-      const hasMinor = Array.isArray(minor) && minor.length > 0;
-      const hasOverlap = (Array.isArray(overlap?.items) && (overlap?.items?.length ?? 0) > 0) ||
-        (Array.isArray(overlap?.criticalRisks) && (overlap?.criticalRisks?.length ?? 0) > 0) ||
-        (Array.isArray(overlap?.maxOpportunities) && (overlap?.maxOpportunities?.length ?? 0) > 0) ||
-        (Array.isArray(overlap?.volatileAmbivalences) && (overlap?.volatileAmbivalences?.length ?? 0) > 0);
-      map.overlapDataMissingNotice = (hasMinor || hasOverlap) ? "" : "（疊宮資料尚未產出：請在專家後台先點「計算」並勾選「計算所有進階功能」，再重新生成此章。）";
-    }
+    applyTimeModuleOverlapPlaceholdersToMap(map, opts?.sectionKey, timeSnap);
     const decisionMatrix = (opts?.content as { decisionMatrix?: DecisionMatrixConfig } | undefined)?.decisionMatrix;
-    if (decisionMatrix && Array.isArray(minor) && minor.length > 0) {
-      const tagToRisk = (tag: "shock" | "mine" | "wealth" | undefined): 1 | 2 | 3 | 4 | 5 => {
-        if (tag === "mine") return 5;
-        if (tag === "shock") return 4;
-        if (tag === "wealth") return 2;
-        return 3;
-      };
-      const items: XiaoXianYearItem[] = minor.map((m) => {
-        const p = m.palace ?? "";
-        const tag = palaceToTag.get(normPalaceForMatch(p));
-        return {
-          year: m.year ?? undefined,
-          nominalAge: m.nominalAge ?? undefined,
-          palace: p,
-          riskLevel: tagToRisk(tag),
-          tag: tag ?? undefined,
-        };
+    const decisionSnap =
+      opts.findings?.timeModuleDecision ??
+      buildTimeModuleDecisionSnapshotFromChart({
+        chartJson: opts.chartJson,
+        decisionMatrix,
+        palaceOverlapTags: timeSnap.palaceOverlapTags,
       });
-      const summaries = items.map((it) => buildYearDecisionSummary(it, decisionMatrix));
-      map.keyYearsDecisionTimeline = formatXiaoXianDecisionTimeline(summaries);
-    } else {
-      map.keyYearsDecisionTimeline = "";
-    }
+    module2TimeSnapCache = timeSnap;
+    module2DecisionSnapCache = decisionSnap;
+    map.keyYearsDecisionTimeline = decisionSnap.keyYearsDecisionTimeline;
   }
-  const timeModuleYearKeys = ["s15", "s16", "s17", "s18", "s19", "s20", "s21"];
+  const timeModuleYearKeys = ["s15", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"];
   if (timeModuleYearKeys.includes(opts?.sectionKey ?? "") && opts?.chartJson) {
     const yearly = (opts.chartJson.yearlyHoroscope ?? (opts.chartJson.ziwei as Record<string, unknown>)?.yearlyHoroscope) as { year?: number; palaceNames?: string[]; mutagenStars?: Record<string, string> } | undefined;
     if (yearly && typeof yearly === "object" && yearly.year != null) map.flowYear = String(yearly.year);
@@ -3667,53 +3461,26 @@ export function getPlaceholderMapFromContext(
         map.yearlyFourTransformSummary = "";
         map.yearlyFourTransformExplanations = "";
       }
-      const decisionMatrix = (opts?.content as { decisionMatrix?: DecisionMatrixConfig } | undefined)?.decisionMatrix;
-      if (decisionMatrix && yearly?.year != null) {
-        const overlap = (opts.chartJson.overlapAnalysis ?? opts.chartJson.overlap) as Record<string, unknown> | undefined;
-        const palaceToTag = new Map<string, "shock" | "mine" | "wealth">();
-        const newItems = Array.isArray(overlap?.items) ? (overlap.items as Array<{ palaceKey?: string; palaceName?: string; tag?: string }>) : [];
-        if (newItems.length > 0) {
-          for (const it of newItems) {
-            const tag = it.tag === "shock" || it.tag === "mine" || it.tag === "wealth" ? it.tag : null;
-            if (!tag) continue;
-            const pNorm = normPalaceForMatch(it.palaceName ?? it.palaceKey ?? "");
-            if (pNorm) palaceToTag.set(pNorm, tag);
-          }
-        } else {
-          const risks = (overlap?.criticalRisks ?? []) as Array<{ palace?: string }>;
-          const opps = (overlap?.maxOpportunities ?? []) as Array<{ palace?: string }>;
-          const vol = (overlap?.volatileAmbivalences ?? []) as Array<{ palace?: string }>;
-          for (const r of risks) {
-            const pNorm = normPalaceForMatch(r.palace ?? "");
-            if (pNorm) palaceToTag.set(pNorm, "mine");
-          }
-          for (const o of opps) {
-            const pNorm = normPalaceForMatch(o.palace ?? "");
-            if (pNorm) palaceToTag.set(pNorm, "wealth");
-          }
-          for (const v of vol) {
-            const pNorm = normPalaceForMatch(v.palace ?? "");
-            if (pNorm) palaceToTag.set(pNorm, "shock");
-          }
-        }
-        const palace = map.flowYearMingPalace ?? yearly?.palaceNames?.[0] ?? "";
-        const tag = palace ? palaceToTag.get(normPalaceForMatch(palace)) : undefined;
-        const tagToRisk = (t: "shock" | "mine" | "wealth" | undefined): 1 | 2 | 3 | 4 | 5 => {
-          if (t === "mine") return 5;
-          if (t === "shock") return 4;
-          if (t === "wealth") return 2;
-          return 3;
-        };
-        const currentYearItem: XiaoXianYearItem = {
-          year: yearly.year,
-          nominalAge: undefined,
-          palace,
-          riskLevel: tagToRisk(tag),
-          tag: tag ?? undefined,
-        };
-        const summary = buildYearDecisionSummary(currentYearItem, decisionMatrix);
+      const decisionMatrixYear = (opts?.content as { decisionMatrix?: DecisionMatrixConfig } | undefined)?.decisionMatrix;
+      if (decisionMatrixYear && yearly?.year != null) {
+        const decisionSnapYear =
+          module2DecisionSnapCache ??
+          opts.findings?.timeModuleDecision ??
+          buildTimeModuleDecisionSnapshotFromChart({
+            chartJson: opts.chartJson,
+            decisionMatrix: decisionMatrixYear,
+            palaceOverlapTags: (
+              module2TimeSnapCache ??
+              opts.findings?.timeModuleOverlap ??
+              buildTimeModuleOverlapSnapshotFromChartJson(opts.chartJson, {
+                content: opts.content,
+                config: opts.config ?? null,
+                contentLocale: opts.contentLocale ?? "zh-TW",
+              })
+            ).palaceOverlapTags,
+          });
         if (!(opts?.sectionKey === "s16" && s16V2Usable)) {
-          map.yearDecisionSummaryBlock = formatYearDecisionSummaryBlock(summary);
+          map.yearDecisionSummaryBlock = decisionSnapYear.yearDecisionSummaryBlock;
         }
       } else {
         if (!(opts?.sectionKey === "s16" && s16V2Usable)) map.yearDecisionSummaryBlock = "";
@@ -3722,7 +3489,7 @@ export function getPlaceholderMapFromContext(
       const ft16 = opts.chartJson.fourTransformations as { liunian?: { mutagenStars?: Record<string, string> } } | undefined;
       liunianMutagen = (opts.chartJson.liunian as { mutagenStars?: Record<string, string> } | undefined)?.mutagenStars ?? ft16?.liunian?.mutagenStars;
     }
-    if (["s15", "s16", "s17", "s18", "s19", "s20", "s21"].includes(opts?.sectionKey ?? "")) {
+    if (["s15", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"].includes(opts?.sectionKey ?? "")) {
       const decadalPalace = map.currentDecadalPalace ?? "";
       const roleResult = getYearRoleInDecadeAndWhy({
         decadalPalace,
@@ -3752,12 +3519,17 @@ export function getPlaceholderMapFromContext(
         "【立刻可做】\n" + nowBlock +
         "\n\n【一年內調整】\n" + yearAdjust +
         "\n\n【這十年都要記住】\n" + decadeRemember;
+      if (opts?.sectionKey === "s19") {
+        map.s19ActionNow = nowBlock;
+        map.s19LongTerm = yearAdjust;
+        map.s19Avoid = decadeRemember;
+      }
       map.closingNarrative =
         "大限與今年流年四化見上方；可依宮位與飛星 from→to 對應策略。";
     }
   }
-  if (["s18", "s19", "s20", "s21"].includes(opts?.sectionKey ?? "") && opts?.chartJson) {
-    const bundle = buildPiercingDiagnosticBundle(opts.chartJson, opts.config ?? null);
+  if (["s18", "s19", "s20", "s22", "s23", "s21"].includes(opts?.sectionKey ?? "") && opts?.chartJson) {
+    const bundle = piercingBundleFromFindingsOrChart(opts.findings, opts.chartJson, opts.config ?? null);
     const rootCauses = bundle.rootCauses ?? [];
     const rc = rootCauses[0];
     const decadalPalace = map.currentDecadalPalace ?? "當前大限";
@@ -3772,15 +3544,6 @@ export function getPlaceholderMapFromContext(
           : "四化飛入的宮位見上方；壓力來源可對照飛星 from→to。";
       }
     }
-    if (opts?.sectionKey === "s19") {
-      const actionNow = (map.actionNowLayers ?? "").split(/\n\n/);
-      const nowLine = actionNow.find((s) => s.includes("立刻可做"));
-      const yearLine = actionNow.find((s) => s.includes("一年內"));
-      const decadeLine = actionNow.find((s) => s.includes("這十年都要記住"));
-      map.s19ActionNow = nowLine ? nowLine.replace(/【立刻可做】\n?/, "").trim() : "";
-      map.s19LongTerm = yearLine ? yearLine.replace(/【一年內調整】\n?/, "").trim() : "";
-      map.s19Avoid = decadeLine ? decadeLine.replace(/【這十年都要記住】\n?/, "").trim() : (decadalPalace ? `大限在${decadalPalace}，四化見上方。` : "");
-    }
     if (opts?.sectionKey === "s20") {
       map.s20BenmingLine = "本命夫妻宮與命宮主星、四化見上方結構。";
       map.s20DecadalLine = `大限主題：${decadalTheme}。四化飛入的宮位見上方。`;
@@ -3792,6 +3555,9 @@ export function getPlaceholderMapFromContext(
       } else {
         map.s20YearLine = flowPalace ? `今年：${flowPalace}。四化見上方。` : "四化見上方。";
       }
+      map.s20CrossChartLine = recurring
+        ? (recurring.length > 280 ? `${recurring.slice(0, 280)}…` : recurring)
+        : "三盤交會：對照上方本命／大限／流年四化與疊宮標記；重大決策宜對齊主戰場與壓力源。";
     }
     if (opts?.sectionKey === "s21") {
       map.s21LifelongLesson = recurring ? recurring : "四化反覆引動的宮位見上方結構。";
@@ -3800,10 +3566,15 @@ export function getPlaceholderMapFromContext(
         : `今年角色：${map.yearRoleInDecade ?? "見上方"}。四化見上方。`;
     }
   }
+  mergeS22S23BlocksIntoMap(map, opts?.sectionKey, opts?.chartJson, {
+    normalizedChart: opts?.normalizedChart,
+    onComputeError: "overwrite",
+  });
   return map;
 }
 
-/** 技術版：依 PalaceContext 列出此宮星曜與四化。Phase 5B-2：有 findings 時只讀 findings.natalFlowItems／sihuaPlacementItems，不讀 chart。 */
+/** 技術版：依 PalaceContext 列出此宮星曜與四化。Phase 5B-2：有 findings 時只讀 findings.natalFlowItems／sihuaPlacementItems，不讀 chart。
+ * 十二宮章節（含 `sectionDataDependencyMap` 所載 s05／s09 等）之【本命宮干飛化】與 `getFlowBlockForPalace(normalizeChart(...))` 同源；四化邊權威見 ADR-0001，非 overlap.items。 */
 export function buildTechDebugForPalace(
   ctx: PalaceContext | null,
   opts?: {
@@ -3941,7 +3712,7 @@ export function getSectionTechnicalBlocks(
   if (!content) return {};
   // s04 + 12 宮產出技術區塊與 skeleton；時間模組（s15～s21）也產出 skeleton（模板＋placeholder），否則技術版只會輸出標題、內容全空。
   const isCoreSection = sectionKey === "s04" || PALACE_SECTION_KEYS.has(sectionKey);
-  const TIME_MODULE_SKELETON_KEYS = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"] as const;
+  const TIME_MODULE_SKELETON_KEYS = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"] as const;
   if (!isCoreSection && !TIME_MODULE_SKELETON_KEYS.includes(sectionKey as (typeof TIME_MODULE_SKELETON_KEYS)[number])) return {};
 
   const templates = config?.templates?.length ? config.templates : SECTION_TEMPLATES;
@@ -3977,7 +3748,7 @@ export function getSectionTechnicalBlocks(
     findingsV2: findingsV2 ?? undefined,
   });
 
-  const TIME_MODULE_KEYS = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"] as const;
+  const TIME_MODULE_KEYS = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"] as const;
   let underlyingParamsTextFinal: string;
   if (TIME_MODULE_KEYS.includes(sectionKey as (typeof TIME_MODULE_KEYS)[number])) {
     underlyingParamsTextFinal = "";
@@ -4048,6 +3819,26 @@ export function getSectionTechnicalBlocks(
   }
   if (sectionKey === "s19") {
     sectionSkeleton = { ...(sectionSkeleton || {}), structure_analysis: "{s19MonthlyBlocks}" };
+  }
+  // s20／s21／s22／s23：與靜態 JSON 對齊，避免 D1／快取仍為「本章重做中」時技術版無內容
+  if (sectionKey === "s20") {
+    sectionSkeleton = {
+      ...(sectionSkeleton || {}),
+      structure_analysis:
+        "【三盤疊加診斷】\n\n【本命底色】\n{s20BenmingLine}\n\n【大限主線】\n{s20DecadalLine}\n\n【流年焦點】\n{s20YearLine}\n\n【三盤交會】\n{s20CrossChartLine}",
+    };
+  }
+  if (sectionKey === "s21") {
+    sectionSkeleton = {
+      ...(sectionSkeleton || {}),
+      structure_analysis: "【收束與總結】\n\n{s21LifelongLesson}\n\n{s21NowSee}",
+    };
+  }
+  if (sectionKey === "s22") {
+    sectionSkeleton = { ...(sectionSkeleton || {}), structure_analysis: "{structureLinesBlock}" };
+  }
+  if (sectionKey === "s23") {
+    sectionSkeleton = { ...(sectionSkeleton || {}), structure_analysis: "{transformationFlowsBlock}" };
   }
   let skeletonBlockText: string | undefined;
   let resolvedSkeleton: { structure_analysis: string; behavior_pattern: string; blind_spots: string; strategic_advice: string } | undefined;
@@ -4242,7 +4033,7 @@ function buildSihuaFallByPalaceBlock(chartJson: Record<string, unknown> | undefi
   const ft = chartJson.fourTransformations as Record<string, { mutagenStars?: Record<string, string> }> | undefined;
   const layers = buildSiHuaLayers(chartJson); // buildSiHuaLayers 已以 fourTransformations 為主
   const lines: string[] = [];
-  const layerOrder: Array<{ label: string; data: SiHuaLayer | null | undefined }> = [
+  const layerOrder: Array<{ label: string; data: BuiltSiHuaLayer | null | undefined }> = [
     { label: "本命", data: layers.benming },
     { label: "大限", data: layers.decadal },
     { label: "流年", data: layers.yearly },
@@ -4254,7 +4045,7 @@ function buildSihuaFallByPalaceBlock(chartJson: Record<string, unknown> | undefi
       lines.push("");
       continue;
     }
-    const part = (s: SiHuaStar | null | undefined, transform: "祿" | "權" | "科" | "忌") => {
+    const part = (s: BuiltSiHuaStar | null | undefined, transform: "祿" | "權" | "科" | "忌") => {
       if (!s) return null;
       const palace = toPalaceDisplayName(s.palaceName ?? s.palaceKey);
       if (!palace || palace === "落宮待核") return null;
@@ -4361,7 +4152,19 @@ export interface InjectTimeModuleOptions {
   findingsV2?: LifebookFindingsV2 | null;
 }
 
-/** 模組二（s15/s15a/s16/s17/s18/s19/s20/s21）：用 chartJson 與 content 或 P2 findings 產出 placeholder map，注入 structure_analysis。P2 時傳入 options.findings 則只讀 findings；流年宮位／四化仍由 chartJson 組裝並與小限分開。 */
+/**
+ * 模組二（s15/s15a/s16/s17/s18/s19/s20/s21）：用 chartJson 與 content 或 P2 findings 產出 placeholder map，注入 structure_analysis。
+ *
+ * **P2 路徑（有 timeAxis／sihuaPlacement）合併順序（後寫覆蓋先寫；同欄位請只在一處定義來源）：**
+ * 1. `assembleTimeModuleFromFindings` — s15/s18/s20 組裝器 + s19/s21 預設行動句（selector／actionItems）
+ * 2. `timeAxis` 原子欄位覆寫
+ * 3. `sihuaPlacement`／`natalFlows` 等 findings 字串欄
+ * 4. `findingsV2` — 僅 s15a／s16 依 sectionKey 合併
+ * 5. `mergeInjectP2TimeModuleOverlapSnapshot`
+ * 6. `mergeInjectP2TimeModuleDecisionSnapshot`
+ * 7. `mergeInjectP2TimeModuleS17S19Snapshot` — 僅 s17／s18／s19：技術版三欄與快照一致；若 `chartInputFingerprint` 與當前 `chartJson` 不符則跳過（即場內容保留）
+ * 8. s20 流年命宮字串替換（P0.4）
+ */
 export function injectTimeModuleDataIntoSection(
   sectionKey: string,
   structureAnalysis: string,
@@ -4372,7 +4175,7 @@ export function injectTimeModuleDataIntoSection(
   options?: InjectTimeModuleOptions
 ): string {
   if (!structureAnalysis || typeof structureAnalysis !== "string") return structureAnalysis;
-  const timeModuleKeys = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"];
+  const timeModuleKeys = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"];
   if (!timeModuleKeys.includes(sectionKey)) return structureAnalysis;
   let map: Record<string, string>;
   if (options?.findings && (options.findings.timeAxis != null || options.findings.sihuaPlacement != null)) {
@@ -4404,10 +4207,20 @@ export function injectTimeModuleDataIntoSection(
         if (v2Result.usable) for (const [k, v] of Object.entries(v2Result.map)) map[k] = v;
       }
     }
+    // 疊宮計數／區塊與 assembleS15 的關鍵年 blocks 分源：只合併非碰撞欄位。
+    mergeInjectP2TimeModuleOverlapSnapshot(map, options.findings.timeModuleOverlap);
+    mergeInjectP2TimeModuleDecisionSnapshot(map, options.findings.timeModuleDecision);
+    mergeInjectP2TimeModuleS17S19Snapshot(
+      map,
+      options.findings.timeModuleS17S19ReaderSnapshot,
+      sectionKey,
+      chartJson
+    );
     // P0.4：P2 路徑下 s20YearLine 可能來自 assembleS20 的 fallback「流年命宮」，改為使用 timeAxis.flowYearMingPalace。
     if (sectionKey === "s20" && map.flowYearMingPalace && map.s20YearLine?.includes("流年命宮")) {
       map.s20YearLine = map.s20YearLine.replace(/流年命宮/g, map.flowYearMingPalace);
     }
+    mergeS22S23BlocksIntoMap(map, sectionKey, chartJson, { onComputeError: "fill-empty" });
     return resolveSkeletonPlaceholders(structureAnalysis, map, { missingReplacement: "" });
   }
 
@@ -4415,7 +4228,15 @@ export function injectTimeModuleDataIntoSection(
   const display = buildTimeModuleDisplayFromChartJson(chartJson);
   const sameSihua = display.currentDecadeSihuaLine && display.flowYearSihuaLine && display.currentDecadeSihuaLine === display.flowYearSihuaLine && !display.flowYearSihuaLine.startsWith("（無");
   const flowYearSihuaNote = sameSihua ? "（大限與流年同天干，四化相同）" : "";
-  map = getPlaceholderMapFromContext(null, { chartJson, sectionKey, content, config, contentLocale, findingsV2: options?.findingsV2 ?? undefined });
+  map = getPlaceholderMapFromContext(null, {
+    chartJson,
+    sectionKey,
+    content,
+    config,
+    contentLocale,
+    findings: options?.findings,
+    findingsV2: options?.findingsV2 ?? undefined,
+  });
   map.birthSihuaLine = display.birthSihuaLine;
   map.currentDecadeSihuaLine = display.currentDecadeSihuaLine;
   map.flowYearMingPalace = display.flowYearMingPalace;

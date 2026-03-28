@@ -125,6 +125,7 @@
     <!-- 登入區域 -->
     <div id="loginWrap" class="glass p-6 max-w-sm">
       <p class="text-sm text-slate-400 mb-4">請輸入後台帳號與密碼</p>
+      <p id="sessionRestoreHint" class="text-sm text-amber-400/90 mb-2 hidden">正在驗證登入狀態…</p>
       <form id="loginForm" class="space-y-4">
         <div>
           <label class="block text-xs text-slate-500 mb-1">帳號</label>
@@ -155,6 +156,10 @@
           <div class="flex flex-wrap items-center gap-2 mb-6">
             <button type="button" id="logoutBtn" class="px-4 py-2 rounded-lg bg-slate-700 text-slate-200 text-sm hover:bg-slate-600">登出</button>
             <button type="button" id="refreshBtn" class="px-4 py-2 rounded-lg bg-amber-600/80 text-slate-900 text-sm font-medium hover:bg-amber-500">重新整理顯示</button>
+            <label class="flex flex-wrap items-center gap-1 text-xs text-slate-400" title="Worker 設 LIFEBOOK_REQUIRE_INVITE 時必填；留空則讀 localStorage lifebook_v2_beta_invite_code">
+              <span class="whitespace-nowrap">封測邀請碼</span>
+              <input type="text" id="expertLifebookBetaInvite" autocomplete="off" placeholder="與 Worker 一致" class="bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-sm text-slate-200 w-40" />
+            </label>
             <button type="button" id="generateLifeBookBtn" class="px-4 py-2 rounded-lg bg-green-600/80 text-slate-100 text-sm font-medium hover:bg-green-500">📘 一鍵生成命書</button>
           </div>
 
@@ -210,24 +215,10 @@
         <h2 class="text-lg font-black text-amber-300 mb-3">一鍵生成命書</h2>
         <p class="text-xs text-slate-500 mb-3">需先完成「計算」，約 2–5 分鐘產出 20 章命書並下載 HTML，自動存入資料庫</p>
         <div class="flex flex-wrap items-center gap-2 mb-3">
-          <label class="flex items-center gap-2 text-sm text-slate-400 cursor-pointer">
-            <input type="checkbox" id="lifeBookUsePipeline" class="rounded border-white/20" />
-            <span class="text-xs text-slate-500 ml-1">（勾選時會走 infer→narrate；已附 chart_json 以套用 12 宮讀者版模板）</span>
-            <span>Phase 3：三層分離（推論→敘事）</span>
-          </label>
-          <select id="lifeBookModelSelect" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200" title="命書生成模型（gpt-4.1 含 temperature；gpt-5.x 由 Worker 自動略過 temperature）">
-            <option value="gpt-4.1" selected>gpt-4.1（預設）</option>
-            <option value="gpt-4.1-turbo">gpt-4.1-turbo</option>
-            <option value="gpt-5.0">gpt-5.0</option>
-            <option value="gpt-5.1">gpt-5.1</option>
-            <option value="gpt-5.2">gpt-5.2</option>
-          </select>
-          <span class="text-xs text-slate-500">模型</span>
-          <select id="lifeBookOutputMode" class="bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200" title="AI 版呼叫 OpenAI；技術版不呼叫 OpenAI，但 12 宮 structure_analysis 仍會套用讀者版模板（底層參數在 section.technical）">
-            <option value="ai" selected>AI 渲染（給用戶）</option>
-            <option value="technical">資料庫技術版（自用）</option>
-          </select>
-          <span class="text-xs text-slate-500">版本</span>
+          <span class="text-xs text-emerald-300/95 px-2 py-1 rounded border border-emerald-500/40 bg-emerald-950/30" title="規則組裝，不呼叫 OpenAI；與 Worker LIFEBOOK_DISABLE_AI 一致">
+            系統技術版（規則組裝）
+          </span>
+          <span class="text-xs text-slate-500">邀請碼請於頂部工具列填寫（與 Worker LIFEBOOK_BETA_CODES 一致）。</span>
           <button type="button" id="generateLifeBookBtnSection" class="px-4 py-2 rounded-lg bg-green-600/80 text-slate-100 text-sm font-medium hover:bg-green-500">📘 一鍵生成命書</button>
         </div>
         <p id="lifeBookProgress" class="text-sm text-amber-400 hidden mt-2"></p>
@@ -237,7 +228,7 @@
           <textarea id="lifeBookCustomPrompt" rows="3" placeholder="留空則使用系統預設；可輸入系統角色或背景說明…" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 resize-y"></textarea>
           <label class="block text-xs text-slate-500">問題（必填，用於單題問答）</label>
           <textarea id="lifeBookQuestion" rows="2" placeholder="輸入要問 AI 的問題，會連同當前命盤一併送出…" class="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 resize-y"></textarea>
-          <button type="button" id="lifeBookAskBtn" class="px-4 py-2 rounded-lg bg-slate-600/80 text-slate-100 text-sm font-medium hover:bg-slate-500">送出單題問答</button>
+          <button type="button" id="lifeBookAskBtn" disabled class="px-4 py-2 rounded-lg bg-slate-600/40 text-slate-500 text-sm font-medium cursor-not-allowed" title="已停用：Worker 設為僅系統命書（LIFEBOOK_DISABLE_AI）時不開放 OpenAI 單題">送出單題問答（已停用）</button>
           <p id="lifeBookAskResult" class="text-sm text-slate-400 hidden mt-2 whitespace-pre-wrap"></p>
         </div>
       </section>
@@ -607,11 +598,58 @@
     </div>
   </div>
 
-  <!-- 載入計算模組 bundle v2（constants.js 含 ES import，須經 Vite 打包） -->
-  <script src="/dist/expert-admin.js?v=2"></script>
+  <!-- 載入計算模組 bundle（constants.js 含 ES import，須經 Vite 打包）；?v= 僅用於部署後快取失效 -->
+  <script src="/dist/expert-admin.js?v=3"></script>
 
   <script>
     var AUTH_KEY = 'expertAdminAuth';
+
+    /**
+     * 命書 Worker 路徑（/api/life-book/*）：正式網域強制同源走 Pages 代理。
+     * 不可只依賴 bundle 內嵌的 Config（舊 dist 仍會把 API_BASE 指到 workers.dev）。
+     */
+    function lifeBookApiBase() {
+      try {
+        var h = window.location.hostname;
+        if (/^(www\.)?17gonplay\.com$/i.test(h)) {
+          return window.location.origin;
+        }
+      } catch (e) {}
+      return (window.Config && window.Config.API_BASE) || 'https://bazi-api.billeetw.workers.dev';
+    }
+
+    /** 先 text 再 JSON.parse，才能顯示 HTTP 狀態與非 JSON 內文（除錯代理／Worker） */
+    function parseLifeBookApiBody(resp, text) {
+      try {
+        return text ? JSON.parse(text) : {};
+      } catch (e) {
+        return { ok: false, error: '非 JSON（HTTP ' + resp.status + '）：' + String((text || '').slice(0, 220)) };
+      }
+    }
+
+    /** 與 js/ui/services/api-service.js getLifebookPlanPayload 對齊；專家後台可覆寫邀請碼輸入框 */
+    function getExpertLifebookPlanPayload() {
+      var plan = { plan_tier: 'pro', unlock_sections: [], beta_invite_code: undefined };
+      try {
+        var inp = document.getElementById('expertLifebookBetaInvite');
+        var fromInput = inp && typeof inp.value === 'string' ? inp.value.trim() : '';
+        if (fromInput) plan.beta_invite_code = fromInput;
+        else {
+          var fromLs = String(localStorage.getItem('lifebook_v2_beta_invite_code') || '').trim();
+          if (fromLs) plan.beta_invite_code = fromLs;
+        }
+      } catch (e) {}
+      try {
+        var tier = localStorage.getItem('lifebook_v2_tier');
+        if (tier === 'free') plan.plan_tier = 'free';
+      } catch (e) {}
+      try {
+        var raw = localStorage.getItem('lifebook_v2_unlock_sections');
+        var parsed = raw ? JSON.parse(raw) : [];
+        if (Array.isArray(parsed)) plan.unlock_sections = parsed.filter(function (x) { return typeof x === 'string'; });
+      } catch (e) {}
+      return plan;
+    }
 
     function getStoredAuth() {
       try { return sessionStorage.getItem(AUTH_KEY); } catch { return null; }
@@ -629,6 +667,13 @@
     function showDashboard() {
       document.getElementById('loginWrap').classList.add('hidden');
       document.getElementById('dashboardWrap').classList.remove('hidden');
+      try {
+        var el = document.getElementById('expertLifebookBetaInvite');
+        if (el && !String(el.value || '').trim()) {
+          var v = String(localStorage.getItem('lifebook_v2_beta_invite_code') || '').trim();
+          if (v) el.value = v;
+        }
+      } catch (e) {}
     }
 
     /**
@@ -638,6 +683,65 @@
     function authHeader() {
       var auth = getStoredAuth();
       return auth ? { Authorization: 'Basic ' + auth } : {};
+    }
+
+    /** 避免後台 Functions 卡住時按鈕永遠 disabled */
+    function fetchAdminSessionCheck(url, headers, timeoutMs) {
+      var ms = timeoutMs || 25000;
+      var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var timer = null;
+      var p = fetch(url, ctrl ? { headers: headers, signal: ctrl.signal } : { headers: headers });
+      if (ctrl) {
+        timer = setTimeout(function () {
+          try { ctrl.abort(); } catch (_) {}
+        }, ms);
+      }
+      return p.finally(function () {
+        if (timer) clearTimeout(timer);
+      });
+    }
+
+    function applySessionCheckResponse(res, text, errEl, btn) {
+      if (res.status === 401) {
+        setStoredAuth('');
+        if (errEl) {
+          errEl.textContent = '帳號或密碼錯誤';
+          errEl.classList.remove('hidden');
+        }
+        return false;
+      }
+      if (text.trim().startsWith('<')) {
+        throw new Error('後台 API 未就緒。本地請用：npx wrangler pages dev . --port 8788，再開 http://localhost:8788/expert-admin');
+      }
+      if (!res.ok) {
+        if (text.trim().startsWith('{')) {
+          var d;
+          try {
+            d = JSON.parse(text);
+          } catch (e) {
+            throw new Error('請求失敗');
+          }
+          throw new Error((d && d.error) || '請求失敗');
+        }
+        throw new Error('後台 API 未就緒。本地請用：npx wrangler pages dev . --port 8788，再開 http://localhost:8788/expert-admin');
+      }
+      return true;
+    }
+
+    function enterDashboardAfterAuth() {
+      showDashboard();
+      try {
+        initComponents();
+      } catch (e) {
+        console.error('initComponents failed:', e);
+        setStoredAuth('');
+        showLogin();
+        var errEl = document.getElementById('loginError');
+        if (errEl) {
+          errEl.textContent = (e && e.message) ? e.message : '初始化失敗，請重新登入';
+          errEl.classList.remove('hidden');
+        }
+      }
     }
 
     /** 命書預設 Prompt（資深諮詢顧問口氣，供單題問答與參考） */
@@ -1515,7 +1619,10 @@
     }
 
     /** 一鍵生成命書：依序呼叫 generate-section 或 infer+narrate，組 HTML 並儲存 */
-    var SECTION_ORDER = ['s00','s03','s04','s02','s10','s01','s05','s06','s07','s08','s09','s11','s12','s13','s14','s15','s15a','s16','s17','s18','s19','s20','s21'];
+    /** 由 npm run sync:section-order 自 worker/data/lifebook-section-order.json 寫入，勿手改 */
+    // LIFEBOOK_SECTION_ORDER_SYNC_START
+    var SECTION_ORDER = ['s00','s03','s04','s02','s10','s01','s05','s06','s07','s08','s09','s11','s12','s13','s14','s15','s15a','s16','s17','s18','s19','s20','s22','s23','s21'];
+// LIFEBOOK_SECTION_ORDER_SYNC_END
     async function generateLifeBook() {
       if (!window.AdminExport || !window.LifeBookEngine) {
         alert('尚未計算，請先輸入出生資訊並計算');
@@ -1553,6 +1660,8 @@
       }
       var chartJson = window.AdminExport.exportCalculationResults({ birthInfo: birthInfo });
       var chartForApi = toSerializable(chartJson);
+      // 已廢止 wire：worker 以 normalize + fourTransformations 為權威；勿送 sihuaLayers（實驗覆寫用 lifebookSiHuaDisplayOverride）
+      if (chartForApi.sihuaLayers != null) delete chartForApi.sihuaLayers;
       chartForApi.birthInfo = birthInfo;
       chartForApi.strategicLinks = window.contract?.strategicLinks ?? [];
       // 前後一致：命書需 ziwei.palaces（主星亮度廟旺），來自 Compute API；若 contract 有則確保帶入
@@ -1637,12 +1746,10 @@
         });
       })();
       var weight = window.LifeBookEngine.weightAnalysis(chartJson);
-      var apiBase = window.Config?.API_BASE || 'https://bazi-api.billeetw.workers.dev';
-      var modelEl = document.getElementById('lifeBookModelSelect');
-      var model = modelEl && modelEl.value ? modelEl.value : 'gpt-4.1';
-      var outputModeEl = document.getElementById('lifeBookOutputMode');
-      var outputMode = (outputModeEl && outputModeEl.value === 'technical') ? 'technical' : 'ai';
-      var usePipeline = outputMode === 'ai' && (document.getElementById('lifeBookUsePipeline') && document.getElementById('lifeBookUsePipeline').checked);
+      var apiBase = lifeBookApiBase();
+      var model = 'system-technical';
+      var outputMode = 'technical';
+      var usePipeline = false;
       var progressEl = document.getElementById('lifeBookProgress');
       var btns = document.querySelectorAll('#generateLifeBookBtn, #generateLifeBookBtnSection');
 
@@ -1685,18 +1792,39 @@
             else sections[sk] = { section_key: sk, title: '[' + sk + ']', importance_level: 'medium', structure_analysis: (nData.error || '失敗'), behavior_pattern: '', blind_spots: '', strategic_advice: '' };
           }
         } else {
+          var planPayload = getExpertLifebookPlanPayload();
           for (var j = 0; j < SECTION_ORDER.length; j++) {
             var sk2 = SECTION_ORDER[j];
             setProgress('生成 ' + (j + 1) + '/' + SECTION_ORDER.length + '…');
-            var sectionPayload = { section_key: sk2, chart_json: chartForApi, weight_analysis: weight, model: model, temperature: 0.7, output_mode: outputMode };
+            var clientTz = 'UTC';
+            try {
+              if (typeof Intl !== 'undefined' && Intl.DateTimeFormat) {
+                clientTz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+              }
+            } catch (e) { /* ignore */ }
+            var sectionPayload = Object.assign(
+              { section_key: sk2, chart_json: chartForApi, weight_analysis: weight, model: model, temperature: 0.7, output_mode: outputMode },
+              planPayload,
+              { clientTimeZone: clientTz, clientNowISO: new Date().toISOString() }
+            );
             console.log('📡 API REQUEST', apiBase + '/api/life-book/generate-section', JSON.stringify(sectionPayload, null, 2));
             var gResp = await fetch(apiBase + '/api/life-book/generate-section', {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(sectionPayload)
             });
-            var gData = await gResp.json().catch(function() { return {}; });
+            var gText = await gResp.text();
+            var gData = parseLifeBookApiBody(gResp, gText);
             if (gData.ok && gData.section) sections[sk2] = gData.section;
-            else sections[sk2] = { section_key: sk2, title: '[' + sk2 + ']', importance_level: 'medium', structure_analysis: (gData.error || '失敗'), behavior_pattern: '', blind_spots: '', strategic_advice: '' };
+            else {
+              var gErr = gData.error;
+              if (gData.invite_required) {
+                gErr = gErr || gData.lock_reason || '需要封測邀請碼：請在頂部填寫邀請碼（與 Worker LIFEBOOK_BETA_CODES 一致），或於主站兌換後寫入 localStorage lifebook_v2_beta_invite_code';
+              } else if (gData.is_locked) {
+                gErr = gErr || gData.lock_reason || gData.teaser || '此章節已鎖定（方案權限）';
+              }
+              if (!gErr && !gResp.ok) gErr = 'HTTP ' + gResp.status + (gText ? ' ' + gText.slice(0, 200) : '');
+              sections[sk2] = { section_key: sk2, title: '[' + sk2 + ']', importance_level: 'medium', structure_analysis: gErr || '失敗', behavior_pattern: '', blind_spots: '', strategic_advice: '' };
+            }
           }
         }
 
@@ -1736,8 +1864,17 @@
         }
         loadExpertLifeBooks();
       } catch (err) {
-        if (progressEl) progressEl.textContent = '錯誤：' + (err.message || err);
-        alert('生成失敗：' + (err.message || err));
+        var msg = (err && err.message) ? String(err.message) : String(err);
+        var isNet = /failed to fetch|networkerror|load failed|echec du chargement/i.test(msg);
+        if (isNet) {
+          msg +=
+            '\n\n（網路層失敗）請檢查：\n' +
+            '1) 目前 API 基底：' + apiBase + '（若在 17gonplay 仍顯示 workers.dev，請強制重新整理或部署含 lifeBookApiBase 的 expert-admin HTML）\n' +
+            '2) 本地請用 wrangler pages dev（埠 8788/8789）讓 /api/life-book 走同源代理，或 ?api=local 並啟動 worker:8787\n' +
+            '3) 瀏覽器開發者工具 → Network 看該請求是否被擋、CORS 或連線被拒';
+        }
+        if (progressEl) progressEl.textContent = '錯誤：' + msg.split('\n')[0];
+        alert('生成失敗：' + msg);
       } finally {
         done();
       }
@@ -2230,34 +2367,21 @@
       setStoredAuth(auth);
 
       console.log('📡 API REQUEST', '/api/admin/calculation-results', JSON.stringify({}, null, 2));
-      var apiUnavailableMsg = '後台 API 未就緒。本地請用：npx wrangler pages dev . --port 8788，再開 http://localhost:8788/expert-admin.html';
-      fetch('/api/admin/calculation-results', { headers: { Authorization: 'Basic ' + auth } })
+      fetchAdminSessionCheck('/api/admin/calculation-results', { Authorization: 'Basic ' + auth })
         .then(function (res) {
           return res.text().then(function (text) {
-            if (res.status === 401) {
-              setStoredAuth('');
-              errEl.textContent = '帳號或密碼錯誤';
-              errEl.classList.remove('hidden');
+            if (!applySessionCheckResponse(res, text, errEl, btn)) {
               btn.disabled = false;
               return;
             }
-            if (text.trim().startsWith('<')) {
-              throw new Error(apiUnavailableMsg);
-            }
-            if (!res.ok) {
-              if (text.trim().startsWith('{')) {
-                try { var d = JSON.parse(text); throw new Error(d.error || '請求失敗'); } catch (e) { if (e.message && e.message !== '請求失敗') throw e; throw new Error('請求失敗'); }
-              }
-              throw new Error(apiUnavailableMsg);
-            }
-            showDashboard();
-            initComponents();
+            enterDashboardAfterAuth();
             btn.disabled = false;
           });
         })
         .catch(function (err) {
           setStoredAuth('');
-          errEl.textContent = err.message || '登入失敗';
+          var msg = err && err.name === 'AbortError' ? '連線逾時，請檢查網路或稍後再試' : (err.message || '登入失敗');
+          errEl.textContent = msg;
           errEl.classList.remove('hidden');
           btn.disabled = false;
         });
@@ -2500,14 +2624,13 @@
         var prompt = promptEl ? (promptEl.value || '').trim() : '';
         var question = questionEl ? (questionEl.value || '').trim() : '';
         if (!question) { alert('請輸入問題'); return; }
-        var modelEl = document.getElementById('lifeBookModelSelect');
-        var model = modelEl && modelEl.value ? modelEl.value : 'gpt-4.1';
+        var model = 'system-technical';
         if (!resultEl) return;
         resultEl.classList.remove('hidden');
         resultEl.textContent = '送出中…';
         lifeBookAskBtn.disabled = true;
         try {
-          var apiBase = window.location.origin;
+          var apiBase = lifeBookApiBase();
           var payload = { prompt: prompt || undefined, question: question, model: model };
           if (window.contract && window.contract.ziwei) {
             payload.chart_json = {
@@ -2595,11 +2718,34 @@
     document.getElementById('exportEstimateLogsCsvBtn').addEventListener('click', exportEstimateLogsCsv);
     document.getElementById('exportEstimateLogsJsonBtn').addEventListener('click', exportEstimateLogsJson);
 
-    // 初始化
-    if (getStoredAuth()) {
-      showDashboard();
-      initComponents();
-    }
+    // 初始化：若有 session，先向 API 驗證再進入主控（避免無效 session 或 init 拋錯導致「當掉」）
+    (function restoreExpertSession() {
+      if (!getStoredAuth()) return;
+      var hint = document.getElementById('sessionRestoreHint');
+      var form = document.getElementById('loginForm');
+      if (hint) hint.classList.remove('hidden');
+      if (form) form.setAttribute('aria-busy', 'true');
+      fetchAdminSessionCheck('/api/admin/calculation-results', authHeader())
+        .then(function (res) {
+          return res.text().then(function (text) {
+            if (hint) hint.classList.add('hidden');
+            if (form) form.removeAttribute('aria-busy');
+            try {
+              if (!applySessionCheckResponse(res, text, null, null)) return;
+              enterDashboardAfterAuth();
+            } catch (e) {
+              setStoredAuth('');
+              console.warn('Session restore failed:', e && e.message ? e.message : e);
+            }
+          });
+        })
+        .catch(function (err) {
+          if (hint) hint.classList.add('hidden');
+          if (form) form.removeAttribute('aria-busy');
+          setStoredAuth('');
+          console.warn('Session restore failed:', err && err.message ? err.message : err);
+        });
+    })();
   </script>
 </body>
 </html>

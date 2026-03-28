@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>命宮 - 斷語優先整合版</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Share+Tech+Mono&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --void-base: #020408;
+      --glow-abyss: rgba(12, 38, 50, 0.5);
+      --trunk-pulse: rgba(255, 255, 255, 0.9);
+      --yin-base: rgba(255, 255, 255, 0.25);
+      --yin-pulse: #020408;
+      --core-blue: #38bdf8;
+      --core-blue-dim: rgba(56, 189, 248, 0.4);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --gold: #d4af37;
+    }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      min-height: 100%;
+      background-color: var(--void-base);
+      color: var(--text);
+      font-family: "Noto Sans TC", sans-serif;
+      overflow-x: hidden;
+    }
+
+    .abyss-light {
+      position: fixed;
+      bottom: -18vh;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 160vw;
+      height: 86vh;
+      z-index: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at center, var(--glow-abyss) 0%, transparent 70%);
+      filter: blur(40px);
+      animation: breathe 14s ease-in-out infinite alternate;
+    }
+
+    .app {
+      position: relative;
+      z-index: 5;
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 30px 18px 110px;
+    }
+
+    .core {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 26px;
+    }
+
+    .blue-star {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #fff 0%, var(--core-blue) 40%, #0284c7 80%);
+      box-shadow: 0 0 40px var(--core-blue-dim), inset 0 0 15px rgba(255,255,255,0.8);
+      animation: blue-pulse 4s cubic-bezier(0.4,0,0.2,1) infinite alternate;
+      position: relative;
+      z-index: 2;
+    }
+    .core-ring {
+      position: absolute;
+      width: 92px;
+      height: 92px;
+      border-radius: 50%;
+      border: 1px dashed rgba(56,189,248,0.34);
+      box-shadow: 0 0 14px rgba(56,189,248,0.25);
+      animation: spin-slow 26s linear infinite;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .palace-name {
+      font-family: "Noto Serif TC", serif;
+      letter-spacing: 6px;
+      font-size: 24px;
+      text-shadow: 0 0 15px var(--core-blue);
+    }
+
+    .stage {
+      position: relative;
+      min-height: 980px;
+      margin-bottom: 20px;
+    }
+
+    .tree {
+      position: absolute;
+      left: 50%;
+      top: 280px;
+      width: 152px;
+      height: 640px;
+      transform: translateX(-50%);
+      opacity: 0.95;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .tree svg { width: 100%; height: 100%; overflow: visible; }
+
+    .trunk-body-yang {
+      fill: none;
+      stroke: url(#trunk-gradient);
+      stroke-width: 2.4px;
+      filter: url(#glow-gold);
+      animation: trunk-breathe 8s ease-in-out infinite alternate;
+    }
+    .energy-flow-yang {
+      fill: none;
+      stroke: var(--trunk-pulse);
+      stroke-width: 1.5px;
+      stroke-dasharray: 120 1500;
+      stroke-dashoffset: 1650;
+      animation: flow-up 9s linear infinite;
+      filter: url(#glow-gold);
+    }
+    .trunk-body-yin {
+      fill: none;
+      stroke: var(--yin-base);
+      stroke-width: 1.5px;
+    }
+    .energy-flow-yin {
+      fill: none;
+      stroke: var(--yin-pulse);
+      stroke-width: 3.8px;
+      stroke-dasharray: 80 1500;
+      stroke-dashoffset: 1650;
+      animation: flow-up 12s linear infinite;
+      filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
+    }
+
+    /* 斷語：永遠在上層，優先閱讀 */
+    .scripture {
+      position: relative;
+      z-index: 3;
+      display: grid;
+      gap: 14px;
+      margin-top: 430px;
+    }
+
+    .s-block {
+      background: rgba(6, 10, 20, 0.58);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 14px;
+      padding: 14px 14px 14px 16px;
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+    }
+    .s-block .label {
+      font-family: "Share Tech Mono", monospace;
+      font-size: 10px;
+      color: var(--muted);
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+    }
+    .s-block .text {
+      font-family: "Noto Serif TC", serif;
+      line-height: 1.82;
+      font-size: 15px;
+      color: #cbd5e1;
+      text-align: justify;
+    }
+    .s-block .text strong { color: #fff; }
+
+    /* 星曜：純 icon + 名稱，無框 */
+    .star-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 310px;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .star-node {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      pointer-events: auto;
+      cursor: pointer;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      padding: 0;
+      transition: transform 0.25s ease;
+    }
+
+    .star-node:hover { transform: translate(-50%, -50%) scale(1.12); }
+
+    .star-icon {
+      display: grid;
+      place-items: center;
+      filter: drop-shadow(0 0 10px rgba(255,255,255,0.18));
+    }
+
+    .star-icon svg { width: 100%; height: 100%; }
+
+    .star-name {
+      font-family: "Noto Serif TC", serif;
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: rgba(0,0,0,0.45);
+      color: #e2e8f0;
+    }
+
+    /* 層級：主星 > 輔星 > 煞星 > 雜曜 */
+    .tier-main .star-icon { width: 64px; height: 64px; }
+    .tier-main .star-name { font-size: 13px; color: #fff; }
+
+    .tier-support .star-icon { width: 52px; height: 52px; }
+    .tier-malefic .star-icon { width: 54px; height: 54px; }
+    .tier-minor .star-icon { width: 44px; height: 44px; opacity: 0.9; }
+    .tier-minor .star-name { font-size: 11px; color: #cbd5e1; }
+
+    /* 節點位置 */
+    .pos-lianzhen { top: 72px; left: 27%; }
+    .pos-dikong { top: 94px; left: 76%; }
+    .pos-hongluan { top: 170px; left: 24%; }
+    .pos-tianyue { top: 40px; left: 51%; }
+    .pos-wuqu { top: 180px; left: 73%; }
+    .pos-qisha { top: 228px; left: 50%; }
+
+    .hint {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 8px 0 2px;
+    }
+
+    /* Modal */
+    .revelation-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2,6,15,0.82);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .revelation-overlay.show { opacity: 1; pointer-events: auto; }
+
+    .rev-card {
+      width: min(430px, 100%);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 20px;
+      padding: 24px 18px;
+      box-shadow: 0 28px 60px rgba(0,0,0,0.72);
+    }
+    .rc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 16px;
+      gap: 10px;
+    }
+    .rc-title {
+      font-family: "Noto Serif TC", serif;
+      margin: 0;
+      font-size: 24px;
+      color: #fff;
+    }
+    .rc-tag {
+      display: inline-block;
+      margin-top: 4px;
+      font-family: "Share Tech Mono", monospace;
+      font-size: 10px;
+      letter-spacing: 1.8px;
+      color: #cbd5e1;
+      background: rgba(255,255,255,0.1);
+      border-radius: 999px;
+      padding: 4px 9px;
+    }
+    .rc-close {
+      background: none;
+      border: 0;
+      color: #94a3b8;
+      font-size: 28px;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .rc-close:hover { color: #fff; }
+    .rc-oneline {
+      font-family: "Noto Serif TC", serif;
+      color: #e2e8f0;
+      margin-bottom: 14px;
+      line-height: 1.65;
+      font-size: 15px;
+    }
+    .rc-grid { display: grid; gap: 10px; }
+    .rc-block {
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 12px;
+      background: rgba(0,0,0,0.18);
+      padding: 12px;
+    }
+    .rc-label { font-size: 12px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+    .rc-text {
+      font-family: "Noto Serif TC", serif;
+      color: #cbd5e1;
+      line-height: 1.7;
+      font-size: 14px;
+      text-align: justify;
+    }
+
+    @keyframes breathe {
+      0% { opacity: 0.3; transform: translateX(-50%) scale(0.95); }
+      100% { opacity: 0.8; transform: translateX(-50%) scale(1.05); }
+    }
+    @keyframes blue-pulse {
+      0% { box-shadow: 0 0 20px var(--core-blue-dim), inset 0 0 10px rgba(255,255,255,0.5); transform: scale(0.98); }
+      100% { box-shadow: 0 0 40px var(--core-blue-dim), inset 0 0 20px rgba(255,255,255,0.9); transform: scale(1.02); }
+    }
+    @keyframes spin-slow {
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes trunk-breathe {
+      0% { stroke-width: 1.5px; opacity: 0.5; }
+      100% { stroke-width: 3px; opacity: 1; }
+    }
+    @keyframes flow-up {
+      0% { stroke-dashoffset: 1650; }
+      100% { stroke-dashoffset: -150; }
+    }
+
+    
+    @media (max-width: 420px) {
+      .stage { min-height: 940px; }
+      .star-layer { height: 280px; }
+      .scripture { margin-top: 400px; }
+      .tier-main .star-icon { width: 58px; height: 58px; }
+      .tier-support .star-icon, .tier-malefic .star-icon { width: 48px; height: 48px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .abyss-light,
+      .blue-star,
+      .core-ring,
+      .trunk-body-yang,
+      .energy-flow-yang,
+      .energy-flow-yin {
+        animation: none !important;
+      }
+      .star-node,
+      .revelation-overlay {
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="abyss-light"></div>
+
+  <main class="app">
+    <header class="core">
+      <div class="core-ring" aria-hidden="true"></div>
+      <div class="blue-star"></div>
+      <div class="palace-name">命宮</div>
+    </header>
+
+    <section class="stage">
+      <div class="tree" aria-hidden="true">
+        <svg viewBox="0 0 100 1000" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="trunk-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
+              <stop offset="0%" stop-color="rgba(12, 38, 50, 0)" />
+              <stop offset="20%" stop-color="rgba(52, 211, 153, 0.4)" />
+              <stop offset="60%" stop-color="rgba(212, 175, 55, 0.9)" />
+              <stop offset="100%" stop-color="rgba(212, 175, 55, 0)" />
+            </linearGradient>
+            <filter id="glow-gold" x="-50%" y="-20%" width="200%" height="140%">
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feComposite in="SourceGraphic" in2="blur" operator="over" />
+            </filter>
+          </defs>
+          <path class="trunk-body-yang" d="M 50 1000 Q 70 700, 45 450 T 50 0" />
+          <path class="energy-flow-yang" d="M 50 1000 Q 70 700, 45 450 T 50 0" />
+          <path class="trunk-body-yin" d="M 50 1000 Q 30 700, 55 450 T 50 0" />
+          <path class="energy-flow-yin" d="M 50 1000 Q 30 700, 55 450 T 50 0" />
+        </svg>
+      </div>
+
+      <div class="star-layer" id="star-layer"></div>
+
+      <div class="scripture">
+        <article class="s-block">
+          <div class="label">這一宮的核心結構</div>
+          <div class="text">你的人格主題是<strong>邊界與控制</strong>，對關係與權力的拿捏特別敏感。你的人格是高想像與高內在世界，抽象思維與靈感很強。這條線，現在主要由<strong>廉貞、地空</strong>帶著你走。</div>
+        </article>
+
+        <article class="s-block">
+          <div class="label">你會怎麼做決策</div>
+          <div class="text">（定調主星｜廉貞）你做決策時重掌控感，會同時考量局勢、面子與主導權。你會優先選擇可長期穩定的做法。</div>
+        </article>
+
+        <article class="s-block">
+          <div class="label">最容易踩的坑</div>
+          <div class="text">你最大的風險往往不是做錯判斷，而是心裡一不安，就先把自己的觸角收回。前景未必不行，只是你更不敢在沒站穩時伸手。廉貞偏掉時，現場摩擦與壓力感會更難降溫。</div>
+        </article>
+      </div>
+    </section>
+
+    <p class="hint">點擊星曜 icon 查看解釋卡（主星 > 輔星 > 煞星 > 雜曜）</p>
+  </main>
+
+  <div class="revelation-overlay" id="rev-modal" onclick="closeCard(event)">
+    <div class="rev-card" onclick="event.stopPropagation()">
+      <div class="rc-header">
+        <div>
+          <h2 class="rc-title" id="rc-title"></h2>
+          <div class="rc-tag" id="rc-tag"></div>
+        </div>
+        <button class="rc-close" onclick="closeCard(event)">×</button>
+      </div>
+      <div class="rc-oneline" id="rc-oneline"></div>
+      <div class="rc-grid">
+        <div class="rc-block"><div class="rc-label">在命宮的作用</div><div class="rc-text" id="rc-inpalace"></div></div>
+        <div class="rc-block"><div class="rc-label">正常表現</div><div class="rc-text" id="rc-normal"></div></div>
+        <div class="rc-block"><div class="rc-label">偏掉時</div><div class="rc-text" id="rc-shadow"></div></div>
+        <div class="rc-block" style="border-left:2px solid rgba(255,255,255,0.8)"><div class="rc-label">實戰建議</div><div class="rc-text" id="rc-advice"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const starDb = {
+      lianzhen: {
+        name: "廉貞", tier: "main", tag: "主星 / 核心主軸", glow: "rgba(245,158,11,0.55)", pos: "pos-lianzhen",
+        oneline: "控制、慾望、界線、突破。",
+        inpalace: "放在命宮時，你很在意自己站不站得住，也會特別敏感於主導權和邊界。",
+        normal: "正常時有判斷、有界線，知道什麼該守、什麼該衝。",
+        shadow: "偏掉時容易過度控制、拉扯、內耗，太想一次把局面掌握好。",
+        advice: "先讓事情動起來，再調整控制感，不要等到全都可控才出手。",
+        svg: `<circle cx="32" cy="32" r="10" fill="none" stroke="#f59e0b" stroke-width="2.8"/><circle cx="32" cy="32" r="21" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-dasharray="96 18"/><path d="M20 46 L45 18" stroke="#fde68a" stroke-width="2.4" stroke-linecap="round"/><path d="M40 44 L47 47" stroke="#f87171" stroke-width="2.1" stroke-linecap="round"/><path d="M16 19 L21 24" stroke="#f87171" stroke-width="2.1" stroke-linecap="round"/>`
+      },
+      tianyue: {
+        name: "天鉞", tier: "support", tag: "輔星 / 貴人資源", glow: "rgba(250,204,21,0.45)", pos: "pos-tianyue",
+        oneline: "暗助、資源、提攜、檯面下支援。",
+        inpalace: "放在命宮時，你常在關鍵時刻得到支持，或有人默默幫你補一把。",
+        normal: "正常時容易獲得機會，也知道何時借力。",
+        shadow: "偏掉時容易以為總有人兜底，忽略自己該補的課。",
+        advice: "把外援當加分，不要把它當地板。先把自己的基本盤站穩。",
+        svg: `<circle cx="32" cy="34" r="10" fill="none" stroke="#fde68a" stroke-width="2.3"/><circle cx="32" cy="34" r="18" fill="none" stroke="#facc15" stroke-width="1.8"/><circle cx="32" cy="15" r="3" fill="#fff7cc"/><path d="M18 34c3 7 9 11 14 11c6 0 11-4 14-11" fill="none" stroke="#fff7cc" stroke-width="1.8" stroke-linecap="round"/>`
+      },
+      dikong: {
+        name: "地空", tier: "minor", tag: "雜曜 / 空性抽象", glow: "rgba(148,163,184,0.45)", pos: "pos-dikong",
+        oneline: "留白、跳躍、抽離、不確定。",
+        inpalace: "放在命宮時，你容易腦中一直有另一種可能，計畫常被更大的想像帶走。",
+        normal: "正常時有靈感、有抽象能力，看得比別人遠。",
+        shadow: "偏掉時容易期待太高、執行接不住，做完還是覺得空。",
+        advice: "用小版本落地，不要拿理想標準否定已經開始動的自己。",
+        svg: `<path d="M18 24c4-8 24-14 34-2" fill="none" stroke="#94a3b8" stroke-width="2.4" stroke-linecap="round"/><path d="M49 38c-5 8-24 12-34 1" fill="none" stroke="#cbd5e1" stroke-width="2.4" stroke-linecap="round"/><circle cx="32" cy="32" r="9" fill="none" stroke="#64748b" stroke-width="1.8" stroke-dasharray="6 6"/><circle cx="17" cy="17" r="2.2" fill="#cbd5e1"/><circle cx="49" cy="20" r="1.6" fill="#94a3b8"/>`
+      },
+      hongluan: {
+        name: "紅鸞", tier: "minor", tag: "雜曜 / 情感緣分", glow: "rgba(236,72,153,0.5)", pos: "pos-hongluan",
+        oneline: "緣分、好感、情感訊號、被帶動。",
+        inpalace: "放在命宮時，你對人際氛圍和關係訊號很敏感，容易因氣氛而改變狀態。",
+        normal: "正常時有魅力、有感受力，也更容易連到他人的情緒。",
+        shadow: "偏掉時容易因好感、投射、期待而影響判斷。",
+        advice: "先分清楚你是真的想要，還是只是被當下的氣氛打動。",
+        svg: `<circle cx="24" cy="28" r="8" fill="none" stroke="#f472b6" stroke-width="2.2"/><circle cx="40" cy="28" r="8" fill="none" stroke="#fb7185" stroke-width="2.2"/><path d="M20 37c4 6 8 10 12 13c4-3 8-7 12-13" fill="none" stroke="#f9a8d4" stroke-width="2.5" stroke-linecap="round"/><path d="M24 20 Q32 14 40 20" fill="none" stroke="#fbcfe8" stroke-width="1.8" stroke-linecap="round"/>`
+      },
+      wuqu: {
+        name: "武曲", tier: "support", tag: "輔星 / 資源現實", glow: "rgba(251,191,36,0.45)", pos: "pos-wuqu",
+        oneline: "結果、資源、紀律、現實配置。",
+        inpalace: "放在命宮時，你會用結果和資源配置來看事情值不值得。",
+        normal: "正常時很會算投入產出，做事有節奏、有結構。",
+        shadow: "偏掉時容易太硬、太算、只看結果忽略情感成本。",
+        advice: "保留現實感，但不要只用可量化的東西衡量自己的價值。",
+        svg: `<rect x="21" y="21" width="22" height="22" rx="2" fill="none" stroke="#fbbf24" stroke-width="2.4"/><rect x="15" y="15" width="34" height="34" rx="4" fill="none" stroke="#fde68a" stroke-width="1.8"/><circle cx="32" cy="32" r="3.2" fill="#fde68a"/><path d="M15 32h34M32 15v34" stroke="#fcd34d" stroke-width="1.6" opacity="0.85"/>`
+      },
+      qisha: {
+        name: "七殺", tier: "malefic", tag: "煞星 / 行動衝突", glow: "rgba(239,68,68,0.5)", pos: "pos-qisha",
+        oneline: "決斷、切開、風險、破而後立。",
+        inpalace: "放在命宮時，你遇到事情常直切重點，必要時寧可重來。",
+        normal: "正常時行動快、魄力夠，不怕困難局。",
+        shadow: "偏掉時容易太快切斷、太快進場，讓自己一直處在高壓模式。",
+        advice: "保留決斷，但先確認這次真的需要破局，而不是只是受不了卡住。",
+        svg: `<path d="M17 47 L31 15 L47 44 Z" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linejoin="round"/><path d="M28 29 L41 21" stroke="#fecaca" stroke-width="2.2" stroke-linecap="round"/><path d="M24 41 L39 31" stroke="#fca5a5" stroke-width="2.1" stroke-linecap="round"/><path d="M16 48 L20 51" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>`
+      }
+    };
+
+    function makeStarNode(key, data) {
+      const n = document.createElement('button');
+      n.type = 'button';
+      n.className = `star-node ${data.pos} tier-${data.tier}`;
+      n.setAttribute('aria-label', data.name);
+      n.innerHTML = `
+        <span class="star-icon" style="filter:drop-shadow(0 0 10px ${data.glow});">
+          <svg viewBox="0 0 64 64">${data.svg}</svg>
+        </span>
+        <span class="star-name">${data.name}</span>
+      `;
+      n.onclick = () => openCard(key);
+      return n;
+    }
+
+    function renderStars() {
+      const layer = document.getElementById('star-layer');
+      Object.entries(starDb).forEach(([k, v]) => layer.appendChild(makeStarNode(k, v)));
+    }
+
+    function openCard(key) {
+      const d = starDb[key];
+      document.getElementById('rc-title').innerText = d.name;
+      document.getElementById('rc-tag').innerText = d.tag;
+      document.getElementById('rc-oneline').innerText = d.oneline;
+      document.getElementById('rc-inpalace').innerText = d.inpalace;
+      document.getElementById('rc-normal').innerText = d.normal;
+      document.getElementById('rc-shadow').innerText = d.shadow;
+      document.getElementById('rc-advice').innerText = d.advice;
+      document.getElementById('rev-modal').classList.add('show');
+    }
+
+    function closeCard(e) {
+      if (e) e.stopPropagation();
+      document.getElementById('rev-modal').classList.remove('show');
+    }
+
+    renderStars();
+    window.closeCard = closeCard;
+  </script>
+</body>
+</html>

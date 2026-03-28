@@ -12,11 +12,14 @@ import { createEmptyFindings } from "../lifebookFindings.js";
 import type { NormalizedChart } from "../normalizedChart.js";
 import type { LifebookFindings, NatalFlowItem } from "../lifebookFindings.js";
 import { normalizeChart } from "../normalize/index.js";
+import { validateTimelineConsistency, type TimelineValidationIssue } from "../validators/validateTimelineConsistency.js";
 import {
-  validateTimelineConsistency,
-  hasTimelineErrors,
-  type TimelineValidationIssue,
-} from "../validators/validateTimelineConsistency.js";
+  validateTransformEdgeConsistency,
+  hasTransformEdgeErrors,
+  TransformEdgeValidationError,
+  isStrictTransformEdgesEnv,
+  type TransformEdgeValidationIssue,
+} from "../validators/validateTransformEdgeConsistency.js";
 import { runStarCombinationEngine } from "../engines/starCombination/starCombinationEngine.js";
 import type { StarCombinationsTable } from "../engines/starCombination/starCombinationEngine.js";
 import { runPalaceInferenceEngine } from "../engines/palaceInference/palaceInferenceEngine.js";
@@ -30,6 +33,10 @@ import type { OverlapInput } from "../engines/signals/signalsEngine.js";
 import { buildPalaceFindings } from "./buildPalaceFindings.js";
 import { buildTimeFindings } from "./buildTimeFindings.js";
 import { buildActionFindings } from "./buildActionFindings.js";
+import { buildTimeModuleOverlapSnapshotFromChartJson } from "../timeModuleOverlapSnapshot.js";
+import { buildTimeModuleDecisionSnapshotFromChart } from "../timeModuleDecisionSnapshot.js";
+import type { DecisionMatrixConfig } from "../timeDecisionEngine.js";
+import decisionMatrixJson from "../../../content/decisionMatrix.json";
 
 /** 施工圖 v1：contentLookup 形狀，供「只吃 chartJson + content」入口使用 */
 export interface LifebookContentLookup {
@@ -92,6 +99,8 @@ export interface BuildLifebookResultWithContext {
   };
   /** 時間軸一致性驗證結果；若有 error 則禁止輸出錯誤四化文案 */
   timelineValidationIssues?: TimelineValidationIssue[];
+  /** 四化邊與星曜落點／mutagen 一致性；若有 error 表示幾何與星名不同源 */
+  transformEdgeValidationIssues?: TransformEdgeValidationIssue[];
 }
 
 /**
@@ -110,11 +119,25 @@ export function buildLifebookFindingsFromChartAndContent(args: {
     );
     const chart = input.normalizedChart;
     const timelineValidationIssues = validateTimelineConsistency(chart);
+    const transformEdgeValidationIssues = validateTransformEdgeConsistency(chart);
+    const logger = typeof console !== "undefined" && console.warn ? console : { warn: () => {} };
     if (timelineValidationIssues.length > 0) {
-      const logger = typeof console !== "undefined" && console.warn ? console : { warn: () => {} };
       logger.warn("[lifebook] validateTimelineConsistency:", timelineValidationIssues);
     }
+    if (transformEdgeValidationIssues.length > 0) {
+      logger.warn("[lifebook] validateTransformEdgeConsistency:", transformEdgeValidationIssues);
+    }
+    if (isStrictTransformEdgesEnv() && hasTransformEdgeErrors(transformEdgeValidationIssues)) {
+      throw new TransformEdgeValidationError(transformEdgeValidationIssues);
+    }
     const findings = buildLifebookFindings(input);
+    const chartJson = args.chartJson as Record<string, unknown>;
+    findings.timeModuleOverlap = buildTimeModuleOverlapSnapshotFromChartJson(chartJson, {});
+    findings.timeModuleDecision = buildTimeModuleDecisionSnapshotFromChart({
+      chartJson,
+      decisionMatrix: decisionMatrixJson as unknown as DecisionMatrixConfig,
+      palaceOverlapTags: findings.timeModuleOverlap.palaceOverlapTags,
+    });
     return {
       findings,
       timeContext: {
@@ -124,8 +147,10 @@ export function buildLifebookFindingsFromChartAndContent(args: {
         nominalAge: chart.nominalAge ?? chart.yearlyHoroscope?.nominalAge,
       },
       timelineValidationIssues,
+      transformEdgeValidationIssues,
     };
-  } catch {
+  } catch (e) {
+    if (e instanceof TransformEdgeValidationError) throw e;
     return null;
   }
 }

@@ -3,23 +3,10 @@
  * 舊 JSON 無 meta.schema_version 時會補上共用常數，以符合 LifeBookDocument 介面。
  */
 
-import type { SectionPayload, WeightAnalysis, LifeBookViewerState, LifeBookMeta } from "../types";
+import type { SectionPayload, WeightAnalysis, LifeBookViewerState, LifeBookMeta, LifeBookSectionTechnical } from "../types";
 import { SECTION_ORDER } from "../constants";
 import { LIFEBOOK_SCHEMA_VERSION } from "../../../js/lifebook-version.js";
-
-function isSectionPayload(obj: unknown): obj is SectionPayload {
-  if (!obj || typeof obj !== "object") return false;
-  const o = obj as Record<string, unknown>;
-  return (
-    typeof o.section_key === "string" &&
-    typeof o.title === "string" &&
-    ["high", "medium", "low"].includes(String(o.importance_level)) &&
-    typeof o.structure_analysis === "string" &&
-    typeof o.behavior_pattern === "string" &&
-    typeof o.blind_spots === "string" &&
-    typeof o.strategic_advice === "string"
-  );
-}
+import { omitDeprecatedSihuaLayers } from "./chartJsonSanitize";
 
 function normalizeSection(raw: unknown, key: string): SectionPayload | null {
   if (!raw || typeof raw !== "object") return null;
@@ -39,6 +26,12 @@ function normalizeSection(raw: unknown, key: string): SectionPayload | null {
     blind_spots: String(o.blind_spots ?? ""),
     strategic_advice: String(o.strategic_advice ?? ""),
   };
+  if (o.output_mode === "technical" || o.output_mode === "ai") {
+    section.output_mode = o.output_mode;
+  }
+  if (o.technical && typeof o.technical === "object" && !Array.isArray(o.technical)) {
+    section.technical = o.technical as LifeBookSectionTechnical;
+  }
   if (star_palace_quotes && Object.keys(star_palace_quotes).length > 0) {
     section.star_palace_quotes = star_palace_quotes;
   }
@@ -53,9 +46,18 @@ export interface NormalizeInput {
   client_name?: string;
   birth_info?: string;
   /** 或直接傳入 meta 物件（如 demo / 已存命書） */
-  meta?: { client_name?: string; birth_info?: string } | null;
+  meta?: { client_name?: string; birth_info?: string; output_mode?: "ai" | "technical" } | null;
   /** 已存命書可能只傳 sections_json 字串 */
   sections_json?: string;
+  locked_sections?: Array<{
+    section_key?: string;
+    is_locked?: boolean;
+    lock_reason?: string;
+    teaser?: { section_key?: string; title?: string; teaser?: string };
+  }>;
+  plan_tier?: "free" | "pro";
+  plan_matrix_version?: string;
+  available_sections?: string[];
 }
 
 /**
@@ -121,12 +123,28 @@ export function normalizeApiResponse(input: NormalizeInput): LifeBookViewerState
     client_name: metaRaw.client_name,
     birth_info: metaRaw.birth_info,
     created_at: (metaRaw as LifeBookMeta).created_at,
+    output_mode: (metaRaw as LifeBookMeta).output_mode,
+    viewer_notice_zh: (metaRaw as LifeBookMeta).viewer_notice_zh,
   };
 
+  if (Array.isArray(input.locked_sections)) {
+    (meta as unknown as Record<string, unknown>).locked_sections = input.locked_sections;
+  }
+  if (typeof input.plan_tier === "string") {
+    (meta as unknown as Record<string, unknown>).plan_tier = input.plan_tier;
+  }
+  if (typeof input.plan_matrix_version === "string") {
+    (meta as unknown as Record<string, unknown>).plan_matrix_version = input.plan_matrix_version;
+  }
+  if (Array.isArray(input.available_sections)) {
+    (meta as unknown as Record<string, unknown>).available_sections = input.available_sections;
+  }
+
+  const rawChart = input.chart_json && typeof input.chart_json === "object" ? input.chart_json : null;
   return {
     meta,
     sections,
     weight_analysis: weight_analysis ?? null,
-    chart_json: input.chart_json && typeof input.chart_json === "object" ? input.chart_json : null,
+    chart_json: rawChart ? omitDeprecatedSihuaLayers(rawChart) ?? null : null,
   };
 }

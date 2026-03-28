@@ -10,8 +10,8 @@ s00 從「四化科普」改為**判讀引擎輸出**：把本命／大限／流
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 三層四化結構化陣列 | ✅ 已有／可組 | `buildSiHuaLayers(chartJson)` 產出 benming/decadal/yearly，每層 lu/quan/ke/ji → starName + palaceName；`chartJson.sihuaLayers` 或 overlap 的 transformations 含 fromPalace/toPalace。 |
-| 統一 event 格式 | ✅ 可實作 | 從 SiHuaLayers 或 sihuaLayers.transforms 組出 `{ layer, transform, starName, fromPalace, toPalace }[]`。Worker 內已有 `getOppositePalaceName`、`normPalaceIdToName`、`collectFourTransformsForPalace` 等，可組出完整 from/to。 |
+| 三層四化結構化陣列 | ✅ 已有／可組 | `buildSiHuaLayers(chartJson)` 產出 benming/decadal/yearly，每層 lu/quan/ke/ji → starName + palaceName（**不**讀 client `sihuaLayers` wire）；overlap 的 transformations 可含 fromPalace/toPalace。 |
+| 統一 event 格式 | ✅ 可實作 | 從 **`buildSiHuaLayers` 結果** 組出 `{ layer, transform, starName, fromPalace, toPalace }[]`。Worker 內已有 `getOppositePalaceName`、`normPalaceIdToName`、`collectFourTransformsForPalace` 等，可組出完整 from/to。 |
 | 規則觸發條件 | ✅ 可實作 | 20 條規則的 when 皆為「對 events 陣列的集合／計數／跨層比對」，無需 DSL，用判斷函式即可。 |
 | 句型與建議產出 | ✅ 可實作 | 每條規則帶 messageTemplate / actionTemplate，placeholder 由 evidence 填入，產出 narrativeBlocks 與 action 前 N 條。 |
 | 接回 s00 文案 | ✅ 可實作 | getPlaceholderMapFromContext 已對 s00 填寫多個 placeholder；新增 s00PatternNarrative、s00PatternActions 等，s00 模板改為「技術表＋命中規則 Top N＋今年建議」。 |
@@ -19,7 +19,7 @@ s00 從「四化科普」改為**判讀引擎輸出**：把本命／大限／流
 
 ### 風險與注意
 
-- **fromPalace/toPalace 完整性**：若前端未送 `sihuaLayers`，目前由 mutagenStars + starByPalace 推「落宮」，再以對宮當 toPalace；若命盤邏輯與前端不一致，需對齊一處（建議以 Worker 推導為準）。
+- **fromPalace/toPalace 完整性**：由 **mutagenStars + normalize 落宮**（或 legacy starByPalace）推「落宮」，再以對宮當 toPalace；若命盤邏輯與前端不一致，需對齊一處（建議以 Worker 推導為準）。
 - **規則數量**：20 條先全上，之後可依命中率與反饋關閉或微調優先級。
 
 ---
@@ -38,7 +38,7 @@ s00 從「四化科普」改為**判讀引擎輸出**：把本命／大限／流
 
 ## 輸出規格（引擎）
 
-- **輸入**：`chartJson`（已有 fourTransformations、decadalLimits、yearlyHoroscope、sihuaLayers／overlap 等）。
+- **輸入**：`chartJson`（已有 fourTransformations、decadalLimits、yearlyHoroscope、overlap 等；**勿**依賴已廢止 `sihuaLayers` wire）。
 - **輸出**（供 s00 使用）：
   - `hotStars[]`：被多層命中的星
   - `hotPalaces[]`：被多層命中的宮

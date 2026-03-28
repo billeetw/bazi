@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<!-- archive only: lifebook-decision-tree-demo v1 (inspiration) -->
+<!-- React production path: src/lifebook-viewer/** -->
+<!-- 請勿把本檔 class/modal 命名直接移植到 React viewer -->
+<!-- 樹枝方向：.node-item--branch-left / .node-item--branch-right（勿用 nth-child） -->
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>人生說明書 2.0 - 宇宙琉璃終極版</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600&family=Noto+Serif+TC:wght@600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Step 1–2 環境與主幹（命運主幹 The Living Trunk） */
+      --void-base: #020408;
+      --glow-abyss: rgba(12, 38, 50, 0.5);
+      --glow-spore: rgba(212, 175, 55, 0.08);
+      --trunk-core: #d4af37;
+      --trunk-pulse: rgba(255, 255, 255, 0.8);
+
+      --bg-space: #020617;
+      --glass-panel: rgba(15, 23, 42, 0.45);
+      --glass-border: rgba(255, 255, 255, 0.06);
+      --glass-highlight: rgba(255, 255, 255, 0.12);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --gold-light: #fde047;
+      --gold: #f59e0b;
+      --gold-glow: rgba(245, 158, 11, 0.4);
+      --red: #ef4444;
+      --red-glow: rgba(239, 68, 68, 0.4);
+      --blue: #3b82f6;
+      --yellow: #fbbf24;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    html { height: 100%; }
+
+    /* 1️⃣ 復活宇宙星雲 + Step1 深淵環境光（與主幹疊加） */
+    body {
+      margin: 0; padding: 0;
+      min-height: 100vh;
+      background-color: var(--void-base);
+      background-image:
+        radial-gradient(circle at 50% 0%, #1e3a8a 0%, transparent 60%),
+        radial-gradient(circle at 20% 80%, rgba(245, 158, 11, 0.12) 0%, transparent 50%);
+      color: var(--text-main);
+      font-family: "PingFang TC", "Microsoft JhengHei", sans-serif;
+      display: flex; justify-content: center;
+      overflow: hidden;
+    }
+
+    /* 全螢幕背景層：不攔截點擊 */
+    .scene-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .scene-backdrop .abyss-light {
+      position: absolute;
+      bottom: -20vh;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150vw;
+      height: 80vh;
+      background: radial-gradient(ellipse at center, var(--glow-abyss) 0%, transparent 70%);
+      filter: blur(40px);
+      animation: lb-breathe 14s ease-in-out infinite alternate;
+    }
+
+    .scene-backdrop .ambient-gold {
+      position: absolute;
+      top: -15vh;
+      right: -20vw;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at center, var(--glow-spore) 0%, transparent 65%);
+      filter: blur(50px);
+      animation: lb-breathe-slow 18s ease-in-out infinite alternate-reverse;
+    }
+
+    /* Step2：命運主幹 SVG（曲線 + 能量流）— z-index 低於 .app */
+    .oracle-tree-container {
+      position: fixed;
+      left: 50%;
+      top: 0;
+      bottom: 0;
+      width: min(120px, 28vw);
+      transform: translateX(-50%);
+      z-index: 1;
+      pointer-events: none;
+      animation: lb-tree-grow 3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      opacity: 0;
+    }
+
+    .oracle-tree-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .trunk-body {
+      fill: none;
+      stroke: url(#trunk-gradient);
+      stroke-width: 2.5px;
+      filter: url(#trunk-glow);
+      animation: lb-trunk-breathe 8s ease-in-out infinite alternate;
+    }
+
+    .energy-flow {
+      fill: none;
+      stroke: var(--trunk-pulse);
+      stroke-width: 1.5px;
+      filter: url(#trunk-glow);
+      stroke-dasharray: 150 1500;
+      stroke-dashoffset: 1650;
+      animation: lb-flow-up 12s linear infinite;
+    }
+
+    @keyframes lb-breathe {
+      0% { opacity: 0.3; transform: translateX(-50%) scale(0.95); }
+      100% { opacity: 0.8; transform: translateX(-50%) scale(1.05); }
+    }
+    @keyframes lb-breathe-slow {
+      0% { opacity: 0.2; }
+      100% { opacity: 0.7; }
+    }
+    @keyframes lb-tree-grow {
+      0% { opacity: 0; transform: translateX(-50%) translateY(5vh); }
+      100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    @keyframes lb-trunk-breathe {
+      0% { stroke-width: 1.5px; opacity: 0.5; }
+      100% { stroke-width: 3px; opacity: 1; }
+    }
+    @keyframes lb-flow-up {
+      0% { stroke-dashoffset: 1650; }
+      100% { stroke-dashoffset: -150; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .scene-backdrop .abyss-light,
+      .scene-backdrop .ambient-gold { animation: none; opacity: 0.5; }
+      .oracle-tree-container { animation: none; opacity: 1; transform: translateX(-50%); }
+      .trunk-body { animation: none; stroke-width: 2.5px; opacity: 0.85; }
+      .energy-flow { animation: none; stroke-dashoffset: 0; opacity: 0.35; }
+      .branch-node { animation: none !important; opacity: 1 !important; transform: none !important; }
+      .fruit-core.danger .halo,
+      .fruit-core.wealth .halo { animation: none; opacity: 0.7; transform: none; }
+      .dewdrop-hint,
+      .oracle-panel { animation: none !important; opacity: 1 !important; transform: none !important; }
+      .month-stream .m-leaf { transition: none !important; }
+      .month-stream.open .m-leaf { transform: none; }
+      .fruit-core::after,
+      .fruit-core.ripple-active::after { animation: none !important; opacity: 0 !important; }
+      .fog-lock::after { animation: none; opacity: 0.9; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    /* ==========================================================================
+       Step 3 & 4: 枝葉與果實（Organic Branches & Glowing Fruits）
+       全寬版；在 .map-section 內另覆寫為相對定位、寬度 50% 以適配窄欄
+       ========================================================================== */
+    .branches-layer {
+      position: absolute;
+      top: 35vh;
+      left: 50%;
+      width: 100vw;
+      transform: translateX(-50%);
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .branch-node {
+      position: relative;
+      display: flex;
+      align-items: center;
+      width: 50vw;
+      pointer-events: auto;
+      opacity: 0;
+      animation: lb-branch-grow 2s cubic-bezier(0.2, 0.8, 0.2, 1) 1.5s forwards;
+    }
+
+    .right-branch { margin-left: 50vw; justify-content: flex-start; padding-left: 50px; }
+    .left-branch { margin-left: 0; justify-content: flex-end; padding-right: 50px; }
+
+    .branch-node::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 50px;
+      height: 30px;
+      border-top: 1.5px solid rgba(212, 175, 55, 0.35);
+      box-shadow: 0 -2px 10px rgba(212, 175, 55, 0.12);
+    }
+    .right-branch::before {
+      left: 0;
+      border-left: 1.5px solid rgba(212, 175, 55, 0.35);
+      border-top-left-radius: 20px;
+    }
+    .left-branch::before {
+      right: 0;
+      border-right: 1.5px solid rgba(212, 175, 55, 0.35);
+      border-top-right-radius: 20px;
+    }
+
+    .fruit-core {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(6, 9, 19, 0.85);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      cursor: pointer;
+      z-index: 2;
+      overflow: visible;
+      isolation: isolate;
+      transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .fruit-core:hover { transform: scale(1.15); }
+
+    .fruit-core .symbol {
+      position: relative;
+      z-index: 2;
+      font-family: 'Noto Serif TC', 'PingFang TC', serif;
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1;
+    }
+
+    .fruit-core.danger {
+      border-color: rgba(225, 29, 72, 0.5);
+    }
+    .fruit-core.danger .symbol {
+      color: #fda4af;
+      text-shadow: 0 0 8px rgba(225, 29, 72, 0.8);
+    }
+    .fruit-core.danger .halo {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      z-index: 0;
+      background: radial-gradient(circle, rgba(225, 29, 72, 0.35) 0%, transparent 70%);
+      animation: lb-pulse-danger 3s infinite alternate;
+      pointer-events: none;
+    }
+
+    .fruit-core.wealth {
+      border-color: rgba(212, 175, 55, 0.5);
+    }
+    .fruit-core.wealth .symbol {
+      color: #fef08a;
+      text-shadow: 0 0 8px rgba(212, 175, 55, 0.8);
+    }
+    .fruit-core.wealth .halo {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      z-index: 0;
+      background: radial-gradient(circle, rgba(212, 175, 55, 0.25) 0%, transparent 70%);
+      animation: lb-pulse-wealth 4s infinite alternate;
+      pointer-events: none;
+    }
+
+    .fruit-core.neutral {
+      border-color: rgba(148, 163, 184, 0.45);
+      cursor: default;
+    }
+    .fruit-core.neutral .symbol {
+      color: #94a3b8;
+      text-shadow: none;
+    }
+
+    .branch-text {
+      font-family: 'Noto Sans TC', 'PingFang TC', sans-serif;
+      font-size: 11px;
+      color: rgba(203, 213, 225, 0.5);
+      letter-spacing: 2px;
+    }
+    .right-branch .branch-text { margin-left: 12px; }
+    .left-branch .branch-text { margin-right: 12px; }
+
+    /* ==========================================================================
+       Step 7 & 8: 蕨葉舒展與觸碰漣漪
+       ========================================================================== */
+    .branch-trigger {
+      cursor: pointer;
+      display: inline-block;
+      transition: 0.3s;
+      color: rgba(212, 175, 55, 0.75);
+      border-bottom: 1px dashed rgba(212, 175, 55, 0.35);
+      padding-bottom: 2px;
+      margin-left: 6px;
+      pointer-events: auto;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .branch-trigger:hover { color: rgba(253, 230, 138, 0.95); }
+    .branch-trigger:active { transform: scale(0.95); opacity: 0.75; }
+
+    .month-stream {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      pointer-events: none;
+      width: 100%;
+      flex-basis: 100%;
+      margin-top: 10px;
+      padding-left: 4px;
+      border-left: 1px solid rgba(212, 175, 55, 0.12);
+    }
+
+    .m-leaf {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      opacity: 0;
+      transform: translateY(-10px) translateX(-10px);
+      transition: opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .month-stream.open .m-leaf {
+      opacity: 1;
+      transform: translateY(0) translateX(0);
+      pointer-events: auto;
+    }
+    .month-stream.open .m-leaf:nth-child(1) { transition-delay: 0.1s; }
+    .month-stream.open .m-leaf:nth-child(2) { transition-delay: 0.25s; }
+    .month-stream.open .m-leaf:nth-child(3) { transition-delay: 0.4s; }
+
+    .m-dot {
+      flex-shrink: 0;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      margin-top: 6px;
+      background: rgba(203, 213, 225, 0.35);
+      box-shadow: 0 0 6px rgba(255, 255, 255, 0.12);
+    }
+    .m-leaf.danger .m-dot {
+      background: rgba(225, 29, 72, 0.85);
+      box-shadow: 0 0 8px rgba(225, 29, 72, 0.45);
+    }
+    .m-leaf.wealth .m-dot {
+      background: rgba(212, 175, 55, 0.85);
+      box-shadow: 0 0 8px rgba(212, 175, 55, 0.45);
+    }
+
+    .month-stream .m-text {
+      font-family: 'Noto Sans TC', 'PingFang TC', sans-serif;
+      font-size: 12px;
+      color: rgba(203, 213, 225, 0.65);
+      letter-spacing: 0.5px;
+      line-height: 1.6;
+    }
+    .month-stream .m-text strong {
+      color: rgba(248, 250, 252, 0.92);
+      font-weight: 600;
+    }
+    .month-stream .m-text .action {
+      display: block;
+      margin-top: 4px;
+      color: rgba(212, 175, 55, 0.9);
+      font-size: 11px;
+      letter-spacing: 0.5px;
+    }
+
+    .fruit-core::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      border: 1px solid transparent;
+      pointer-events: none;
+      z-index: 1;
+      box-sizing: border-box;
+    }
+    .fruit-core.ripple-active::after {
+      animation: lb-fruit-ripple 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+    .fruit-core.danger.ripple-active::after { border-color: rgba(225, 29, 72, 0.75); }
+    .fruit-core.wealth.ripple-active::after { border-color: rgba(212, 175, 55, 0.75); }
+
+    @keyframes lb-fruit-ripple {
+      0% { width: 100%; height: 100%; opacity: 0.85; }
+      100% { width: 250%; height: 250%; opacity: 0; }
+    }
+
+    @keyframes lb-branch-grow {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes lb-pulse-danger {
+      0% { transform: scale(0.85); opacity: 0.6; }
+      100% { transform: scale(1.3); opacity: 1; }
+    }
+    @keyframes lb-pulse-wealth {
+      0% { transform: scale(0.9); opacity: 0.5; }
+      100% { transform: scale(1.2); opacity: 1; }
+    }
+
+    /* 地圖區：枝枒層改為相對、窄欄寬度（避免 50vw 在 max-width 480 欄內错位） */
+    .map-section > .branches-layer {
+      position: relative;
+      top: auto;
+      left: auto;
+      width: 100%;
+      transform: none;
+      z-index: 6;
+      margin: 0 0 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .map-section > .branches-layer .branch-node {
+      width: 50%;
+      max-width: 50%;
+    }
+    .map-section > .branches-layer .right-branch {
+      margin-left: 50%;
+      padding-left: 28px;
+    }
+    .map-section > .branches-layer .left-branch {
+      padding-right: 28px;
+    }
+    .map-section > .branches-layer .branch-node::before {
+      width: 36px;
+    }
+    /* 此層果實預設不攔截點擊；含流月互動的枝枒除外 */
+    .map-section > .branches-layer .fruit-core {
+      pointer-events: none;
+      cursor: default;
+    }
+    .map-section > .branches-layer .branch-node--with-months .fruit-core {
+      pointer-events: auto;
+      cursor: pointer;
+    }
+
+    .map-section > .branches-layer .branch-node--with-months {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      margin-left: 0;
+      padding-left: 12px;
+      padding-right: 8px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      align-content: flex-start;
+      gap: 8px 10px;
+    }
+    .map-section > .branches-layer .branch-node--with-months::before {
+      opacity: 0.85;
+    }
+
+    /* ==========================================================================
+       Step 9: 迷霧鎖（付費牆視覺）
+       ========================================================================== */
+    .fog-lock {
+      position: relative;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+    /* 全區可點：子層曾設 pointer-events:none，需透明按鈕承接點擊 */
+    .fog-lock-hit {
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      border-radius: 10px;
+      background: transparent;
+      cursor: pointer;
+    }
+    .fog-lock-hit:focus-visible {
+      outline: 2px solid rgba(212, 175, 55, 0.55);
+      outline-offset: 3px;
+    }
+    .fog-lock .fruit-core,
+    .fog-lock .branch-text {
+      filter: blur(4px) brightness(0.5);
+      transition: filter 0.5s ease;
+    }
+    .fog-lock:hover .fruit-core,
+    .fog-lock:hover .branch-text {
+      filter: blur(2px) brightness(0.8);
+    }
+    .fog-lock::after {
+      content: '✧ 迷霧籠罩 ✧\A 解鎖未來軌跡';
+      white-space: pre;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 11;
+      font-family: 'Noto Serif TC', 'PingFang TC', serif;
+      font-size: 11px;
+      color: rgba(212, 175, 55, 0.9);
+      text-align: center;
+      letter-spacing: 2px;
+      line-height: 1.8;
+      text-shadow: 0 0 15px rgba(0, 0, 0, 0.95);
+      opacity: 0.85;
+      pointer-events: none;
+      animation: lb-fog-breathe 4s ease-in-out infinite alternate;
+    }
+    @keyframes lb-fog-breathe {
+      0% { opacity: 0.65; transform: translate(-50%, -50%) scale(0.96); }
+      100% { opacity: 1; transform: translate(-50%, -50%) scale(1.04); }
+    }
+
+    .map-section > .branches-layer .fog-lock.left-branch {
+      width: 100%;
+      max-width: 100%;
+      margin-left: 0;
+      padding-left: 12px;
+      padding-right: 12px;
+      min-height: 56px;
+    }
+
+    .app {
+      width: 100%; max-width: 480px; height: 100vh;
+      position: relative;
+      z-index: 2;
+      overflow-y: auto; overflow-x: hidden;
+      scroll-behavior: smooth;
+    }
+
+    .content-layer {
+      position: relative; z-index: 10; padding: 20px 16px 100px;
+    }
+
+    /* ==========================================================================
+       Step 5 & 6: 晨露與神諭之葉（置於 .content-layer 內，相對定位；勿用全屏 z-30 蓋住地圖）
+       ========================================================================== */
+    .content-layer > .oracle-layer {
+      position: relative;
+      width: 100%;
+      max-width: 100%;
+      height: auto;
+      left: auto;
+      top: auto;
+      z-index: 1;
+      padding: 0 8px;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .dewdrop-hint {
+      margin-top: 2vh;
+      padding: 8px 20px;
+      max-width: 100%;
+      background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.1), transparent);
+      border-top: 1px solid rgba(212, 175, 55, 0.2);
+      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+      font-family: 'Noto Sans TC', 'PingFang TC', sans-serif;
+      font-size: 12px;
+      color: rgba(253, 230, 138, 0.85);
+      letter-spacing: 1.5px;
+      text-align: center;
+      white-space: normal;
+      line-height: 1.45;
+      pointer-events: auto;
+      animation: lb-dew-drop 2.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+      opacity: 0;
+    }
+
+    .oracle-panel {
+      margin-top: 3vh;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 400px;
+      background: rgba(6, 9, 19, 0.35);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-top: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 28px 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      pointer-events: auto;
+      animation: lb-panel-float-up 2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.5s forwards;
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    .panel-anchor {
+      text-align: center;
+      font-size: 10px;
+      color: rgba(203, 213, 225, 0.4);
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+      font-family: 'Noto Sans TC', 'PingFang TC', sans-serif;
+    }
+
+    /* ⏳ 光陰流轉進度條 (極細、發光、居中) */
+    .time-progress {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin: -4px 0 20px 0;
+    }
+    .time-progress .p-text {
+      font-family: 'Noto Sans TC', 'PingFang TC', sans-serif;
+      font-size: 10px;
+      color: rgba(212, 175, 55, 0.7);
+      letter-spacing: 2px;
+    }
+    .time-progress .p-track {
+      width: 40%;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+      position: relative;
+      overflow: visible;
+    }
+    .time-progress .p-fill {
+      position: absolute;
+      left: 0;
+      top: -0.5px;
+      height: 2px;
+      width: 23%;
+      background: #d4af37;
+      box-shadow: 0 0 8px 1px rgba(212, 175, 55, 0.8);
+    }
+
+    .panel-title {
+      font-family: 'Noto Serif TC', 'PingFang TC', serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: #f8fafc;
+      text-align: center;
+      margin: 0 0 24px;
+      letter-spacing: 2px;
+    }
+
+    .oracle-panel .prophecy-text {
+      font-family: 'Noto Serif TC', 'PingFang TC', serif;
+      font-size: 15px;
+      line-height: 1.8;
+      color: #cbd5e1;
+      position: relative;
+      padding: 0 16px;
+      margin-bottom: 32px;
+      text-align: justify;
+    }
+    .oracle-panel .prophecy-text::before,
+    .oracle-panel .prophecy-text::after {
+      content: '✦';
+      position: absolute;
+      color: rgba(212, 175, 55, 0.4);
+      font-size: 12px;
+    }
+    .oracle-panel .prophecy-text::before { top: 0; left: 0; }
+    .oracle-panel .prophecy-text::after { bottom: 0; right: 0; }
+
+    .oracle-panel .matrix-grid {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .oracle-panel .m-col { flex: 1; min-width: 0; }
+    /* 避免與 modal .m-title、流月區塊衝突：僅在神諭面板內 */
+    .oracle-panel .matrix-grid .matrix-col-title {
+      font-family: 'Noto Sans TC', 'PingFang TC', sans-serif;
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .oracle-panel .m-col.do .matrix-col-title { color: rgba(52, 211, 153, 0.85); }
+    .oracle-panel .m-col.dont .matrix-col-title { color: rgba(225, 29, 72, 0.85); }
+    .oracle-panel .matrix-grid .matrix-col-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    /* ul 不用 .m-list，避免與流月 div.m-list { display:none } 衝突 */
+    .oracle-panel ul.oracle-matrix-ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: block;
+    }
+    .oracle-panel ul.oracle-matrix-ul li {
+      font-family: 'Noto Sans TC', 'PingFang TC', sans-serif;
+      font-size: 13px;
+      color: rgba(203, 213, 225, 0.75);
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+
+    @keyframes lb-dew-drop {
+      0% { opacity: 0; transform: translateY(-20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes lb-panel-float-up {
+      0% { opacity: 0; transform: translateY(30px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    /* =========================================
+       2️⃣ 頂級全息玻璃（地圖節點 .n-card）
+       ========================================= */
+    .n-card {
+      position: relative;
+      z-index: 1;
+      width: 85%;
+      border-radius: 16px;
+      padding: 16px;
+      transition: 0.3s;
+      background: rgba(15, 23, 42, 0.4);
+      backdrop-filter: blur(20px) saturate(150%);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-top: 1px solid rgba(255, 255, 255, 0.25);
+      box-shadow:
+        0 25px 50px -12px rgba(0, 0, 0, 0.8),
+        inset 0 0 20px rgba(255, 255, 255, 0.02);
+    }
+
+    /* 🚫 警告 (霓虹紅) */
+    .neon-warn {
+      background: linear-gradient(90deg, rgba(153, 27, 27, 0.3) 0%, transparent 100%);
+      border-left: 2px solid var(--red); padding: 12px 16px; border-radius: 4px;
+      font-size: 13px; color: #fecaca; display: flex; gap: 10px; align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    /* =========================================
+       3️⃣ 地圖與流月探索 (藝術化節點)
+       ========================================= */
+    /* isolation：樹枝 ::before 與卡片 z-index 堆疊可預期，不受外層 content-layer 影響 */
+    .map-section { position: relative; padding-top: 20px; isolation: isolate; }
+    .map-title { text-align: center; font-size: 14px; color: var(--text-muted); letter-spacing: 4px; margin-bottom: 30px; text-transform: uppercase; }
+
+    /* 4️⃣ 地圖節點 + 有機發光樹枝 */
+    .node-item {
+      display: flex;
+      margin-bottom: 40px;
+      position: relative;
+      z-index: 10;
+      justify-content: center;
+    }
+    .node-item::before {
+      content: '';
+      position: absolute;
+      top: 30px;
+      width: 45%;
+      height: 40px;
+      z-index: 0;
+      pointer-events: none;
+      border-top: 1.5px solid rgba(212, 175, 55, 0.35);
+      box-shadow: 0 -2px 10px rgba(212, 175, 55, 0.1);
+    }
+    /* 由幹線向左側彎出（顯式 class，不依賴 nth-child，插版不會錯位） */
+    .node-item--branch-left::before {
+      right: 50%;
+      border-right: 1.5px solid rgba(212, 175, 55, 0.35);
+      border-top-right-radius: 20px;
+    }
+    /* 由幹線向右側彎出 */
+    .node-item--branch-right::before {
+      left: 50%;
+      border-left: 1.5px solid rgba(212, 175, 55, 0.35);
+      border-top-left-radius: 20px;
+    }
+
+    .node-item.active .n-card {
+      border-color: rgba(245, 158, 11, 0.35);
+      background: rgba(245, 158, 11, 0.07);
+      box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.5),
+        inset 0 0 20px rgba(255, 255, 255, 0.02);
+    }
+    
+    .n-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .n-year { font-size: 18px; font-weight: bold; color: #fff; display: flex; align-items: center; gap: 8px;}
+    .n-tag { font-size: 10px; background: var(--gold); color: #000; padding: 2px 8px; border-radius: 10px; font-weight: bold; }
+    
+    /* 果實群組（卡片內使用 .fruit-core，與 Step4 靈魂果實一致） */
+    .fruit-group { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+    /* 流月展開器 */
+    .btn-month {
+      width: 100%; background: transparent; border: none; border-top: 1px dashed rgba(255,255,255,0.1);
+      color: var(--text-muted); padding: 12px 0 0; margin-top: 12px; font-size: 12px; cursor: pointer; transition: 0.3s;
+    }
+    .btn-month:hover { color: var(--gold); }
+    
+    .m-list { display: none; margin-top: 16px; }
+    .n-card.expanded .m-list { display: block; animation: fadeIn 0.4s ease; }
+
+    .m-item { padding: 0 0 16px 16px; border-left: 1px solid rgba(255,255,255,0.1); position: relative; }
+    .m-item::before { content: ''; position: absolute; left: -4px; top: 4px; width: 7px; height: 7px; border-radius: 50%; background: #475569; }
+    .m-item.danger::before { background: var(--red); box-shadow: 0 0 8px var(--red); border: 1px solid #fff; left: -5px; width: 9px; height: 9px;}
+    .m-item.wealth::before { background: var(--yellow); box-shadow: 0 0 8px var(--yellow); border: 1px solid #fff; left: -5px; width: 9px; height: 9px;}
+    
+    .m-item.normal { opacity: 0.4; }
+    .m-head { font-size: 13px; font-weight: bold; color: #fff; margin-bottom: 4px; }
+    .m-desc { font-size: 12px; color: #cbd5e1; line-height: 1.5; margin: 0; }
+    .m-focus { color: var(--gold-light); font-size: 11px; font-weight: bold; margin-top: 6px; letter-spacing: 0.5px; }
+
+    /* =========================================
+       4️⃣ 終極付費彈窗 (Holographic Modal)
+       ========================================= */
+    .modal {
+      position: fixed; inset: 0; background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(12px);
+      z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal.show { display: flex; animation: fadeIn 0.3s; }
+    
+    .m-card {
+      width: 100%; max-width: 400px; background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255,255,255,0.1); border-top: 1px solid rgba(255,255,255,0.2);
+      border-radius: 24px; padding: 28px 24px; box-shadow: 0 30px 60px rgba(0,0,0,0.9);
+      position: relative; overflow: hidden;
+    }
+    
+    .m-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .m-icon { width: 40px; height: 40px; border-radius: 50%; background: rgba(239, 68, 68, 0.2); border: 1px solid var(--red); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fca5a5; box-shadow: 0 0 15px var(--red-glow);}
+    .m-card .m-title { margin: 0; font-size: 20px; color: #fff; font-weight: 800; }
+    .m-level { background: var(--red); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 4px; vertical-align: middle; margin-left: 8px;}
+
+    /* 邏輯推演區塊 */
+    .m-logic { margin-bottom: 20px; }
+    .l-row { margin-bottom: 16px; }
+    .l-k { font-size: 11px; color: var(--text-muted); font-weight: bold; margin-bottom: 4px; letter-spacing: 1px; text-transform: uppercase;}
+    .l-v { font-size: 14px; color: #e2e8f0; line-height: 1.6; }
+
+    /* 💀 後果特化 */
+    .l-row.doom { background: linear-gradient(90deg, rgba(153, 27, 27, 0.2), transparent); padding: 12px; border-radius: 8px; border-left: 2px solid var(--red); }
+    .l-row.doom .l-k { color: #fca5a5; display: flex; align-items: center; gap: 6px; }
+    .l-row.doom .l-v { color: #fff; font-weight: bold; }
+
+    /* CTA 按鈕 */
+    .btn-cta {
+      width: 100%; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000;
+      border: none; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 800;
+      cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;
+      box-shadow: 0 10px 25px rgba(245, 158, 11, 0.4); margin-top: 8px; transition: 0.3s;
+    }
+    .btn-cta:active { transform: scale(0.97); }
+    .btn-close { display: block; text-align: center; margin-top: 16px; font-size: 12px; color: var(--text-muted); cursor: pointer; }
+
+    /* ==========================================================================
+       Step 10: 命運啟示錄（付費轉化層，z-index 高於舊 #paywallModal）
+       ========================================================================== */
+    .revelation-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 4, 8, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 1001;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    .revelation-overlay.show {
+      display: flex;
+      opacity: 1;
+    }
+
+    .r-panel {
+      width: 100%;
+      max-width: 400px;
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.65) 0%, rgba(6, 9, 19, 0.92) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-top: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 16px;
+      padding: 32px 24px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.85), inset 0 0 30px rgba(0, 0, 0, 0.45);
+      transform: translateY(20px);
+      transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+      position: relative;
+      pointer-events: auto;
+    }
+    .revelation-overlay.show .r-panel {
+      transform: translateY(0);
+    }
+
+    .r-header { text-align: center; margin-bottom: 32px; }
+    .r-icon {
+      font-size: 22px;
+      color: rgba(225, 29, 72, 0.9);
+      margin-bottom: 12px;
+      text-shadow: 0 0 10px rgba(225, 29, 72, 0.45);
+      font-family: 'Noto Serif TC', 'PingFang TC', serif;
+    }
+    .r-title {
+      font-family: 'Noto Serif TC', 'PingFang TC', serif;
+      font-size: 22px;
+      color: #f8fafc;
+      margin: 0 0 8px;
+      letter-spacing: 1px;
+    }
+    .r-subtitle {
+      font-family: 'Noto Sans TC', 'PingFang TC', sans-serif;
+      font-size: 11px;
+      color: rgba(225, 29, 72, 0.85);
+      letter-spacing: 2px;
+    }
+
+    .r-block { margin-bottom: 24px; }
+    .r-label {
+      font-family: 'Noto Sans TC', 'PingFang TC', sans-serif;
+      font-size: 10px;
+      color: rgba(203, 213, 225, 0.5);
+      letter-spacing: 2px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .r-label::before {
+      content: '✦';
+      color: rgba(212, 175, 55, 0.5);
+      font-size: 10px;
+    }
+    .r-text {
+      font-family: 'Noto Serif TC', 'PingFang TC', serif;
+      font-size: 14px;
+      line-height: 1.8;
+      color: #cbd5e1;
+      text-align: justify;
+    }
+
+    .r-doom {
+      background: linear-gradient(90deg, rgba(225, 29, 72, 0.1), transparent);
+      border-left: 2px solid rgba(225, 29, 72, 0.5);
+      padding: 16px;
+      border-radius: 0 8px 8px 0;
+      margin-top: 28px;
+    }
+    .r-doom .r-text { color: #f8fafc; font-weight: 600; }
+
+    .btn-premium {
+      display: block;
+      width: 100%;
+      margin-top: 32px;
+      padding: 18px;
+      background: transparent;
+      border: 1px solid rgba(212, 175, 55, 0.5);
+      color: rgba(212, 175, 55, 0.92);
+      font-family: 'Noto Serif TC', 'PingFang TC', serif;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-align: center;
+      cursor: pointer;
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.3s, transform 0.2s;
+    }
+    .btn-premium::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.22), transparent);
+      transition: left 0.55s ease;
+    }
+    .btn-premium:hover::before { left: 100%; }
+    .btn-premium:active {
+      background: rgba(212, 175, 55, 0.1);
+      transform: scale(0.98);
+    }
+
+    .revelation-overlay .btn-close {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      font-family: 'Noto Sans TC', 'PingFang TC', sans-serif;
+      font-size: 11px;
+      color: rgba(203, 213, 225, 0.45);
+      cursor: pointer;
+      text-decoration: underline;
+      letter-spacing: 1px;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+
+  <div class="scene-backdrop" aria-hidden="true">
+    <div class="abyss-light"></div>
+    <div class="ambient-gold"></div>
+  </div>
+
+  <div class="oracle-tree-container" aria-hidden="true">
+    <svg class="oracle-tree-svg" viewBox="0 0 100 1000" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="trunk-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" stop-color="rgba(12, 38, 50, 0)" />
+          <stop offset="20%" stop-color="rgba(52, 211, 153, 0.4)" />
+          <stop offset="60%" stop-color="rgba(212, 175, 55, 0.9)" />
+          <stop offset="100%" stop-color="rgba(212, 175, 55, 0)" />
+        </linearGradient>
+        <filter id="trunk-glow" x="-50%" y="-20%" width="200%" height="140%">
+          <feGaussianBlur stdDeviation="4" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+      </defs>
+      <path class="trunk-body" d="M 50 1000 Q 70 700, 45 450 T 50 0" />
+      <path class="energy-flow" d="M 50 1000 Q 70 700, 45 450 T 50 0" />
+    </svg>
+  </div>
+
+  <div class="app">
+    <div class="content-layer">
+
+      <div class="oracle-layer">
+        <div class="dewdrop-hint">
+          2026.03.24 ✧ 今日流日忌：不宜做出重大承諾
+        </div>
+
+        <div class="oracle-panel">
+          <div class="panel-anchor">DESTINY CORE 2026</div>
+
+          <div class="time-progress">
+            <div class="p-text">歲月流轉 23%</div>
+            <div class="p-track"><div class="p-fill"></div></div>
+          </div>
+
+          <h1 class="panel-title">關鍵推進年</h1>
+
+          <div class="prophecy-text">
+            今年將迎來跨界爆發的機遇，然星曜交錯，其代價將是極度的體力透支。若不主動控制節奏，肉體將先於事業崩盤。
+          </div>
+
+          <div class="matrix-grid">
+            <div class="m-col do">
+              <div class="matrix-col-title">順勢而為</div>
+              <ul class="oracle-matrix-ul">
+                <li>推動跨界合作</li>
+                <li>建立標準化流程</li>
+                <li>主導新資源專案</li>
+              </ul>
+            </div>
+            <div class="m-col dont">
+              <div class="matrix-col-title">逆流大忌</div>
+              <ul class="oracle-matrix-ul">
+                <li>孤軍奮戰</li>
+                <li>透支睡眠硬撐</li>
+                <li>極限施壓團隊</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="neon-warn">
+        <span style="font-size: 16px;">🚫</span>
+        <div>絕對不要在情緒疲勞或連續熬夜後，做出職涯切換的決定。</div>
+      </div>
+
+      <div class="map-section">
+        <div class="map-title">--- 生命時空導航 ---</div>
+
+        <div class="branches-layer">
+          <div class="branch-node right-branch branch-node--with-months">
+            <div class="fruit-core danger" onclick="triggerFruit(this)" role="button" tabindex="0" aria-label="災星引動">
+              <span class="symbol">災</span>
+              <div class="halo" aria-hidden="true"></div>
+            </div>
+            <div class="branch-text">
+              2026 · 推進
+              <span class="branch-trigger" role="button" tabindex="0" aria-expanded="false" aria-controls="months-2026" onclick="toggleMonths(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleMonths(this);}">展開流月 ▾</span>
+            </div>
+
+            <div class="month-stream" id="months-2026" aria-hidden="true">
+              <div class="m-leaf">
+                <div class="m-dot" aria-hidden="true"></div>
+                <div class="m-text"><strong>1-2月</strong> 沉潛期。維持日常節奏。</div>
+              </div>
+              <div class="m-leaf danger">
+                <div class="m-dot" aria-hidden="true"></div>
+                <div class="m-text">
+                  <strong>3月</strong> 團隊摩擦。事情不會自己動。<br>
+                  <span class="action">✦ 感覺滿載時，先還原睡眠。</span>
+                </div>
+              </div>
+              <div class="m-leaf wealth">
+                <div class="m-dot" aria-hidden="true"></div>
+                <div class="m-text">
+                  <strong>7月</strong> 變現爆發。年初合作見效。<br>
+                  <span class="action">✦ 該收割就收割，勿手軟。</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="branch-node left-branch fog-lock" style="margin-top: 18vh;">
+            <button type="button" class="fog-lock-hit" onclick="openRevelation()" aria-label="2027 迷霧鎖定，點擊查看解鎖與啟示"></button>
+            <div class="branch-text">2027 · 盤整</div>
+            <div class="fruit-core wealth">
+              <span class="symbol">祿</span>
+              <div class="halo" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="node-item active node-item--branch-left">
+          <div class="n-card" id="card-2026">
+            <div class="n-header">
+              <div class="n-year">2026 <span class="n-tag">📍 今年</span></div>
+              <div class="fruit-group">
+                <div class="fruit-core danger" onclick="openModal()" role="button" tabindex="0">
+                  <span class="halo" aria-hidden="true"></span>
+                  <span class="symbol">⚠</span>
+                </div>
+              </div>
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">重心：建立系統與對外輸出</div>
+            
+            <button class="btn-month" onclick="toggleMonth('card-2026')">📅 展開流月吉凶動態 ▼</button>
+            
+            <div class="m-list">
+              <div class="m-item normal">
+                <div class="m-head">1 - 2月 (平穩)</div>
+                <p class="m-desc">維持日常節奏，無重大引動。</p>
+              </div>
+              <div class="m-item danger">
+                <div class="m-head">3月 (國曆3/5-4/4) ⚠</div>
+                <p class="m-desc">文曲化科入僕役宮。事情不會自己動，需要你主動推。</p>
+                <div class="m-focus">🎯 本月只做一件事：抓緊核心專案，放生邊緣人際。</div>
+              </div>
+              <div class="m-item wealth">
+                <div class="m-head">7月 (國曆7/7-8/7) 💰</div>
+                <p class="m-desc">祿星引動財帛宮。年初的佈局開始見效。</p>
+                <div class="m-focus">🎯 本月只做一件事：專注收錢，別談感情。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="node-item node-item--branch-right">
+          <div class="n-card">
+            <div class="n-header">
+              <div class="n-year">2027</div>
+              <div class="fruit-group">
+                <div class="fruit-core neutral" aria-hidden="true"><span class="symbol">⚖️</span></div>
+                <div class="fruit-core wealth"><span class="halo" aria-hidden="true"></span><span class="symbol">💰</span></div>
+              </div>
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted);">重心：法務防禦與資源盤整</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="paywallModal">
+    <div class="m-card">
+      <div class="m-header">
+        <div class="m-icon">⚠</div>
+        <h2 class="m-title">健康高壓警報 <span class="m-level">極高</span></h2>
+      </div>
+
+      <div class="m-logic">
+        <div class="l-row">
+          <div class="l-k">🔍 為什麼？ (底層邏輯)</div>
+          <div class="l-v">疾厄宮被引動。廉貞化忌代表權力焦慮會直接轉化為生理負荷，特別是肝火與神經系統。</div>
+        </div>
+        
+        <div class="l-row">
+          <div class="l-k">💡 該怎麼做？ (實戰對策)</div>
+          <div class="l-v">本月行事曆強制留白 20%。重大決策排在上午精神最好時，下午拒絕臨時會議。</div>
+        </div>
+
+        <div class="l-row doom">
+          <div class="l-k">💀 如果不做會怎樣？</div>
+          <div class="l-v">農曆 3 月底極易因突發性免疫力崩潰，導致手上最核心的專案直接停擺，甚至引發合約違約風險。</div>
+        </div>
+      </div>
+
+      <button class="btn-cta">
+        🔒 解鎖完整年度策略 (付費)
+      </button>
+      <div class="btn-close" onclick="closeModal()">我願意承擔風險，稍後再說</div>
+    </div>
+  </div>
+
+  <div class="revelation-overlay" id="revModal" role="dialog" aria-modal="true" aria-labelledby="revTitle" aria-hidden="true" onclick="if(event.target===this)closeRevelation()">
+    <div class="r-panel" onclick="event.stopPropagation()">
+      <div class="r-header">
+        <div class="r-icon" aria-hidden="true">災</div>
+        <h2 class="r-title" id="revTitle">健康高壓警報</h2>
+        <div class="r-subtitle">疾厄宮引動 ✧ 極高風險</div>
+      </div>
+
+      <div class="r-block">
+        <div class="r-label">底層運算邏輯</div>
+        <div class="r-text">廉貞化忌飛入疾厄宮。您的權力焦慮將直接轉化為生理負荷，特別顯現於肝火與神經系統的過載。</div>
+      </div>
+
+      <div class="r-block">
+        <div class="r-label">高階戰略對策</div>
+        <div class="r-text">本月行事曆強制留白 20%。重大決策排在上午精神最好時，下午拒絕臨時會議，安靜是最好的防禦。</div>
+      </div>
+
+      <div class="r-doom">
+        <div class="r-label" style="color: rgba(225, 29, 72, 0.85);">如果不做會怎樣？</div>
+        <div class="r-text">系統推演於農曆三月底，極易因突發性免疫力崩潰，導致手上最核心的專案直接停擺，進而引發致命的違約風險。</div>
+      </div>
+
+      <button type="button" class="btn-premium" onclick="alert('呼叫 LINE PAY / 綠界 API')">解鎖完整 2026 防禦指南</button>
+      <div class="btn-close" onclick="closeRevelation()">我願意承擔風險，暫不解鎖</div>
+    </div>
+  </div>
+
+  <script>
+    // 展開流月（n-card 內）
+    function toggleMonth(cardId) {
+      const card = document.getElementById(cardId);
+      const btn = card.querySelector('.btn-month');
+      card.classList.toggle('expanded');
+      btn.innerHTML = card.classList.contains('expanded') ? '▲ 收起流月' : '📅 展開流月吉凶動態 ▼';
+    }
+
+    // Step 7：枝枒「展開流月」
+    function toggleMonths(triggerEl) {
+      const node = triggerEl.closest('.branch-node');
+      const stream = node && node.querySelector('.month-stream');
+      if (!stream) return;
+      stream.classList.toggle('open');
+      const open = stream.classList.contains('open');
+      triggerEl.textContent = open ? '收起流月 ▴' : '展開流月 ▾';
+      triggerEl.setAttribute('aria-expanded', open ? 'true' : 'false');
+      stream.setAttribute('aria-hidden', open ? 'false' : 'true');
+    }
+
+    // Step 8：觸碰漣漪並喚醒神諭（啟示錄）
+    function triggerFruit(fruit) {
+      fruit.classList.remove('ripple-active');
+      void fruit.offsetWidth;
+      fruit.classList.add('ripple-active');
+      window.setTimeout(function () { fruit.classList.remove('ripple-active'); }, 820);
+      window.setTimeout(openRevelation, 400);
+    }
+
+    function openRevelation() {
+      var modal = document.getElementById('revModal');
+      if (!modal) return;
+      modal.style.display = 'flex';
+      modal.setAttribute('aria-hidden', 'false');
+      window.setTimeout(function () { modal.classList.add('show'); }, 10);
+    }
+
+    function closeRevelation() {
+      var modal = document.getElementById('revModal');
+      if (!modal) return;
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+      window.setTimeout(function () {
+        modal.style.display = 'none';
+      }, 500);
+    }
+
+    // 舊版全息彈窗（n-card ⚠）
+    function openModal() { document.getElementById('paywallModal').classList.add('show'); }
+    function closeModal() { document.getElementById('paywallModal').classList.remove('show'); }
+  </script>
+</body>
+</html>

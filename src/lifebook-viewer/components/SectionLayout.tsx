@@ -3,7 +3,7 @@
  */
 
 import React from "react";
-import { getSectionStatus, type SectionTechContext } from "../constants";
+import { getSectionDomAnchorId, getSectionStatus, type SectionTechContext } from "../constants";
 import { TechnicalInsight } from "./TechnicalInsight";
 import { ActionCard } from "./ActionCard";
 
@@ -21,12 +21,18 @@ interface SectionLayoutProps {
   section: LifeBookSection;
   id?: string;
   className?: string;
+  /**
+   * 是否顯示每章底部「底層技術依據」摺疊區。
+   * 一般讀者版建議 false；專家模式（expertMode）為 true。
+   */
+  showPerSectionTechnical?: boolean;
 }
 
 export const SectionLayout: React.FC<SectionLayoutProps> = ({
   section,
   id: propId,
   className = "",
+  showPerSectionTechnical = true,
 }) => {
   const status = getSectionStatus(section.techContext ?? {});
 
@@ -51,9 +57,12 @@ export const SectionLayout: React.FC<SectionLayoutProps> = ({
   const firstParagraph = narrativeParagraphs[0] ?? section.narrative;
   const restNarrative = narrativeParagraphs.slice(1).join("\n\n");
 
+  /** 與 `getSectionDomAnchorId` / Home `#palace-*` 一致；`data-lifebook-section` 仍用 section id 供 TOC／observer */
+  const domAnchorId = propId ?? getSectionDomAnchorId(section.id);
   return (
     <article
-      id={propId ?? section.id}
+      id={domAnchorId}
+      data-lifebook-section={section.id}
       className={`lifebook-section rounded-2xl border border-slate-700/50 overflow-hidden scroll-mt-6 ${className}`}
     >
       <header className="lifebook-section-header bg-gradient-to-br from-slate-800/90 via-indigo-950/30 to-slate-900/90 px-6 py-5 border-b border-white/5">
@@ -115,24 +124,26 @@ export const SectionLayout: React.FC<SectionLayoutProps> = ({
         </section>
       )}
 
-      <section className="lifebook-section-tech border-t border-white/5 pt-4 px-6 pb-6">
-        <details className="group">
-          <summary className="flex items-center justify-between cursor-pointer list-none text-slate-500 hover:text-amber-400/90 transition-all py-2">
-            <span className="flex items-center gap-2 text-xs uppercase tracking-widest">
-              <span className="w-1.5 h-1.5 bg-amber-500/60 rounded-full animate-pulse" />
-              🔍 查看底層技術依據
-            </span>
-            <span className="text-[10px] group-open:rotate-180 transition-transform duration-300">▼</span>
-          </summary>
-          <div className="mt-4">
-            <TechnicalInsight
-              stars={section.techContext?.stars ?? []}
-              tenGod={section.techContext?.tenGod ?? null}
-              wuxing={section.techContext?.wuxing ?? null}
-            />
-          </div>
-        </details>
-      </section>
+      {showPerSectionTechnical ? (
+        <section className="lifebook-section-tech border-t border-white/5 pt-4 px-6 pb-6">
+          <details className="group">
+            <summary className="flex items-center justify-between cursor-pointer list-none text-slate-500 hover:text-amber-400/90 transition-all py-2">
+              <span className="flex items-center gap-2 text-xs uppercase tracking-widest">
+                <span className="w-1.5 h-1.5 bg-amber-500/60 rounded-full motion-reduce:animate-none animate-pulse" />
+                🔍 查看底層技術依據
+              </span>
+              <span className="text-[10px] group-open:rotate-180 transition-transform duration-300">▼</span>
+            </summary>
+            <div className="mt-4">
+              <TechnicalInsight
+                stars={section.techContext?.stars ?? []}
+                tenGod={section.techContext?.tenGod ?? null}
+                wuxing={section.techContext?.wuxing ?? null}
+              />
+            </div>
+          </details>
+        </section>
+      ) : null}
     </article>
   );
 };

@@ -128,7 +128,8 @@ export function buildInferUserPrompt(
     return `- ${key}: ${t?.title ?? key}`;
   }).join("\n");
 
-  return `請分析以下命盤，為 22 個章節（s00～s21）各產出結構化 insight。
+  const sectionCount = SECTION_ORDER.length;
+  return `請分析以下命盤，為 ${sectionCount} 個章節（鍵名見【章節列表】）各產出結構化 insight。
 
 【章節列表】
 ${sectionList}
@@ -152,7 +153,7 @@ ${auxRiskBlock}
   ...
   "s21": { ... }
 }
-（鍵名必須與【章節列表】完全一致：s00, s03, s04, s02, s10, s01, s05, s06, s07, s08, s09, s11, s12, s13, s14, s15, s15a, s16, s17, s18, s19, s20, s21）
+（鍵名必須與【章節列表】完全一致，含 s22、s23 在 s20 與 s21 之間：${SECTION_ORDER.join(", ")}）
 
 每欄 80–200 字，精準提取命盤事實與推論。請開始。`;
 }

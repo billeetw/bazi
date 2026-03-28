@@ -148,5 +148,10 @@ export interface S19MonthlyOutput {
     triggerStar?: string;
     chain?: string;
     confidence?: "low" | "medium" | "high";
+    /**
+     * 與 ADR-0001 對齊：流年／大限／本命疊宮邊以 NormalizedChart.*.flows 為權威（經 overlay→S18）；
+     * 流月邊仍由 monthlyHoroscope + 宮干飛化（GongGan）產出，不讀 overlap。
+     */
+    edgeAuthority?: "normalizedChart_plus_month_gonggan" | "chartJson_overlay_plus_month_gonggan";
   };
 }

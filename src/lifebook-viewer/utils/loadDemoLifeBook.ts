@@ -6,11 +6,17 @@
 import type { LifeBookViewerState } from "../types";
 import { normalizeApiResponse } from "./normalizeApiResponse";
 
-/** 與 lifebook-viewer.html 同目錄，方便任意路徑部署 */
-const DEMO_JSON_URL = "./demo-lifebook.json";
+/**
+ * 以 `import.meta.env.BASE_URL` + 當前頁面解析 `public/demo-lifebook.json`，避免從 `/viewer` 用相對路徑誤抓到 `/viewer/demo-…`。
+ */
+function resolveDemoLifebookUrl(): string {
+  if (typeof window === "undefined") return "/demo-lifebook.json";
+  const base = import.meta.env.BASE_URL ?? "/";
+  return new URL(`${base}demo-lifebook.json`, window.location.href).href;
+}
 
 export async function loadDemoLifeBook(): Promise<LifeBookViewerState> {
-  const res = await fetch(DEMO_JSON_URL);
+  const res = await fetch(resolveDemoLifebookUrl());
   if (!res.ok) {
     throw new Error(`無法載入示範命書（${res.status}）`);
   }

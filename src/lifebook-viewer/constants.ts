@@ -1,14 +1,14 @@
 /**
- * 命書章節順序與模組分組（與 worker lifeBookTemplates SECTION_ORDER 一致）
- * 命主・身主・身宮（s04）須在命宮（s02）之前。
+ * 命書章節順序與模組分組
+ * 順序唯一來源：worker/data/lifebook-section-order.json（與 API worker 共用）。
  */
+import lifebookSectionOrder from "../../worker/data/lifebook-section-order.json";
+import type { PalaceId } from "./themes/palaceVisualTheme";
 
-export const SECTION_ORDER = [
-  "s00", "s03", "s04", "s02", "s10", "s01", "s05", "s06", "s07", "s08", "s09",
-  "s11", "s12", "s13", "s14", "s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21",
-] as const;
+export const SECTION_ORDER = lifebookSectionOrder.sectionOrder as readonly string[];
 
-export type SectionKey = (typeof SECTION_ORDER)[number];
+/** 章節鍵（與 SECTION_ORDER 內容一致；型別寬鬆為 string 以利 JSON 單一來源） */
+export type SectionKey = string;
 
 /** 命盤與五行 iframe 嵌入的示範頁 URL（主站路由，可自行改為實際路徑） */
 export const LIFEBOOK_DEMO_CHART_URL = "/ziwei/demo-lifebook";
@@ -18,7 +18,7 @@ export const MODULE_MAP: Record<string, readonly string[]> = {
   "開場": ["s00"],
   "模組一：核心作業系統": ["s03", "s04", "s02", "s10", "s01"],
   "人生十二課題": ["s05", "s06", "s07", "s08", "s09", "s11", "s12", "s13", "s14"],
-  "模組二：時間主線與功課": ["s15", "s15a", "s16", "s17", "s18", "s19", "s20"],
+  "模組二：時間主線與功課": ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23"],
   "收束": ["s21"],
 };
 
@@ -78,7 +78,7 @@ export const SECTION_GROUPS: Record<
   },
   TIME_AND_CLOSING: {
     label: "時間與收束",
-    sections: ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"],
+    sections: ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"],
   },
 };
 
@@ -106,8 +106,135 @@ export const SECTION_PALACE_MAP: Record<string, string | null> = {
   s18: null,
   s19: null,
   s20: null,
+  s22: null,
+  s23: null,
   s21: null,
 };
+
+/**
+ * section_key → `palace-theme-presets.json` 的 palaceId（僅十二宮課題章節有值）。
+ * 供 SectionViewModel.palaceId 與 SectionPalaceTemplate 單一主題來源。
+ */
+export const SECTION_KEY_TO_PALACE_ID: Partial<Record<string, PalaceId>> = {
+  s01: "fude",
+  s02: "ming",
+  s04: "ming",
+  s05: "fumu",
+  s06: "xiongdi",
+  s07: "nuppu",
+  s08: "guanlu",
+  s09: "tianzhai",
+  s10: "caibo",
+  s11: "jie",
+  s12: "qianyi",
+  s13: "fuqi",
+  s14: "zinv",
+};
+
+/** 是否為「宮位課題」章節（正文走 `SectionPalaceTemplate`，含 s02/s04 等映射至 palaceId 者）。 */
+export function isSectionKeyPalaceShell(sectionKey: string): boolean {
+  return Object.prototype.hasOwnProperty.call(SECTION_KEY_TO_PALACE_ID, sectionKey);
+}
+
+/**
+ * 章節捲動錨點 id：宮位課題用 `#palace-{palaceId}`，其餘用 `section_key`。
+ * 與 Step 1 Home CTA、`#palace-*`（overlay）／`?view=viewer#palace-*`（完整閱讀）對齊。
+ */
+export function getSectionDomAnchorId(sectionKey: string): string {
+  const p = SECTION_KEY_TO_PALACE_ID[sectionKey];
+  if (p) return `palace-${p}`;
+  return sectionKey;
+}
+
+/**
+ * 由 `palaceId` 反查第一個存在的章節 key（順序依 `SECTION_ORDER`；例如命宮可能為 s04 或 s02）。
+ */
+export function getSectionKeyForPalaceId(palaceId: PalaceId, sections: Record<string, unknown>): string | null {
+  for (const key of SECTION_ORDER) {
+    if (!sections[key]) continue;
+    const p = SECTION_KEY_TO_PALACE_ID[key];
+    if (p === palaceId) return key;
+  }
+  return null;
+}
+
+/**
+ * 單宮按需生成（v1）：palace → `SECTION_ORDER` 中**第一個**對應的 section_key（一宮只生成一章）。
+ * 例：命宮在順序中為 s04 早於 s02。
+ */
+export function getPrimarySectionKeyForPalaceId(palaceId: PalaceId): string | null {
+  for (const key of SECTION_ORDER) {
+    const p = SECTION_KEY_TO_PALACE_ID[key];
+    if (p === palaceId) return key;
+  }
+  return null;
+}
+
+/**
+ * Viewer「宮位模板預覽」區塊：十二宮課題章節（與 `SECTION_KEY_TO_PALACE_ID` 一致）。
+ */
+export const PALACE_TEMPLATE_PREVIEW_SECTION_KEYS = [
+  "s02",
+  "s08",
+  "s10",
+  "s13",
+  "s11",
+  "s12",
+  "s01",
+  "s09",
+  "s05",
+  "s06",
+  "s07",
+  "s14",
+] as const;
+
+/** URL / fixture 焦點用語（對應單一 section_key） */
+export type PalacePreviewFocus =
+  | "ming"
+  | "guanlu"
+  | "caibo"
+  | "fuqi"
+  | "jie"
+  | "qianyi"
+  | "fude"
+  | "tianzhai"
+  | "fumu"
+  | "xiongdi"
+  | "nuppu"
+  | "zinv";
+
+export const PREVIEW_FOCUS_TO_SECTION_KEY: Record<PalacePreviewFocus, string> = {
+  ming: "s02",
+  guanlu: "s08",
+  caibo: "s10",
+  fuqi: "s13",
+  jie: "s11",
+  qianyi: "s12",
+  fude: "s01",
+  tianzhai: "s09",
+  fumu: "s05",
+  xiongdi: "s06",
+  nuppu: "s07",
+  zinv: "s14",
+};
+
+export function sectionKeyToPreviewFocus(sectionKey: string): PalacePreviewFocus | null {
+  const m: Record<string, PalacePreviewFocus> = {
+    s02: "ming",
+    s08: "guanlu",
+    s10: "caibo",
+    s13: "fuqi",
+    s11: "jie",
+    s12: "qianyi",
+    s01: "fude",
+    s09: "tianzhai",
+    s05: "fumu",
+    s06: "xiongdi",
+    s07: "nuppu",
+    s14: "zinv",
+  };
+  return m[sectionKey] ?? null;
+}
 
 /** 章節狀態（高壓 / 機會 / 中性） */
 export type SectionStatus = "HIGH_PRESSURE" | "OPPORTUNITY" | "NEUTRAL";

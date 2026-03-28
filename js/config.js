@@ -9,23 +9,49 @@
   /**
    * API 基底 URL
    * - 8788、8789、3000（wrangler pages dev）：用同源，由 Pages Function 代理到遠端 Worker
+   * - www.17gonplay.com（HTTPS 正式站）：同源，避免瀏覽器直連 workers.dev 在部分網路下 Failed to fetch
    * - 5173 等（serve/vite）：直接用遠端 Worker，本地無 Worker 時避免 ERR_CONNECTION_REFUSED
    * - ?api=local 且 port 非 5173：用本地 Worker 8787（需先 cd worker && npx wrangler dev）
    */
   const REMOTE_API_BASE = "https://bazi-api.billeetw.workers.dev";
+  const LOCAL_WORKER_API_BASE = "http://127.0.0.1:8787";
+  /** 封測模式不內建固定邀請碼；由後端 LIFEBOOK_BETA_CODES 控管 */
+  const LIFEBOOK_BETA_PERMANENT_CODE = "";
+  /**
+   * 命書封測回饋表單基底 URL（Google Form / Typeform）。
+   * 優先：`window.LIFEBOOK_FEEDBACK_URL`（在載入本檔前注入）。
+   * 次之：下方 `LIFEBOOK_FEEDBACK_URL_INLINE`（可提交於版控）。
+   * 皆空則不顯示「封測回饋」連結。
+   */
+  const LIFEBOOK_FEEDBACK_URL_INLINE = "https://forms.gle/EAsPAy9xJYdCEGPK6";
+  const LIFEBOOK_FEEDBACK_URL =
+    (typeof window !== "undefined" && String(window.LIFEBOOK_FEEDBACK_URL || "").trim()) ||
+    String(LIFEBOOK_FEEDBACK_URL_INLINE || "").trim();
   const port = (typeof window !== "undefined" && window.location.port) || "";
   const usePagesProxy =
     typeof window !== "undefined" &&
     /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname) &&
     ["8788", "8789", "3000"].includes(port);
+  /** 正式站已部署 functions（compute/content/api/life-book 等代理），與本地 pages dev 一致走同源 */
+  const useProductionSameOrigin =
+    typeof window !== "undefined" &&
+    window.location.protocol === "https:" &&
+    /^(www\.)?17gonplay\.com$/i.test(window.location.hostname);
   const useLocalApi =
     typeof window !== "undefined" &&
     /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname) &&
     window.location.search.includes("api=local") &&
     !["5173", "5174", "3001"].includes(port);
+  const preferLocalWorkerOnLocalhost =
+    typeof window !== "undefined" &&
+    /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname) &&
+    !usePagesProxy &&
+    !useProductionSameOrigin;
   const API_BASE = useLocalApi
-    ? "http://localhost:8787"
-    : usePagesProxy
+    ? LOCAL_WORKER_API_BASE
+    : preferLocalWorkerOnLocalhost
+      ? LOCAL_WORKER_API_BASE
+    : usePagesProxy || useProductionSameOrigin
       ? (window.location.origin || REMOTE_API_BASE)
       : REMOTE_API_BASE;
 
@@ -164,6 +190,9 @@
     window.Config = {
       API_BASE,
       REMOTE_API_BASE,
+      LOCAL_WORKER_API_BASE,
+      LIFEBOOK_BETA_PERMANENT_CODE,
+      LIFEBOOK_FEEDBACK_URL,
       SUPPORTS_CHARTS_SCORES,
       SITE_URL,
       GA_MEASUREMENT_ID,
@@ -182,6 +211,9 @@
     globalThis.Config = {
       API_BASE,
       REMOTE_API_BASE,
+      LOCAL_WORKER_API_BASE,
+      LIFEBOOK_BETA_PERMANENT_CODE,
+      LIFEBOOK_FEEDBACK_URL,
       SUPPORTS_CHARTS_SCORES,
       SITE_URL,
       GA_MEASUREMENT_ID,

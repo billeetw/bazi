@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<!--
+  共振儀：對應 lifebook-viewer 的 SectionPalaceTemplate 裡「靈魂共振儀」區塊
+  （校準狀態、動態卡、情境觸發），此靜態預覽頁未收錄該區塊。
+-->
+<html lang="zh-TW" data-palace="ming">
+<head>
+  <meta charset="UTF-8" />
+  <script>
+    (function () {
+      var allow = ["ming", "guanlu", "caibo", "fuqi", "xiongdi", "zinv", "jie", "qianyi", "nuppu", "tianzhai", "fude", "fumu"];
+      var q = new URLSearchParams(location.search).get("palace");
+      if (q && allow.indexOf(q) !== -1) document.documentElement.setAttribute("data-palace", q);
+    })();
+  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>命宮 - 重構版（弧線星群）</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Share+Tech+Mono&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="palace-templates/palace-section-shell.css" />
+  <link rel="stylesheet" href="palace-templates/palace-section-themes.css" />
+</head>
+<body>
+  <div id="palace-theme-load-error" class="palace-theme-load-error" role="status" aria-live="polite"></div>
+  <div class="palace-theme-bar" aria-label="宮位主題預覽（Vite 請先 npm run sync:palace-static）">
+    <label>
+      <span>宮位</span>
+      <select id="palace-theme-select" title="切換十二宮視覺預設"></select>
+    </label>
+  </div>
+  <div class="abyss-light"></div>
+
+  <main class="app">
+    <div class="app-life-lines" aria-hidden="true">
+      <svg viewBox="0 0 520 980" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="pmso-trunk-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stop-color="rgba(12, 38, 50, 0)" />
+            <stop offset="20%" stop-color="rgba(52, 211, 153, 0.4)" />
+            <stop offset="60%" stop-color="rgba(212, 175, 55, 0.9)" />
+            <stop offset="100%" stop-color="rgba(212, 175, 55, 0)" />
+          </linearGradient>
+          <filter id="pmso-glow-gold" x="-50%" y="-20%" width="200%" height="140%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+        </defs>
+
+        <path id="pmso-yang-trunk" class="trunk-body-yang" d="M260 980 Q300 760 245 520 T 260 140" />
+        <path id="pmso-yang-flow" class="energy-flow-yang" d="M260 980 Q300 760 245 520 T 260 140" />
+        <path id="pmso-yin-trunk" class="trunk-body-yin" d="M260 980 Q220 760 275 520 T 260 140" />
+        <path id="pmso-yin-flow" class="energy-flow-yin" d="M260 980 Q220 760 275 520 T 260 140" />
+      </svg>
+    </div>
+
+    <div class="app-stack">
+    <header class="core">
+      <div class="blue-star" aria-hidden="true"></div>
+      <span class="palace-hint-symbol" id="vm-palace-symbol" aria-hidden="true">◎</span>
+      <div class="palace-name" id="vm-title">命宮</div>
+      <div class="subcopy" id="vm-subtitle">你現在怎麼使用自己，會從這裡看得最清楚</div>
+    </header>
+
+    <section class="scene">
+      <div class="main-star-wrap">
+        <article class="main-star-card" id="main-star-card"></article>
+      </div>
+
+      <section class="constellation-zone">
+        <div class="cluster-title">✦ 關鍵星群 ✦</div>
+        <div class="star-arc-layer" id="star-arc-layer"></div>
+      </section>
+
+      <section class="more-stars-wrap">
+        <button class="more-stars-toggle" id="more-stars-toggle" type="button">
+          查看全部星曜 ▼
+        </button>
+        <div class="more-stars-grid" id="more-stars-grid"></div>
+      </section>
+
+      <div class="hint">✧ 點擊星曜讀取神諭 ✧</div>
+
+      <div class="scripture-wrap">
+        <article class="scripture-card">
+          <section class="scripture-section">
+            <div class="scripture-label">這一宮的核心結構</div>
+            <div class="scripture-text">
+              你的人格主題是<strong>邊界與控制</strong>，對關係與權力的拿捏特別敏感。你的人格是高想像與高內在世界，抽象思維與靈感很強。這條線，現在主要由<strong>廉貞、地空</strong>帶著你走。
+            </div>
+          </section>
+
+          <section class="scripture-section">
+            <div class="scripture-label">你會怎麼做決策</div>
+            <div class="scripture-text">
+              你做決策時重掌控感，會同時考量局勢、面子與主導權。你會優先選擇可長期穩定的做法。
+            </div>
+          </section>
+
+          <section class="scripture-section">
+            <div class="scripture-label">最容易踩的坑</div>
+            <div class="scripture-text">
+              你最大的風險往往不是做錯判斷，而是心裡一不安，就先把自己的觸角收回。前景未必不行，只是你更不敢在沒站穩時伸手。
+            </div>
+          </section>
+        </article>
+      </div>
+
+      <div class="related-wrap">
+        <div class="related-title">✦ 三方四正牽動 ✦</div>
+        <nav class="related-links">
+          <a href="#finance-palace" class="related-link">財帛宮</a>
+          <a href="#career-palace" class="related-link">官祿宮</a>
+          <a href="#travel-palace" class="related-link">遷移宮</a>
+        </nav>
+      </div>
+    </section>
+    </div>
+  </main>
+
+  <div class="revelation-overlay" id="rev-modal" onclick="closeCard(event)">
+    <div class="rev-card" onclick="event.stopPropagation()">
+      <div class="rc-header">
+        <div class="rc-title-group">
+          <div class="rc-icon-box" id="rc-icon-box"></div>
+          <div class="rc-title-info">
+            <h2 class="rc-title" id="rc-title"></h2>
+            <div class="rc-tag" id="rc-tag"></div>
+          </div>
+        </div>
+        <button class="rc-close" onclick="closeCard(event)">×</button>
+      </div>
+
+      <div class="rc-oneline" id="rc-oneline"></div>
+      <div class="rc-quote" id="rc-quote"></div>
+
+      <div class="rc-grid">
+        <div class="rc-block">
+          <div class="rc-label">在命宮的作用</div>
+          <div class="rc-text" id="rc-inpalace"></div>
+        </div>
+        <div class="rc-block">
+          <div class="rc-label">正常表現 / 偏掉時</div>
+          <div class="rc-text" id="rc-shadow"></div>
+        </div>
+        <div class="rc-advice-block">
+          <div class="rc-label">實戰建議</div>
+          <div class="rc-text" id="rc-advice"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="palace-templates/palace-theme-apply.js"></script>
+  <script>
+    const starDb = {
+      lianzhen: {
+        name: "廉貞",
+        tier: "main",
+        role: "主星",
+        tag: "主星 / 核心主軸",
+        glow: "rgba(245,158,11,0.55)",
+        color: "#f59e0b",
+        quote: "妳是天生的外交官，也是不安份的囚徒。",
+        oneline: "控制、慾望、界線、突破。",
+        inpalace: "放在命宮時，你很在意自己站不站得住，也會特別敏感於主導權和邊界。",
+        shadow: "正常時有判斷、有界線。偏掉時容易過度控制、內耗，太想一次把局面掌握好。",
+        advice: "先讓事情動起來，再調整控制感，不要等到全都可控才出手。",
+        summary: "你的人格主題是邊界與控制，對關係與權力的拿捏特別敏感。",
+        svg: `<circle cx="32" cy="32" r="10" fill="none" stroke="#f59e0b" stroke-width="2.8"/><circle cx="32" cy="32" r="21" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-dasharray="96 18"/><path d="M20 46 L45 18" stroke="#fde68a" stroke-width="2.4" stroke-linecap="round"/><path d="M40 44 L47 47" stroke="#f87171" stroke-width="2.1" stroke-linecap="round"/><path d="M16 19 L21 24" stroke="#f87171" stroke-width="2.1" stroke-linecap="round"/>`
+      },
+      tianyue: {
+        name: "天鉞",
+        tier: "support",
+        role: "輔星",
+        tag: "輔星 / 貴人資源",
+        glow: "rgba(250,204,21,0.45)",
+        color: "#facc15",
+        quote: "有些門不是你撞開的，是有人在裡面替你鬆了門栓。",
+        oneline: "暗助、資源、提攜、檯面下支援。",
+        inpalace: "放在命宮時，你常在關鍵時刻得到支持，或有人默默幫你補一把。",
+        shadow: "正常時知道何時借力。偏掉時容易以為總有人兜底，忽略自己該補的課。",
+        advice: "把外援當加分，不要把它當地板。先把自己的基本盤站穩。",
+        svg: `<circle cx="32" cy="34" r="10" fill="none" stroke="#fde68a" stroke-width="2.3"/><circle cx="32" cy="34" r="18" fill="none" stroke="#facc15" stroke-width="1.8"/><circle cx="32" cy="15" r="3" fill="#fff7cc"/><path d="M18 34c3 7 9 11 14 11c6 0 11-4 14-11" fill="none" stroke="#fff7cc" stroke-width="1.8" stroke-linecap="round"/>`
+      },
+      dikong: {
+        name: "地空",
+        tier: "minor",
+        role: "雜曜",
+        tag: "雜曜 / 空性抽象",
+        glow: "rgba(148,163,184,0.45)",
+        color: "#94a3b8",
+        quote: "你心裡總有另一個版本的世界，讓現實顯得不夠完整。",
+        oneline: "留白、跳躍、抽離、不確定。",
+        inpalace: "放在命宮時，你容易腦中一直有另一種可能，計畫常被更大的想像帶走。",
+        shadow: "正常時有抽象能力。偏掉時容易期待太高、執行接不住，做完還是覺得空。",
+        advice: "用小版本落地，不要拿理想標準否定已經開始動的自己。",
+        svg: `<path d="M18 24c4-8 24-14 34-2" fill="none" stroke="#94a3b8" stroke-width="2.4" stroke-linecap="round"/><path d="M49 38c-5 8-24 12-34 1" fill="none" stroke="#cbd5e1" stroke-width="2.4" stroke-linecap="round"/><circle cx="32" cy="32" r="9" fill="none" stroke="#64748b" stroke-width="1.8" stroke-dasharray="6 6"/><circle cx="17" cy="17" r="2.2" fill="#cbd5e1"/><circle cx="49" cy="20" r="1.6" fill="#94a3b8"/>`
+      },
+      wuqu: {
+        name: "武曲",
+        tier: "support",
+        role: "輔星",
+        tag: "輔星 / 資源現實",
+        glow: "rgba(251,191,36,0.45)",
+        color: "#fbbf24",
+        quote: "你不是不感性，你只是習慣先把代價算清楚。",
+        oneline: "結果、資源、紀律、現實配置。",
+        inpalace: "放在命宮時，你會用結果和資源配置來看事情值不值得。",
+        shadow: "正常時做事有節奏。偏掉時容易太硬、太算、只看結果忽略情感成本。",
+        advice: "保留現實感，但不要只用可量化的東西衡量自己的價值。",
+        svg: `<rect x="21" y="21" width="22" height="22" rx="2" fill="none" stroke="#fbbf24" stroke-width="2.4"/><rect x="15" y="15" width="34" height="34" rx="4" fill="none" stroke="#fde68a" stroke-width="1.8"/><circle cx="32" cy="32" r="3.2" fill="#fde68a"/><path d="M15 32h34M32 15v34" stroke="#fcd34d" stroke-width="1.6" opacity="0.85"/>`
+      },
+      hongluan: {
+        name: "紅鸞",
+        tier: "minor",
+        role: "雜曜",
+        tag: "雜曜 / 情感緣分",
+        glow: "rgba(236,72,153,0.5)",
+        color: "#f472b6",
+        quote: "有些波動不是命運改變了你，而是你先被氣氛打動了。",
+        oneline: "緣分、好感、情感訊號、被帶動。",
+        inpalace: "放在命宮時，你對人際氛圍和關係訊號很敏感，容易因氣氛而改變狀態。",
+        shadow: "正常時有魅力。偏掉時容易因好感、投射、期待而影響判斷。",
+        advice: "先分清楚你是真的想要，還是只是被當下的氣氛打動。",
+        svg: `<circle cx="24" cy="28" r="8" fill="none" stroke="#f472b6" stroke-width="2.2"/><circle cx="40" cy="28" r="8" fill="none" stroke="#fb7185" stroke-width="2.2"/><path d="M20 37c4 6 8 10 12 13c4-3 8-7 12-13" fill="none" stroke="#f9a8d4" stroke-width="2.5" stroke-linecap="round"/><path d="M24 20 Q32 14 40 20" fill="none" stroke="#fbcfe8" stroke-width="1.8" stroke-linecap="round"/>`
+      },
+      qisha: {
+        name: "七殺",
+        tier: "malefic",
+        role: "煞星",
+        tag: "煞星 / 行動衝突",
+        glow: "rgba(239,68,68,0.5)",
+        color: "#ef4444",
+        quote: "你不怕難，只怕拖；可有時太快切下去，也會讓自己流血。",
+        oneline: "決斷、切開、風險、破而後立。",
+        inpalace: "放在命宮時，你遇到事情常直切重點，必要時寧可重來。",
+        shadow: "正常時行動快。偏掉時容易太快切斷、太快進場，讓自己處於高壓。",
+        advice: "保留決斷，但先確認這次真的需要破局，而不是只是受不了卡住。",
+        svg: `<path d="M17 47 L31 15 L47 44 Z" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linejoin="round"/><path d="M28 29 L41 21" stroke="#fecaca" stroke-width="2.2" stroke-linecap="round"/><path d="M24 41 L39 31" stroke="#fca5a5" stroke-width="2.1" stroke-linecap="round"/><path d="M16 48 L20 51" stroke="#ef4444" stroke-width="2" stroke-linecap="round"/>`
+      },
+      tianchu: {
+        name: "天廚",
+        tier: "minor",
+        role: "雜曜",
+        tag: "雜曜 / 生活品味",
+        glow: "rgba(251,191,36,0.28)",
+        color: "#fbbf24",
+        quote: "你不只是想活下去，你想把日子過成有味道的樣子。",
+        oneline: "飲食、品味、資源與生活感。",
+        inpalace: "放在命宮時，你會把生活品質看得很重要，也容易把資源花在讓自己舒服的地方。",
+        shadow: "正常時懂得滋養自己。偏掉時容易用享受來安撫壓力。",
+        advice: "讓享受成為補給，不要讓它變成逃避。",
+        svg: `<circle cx="32" cy="22" r="6" fill="none" stroke="#fbbf24" stroke-width="2"/><path d="M20 38c3 7 9 11 12 11s9-4 12-11" fill="none" stroke="#fde68a" stroke-width="2.2" stroke-linecap="round"/><path d="M24 30h16" stroke="#fcd34d" stroke-width="1.8" />`
+      }
+    };
+
+    const moreStarOrder = ["tianchu"];
+
+    function starSvg(star) {
+      return `<svg viewBox="0 0 64 64" aria-hidden="true">${star.svg}</svg>`;
+    }
+
+    function renderMainStar(mainStars = ["lianzhen"]) {
+      const target = document.getElementById("main-star-card");
+
+      const isDual = mainStars.length === 2;
+      if (!isDual) {
+        const star = starDb[mainStars[0]];
+        target.innerHTML = `
+          <div class="main-star-icon">${starSvg(star)}</div>
+          <div class="main-star-meta">
+            <div class="main-star-kicker">主定調星</div>
+            <div class="main-star-title">
+              ${star.name}
+              <span class="main-star-badge">廟</span>
+            </div>
+            <div class="main-star-summary">${star.summary}</div>
+          </div>
+        `;
+        target.onclick = () => openCard(mainStars[0]);
+        return;
+      }
+
+      const a = starDb[mainStars[0]];
+      const b = starDb[mainStars[1]];
+      target.innerHTML = `
+        <div class="main-star-icon">${starSvg(a)}</div>
+        <div class="main-star-meta">
+          <div class="main-star-kicker">雙主星</div>
+          <div class="main-star-title">
+            <span class="main-star-pair">
+              <span>${a.name}</span>
+              <span class="pair-sep">×</span>
+              <span>${b.name}</span>
+            </span>
+            <span class="main-star-badge">雙主軸</span>
+          </div>
+          <div class="main-star-summary">你的命宮主軸由兩股力量共同構成，需要看組合，而不是拆成兩張互相競爭的主卡。</div>
+        </div>
+      `;
+      target.onclick = () => openCard(mainStars[0]);
+    }
+
+    function buildStarNode(starKey) {
+      const star = starDb[starKey];
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = `star-node tier-${star.tier}`;
+      btn.innerHTML = `
+        <span class="star-icon" style="filter:drop-shadow(0 0 10px ${star.glow});">
+          ${starSvg(star)}
+        </span>
+        <span class="star-name">${star.name}</span>
+      `;
+      btn.onmouseenter = () => {
+        btn.querySelector(".star-icon").style.filter = `drop-shadow(0 0 18px ${star.glow}) brightness(1.18)`;
+      };
+      btn.onmouseleave = () => {
+        btn.querySelector(".star-icon").style.filter = `drop-shadow(0 0 10px ${star.glow})`;
+      };
+      btn.onclick = () => openCard(starKey);
+      return btn;
+    }
+
+    function placeArc(keys, cx, cy, radius, startDeg, endDeg) {
+      if (!keys.length) return [];
+      const rad = deg => deg * Math.PI / 180;
+      const step = keys.length === 1 ? 0 : (endDeg - startDeg) / (keys.length - 1);
+
+      return keys.map((key, idx) => {
+        const angle = rad(startDeg + step * idx);
+        const x = cx + radius * Math.cos(angle);
+        const y = cy + radius * Math.sin(angle);
+        return { key, x, y };
+      });
+    }
+
+    function renderStars() {
+      const layer = document.getElementById("star-arc-layer");
+      layer.innerHTML = "";
+
+      const leftArc = placeArc(
+        ["dikong", "hongluan"],
+        50,
+        48,
+        31,
+        212,
+        150
+      );
+
+      const rightArc = placeArc(
+        ["wuqu", "qisha", "tianyue"],
+        50,
+        48,
+        31,
+        -28,
+        34
+      );
+
+      [...leftArc, ...rightArc].forEach(item => {
+        const node = buildStarNode(item.key);
+        node.style.left = `${item.x}%`;
+        node.style.top = `${item.y}%`;
+        layer.appendChild(node);
+      });
+    }
+
+    function renderMoreStars() {
+      const grid = document.getElementById("more-stars-grid");
+      grid.innerHTML = "";
+      moreStarOrder.forEach(key => {
+        const star = starDb[key];
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "mini-star-card";
+        card.innerHTML = `
+          ${starSvg(star)}
+          <div class="mini-star-name">${star.name}</div>
+          <div class="mini-star-role">${star.role}</div>
+        `;
+        card.onclick = () => openCard(key);
+        grid.appendChild(card);
+      });
+    }
+
+    function openCard(key) {
+      const d = starDb[key];
+      document.getElementById("rc-title").innerText = d.name;
+      document.getElementById("rc-tag").innerText = d.tag;
+      document.getElementById("rc-tag").style.color = d.color;
+      document.getElementById("rc-tag").style.borderColor = d.glow;
+      document.getElementById("rc-oneline").innerText = d.oneline;
+      document.getElementById("rc-quote").innerText = `「${d.quote}」`;
+      document.getElementById("rc-inpalace").innerText = d.inpalace;
+      document.getElementById("rc-shadow").innerText = d.shadow;
+      document.getElementById("rc-advice").innerText = d.advice;
+
+      const iconBox = document.getElementById("rc-icon-box");
+      iconBox.innerHTML = starSvg(d);
+      iconBox.style.boxShadow = `0 0 20px ${d.glow}`;
+      iconBox.style.borderColor = d.glow;
+
+      document.querySelector(".rev-card").style.borderTopColor = d.color;
+      document.getElementById("rev-modal").classList.add("show");
+    }
+
+    function closeCard(e) {
+      if (e) e.stopPropagation();
+      document.getElementById("rev-modal").classList.remove("show");
+    }
+
+    function bindMoreToggle() {
+      const btn = document.getElementById("more-stars-toggle");
+      const grid = document.getElementById("more-stars-grid");
+      btn.addEventListener("click", () => {
+        const isOpen = grid.classList.toggle("show");
+        btn.textContent = isOpen ? "收起全部星曜 ▲" : "查看全部星曜 ▼";
+      });
+    }
+
+    if (typeof loadPalaceThemePresets === "function") {
+      loadPalaceThemePresets();
+    }
+
+    renderMainStar(["lianzhen"]);
+    renderStars();
+    renderMoreStars();
+    bindMoreToggle();
+  </script>
+</body>
+</html>

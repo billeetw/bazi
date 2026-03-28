@@ -54,13 +54,13 @@
 
   // 5. 動態載入 startup-sequence.js
   document.addEventListener("DOMContentLoaded", function () {
-    fetch("dist/startup-sequence.js", { method: "HEAD" })
+    fetch("/dist/startup-sequence.js", { method: "HEAD" })
       .then(function (res) {
         if (!res.ok) return;
         var ct = res.headers.get("content-type") || "";
         if (ct.indexOf("javascript") === -1) return;
         var s = document.createElement("script");
-        s.src = "dist/startup-sequence.js";
+        s.src = "/dist/startup-sequence.js";
         s.defer = true;
         s.onerror = function () {
           console.warn("startup-sequence.js 載入失敗");

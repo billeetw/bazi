@@ -12,12 +12,9 @@
     throw new Error("window object not available");
   }
   
-  // 延遲解構 window.Calc，避免在模組載入前報錯
-  // 如果 calc.js 未載入，在 DOMContentLoaded 時再檢查
+  // calc.js 可能晚於本檔載入：不要把 window.Calc 強制設為 {}，避免後續被誤判為「已載入」
   if (!window.Calc) {
-    console.error("[ui.js] window.Calc not found! Make sure calc.js is loaded before ui.js");
-    // 提供臨時的空對象以避免立即報錯，實際檢查會在 DOMContentLoaded 時進行
-    window.Calc = window.Calc || {};
+    console.error("[ui.js] window.Calc not found at module init; will re-check on DOMContentLoaded");
   }
 
   const {
@@ -38,7 +35,7 @@
     getMutagenStars,
     getPalaceScoreWithWeights,
     computeAllPalaceScores,
-  } = window.Calc;
+  } = window.Calc || {};
 
   // 导入 UI 工具函数
   if (!window.UiDomHelpers) {
@@ -103,7 +100,13 @@
   let lastGender = null;
 
   // 宮位環（以命宮為起點的 12 宮順序）
-  let PALACE_RING = PALACE_DEFAULT.slice();
+  // 防止 Calc 尚未完整掛載時直接中斷整支 UI 腳本（會造成所有按鈕無反應）
+  let PALACE_RING = Array.isArray(PALACE_DEFAULT) ? PALACE_DEFAULT.slice() : [];
+  let lifebookTier = "free";
+  const LIFEBOOK_BETA_SEED_KEY = "lifebook_v2_seed";
+  const LIFEBOOK_BETA_SEED_BACKUP_KEY = "lifebook_v2_seed_backup";
+  /** 從主站「開啟命書 Beta」離開後，按上一頁回主站時若需自動重算以還原命盤區塊 */
+  const LIFEBOOK_EXPECT_DASHBOARD_RETURN_KEY = "lifebook_expect_dashboard_return";
 
   /** 取得當前年齡（虛歲）：一律由出生年月日推算，無預設值 */
   function getCurrentAge() {
@@ -120,9 +123,10 @@
   // getMonthStrategyTag 已移至 strategy-tags.js 工具模块
   const StrategyTags = window.UiUtils?.StrategyTags || {};
   const getMonthStrategyTag = StrategyTags.getMonthStrategyTag || function(b) {
-    const risk = Number(b.riskScore) || 0;
-    const isHigh = risk >= 55 || b.light === "RED";
-    const reasons = (b.reasonTags || []).join("");
+    const item = (b && typeof b === "object") ? b : {};
+    const risk = Number(item.riskScore) || 0;
+    const isHigh = risk >= 55 || item.light === "RED";
+    const reasons = Array.isArray(item.reasonTags) ? item.reasonTags.join("") : "";
     const hasCai = /財|才|偏財|正財/.test(reasons);
     const hasGuanSha = /官|殺|七殺|正官|偏官/.test(reasons);
     if (isHigh && (hasGuanSha || risk >= 70)) return "🚨 壓力監測";
@@ -337,6 +341,239 @@
     }, 80);
   }
 
+  function normalizeInviteCode(raw) {
+    return String(raw || "").trim().toUpperCase();
+  }
+
+  function setLifebookBetaHintDefault() {
+    const hint = document.getElementById("lifebookBetaHint");
+    if (!hint) return;
+    hint.textContent = "Beta 封測期間需邀請碼（先測免費版，再逐步開放進階版）。";
+    hint.className = "mt-2 text-xs text-slate-400";
+  }
+
+  /** 須通過 /api/life-book/beta/redeem 成功後才寫入；僅存字串不算已驗證 */
+  const LIFEBOOK_BETA_VERIFIED_KEY = "lifebook_v2_beta_invite_verified";
+
+  function hasVerifiedLifebookInvite() {
+    try {
+      return localStorage.getItem(LIFEBOOK_BETA_VERIFIED_KEY) === "1";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function setLifebookTier(nextTier) {
+    lifebookTier = nextTier === "pro" ? "pro" : "free";
+    try {
+      localStorage.setItem("lifebook_v2_tier", lifebookTier);
+    } catch (_) {}
+    try {
+      window.dispatchEvent(new CustomEvent("lifebook:plan-tier-changed", { detail: { plan_tier: lifebookTier } }));
+    } catch (_) {}
+    const badge = document.getElementById("lifebookTierBadge");
+    const hint = document.getElementById("lifebookBetaHint");
+    if (badge) {
+      const verified = hasVerifiedLifebookInvite();
+      if (!verified) {
+        badge.textContent = "待驗證";
+        badge.className = "font-bold text-amber-300";
+      } else {
+        badge.textContent =
+          lifebookTier === "pro" ? "已驗證 · 進階版（模組二）" : "已驗證 · 基本版（模組一）";
+        badge.className = lifebookTier === "pro" ? "font-bold text-amber-300" : "font-bold text-emerald-300";
+      }
+    }
+    if (hint) {
+      setLifebookBetaHintDefault();
+    }
+  }
+
+  /**
+   * document 委派：避免 initSelectors 等拋錯導致按鈕從未綁定；Calc 未載入時仍可用。
+   */
+  function bindLifebookBetaDelegatedOnce() {
+    if (window.__lifebookBetaDelegated) return;
+    window.__lifebookBetaDelegated = true;
+
+    document.addEventListener(
+      "click",
+      async function lifebookBetaDelegatedClick(e) {
+        const t = e.target;
+        if (!t || typeof t.closest !== "function") return;
+
+        const openEl = t.closest("#lifebookOpenViewerBtn");
+        if (openEl) {
+          e.preventDefault();
+          const hint = document.getElementById("lifebookBetaHint");
+          const card = document.getElementById("lifebookBetaCard");
+          try {
+            if (!hasVerifiedLifebookInvite()) {
+              if (hint) {
+                hint.textContent = "請先輸入並驗證邀請碼，再開啟命書 Beta。";
+                hint.className = "mt-2 text-xs text-red-300/90";
+                hint.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              }
+              if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              return;
+            }
+            const raw = sessionStorage.getItem(LIFEBOOK_BETA_SEED_KEY);
+            if (!raw) {
+              if (hint) {
+                hint.textContent = "請先完成一次命盤計算，再開啟命書 Beta。";
+                hint.className = "mt-2 text-xs text-red-300/90";
+                hint.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              }
+              if (card) card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              return;
+            }
+            const u = new URL("dist/lifebook-viewer.html", window.location.href);
+            u.searchParams.set("beta", "1");
+            /** 僅從主站按鈕進入時自動觸發整本生成；避免每次開 viewer 都打滿 Worker */
+            u.searchParams.set("autogen", "1");
+            /** 預設進時間軸；舊版 viewer bundle 若仍預設 root，靠 query 強制對齊 */
+            u.searchParams.set("view", "timeline");
+            window.location.assign(u.href);
+          } catch (err) {
+            console.warn("[ui.js] lifebookOpenViewerBtn", err);
+            if (hint) {
+              hint.textContent = "無法開啟命書頁面，請確認網址或改用根目錄開啟本站。";
+              hint.className = "mt-2 text-xs text-red-300/90";
+              hint.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
+          }
+          return;
+        }
+
+        const unlockEl = t.closest("#lifebookBetaUnlockBtn");
+        if (!unlockEl) return;
+
+        e.preventDefault();
+        const input = document.getElementById("lifebookInviteCodeInput");
+        const code = normalizeInviteCode(input ? input.value : "");
+        const hint = document.getElementById("lifebookBetaHint");
+        if (!code) {
+          if (hint) {
+            hint.textContent = "請先輸入邀請碼。";
+            hint.className = "mt-2 text-xs text-red-300/90";
+            hint.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+          return;
+        }
+
+        unlockEl.disabled = true;
+        try {
+          const api = window.UiServices?.ApiService;
+          if (!(api && typeof api.redeemLifeBookBetaInvite === "function")) {
+            throw new Error("邀請碼服務尚未啟用，請稍後再試。");
+          }
+          await api.redeemLifeBookBetaInvite(code);
+
+          // 封測策略：驗證成功即「可進封測」，非進階版解鎖
+          // 須先寫入 LIFEBOOK_BETA_VERIFIED_KEY，再 setLifebookTier（否則 badge 仍顯示「待驗證」）
+          if (input) input.value = "";
+          try {
+            localStorage.setItem("lifebook_v2_unlock_sections", JSON.stringify([]));
+            localStorage.setItem("lifebook_v2_beta_invite_code", code);
+            localStorage.setItem(LIFEBOOK_BETA_VERIFIED_KEY, "1");
+          } catch (_) {}
+          setLifebookTier("free");
+          if (hint) {
+            hint.textContent = "邀請碼驗證成功：你已可進入命書封測頁。";
+            hint.className = "mt-2 text-xs text-emerald-300/90";
+          }
+        } catch (err) {
+          if (hint) {
+            hint.textContent = err && err.message ? err.message : "邀請碼無效，請確認後重試。";
+            hint.className = "mt-2 text-xs text-red-300/90";
+            hint.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        } finally {
+          unlockEl.disabled = false;
+        }
+      },
+      false
+    );
+  }
+
+  function initLifebookBetaCard() {
+    try {
+      const saved = localStorage.getItem("lifebook_v2_tier");
+      setLifebookTier(saved === "pro" ? "pro" : "free");
+    } catch (_) {
+      setLifebookTier("free");
+    }
+    // 舊版只存邀請碼字串：向後端補 redeem，通過後才標記已驗證（否則清除無效碼）
+    try {
+      const code = String(localStorage.getItem("lifebook_v2_beta_invite_code") || "").trim();
+      if (!code || localStorage.getItem(LIFEBOOK_BETA_VERIFIED_KEY) === "1") return;
+      const api = window.UiServices?.ApiService;
+      if (!(api && typeof api.redeemLifeBookBetaInvite === "function")) return;
+      void api
+        .redeemLifeBookBetaInvite(code)
+        .then(function () {
+          try {
+            localStorage.setItem(LIFEBOOK_BETA_VERIFIED_KEY, "1");
+          } catch (_) {}
+          try {
+            setLifebookTier(localStorage.getItem("lifebook_v2_tier") === "pro" ? "pro" : "free");
+          } catch (_) {}
+        })
+        .catch(function () {
+          try {
+            localStorage.removeItem("lifebook_v2_beta_invite_code");
+            localStorage.removeItem(LIFEBOOK_BETA_VERIFIED_KEY);
+          } catch (_) {}
+          try {
+            setLifebookTier("free");
+          } catch (_) {}
+        });
+    } catch (_) {}
+  }
+
+  window.getLifebookPlanPayload = function () {
+    let planTier = "free";
+    let unlockSections = [];
+    try {
+      const s = localStorage.getItem("lifebook_v2_tier");
+      if (s === "pro") planTier = "pro";
+    } catch (_) {}
+    try {
+      const raw = localStorage.getItem("lifebook_v2_unlock_sections");
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) unlockSections = parsed.filter((x) => typeof x === "string");
+    } catch (_) {}
+    let betaInviteCode = "";
+    try {
+      betaInviteCode = String(localStorage.getItem("lifebook_v2_beta_invite_code") || "").trim();
+    } catch (_) {}
+    return { plan_tier: planTier, unlock_sections: unlockSections, beta_invite_code: betaInviteCode || undefined };
+  };
+
+  function persistLifeBookBetaSeed(contractObj) {
+    try {
+      if (!contractObj || typeof contractObj !== "object") return;
+      const lbe = window.LifeBookEngine;
+      let weight = {};
+      if (lbe && typeof lbe.weightAnalysis === "function") {
+        weight = lbe.weightAnalysis(contractObj);
+      } else {
+        console.warn("[ui.js] persistLifeBookBetaSeed: LifeBookEngine.weightAnalysis 不可用，先存空權重以便開啟 Beta");
+      }
+      const payload = {
+        chart_json: contractObj,
+        weight_analysis: weight,
+        saved_at: new Date().toISOString(),
+      };
+      sessionStorage.setItem(LIFEBOOK_BETA_SEED_KEY, JSON.stringify(payload));
+      try {
+        localStorage.setItem(LIFEBOOK_BETA_SEED_BACKUP_KEY, JSON.stringify(payload));
+      } catch (_) {}
+    } catch (e) {
+      console.warn("[ui.js] persistLifeBookBetaSeed failed", e);
+    }
+  }
+
   // ====== Calculate ======
   async function calculate(skipStartupSequence) {
     console.log("[ui.js] calculate 函數開始執行, skipStartupSequence:", skipStartupSequence);
@@ -467,6 +704,40 @@
       // Worker 回傳的 astrolabe 語系，供轉繁邏輯判斷；無則預設 zh-CN（保守，照舊轉繁）
       contract.astrolabeLanguage = payload.language || "zh-CN";
       window.contract = contract;
+      persistLifeBookBetaSeed(contract);
+      try {
+        var _yEl = document.getElementById("birthYear");
+        var _mEl = document.getElementById("birthMonth");
+        var _dEl = document.getElementById("birthDay");
+        if (_yEl && _mEl && _dEl) {
+          var _vy = parseInt(_yEl.value, 10);
+          var _vm = parseInt(_mEl.value, 10);
+          var _vd = parseInt(_dEl.value, 10);
+          if (_vy && _vm && _vd) {
+            localStorage.setItem(
+              "landing_birth_form_v1",
+              JSON.stringify({
+                year: _vy,
+                month: _vm,
+                day: _vd,
+                hour: document.getElementById("birthHour") ? parseInt(document.getElementById("birthHour").value, 10) : 12,
+                minute: document.getElementById("birthMinute") ? parseInt(document.getElementById("birthMinute").value, 10) : 0,
+                gender: (document.getElementById("gender") && document.getElementById("gender").value) || "",
+                timeMode: (document.getElementById("timeMode") && document.getElementById("timeMode").value) || "exact",
+                shichen: (document.getElementById("birthShichen") && document.getElementById("birthShichen").value) || "",
+                shichenHalf: (document.getElementById("birthShichenHalf") && document.getElementById("birthShichenHalf").value) || "upper",
+              })
+            );
+          }
+        }
+      } catch (_) {}
+
+      /** 瀏覽器「上一頁」：先回到排盤結果頁，再上一頁才離開；避免 viewer 返回時直接落到空白 landing */
+      try {
+        if (window.history && typeof window.history.pushState === "function") {
+          window.history.pushState({ lifebookChart: true }, "", window.location.href);
+        }
+      } catch (_) {}
 
       // 身宮在 12 宮報告（前端輕量卡片 + 命書 Pro 用）
       if (window.BodyPalaceEngine && contract.ziwei) {
@@ -1205,6 +1476,65 @@
     }
   }
 
+  /** 從命書 Beta「上一頁」回到主站時還原上次已算過的出生資料（與 locale 切換還原分開） */
+  function restoreLandingBirthFormIfAny() {
+    try {
+      if (sessionStorage.getItem("localeSwitchFormData")) return;
+      const raw = localStorage.getItem("landing_birth_form_v1");
+      if (!raw) return;
+      const data = JSON.parse(raw);
+      if (!data || !data.year || !data.month || !data.day) return;
+      const setVal = (id, v) => {
+        const el = document.getElementById(id);
+        if (el) el.value = String(v ?? "");
+      };
+      setVal("birthYear", data.year);
+      setVal("birthMonth", data.month);
+      const yEl = document.getElementById("birthYear");
+      const mEl = document.getElementById("birthMonth");
+      if (yEl) yEl.dispatchEvent(new Event("change", { bubbles: true }));
+      setVal("birthDay", data.day);
+      if (data.hour != null && data.hour !== "") setVal("birthHour", data.hour);
+      if (data.minute != null && data.minute !== "") setVal("birthMinute", data.minute);
+      if (data.gender) setVal("gender", data.gender);
+      if (data.timeMode) setVal("timeMode", data.timeMode);
+      if (data.shichen) setVal("birthShichen", data.shichen);
+      if (data.shichenHalf) setVal("birthShichenHalf", data.shichenHalf);
+      const tm = document.getElementById("timeMode");
+      if (tm) tm.dispatchEvent(new Event("change", { bubbles: true }));
+    } catch (e) {
+      if (window.console) window.console.warn("[ui.js] restoreLandingBirthFormIfAny failed:", e);
+    }
+  }
+
+  /**
+   * 從 Beta 頁按「上一頁」回到主站時，整頁重載後 #system 會隱藏；若有 seed 與表單，觸發一次計算以還原命盤（bfcache 已顯示命盤時會跳過）。
+   */
+  function tryRestoreDashboardAfterBetaReturn() {
+    try {
+      if (sessionStorage.getItem(LIFEBOOK_EXPECT_DASHBOARD_RETURN_KEY) !== "1") return;
+      const raw = sessionStorage.getItem(LIFEBOOK_BETA_SEED_KEY) || localStorage.getItem(LIFEBOOK_BETA_SEED_BACKUP_KEY);
+      if (!raw) {
+        sessionStorage.removeItem(LIFEBOOK_EXPECT_DASHBOARD_RETURN_KEY);
+        return;
+      }
+      const sysEl = document.getElementById("system");
+      if (sysEl && !sysEl.classList.contains("hidden")) {
+        sessionStorage.removeItem(LIFEBOOK_EXPECT_DASHBOARD_RETURN_KEY);
+        return;
+      }
+      sessionStorage.removeItem(LIFEBOOK_EXPECT_DASHBOARD_RETURN_KEY);
+      const btn = document.getElementById("btnLaunch");
+      if (btn && typeof btn.click === "function") {
+        window.setTimeout(function () {
+          btn.click();
+        }, 150);
+      }
+    } catch (e) {
+      if (window.console) window.console.warn("[ui.js] tryRestoreDashboardAfterBetaReturn failed:", e);
+    }
+  }
+
   function restoreFormAfterLocaleSwitch() {
     try {
       const raw = sessionStorage.getItem("localeSwitchFormData");
@@ -1254,8 +1584,17 @@
 
   // ====== BOOT ======
   document.addEventListener("DOMContentLoaded", async () => {
+    /** 命書 Beta：委派綁定須最早執行，避免後續 init 拋錯導致按鈕無反應 */
+    bindLifebookBetaDelegatedOnce();
+    initLifebookBetaCard();
+
     // 檢查必要依賴
-    if (!window.Calc) {
+    const calcReady = !!(
+      window.Calc &&
+      typeof window.Calc.resolveBirthTime === "function" &&
+      typeof window.Calc.pad2 === "function"
+    );
+    if (!calcReady) {
       console.error("[ui.js] window.Calc not found! Make sure calc.js is loaded before ui.js");
       console.error("[ui.js] 檢查依賴狀態:", {
         Calc: !!window.Calc,
@@ -1300,6 +1639,8 @@
       initIdentifyBirthTime();
       syncNavChipActive();
       restoreFormAfterLocaleSwitch();
+      restoreLandingBirthFormIfAny();
+      tryRestoreDashboardAfterBetaReturn();
       bindLangSwitcher();
       
       // 使用事件绑定服务模块
@@ -1421,5 +1762,11 @@
       console.error("[ui.js] DOMContentLoaded 初始化失敗:", err);
     }
   });
+
+  /** script 晚於 DOMContentLoaded 載入時，仍綁定 Beta 按鈕（主流程 catch 時也會用到） */
+  if (document.readyState !== "loading") {
+    bindLifebookBetaDelegatedOnce();
+    initLifebookBetaCard();
+  }
 })();
 

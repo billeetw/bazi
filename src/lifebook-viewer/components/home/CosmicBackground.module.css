@@ -1,0 +1,164 @@
+.sceneBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.abyssLight {
+  position: absolute;
+  bottom: -20vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150vw;
+  height: 80vh;
+  background: radial-gradient(ellipse at center, var(--lb-glow-abyss) 0%, transparent 70%);
+  filter: blur(40px);
+  animation: lbBreathe 14s ease-in-out infinite alternate;
+}
+
+.ambientGold {
+  position: absolute;
+  top: -15vh;
+  right: -20vw;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at center, var(--lb-glow-spore) 0%, transparent 65%);
+  filter: blur(50px);
+  animation: lbBreatheSlow 18s ease-in-out infinite alternate-reverse;
+}
+
+.treeWrap {
+  position: fixed;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: min(120px, 28vw);
+  transform: translateX(-50%);
+  z-index: 1;
+  pointer-events: none;
+  animation: lbTreeGrow 3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+  opacity: 0;
+}
+
+.treeSvg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.trunkBody {
+  fill: none;
+  stroke: url(#trunk-gradient);
+  stroke-width: 2.5px;
+  filter: url(#trunk-glow);
+  animation: lbTrunkBreathe 8s ease-in-out infinite alternate;
+}
+
+.energyFlow {
+  fill: none;
+  stroke: var(--lb-trunk-pulse);
+  stroke-width: 1.5px;
+  filter: url(#trunk-glow);
+  stroke-dasharray: 150 1500;
+  stroke-dashoffset: 1650;
+  animation: lbFlowUp 12s linear infinite;
+}
+
+:global(.lb-home-root.lb-low-power) .abyssLight,
+:global(.lb-home-root.lb-low-power) .ambientGold {
+  animation: none;
+  opacity: 0.45;
+  filter: none;
+}
+
+:global(.lb-home-root.lb-low-power) .treeWrap {
+  animation: none;
+  opacity: 1;
+  transform: translateX(-50%);
+}
+
+:global(.lb-home-root.lb-low-power) .trunkBody {
+  animation: none;
+  stroke-width: 2.5px;
+  opacity: 0.85;
+  filter: none;
+}
+
+:global(.lb-home-root.lb-low-power) .energyFlow {
+  animation: none;
+  stroke-dashoffset: 0;
+  opacity: 0.35;
+  filter: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abyssLight,
+  .ambientGold {
+    animation: none;
+    opacity: 0.5;
+  }
+  .treeWrap {
+    animation: none;
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+  .trunkBody {
+    animation: none;
+  }
+  .energyFlow {
+    animation: none;
+  }
+}
+
+@keyframes lbBreathe {
+  0% {
+    opacity: 0.3;
+    transform: translateX(-50%) scale(0.95);
+  }
+  100% {
+    opacity: 0.8;
+    transform: translateX(-50%) scale(1.05);
+  }
+}
+
+@keyframes lbBreatheSlow {
+  0% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes lbTreeGrow {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(5vh);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+@keyframes lbTrunkBreathe {
+  0% {
+    stroke-width: 1.5px;
+    opacity: 0.5;
+  }
+  100% {
+    stroke-width: 3px;
+    opacity: 1;
+  }
+}
+
+@keyframes lbFlowUp {
+  0% {
+    stroke-dashoffset: 1650;
+  }
+  100% {
+    stroke-dashoffset: -150;
+  }
+}

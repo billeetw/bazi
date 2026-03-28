@@ -1,12 +1,29 @@
 /**
  * 命書 Viewer 入口：明確 root id、storage 載入、ErrorBoundary，避免白屏與未捕獲錯誤。
  * 若在掛載前設定 window.__LIFEBOOK_INITIAL_STATE__ 或由 parent 經 postMessage 傳 LIFEBOOK_DOC，viewer 會顯示命書。
+ *
+ * 使用靜態 import 載入 App（勿對 App 做 dynamic import）：Vite dev 下 dynamic import 偶發
+ * Failed to fetch dynamically imported module，導致整頁只顯示「尚未載入命書資料」。
  */
 
+import "./syncDefaultTimelineUrl";
+import "@/design-system/tokens.css";
+import { createRoot } from "react-dom/client";
+import { App } from "./App";
+import { LifebookErrorBoundary } from "./ErrorBoundary";
+import { resolveInitialDocument } from "./bootstrapAccountLifebook";
+import { buildLifeBookDocument } from "./utils/lifebook-assembler";
+import { chartJsonHasZiwei, mergeDocWithBetaSeed, tryLoadBetaSeedDocument } from "./utils/betaSeedDocument";
 import type { LifeBookDocument } from "./types";
 
 const ROOT_ID = "lifebook-root";
 const STORAGE_KEY = "lifebook_doc";
+
+function lifeBookDocHasRenderableContent(doc: LifeBookDocument): boolean {
+  const sec = doc.sections;
+  if (sec && typeof sec === "object" && Object.keys(sec).length > 0) return true;
+  return !!(doc.chart_json && typeof doc.chart_json === "object");
+}
 
 function renderFallback(message: string) {
   const el = document.getElementById(ROOT_ID);
@@ -18,10 +35,12 @@ function renderFallback(message: string) {
 /** 依序從 window / sessionStorage / localStorage 讀取命書，解析失敗不拋錯 */
 function loadInitialDocFromStorage(): LifeBookDocument | null {
   if (typeof window === "undefined") return null;
+  const seed = tryLoadBetaSeedDocument();
   try {
     const fromWindow = (window as unknown as { __LIFEBOOK_INITIAL_STATE__?: LifeBookDocument }).__LIFEBOOK_INITIAL_STATE__;
     if (fromWindow && typeof fromWindow === "object" && typeof (fromWindow as LifeBookDocument).sections === "object") {
-      return fromWindow as LifeBookDocument;
+      const merged = mergeDocWithBetaSeed(fromWindow as LifeBookDocument, seed);
+      return merged ?? seed;
     }
   } catch {
     /* ignore */
@@ -31,17 +50,18 @@ function loadInitialDocFromStorage(): LifeBookDocument | null {
       const raw = sessionStorage.getItem(key) ?? localStorage.getItem(key);
       if (!raw) continue;
       const parsed = JSON.parse(raw) as LifeBookDocument;
-      if (parsed && typeof parsed === "object" && typeof parsed.sections === "object") {
-        return parsed;
+      if (parsed && typeof parsed === "object" && typeof parsed.sections === "object" && lifeBookDocHasRenderableContent(parsed)) {
+        const merged = mergeDocWithBetaSeed(parsed, seed);
+        return merged ?? seed;
       }
     } catch (e) {
       console.error("[lifebook-viewer] Failed to parse", key, e);
     }
   }
-  return null;
+  return seed;
 }
 
-(async function main() {
+void (async () => {
   try {
     const container = document.getElementById(ROOT_ID);
     if (!container) {
@@ -49,16 +69,16 @@ function loadInitialDocFromStorage(): LifeBookDocument | null {
       renderFallback("尚未載入命書資料");
       return;
     }
-    const initialDoc = loadInitialDocFromStorage();
-    console.log("[lifebook-viewer] initialDoc from storage:", initialDoc ? { sectionsCount: Object.keys(initialDoc.sections || {}).length, hasMeta: !!initialDoc.meta } : null);
 
-    const [React, { createRoot }, { App }, { buildLifeBookDocument }, { LifebookErrorBoundary }] = await Promise.all([
-      import("react"),
-      import("react-dom/client"),
-      import("./App"),
-      import("./utils/lifebook-assembler"),
-      import("./ErrorBoundary"),
-    ]);
+    const initialDoc = await resolveInitialDocument(loadInitialDocFromStorage);
+    console.log("[lifebook-viewer] initialDoc resolved:", initialDoc
+      ? {
+          sectionsCount: Object.keys(initialDoc.sections || {}).length,
+          hasMeta: !!initialDoc.meta,
+          hasZiwei: chartJsonHasZiwei(initialDoc.chart_json),
+        }
+      : null);
+
     if (typeof window !== "undefined") {
       try {
         (window as unknown as { buildLifeBookDocument: typeof buildLifeBookDocument }).buildLifeBookDocument = buildLifeBookDocument;
@@ -68,11 +88,9 @@ function loadInitialDocFromStorage(): LifeBookDocument | null {
     }
     const root = createRoot(container);
     root.render(
-      React.createElement(
-        LifebookErrorBoundary,
-        null,
-        React.createElement(App, { initialDocument: initialDoc ?? undefined })
-      )
+      <LifebookErrorBoundary>
+        <App initialDocument={initialDoc ?? undefined} />
+      </LifebookErrorBoundary>
     );
   } catch (e) {
     console.error("[lifebook-viewer]", e);

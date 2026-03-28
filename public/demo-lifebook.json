@@ -35,7 +35,8 @@
     "schema_version": "1.0",
     "generator_version": "gpt-4.1",
     "client_name": "示範用命書",
-    "birth_info": "1990年1月1日 子時"
+    "birth_info": "1990年1月1日 子時",
+    "viewer_notice_zh": "本檔為舊版「模組一／模組二 + 章節鍵」管線示範，用於測試匯入與閱讀流程；與 Root「降生藍圖／十二宮」入口並存。正式產品將以宮位敘事與新管線輸出為準，此處文案與分組不代表最終資訊架構。"
   },
   "weight_analysis": {
     "top_focus_palaces": ["命宮", "財帛", "官祿"],

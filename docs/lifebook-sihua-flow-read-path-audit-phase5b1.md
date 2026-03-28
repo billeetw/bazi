@@ -4,16 +4,23 @@
 
 ---
 
+## 2026-03 更新（與現況對齊）
+
+- **buildSiHuaLayers**：權威為 **normalizeChart 落宮 + fourTransformations.mutagenStars**（及大限／流年 resolver）。**不讀** `chartJson.sihuaLayers` 作為輸出；該欄位僅供與 worker 比對（diff，需 env）。可選 **`chartJson.lifebookSiHuaDisplayOverride`**（Phase 3：audit + 部分層覆寫），見 `docs/lifebook-sihua-single-source-phase1.md`。
+- **buildSiHuaContext**：列表與各宮摘要來自 **fourTransformations + findings**，不依賴 `sihuaLayers` wire。
+
+---
+
 ## 一、四化／飛化讀取點總表
 
 ### 1. 四化落宮相關
 
 | 模組／函式 | 所在檔案 | 用途 | 所屬區域 | 已接 Findings？ | 仍讀 chart？ | 仍讀 overlap？ | 備註 |
 |-----------|----------|------|----------|-----------------|--------------|---------------|------|
-| **buildSiHuaLayers** | lifeBookPrompts.ts | 從 chartJson 產出本命／大限／流年 SiHuaLayers（祿權科忌落宮） | 多處共用 | 否 | 是 | 間接（若無 sihuaLayers 則由 fourTransformations + overlap 推導） | 底層 builder，被多個路徑呼叫 |
+| **buildSiHuaLayers** | lifeBookPrompts.ts | 從 chartJson 產出 **BuiltSiHuaLayers**（祿權科忌落宮）；normalize + mutagen；可選 lifebookSiHuaDisplayOverride 合併 | 多處共用 | 否 | 是 | 間接（mutagen 來自 chart；落宮來自 NormalizedChart） | **不採用** wire `sihuaLayers`；底層 builder |
 | **getSihuaByLayerLines** | lifeBookPrompts.ts | 分層列出本命／大限／流年祿權科忌落宮（除錯用） | 技術版／debug | 否 | 是（經 buildSiHuaLayers） | — | 僅內部使用，未見對外呼叫 |
 | **getSihuaPalaceListsFromLayers** | lifeBookPrompts.ts | 推導「祿權科忌各落在哪些宮位」清單 | 模組二（時間） | 否 | 是（經 buildSiHuaLayers） | — | 被 buildSihuaEnergyFocusBlock 呼叫 |
-| **buildSiHuaContext** | lifeBookPrompts.ts | 四化高階 context（benMingSiHuaList、perPalaceFlow 等） | 全域 placeholder（含 12 宮、s00、s03） | 否 | 是 | 是（若無 sihuaLayers 則用 fourTransformations + overlap） | opts?.chartJson 時填入 map，所有 section 共用 |
+| **buildSiHuaContext** | lifeBookPrompts.ts | 四化高階 context（benMingSiHuaList、perPalaceFlow 等） | 全域 placeholder（含 12 宮、s00、s03） | 否 | 是 | — | 列表來自 fourTransformations；perPalaceFlow 來自 findings + buildSihuaFlowSummary；**不讀** sihuaLayers wire |
 | **getSihuaPlacementItemsFromChart** | lifeBookPrompts.ts | 從 chart 產出結構化 sihuaPlacementItems | Findings 組裝（index） | — | 是 | — | **僅**在 buildP2FindingsAndContext / 產出 Findings 時呼叫，寫入 findings.sihuaPlacementItems |
 | **getTransformsByLayer** | normalizeTransforms.ts | 從 overlap 產出 natal/decade/year TransformEdge[] | normalizeChart | — | — | 是（overlapAnalysis.items[].transformations） | 正規化層，產出給 NormalizedChart |
 | **buildTransformEdgesFromOverlap** | normalizeTransforms.ts | 同上，底層實作 | normalizeTransforms.ts | — | — | 是 | getTransformsByLayer 內部呼叫 |
@@ -129,7 +136,7 @@
 
 ### 仍直接讀 overlap 的讀取點
 
-- **buildSiHuaContext**：若無 chartJson.sihuaLayers，由 fourTransformations + overlapAnalysis 推導。  
+- **buildSiHuaContext**：列表與 perPalaceFlow 來自 **fourTransformations + findings／buildSihuaFlowSummary**；**不讀** `chartJson.sihuaLayers` wire。  
 - **getTransformsByLayer / buildTransformEdgesFromOverlap**：overlapAnalysis.items[].transformations → NormalizedChart 的 decade/year transforms。  
 - **buildOverlapDetailBlocks**：overlapAnalysis.items（或 criticalRisks / maxOpportunities / volatileAmbivalences）。  
 - **模組二 placeholder**：opts.chartJson.overlapAnalysis ?? opts.chartJson.overlap（疊宮統計與明細）。  

@@ -1,0 +1,8 @@
+# 舊書籤／連結：根目錄 expert-admin.html 已改為目錄 /expert-admin/（index.html）
+/expert-admin.html /expert-admin 301
+
+# 命書 SPA：必須指向 **建置後** dist/lifebook-viewer.html（根目錄 lifebook-viewer.html 仍含 /src/*.tsx，生產會 MIME 錯誤）
+/viewer /dist/lifebook-viewer.html 200
+/timeline /dist/lifebook-viewer.html 200
+# 無 .html 的捷徑（與主站 dist/lifebook-viewer?beta=1 等連結一致）
+/dist/lifebook-viewer /dist/lifebook-viewer.html 200

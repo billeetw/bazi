@@ -3,7 +3,13 @@
  * 供 functions/api/admin/* 使用
  */
 
-const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
+const JSON_HEADERS = {
+  "Content-Type": "application/json; charset=utf-8",
+  /** 避免 CDN／瀏覽器快取含個資的 JSON；亦避免誤以為「未登入仍看得到資料」 */
+  "Cache-Control": "no-store, private",
+  Pragma: "no-cache",
+  "X-Content-Type-Options": "nosniff",
+};
 
 export function parseBasicAuth(request) {
   const auth = request.headers.get("Authorization");
@@ -29,7 +35,11 @@ export function jsonResponse(data, status = 200) {
 export function unauthorized() {
   return new Response(JSON.stringify({ error: "請登入" }), {
     status: 401,
-    headers: { ...JSON_HEADERS, "WWW-Authenticate": 'Basic realm="Admin"' },
+    headers: {
+      ...JSON_HEADERS,
+      "WWW-Authenticate": 'Basic realm="Admin"',
+      Vary: "Authorization",
+    },
   });
 }
 

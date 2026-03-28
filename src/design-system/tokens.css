@@ -1,0 +1,34 @@
+/**
+ * 命書宇宙敘事 — 單一 token 來源（CSS variables）
+ * 元件請優先使用 var(--lb-*)；TS 執行時色碼見 tokens.ts。
+ */
+:root {
+  /* core — 深空底與文字 */
+  --lb-core-void-base: #020408;
+  --lb-core-space: #020617;
+  --lb-core-text-main: #f8fafc;
+  --lb-core-text-body: #cbd5e1;
+  --lb-core-text-muted: #94a3b8;
+
+  /* glow — 邊界光暈（非 focus ring） */
+  --lb-glow-abyss: rgba(12, 38, 50, 0.5);
+  --lb-glow-spore: rgba(212, 175, 55, 0.08);
+  --lb-glow-gold: rgba(245, 158, 11, 0.4);
+  --lb-glow-cyan: rgba(56, 189, 248, 0.35);
+
+  /* palace — 敘事主色（與宮位殼呼應，可擴充） */
+  --lb-palace-trunk-core: #d4af37;
+  --lb-palace-trunk-pulse: rgba(255, 255, 255, 0.85);
+
+  /* gate — open / teaser / locked 語義 */
+  --lb-gate-open-accent: #38bdf8;
+  --lb-gate-teaser-amber: #f59e0b;
+  --lb-gate-teaser-bg: rgba(245, 158, 11, 0.12);
+  --lb-gate-locked-rose: #fda4af;
+  --lb-gate-locked-border: rgba(225, 29, 72, 0.35);
+
+  /* glass — 卡片 */
+  --lb-glass-panel: rgba(15, 23, 42, 0.45);
+  --lb-glass-border: rgba(255, 255, 255, 0.06);
+  --lb-glass-highlight: rgba(255, 255, 255, 0.03);
+}

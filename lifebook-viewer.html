@@ -5,6 +5,78 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="robots" content="noindex, nofollow" />
   <title>命書 Viewer - 人生說明書</title>
+  <link rel="icon" href="/favicon.ico" sizes="any" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <!-- GA4：與主站 index.html 同一 Measurement ID；js/config.js 會讀入 window.GA_MEASUREMENT_ID -->
+  <script>
+    window.GA_MEASUREMENT_ID = window.GA_MEASUREMENT_ID || "G-S0JFD6CTDP";
+  </script>
+  <!-- 正式環境可於此（在 config.js 前）注入回饋表單 URL，避免改動版控內常數：
+       <script>window.LIFEBOOK_FEEDBACK_URL = "https://docs.google.com/forms/d/e/…/viewform";</script> -->
+  <!-- 須在 module bundle 之前載入，以便 `window.Config`（含 LIFEBOOK_FEEDBACK_URL）就緒 -->
+  <script src="/js/config.js"></script>
+  <script>
+    (function () {
+      var gaId = window.GA_MEASUREMENT_ID;
+      if (!gaId || gaId.indexOf("G-") !== 0) return;
+      var debug = false;
+      try {
+        debug = new URLSearchParams(window.location.search || "").get("ga_debug") === "1";
+      } catch (e) {}
+      var s = document.createElement("script");
+      s.async = true;
+      s.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(gaId);
+      document.head.appendChild(s);
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      window.gtag = gtag;
+      gtag("js", new Date());
+      var cfg = { anonymize_ip: true };
+      if (debug) cfg.debug_mode = true;
+      gtag("config", gaId, cfg);
+    })();
+  </script>
+  <script>
+    (function () {
+      // 純靜態伺服器（如 python http.server）下，根目錄版會載入 /src/*.tsx 造成 MIME 錯誤；
+      // 自動導向到 build 輸出的 dist/lifebook-viewer.html。
+      var p = window.location.port || "";
+      var isViteDev = p === "5173" || p === "5174" || p === "5180" || p === "5181";
+      if (!isViteDev && window.location.pathname.endsWith("/lifebook-viewer.html")) {
+        // search + hash 皆須保留，否則 `#palace-*`（Home 宮位 overlay）會在導向 dist 時遺失
+        var target =
+          "/dist/lifebook-viewer.html" +
+          (window.location.search || "") +
+          (window.location.hash || "");
+        if (window.location.pathname !== "/dist/lifebook-viewer.html") {
+          window.location.replace(target);
+        }
+      }
+    })();
+  </script>
+  <!-- 在 React 掛載前補上 view=timeline，避免舊 bundle／書籤無 query 時仍落在降生藍圖；/viewer 由 App 內補 view=viewer -->
+  <script>
+    (function () {
+      try {
+        var url = new URL(window.location.href);
+        if (url.searchParams.get("view")) return;
+        var path = (url.pathname || "").replace(/\/$/, "") || "/";
+        if (path === "/viewer" || path.endsWith("/viewer")) return;
+        if (!path.includes("lifebook-viewer")) return;
+        url.searchParams.set("view", "timeline");
+        if (window.location.href === url.href) return;
+        window.location.replace(url.href);
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;600&family=Share+Tech+Mono&family=Noto+Sans+TC:wght@300;400;500;700&display=swap"
+    rel="stylesheet"
+  />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -19,6 +91,9 @@
       font-family: 'Noto Sans TC', system-ui, sans-serif;
     }
   </style>
+  <!-- 宮位殼樣式：用 link，勿用 JS import（否則瀏覽器會當 ES module 載入，MIME 必須是 JS 而報錯） -->
+  <link rel="stylesheet" href="/palace-templates/palace-section-shell.css" />
+  <link rel="stylesheet" href="/palace-templates/palace-section-themes.css" />
 </head>
 <body class="antialiased">
   <div id="lifebook-root"></div>

@@ -1,0 +1,868 @@
+.card {
+  --void-base: #030408;
+  --womb-glow: rgba(14, 165, 233, 0.12);
+  --core-light: #38bdf8;
+  --core-aura: rgba(56, 189, 248, 0.3);
+  --text-divine: #f8fafc;
+  --text-body: #cbd5e1;
+  --text-muted: rgba(148, 163, 184, 0.5);
+  --gold-holy: #d4af37;
+  --crimson-blood: #e11d48;
+  --jade-green: #10b981;
+  --warning-orange: #f59e0b;
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --debug-text: rgba(212, 175, 55, 0.5);
+
+  position: relative;
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(3, 4, 8, 0.92), rgba(3, 4, 8, 0.78));
+  /** allow palace lifelines (absolute) to paint to card edges */
+  overflow: visible;
+  max-height: min(92vh, 920px);
+  font-family: "Noto Sans TC", system-ui, sans-serif;
+}
+
+.abyssWomb {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.wombBreath {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, var(--womb-glow) 0%, transparent 60%);
+  filter: blur(50px);
+  animation: wombBreathe 12s ease-in-out infinite alternate;
+}
+
+.dust {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+}
+
+.d1 {
+  top: 10%;
+  left: 20%;
+  animation: floatDust 18s linear infinite;
+}
+
+.d2 {
+  top: 80%;
+  left: 80%;
+  animation: floatDust 25s linear infinite reverse;
+}
+
+.lifelineLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  padding: 28px 24px 120px;
+  max-height: min(88vh, 880px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+.genesisHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.soulCore {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #fff 0%, var(--core-light) 40%, transparent 80%);
+  box-shadow: 0 0 30px var(--core-aura), inset 0 0 15px rgba(255, 255, 255, 0.8);
+  animation: corePulse 4s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+.coreRing {
+  position: absolute;
+  top: -14px;
+  left: -14px;
+  right: -14px;
+  bottom: -14px;
+  border: 1px dashed rgba(56, 189, 248, 0.2);
+  border-radius: 50%;
+  animation: spinSlow 24s linear infinite;
+}
+
+.coreTitle {
+  margin-top: 24px;
+  font-family: "Noto Serif TC", serif;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-divine);
+  letter-spacing: 4px;
+  text-shadow: 0 0 15px var(--core-aura);
+  margin-bottom: 0;
+}
+
+.coreSubtitle {
+  margin-top: 8px;
+  margin-bottom: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.signalsGroup {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+/* 靈魂共振儀 */
+
+
+.starSection {
+  margin-bottom: 28px;
+}
+
+.starGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.starCard {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.starSummary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--text-divine);
+  font-size: 13px;
+}
+
+.starSummary::-webkit-details-marker {
+  display: none;
+}
+
+.starGlyph {
+  color: var(--gold-holy);
+  text-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+}
+
+.starName {
+  flex: 1;
+}
+
+.starMainTag {
+  font-size: 10px;
+  color: var(--core-light);
+  border: 1px solid rgba(56, 189, 248, 0.45);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.starDetail {
+  margin-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.14);
+  padding-top: 8px;
+  color: var(--text-body);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.starDetail p {
+  margin: 0 0 8px;
+}
+
+.preservedSection {
+  margin: 10px 0 18px;
+}
+
+.longNotes {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 12px;
+}
+
+.longNotes summary {
+  cursor: pointer;
+  color: var(--text-divine);
+  font-size: 13px;
+}
+
+.longNotesBody {
+  margin-top: 10px;
+  color: var(--text-body);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.longNotesBody p {
+  margin: 0 0 10px;
+}
+
+.linkSection {
+  margin-bottom: 18px;
+}
+
+.linkGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.linkChip {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.linkChip:hover {
+  border-color: rgba(56, 189, 248, 0.45);
+}
+
+.linkLabel {
+  color: var(--text-divine);
+  font-size: 13px;
+}
+
+.linkReason {
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: right;
+}
+
+@media (max-width: 560px) {
+  .starGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.resonanceDashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 36px;
+}
+
+.calibrationState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 8px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.calBalanced {
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.calCaution {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.calCaution .calIcon {
+  color: var(--jade-green);
+}
+
+.calOverburn {
+  border-color: rgba(225, 29, 72, 0.4);
+  background: rgba(225, 29, 72, 0.1);
+}
+
+.calOverburn .calIcon {
+  color: var(--crimson-blood);
+  text-shadow: 0 0 10px var(--crimson-blood);
+  animation: calBlink 2s infinite;
+}
+
+.calIcon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.calText {
+  font-size: 12px;
+  color: var(--text-divine);
+  letter-spacing: 1px;
+  text-align: left;
+}
+
+.calBadge {
+  color: var(--text-muted);
+  font-size: 10px;
+  margin-right: 8px;
+  font-family: "Share Tech Mono", monospace;
+}
+
+.dynamicCards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.dCard {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  padding: 16px;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.dCard::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+  transform: skewX(-20deg);
+  animation: sweepLight 6s infinite;
+}
+
+.dCardAlert {
+  border-color: rgba(225, 29, 72, 0.2);
+}
+
+.dCardAlert .dTag {
+  color: rgba(225, 29, 72, 0.8);
+}
+
+.dCardAlert .dTag::before {
+  background: var(--crimson-blood);
+}
+
+.dCardAlert .dQuote {
+  color: #fecdd3;
+}
+
+.dTag {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 10px;
+  color: var(--gold-holy);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dTag::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  background: var(--gold-holy);
+  border-radius: 50%;
+}
+
+.dQuote {
+  font-family: "Noto Serif TC", serif;
+  font-size: 15px;
+  color: var(--text-divine);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.situationalTriggers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  justify-content: center;
+}
+
+.sTrigger {
+  padding: 8px 16px;
+  font-size: 11px;
+  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.3s, color 0.3s, transform 0.15s;
+  letter-spacing: 1px;
+  font-family: inherit;
+}
+
+.sTrigger:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-divine);
+}
+
+.sTrigger:active {
+  transform: scale(0.95);
+}
+
+.archivesMargin {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.rune {
+  padding: 4px 12px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-body);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.runeGood {
+  border-color: rgba(52, 211, 153, 0.4);
+  color: #6ee7b7;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.1);
+}
+
+.runeWarn {
+  border-color: rgba(225, 29, 72, 0.4);
+  color: #fda4af;
+  box-shadow: 0 0 10px rgba(225, 29, 72, 0.1);
+}
+
+.runeNow {
+  margin-left: 8px;
+  border-color: var(--core-aura);
+  color: var(--core-light);
+}
+
+.angelWhisper {
+  text-align: center;
+  margin-bottom: 32px;
+  padding: 0 12px;
+}
+
+.angelWhisper::before {
+  content: "✦";
+  display: block;
+  color: var(--gold-holy);
+  font-size: 14px;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.angelWhisper p {
+  font-family: "Noto Serif TC", serif;
+  font-size: 16px;
+  line-height: 2;
+  color: var(--gold-holy);
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+  margin: 0;
+}
+
+.sacredSlate {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+  margin-bottom: 48px;
+}
+
+.sBlock {
+  position: relative;
+  padding-left: 24px;
+}
+
+.sBlock::before {
+  content: "";
+  position: absolute;
+  top: 6px;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--text-muted), transparent);
+}
+
+.sLabel {
+  font-family: "Share Tech Mono", "Noto Sans TC", monospace, sans-serif;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sText {
+  font-family: "Noto Serif TC", serif;
+  font-size: 15px;
+  line-height: 1.8;
+  color: var(--text-body);
+  text-align: justify;
+}
+
+.shadow::before {
+  background: linear-gradient(to bottom, var(--crimson-blood), transparent);
+  box-shadow: 0 0 8px var(--crimson-blood);
+}
+
+.shadow .sLabel {
+  color: rgba(225, 29, 72, 0.8);
+}
+
+.shadow .sText {
+  color: #fecdd3;
+}
+
+.directive::before {
+  background: linear-gradient(to bottom, var(--gold-holy), transparent);
+  box-shadow: 0 0 8px var(--gold-holy);
+}
+
+.directive .sLabel {
+  color: rgba(212, 175, 55, 0.8);
+}
+
+/* 命運絲線 */
+.timelineSection {
+  position: relative;
+  padding-top: 20px;
+  margin-bottom: 8px;
+}
+
+.sectionDivider {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.sectionDivider::before {
+  content: "✧";
+  color: var(--text-muted);
+  font-size: 12px;
+  letter-spacing: 12px;
+}
+
+.sectionDivider::after {
+  content: "✧";
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.sectionDivider span {
+  font-family: "Share Tech Mono", monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+}
+
+.tThread {
+  position: absolute;
+  top: 100px;
+  bottom: 0;
+  left: 24px;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--core-aura), transparent);
+}
+
+.tNode {
+  position: relative;
+  padding-left: 56px;
+  margin-bottom: 40px;
+}
+
+.tPoint {
+  position: absolute;
+  left: 21px;
+  top: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.tNodeActive .tPoint {
+  background: var(--core-light);
+  box-shadow: 0 0 15px var(--core-aura);
+}
+
+.tYear {
+  font-family: "Noto Serif TC", serif;
+  font-size: 18px;
+  color: var(--text-divine);
+  font-weight: 600;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tDesc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* 大天使結界 — 用 grid 同格疊加，列高取 max(模糊層, 面紗層)，避免 absolute 面紗不撐高父層導致按鈕被 overflow 裁切 */
+.sealedDomain {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
+  position: relative;
+  margin-top: 48px;
+  padding: 40px 24px;
+  border-radius: 16px;
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(6, 9, 19, 0.5),
+    rgba(6, 9, 19, 0.5) 10px,
+    rgba(13, 19, 38, 0.45) 10px,
+    rgba(13, 19, 38, 0.45) 20px
+  );
+  overflow: hidden;
+}
+
+.sealedContent {
+  grid-area: 1 / 1;
+  z-index: 1;
+  align-self: start;
+  opacity: 0.25;
+  filter: blur(3px);
+  user-select: none;
+  pointer-events: none;
+}
+
+.karmicLabel {
+  color: var(--gold-holy) !important;
+}
+
+.veilOverlay {
+  grid-area: 1 / 1;
+  position: relative;
+  z-index: 5;
+  align-self: stretch;
+  justify-self: stretch;
+  min-height: 0;
+  background: rgba(3, 4, 8, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px 0 0;
+  box-sizing: border-box;
+}
+
+.veilIcon {
+  font-size: 24px;
+  color: var(--gold-holy);
+  margin-bottom: 12px;
+  animation: floatSlow 4s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.6));
+}
+
+.veilTitle {
+  font-family: "Noto Serif TC", serif;
+  font-size: 18px;
+  color: #f8fafc;
+  letter-spacing: 4px;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.veilDesc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin-bottom: 24px;
+  letter-spacing: 1px;
+  white-space: pre-line;
+  max-width: 280px;
+}
+
+.btnUnlock {
+  background: transparent;
+  border: 1px solid var(--gold-holy);
+  color: var(--gold-holy);
+  padding: 14px 28px;
+  border-radius: 4px;
+  font-family: "Noto Serif TC", serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.15s;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
+}
+
+.btnUnlock:hover {
+  background: rgba(212, 175, 55, 0.08);
+}
+
+.btnUnlock:active {
+  background: rgba(212, 175, 55, 0.15);
+  transform: scale(0.97);
+}
+
+.debugHud {
+  position: absolute;
+  bottom: 14px;
+  left: 14px;
+  z-index: 6;
+  font-family: "Share Tech Mono", monospace;
+  font-size: 9px;
+  color: var(--debug-text);
+  line-height: 1.6;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wombBreath,
+  .soulCore,
+  .coreRing,
+  .d1,
+  .d2,
+  .veilIcon,
+  .calOverburn .calIcon {
+    animation: none !important;
+  }
+
+  .dCard::before {
+    animation: none !important;
+  }
+
+  .veilOverlay {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(3, 4, 8, 0.82);
+  }
+
+  .sealedContent {
+    filter: none;
+    opacity: 0.2;
+  }
+
+  .rune {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@keyframes wombBreathe {
+  0% {
+    opacity: 0.3;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  100% {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+@keyframes corePulse {
+  0% {
+    box-shadow: 0 0 20px var(--core-aura), inset 0 0 10px rgba(255, 255, 255, 0.4);
+    transform: scale(0.95);
+  }
+  100% {
+    box-shadow: 0 0 40px var(--core-aura), inset 0 0 25px rgba(255, 255, 255, 0.8);
+    transform: scale(1.05);
+  }
+}
+
+@keyframes spinSlow {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes floatDust {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-150px) translateX(20px);
+    opacity: 0;
+  }
+}
+
+@keyframes floatSlow {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+@keyframes calBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes sweepLight {
+  0%,
+  20% {
+    left: -100%;
+  }
+  40%,
+  100% {
+    left: 200%;
+  }
+}

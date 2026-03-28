@@ -18,3 +18,11 @@ id = "e62b8e6535bd483bbe08e87cae4232bf"
 
 # Deploy to *.workers.dev by default; override with --route for custom domain
 # workers_dev = true
+
+[vars]
+# 命書僅系統規則組裝（technical），並關閉 ask／infer／narrate 等 OpenAI 路由
+LIFEBOOK_DISABLE_AI = "true"
+# 封測：免費版也需邀請碼
+LIFEBOOK_REQUIRE_INVITE = "true"
+# 目前僅開放你個人測試用邀請碼
+LIFEBOOK_BETA_CODES = "17gonplaytest"

@@ -13,18 +13,27 @@
 
   const API_BASE = window.Config?.API_BASE ?? "https://bazi-api.billeetw.workers.dev";
   const REMOTE_API_BASE = window.Config?.REMOTE_API_BASE ?? "https://bazi-api.billeetw.workers.dev";
+  const LOCAL_WORKER_API_BASE = window.Config?.LOCAL_WORKER_API_BASE ?? "http://127.0.0.1:8787";
 
   /**
    * 本地請求失敗時（ERR_CONNECTION_REFUSED）改用遠端 API
    */
   async function fetchWithFallback(url, opts) {
     const isLocal = /^https?:\/\/localhost(:\d+)?\//.test(url) || /^https?:\/\/127\.0\.0\.1(:\d+)?\//.test(url);
+    const runningOnLocalhost =
+      typeof window !== "undefined" &&
+      /^localhost$|^127\.0\.0\.1$/.test(window.location.hostname || "");
     try {
       return await fetch(url, opts);
     } catch (e) {
       if (isLocal && (e?.name === "TypeError" || /fetch|network|refused/i.test(String(e)))) {
         const fallbackUrl = url.replace(/^https?:\/\/[^/]+/, REMOTE_API_BASE);
         console.warn("[ApiService] 本地 API 無法連線，改用遠端:", fallbackUrl);
+        return fetch(fallbackUrl, opts);
+      }
+      if (!isLocal && runningOnLocalhost && (e?.name === "TypeError" || /fetch|network|refused/i.test(String(e)))) {
+        const fallbackUrl = url.replace(/^https?:\/\/[^/]+/, LOCAL_WORKER_API_BASE);
+        console.warn("[ApiService] 遠端 API 無法連線，改用本地 Worker:", fallbackUrl);
         return fetch(fallbackUrl, opts);
       }
       throw e;
@@ -219,6 +228,97 @@
     }
   }
 
+  function getLifebookPlanPayload() {
+    try {
+      if (typeof window.getLifebookPlanPayload === "function") {
+        return window.getLifebookPlanPayload();
+      }
+    } catch (_) {}
+    let planTier = "free";
+    let unlockSections = [];
+    try {
+      const s = localStorage.getItem("lifebook_v2_tier");
+      if (s === "pro") planTier = "pro";
+    } catch (_) {}
+    try {
+      const raw = localStorage.getItem("lifebook_v2_unlock_sections");
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) unlockSections = parsed.filter((x) => typeof x === "string");
+    } catch (_) {}
+    let betaInviteCode = "";
+    try {
+      betaInviteCode = String(localStorage.getItem("lifebook_v2_beta_invite_code") || "").trim();
+    } catch (_) {}
+    return { plan_tier: planTier, unlock_sections: unlockSections, beta_invite_code: betaInviteCode || undefined };
+  }
+
+  async function redeemLifeBookBetaInvite(inviteCode) {
+    const body = { invite_code: String(inviteCode || "").trim() };
+    const url = `${API_BASE}/api/life-book/beta/redeem`;
+    console.log("📡 API REQUEST", url, JSON.stringify({ invite_code: body.invite_code ? "***" : "" }, null, 2));
+    const resp = await fetchWithFallback(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok || !data?.ok) {
+      throw new Error(data?.error || `API HTTP ${resp.status}`);
+    }
+    return data;
+  }
+
+  async function generateLifeBook(params) {
+    const plan = getLifebookPlanPayload();
+    const body = Object.assign({}, params || {}, plan);
+    const url = `${API_BASE}/api/life-book/generate`;
+    console.log("📡 API REQUEST", url, JSON.stringify(body, null, 2));
+    const resp = await fetchWithFallback(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      throw new Error(data?.error || `API HTTP ${resp.status}`);
+    }
+    return data;
+  }
+
+  function getClientTimeContextFields() {
+    var tz = "UTC";
+    try {
+      if (typeof Intl !== "undefined" && Intl.DateTimeFormat) {
+        tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    return { clientTimeZone: tz, clientNowISO: new Date().toISOString() };
+  }
+
+  async function generateLifeBookSection(params) {
+    const plan = getLifebookPlanPayload();
+    const body = Object.assign({}, params || {}, plan, getClientTimeContextFields());
+    const url = `${API_BASE}/api/life-book/generate-section`;
+    console.log("📡 API REQUEST", url, JSON.stringify(body, null, 2));
+    const resp = await fetchWithFallback(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      var err = new Error(data?.error || `API HTTP ${resp.status}`);
+      err.status = resp.status;
+      if (data && typeof data === "object" && data.time_context) {
+        err.time_context = data.time_context;
+      }
+      throw err;
+    }
+    return data;
+  }
+
   // 导出到 window.UiServices.ApiService
   if (!window.UiServices) {
     window.UiServices = {};
@@ -231,5 +331,9 @@
     fetchHoroscope,
     getPalaceScores,
     getStrategyNote,
+    generateLifeBook,
+    generateLifeBookSection,
+    redeemLifeBookBetaInvite,
+    getLifebookPlanPayload,
   };
 })();

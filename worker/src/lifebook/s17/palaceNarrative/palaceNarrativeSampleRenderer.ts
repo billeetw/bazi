@@ -13,7 +13,7 @@ import type {
 import { getPalaceNarrativeCopy } from "./palaceNarrativeCopy.js";
 import { getMiscPhenomenaShortMap, MING_GONG_PHENOMENA_FALLBACKS } from "./palaceMiscPhenomena.js";
 import { getMingProfile } from "./mingProfiles.js";
-import { normalizeNarrativePunctuation } from "./narrativePunctuation.js";
+import { normalizeNarrativePunctuation, stripMarkdownEmphasis } from "./narrativePunctuation.js";
 import { getWealthProfile } from "./wealthPalaceProfiles.js";
 import { getCareerProfile } from "./careerProfiles.js";
 import { getTianZhaiProfile } from "./tianZhaiPalaceProfiles.js";
@@ -21,6 +21,7 @@ import { formatCareerForbiddenHuman, formatCareerPhenomenonHuman } from "./segme
 import { PALACE_SEGMENT_SCHEMA } from "./weightedPalaceSchemas.js";
 
 import starPalacesMainZhTw from "../../../../content/starPalacesMain-zh-TW.json";
+import { getMingDualMainStarNarrativeText } from "./mingDualMainStarNarrative.js";
 
 type BrightnessKey = "廟" | "旺" | "得" | "利" | "平" | "陷";
 
@@ -238,7 +239,7 @@ function buildStarStructureBlock(raw: PalaceRawInput, natalTransformItems?: Pala
   const palaceLabel = copy?.shortLabel ?? raw.palace;
 
   lines.push("【星曜結構解析】", "");
-  lines.push("🔹 主定調星", "");
+  lines.push(raw.palace === "疾厄宮" ? "🔹 主星五行／體質線索" : "🔹 主定調星", "");
 
   const mainTotal = raw.mainStars.length;
   if (mainTotal > 0) {
@@ -248,9 +249,26 @@ function buildStarStructureBlock(raw: PalaceRawInput, natalTransformItems?: Pala
     });
     lines.push(mainParts.join("＋"), "");
     const mingStarCompact = raw.palace === "命宮";
+    const jiEMode = raw.palace === "疾厄宮";
     for (const star of raw.mainStars.slice(0, 2)) {
       const sem = getStarSemantic(star);
       const b = normalizeB(brightness[star]);
+      if (jiEMode) {
+        const label = b ? `${star}（${b}）` : star;
+        lines.push(`${label}`, "");
+        const wux = sem?.jiE_wuxingBody?.trim();
+        if (wux) {
+          lines.push(normalizeNarrativePunctuation(wux), "");
+        } else {
+          lines.push(
+            normalizeNarrativePunctuation(
+              "此星於疾厄宮之五行臟腑對照：語料待補；請結合全盤五行強弱與實際體質交叉校正（非醫療診斷）。"
+            ),
+            ""
+          );
+        }
+        continue;
+      }
       const core = sem?.core ?? "與此宮主題相關";
       const shortCore = core.split("、").slice(0, 3).join("、");
       const because = b ? mainStarBecauseLine(star, b) : "";
@@ -310,17 +328,37 @@ function buildStarStructureBlock(raw: PalaceRawInput, natalTransformItems?: Pala
   });
 
   if (otherOrdered.length > 0) {
-    lines.push("🔹 其他星曜", "");
     const miscShort = getMiscPhenomenaShortMap(raw.palace);
+    const jiEOther = raw.palace === "疾厄宮";
+    let otherSectionStarted = false;
+    const startOtherSection = () => {
+      if (!otherSectionStarted) {
+        lines.push("🔹 其他星曜", "");
+        otherSectionStarted = true;
+      }
+    };
     for (const star of otherOrdered) {
       const b = normalizeB(brightness[star]);
       const miscLine = miscShort[star]?.trim();
       if (miscLine) {
+        startOtherSection();
         const label = b ? `${star}（${b}）` : star;
         lines.push(`${label}：${miscLine}`, "");
         appendStarDeepLine(star, raw, palaceLabel, lines);
         continue;
       }
+      if (jiEOther) {
+        const semJ = getStarSemantic(star);
+        const jieBody = semJ?.jiE_wuxingBody?.trim();
+        if (jieBody) {
+          startOtherSection();
+          const label = b ? `${star}（${b}）` : star;
+          lines.push(`${label}`, "");
+          lines.push(normalizeNarrativePunctuation(jieBody), "");
+        }
+        continue;
+      }
+      startOtherSection();
       const core = otherStarSemanticCore(star);
       if (core) {
         const tail = b ? AUX_BRIGHTNESS_PHRASE[b] : "";
@@ -347,7 +385,7 @@ function buildStarStructureBlock(raw: PalaceRawInput, natalTransformItems?: Pala
     }
   }
 
-  return lines.join("\n").trim();
+  return stripMarkdownEmphasis(lines.join("\n").trim());
 }
 
 export interface RenderPalaceNarrativeOptions {
@@ -446,8 +484,10 @@ const BATCH1_PHENOMENA_FALLBACKS = [
   "壓力來時，你的反應會比想像中更固定。",
 ];
 
-/** 福德等：決策／運作條目不顯示「（定調主星｜…）」前綴，改為直接可讀句 */
-const STRIP_STAR_ROLE_PREFIX_PALACES = new Set(["福德宮"]);
+/** 除命宫外：決策／運作條目不顯示「（定調主星｜…）（共軸主星｜…）」前綴 */
+const STRIP_STAR_ROLE_PREFIX_PALACES = new Set(
+  Object.keys(PALACE_SEGMENT_SCHEMA).filter((p) => p !== "命宮")
+);
 
 function schemaGenericDecisionLine(
   palace: string,
@@ -620,7 +660,7 @@ function buildNonMingReaderBodyBlocks(input: PalaceNarrativeInput, prem: MingNar
   pitfalls.forEach((s) => out.push(`- ${s}`));
 
   out.push("");
-  out.push("【轉個念，力就出來】", "");
+  out.push("【轉個念，就不一樣】", "");
   const t = prem.turns[tier];
   out.push(t.reframe, "");
   if (
@@ -757,7 +797,7 @@ function buildMingPremiumBodyBlocks(input: PalaceNarrativeInput, prem: MingNarra
 
   if (prem) {
     out.push("");
-    out.push("【轉個念，力就出來】", "");
+    out.push("【轉個念，就不一樣】", "");
     const t = prem.turns[tier];
     out.push(t.reframe, "");
     if (
@@ -773,6 +813,13 @@ function buildMingPremiumBodyBlocks(input: PalaceNarrativeInput, prem: MingNarra
   out.push("【相關牽動】", "");
   out.push(input.relatedPalacesNote ?? "此宮位目前未設定相關牽動。");
   return out;
+}
+
+/** 命宮雙主星專題：僅在語料命中時插入（緊接【星曜結構解析】之後） */
+function appendMingDualMainStarIfAny(lines: string[], raw: PalaceRawInput | undefined): void {
+  const block = getMingDualMainStarNarrativeText(raw);
+  if (!block) return;
+  lines.push(block, "");
 }
 
 function buildReaderPremiumBodyBlocks(input: PalaceNarrativeInput): string[] {
@@ -820,12 +867,14 @@ export function renderPalaceNarrativeSample(
     if (options?.raw) {
       lines.push(buildStarStructureBlock(options.raw, input.natalTransformItems));
       lines.push("");
+      appendMingDualMainStarIfAny(lines, options.raw);
     }
     lines.push(...buildReaderPremiumBodyBlocks(input));
   } else if (input.palace === "命宮") {
     if (options?.raw) {
       lines.push(buildStarStructureBlock(options.raw, input.natalTransformItems));
       lines.push("");
+      appendMingDualMainStarIfAny(lines, options.raw);
     }
     const decisions = input.weightedMode ? input.decisionPatterns : padTo(input.decisionPatterns, 3, decisionFallbacks);
     const phenomena = input.weightedMode ? input.phenomena : padTo(input.phenomena, 5, phenomenaFallbacks);
@@ -871,5 +920,5 @@ export function renderPalaceNarrativeSample(
     lines.push(`「一直在發生的」：${input.behaviorLoopLine.trim()}`);
   }
 
-  return lines.join("\n").trim();
+  return stripMarkdownEmphasis(lines.join("\n").trim());
 }

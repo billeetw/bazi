@@ -25,11 +25,12 @@
   const LIFEBOOK_SCHEMA_VERSION = "1.0";
   const LIFEBOOK_GENERATOR_VERSION = "gpt-4.1-lifebook-v1";
 
-  /** 嚴格章節順序（與 worker lifeBookTemplates 一致） */
+  /** 嚴格章節順序 — 由 npm run sync:section-order 自 worker/data/lifebook-section-order.json 寫入，勿手改 */
+  // LIFEBOOK_SECTION_ORDER_SYNC_START
   const SECTION_ORDER = [
-    "s00", "s03", "s02", "s10", "s01", "s05", "s06", "s07", "s08", "s04", "s09",
-    "s11", "s12", "s13", "s14", "s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21",
+    "s00", "s03", "s04", "s02", "s10", "s01", "s05", "s06", "s07", "s08", "s09", "s11", "s12", "s13", "s14", "s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21",
   ];
+// LIFEBOOK_SECTION_ORDER_SYNC_END
 
   /** 章節標題與宮位映射（人話描述（技術名稱）） */
   const SECTION_CONFIG = {
@@ -55,6 +56,8 @@
     s18: { title: "未完成的必修課（業力議題）", palace: null },
     s19: { title: "三條立刻可做・三條長期累積・三條避開折損（短期・長期・避凶）", palace: null },
     s20: { title: "三盤疊加診斷（流年 × 大限 × 本命）", palace: null },
+    s22: { title: "你的結構格局（對宮線）", palace: null },
+    s23: { title: "你怎麼把人生用出來（轉化流）", palace: null },
     s21: { title: "你往何處去（靈魂總結）", palace: null },
   };
 
@@ -110,7 +113,7 @@
       const cfg = SECTION_CONFIG[key];
       if (cfg?.palace && palaceImportance[cfg.palace]) {
         importance_map[key] = palaceImportance[cfg.palace];
-      } else if (["s15", "s16", "s17", "s19", "s20"].includes(key)) {
+      } else if (["s15", "s16", "s17", "s19", "s20", "s22", "s23"].includes(key)) {
         importance_map[key] = "high";
       } else if (key === "s03" || key === "s18" || key === "s01") {
         importance_map[key] = "medium";
@@ -234,7 +237,7 @@
       "開場": ["s00"],
       "模組一：核心作業系統": ["s03", "s02", "s10", "s01"],
       "人生十二課題": ["s05", "s06", "s07", "s08", "s04", "s09", "s11", "s12", "s13", "s14"],
-      "模組二：時間主線與功課": ["s15", "s16", "s17", "s18", "s19", "s20"],
+      "模組二：時間主線與功課": ["s15", "s16", "s17", "s18", "s19", "s20", "s22", "s23"],
       "收束": ["s21"],
     };
 
@@ -272,7 +275,7 @@
     s00: undefined, s01: ["福德"], s02: ["命宮"], s03: undefined, s04: ["命宮", "福德"], s05: ["父母"],
     s06: ["兄弟"], s07: ["僕役"], s08: ["官祿"], s09: ["田宅"], s10: ["財帛"],
     s11: ["疾厄"], s12: ["遷移"], s13: ["夫妻"], s14: ["子女"],
-    s15: undefined, s16: undefined, s17: undefined, s18: undefined, s19: undefined, s20: undefined, s21: undefined,
+    s15: undefined, s16: undefined, s17: undefined, s18: undefined, s19: undefined, s20: undefined, s22: undefined, s23: undefined, s21: undefined,
   };
 
   /**
@@ -379,7 +382,7 @@
       "開場": ["s00"],
       "模組一：核心作業系統": ["s03", "s02", "s10", "s01"],
       "人生十二課題": ["s05", "s06", "s07", "s08", "s04", "s09", "s11", "s12", "s13", "s14"],
-      "模組二：時間主線與功課": ["s15", "s16", "s17", "s18", "s19", "s20"],
+      "模組二：時間主線與功課": ["s15", "s16", "s17", "s18", "s19", "s20", "s22", "s23"],
       "收束": ["s21"],
     };
     Object.keys(moduleMap).forEach(function (modTitle) {
@@ -615,7 +618,10 @@ ${chartForPrompt}
     "s17": "",
     "s18": "",
     "s19": "",
-    "s20": ""
+    "s20": "",
+    "s22": "",
+    "s23": "",
+    "s21": ""
   },
   "top_focus_palaces": [],
   "risk_palaces": [],

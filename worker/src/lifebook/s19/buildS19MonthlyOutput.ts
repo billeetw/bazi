@@ -25,6 +25,11 @@ import type { S19ChainType } from "./interpretationRuleTypes.js";
 import { INTERPRETATION_RULES_V1 } from "./interpretationRulesOverride.js";
 import { INTERPRETATION_RULES_SEED } from "./interpretationRulesSeed.js";
 import { runSynthesis } from "./synthesisRules.js";
+import {
+  buildFlowMonthSolarTermSpanZh,
+  resolveFlowMonthSolarYmd,
+} from "../../flowMonthContext.js";
+import type { NormalizedChart } from "../normalizedChart.js";
 
 function normPalace(p: string): string {
   const s = (p ?? "").trim();
@@ -32,22 +37,52 @@ function normPalace(p: string): string {
   return s.endsWith("宮") ? s : `${s}宮`;
 }
 
-/** 月支 → 農曆月份 1–12（寅=1 … 丑=12） */
+/** 月支 → 斗數正月起寅之月序 1–12（僅作舊資料 fallback，新盤以 solarYear/solarMonth 為準） */
 const BRANCH_TO_MONTH: Record<string, number> = {
   寅: 1, 卯: 2, 辰: 3, 巳: 4, 午: 5, 未: 6, 申: 7, 酉: 8, 戌: 9, 亥: 10, 子: 11, 丑: 12,
 };
 
-/** 從 chartJson 取得「YYYY年M月｜流月分析」，無則回傳 undefined */
+type MonthlyHoroscopeDisplay = {
+  solarYear?: number;
+  solarMonth?: number;
+  solarDay?: number;
+  solarTermSpan?: string;
+  year?: number;
+  month?: number;
+  branch?: string;
+};
+
+/** 從 chartJson 取得流月標題：優先西曆錨點 + 節氣區間（與 compute 端 monthlyHoroscope 一致） */
 function getMonthDisplay(chartJson: Record<string, unknown> | undefined): string | undefined {
   if (!chartJson) return undefined;
   const z = chartJson.features?.ziwei ?? chartJson.ziwei;
   const zObj = z && typeof z === "object" ? (z as Record<string, unknown>) : undefined;
-  const monthly = (zObj?.monthlyHoroscope ?? zObj?.monthly) as
-    | { year?: number; month?: number; branch?: string }
-    | undefined;
+  const monthly = (zObj?.monthlyHoroscope ?? zObj?.monthly) as MonthlyHoroscopeDisplay | undefined;
   const yearly = (zObj?.yearlyHoroscope ?? chartJson.yearlyHoroscope) as
     | { year?: number }
     | undefined;
+
+  const solarY = monthly?.solarYear;
+  const solarM = monthly?.solarMonth;
+  if (typeof solarY === "number" && typeof solarM === "number" && solarM >= 1 && solarM <= 12) {
+    const line1 = `${solarY}年${solarM}月（西曆）｜流月分析`;
+    const span = (monthly?.solarTermSpan ?? "").trim();
+    if (span) return `${line1}\n${span}`;
+    return line1;
+  }
+
+  /** 舊快取／舊 API 未帶 solar 時：用與 compute 相同的錨點規則推算標題，勿把 monthly.month／地支當西曆月誤標「斗數月序」 */
+  try {
+    const body = chartJson as Record<string, unknown>;
+    const { y, m, d } = resolveFlowMonthSolarYmd(body, new Date());
+    const line1 = `${y}年${m}月（西曆）｜流月分析`;
+    const span = buildFlowMonthSolarTermSpanZh(y, m, d).trim();
+    if (span) return `${line1}\n${span}`;
+    return line1;
+  } catch {
+    /* Intl / 環境異常時再退回舊欄位 */
+  }
+
   const year =
     typeof monthly?.year === "number"
       ? monthly.year
@@ -63,7 +98,7 @@ function getMonthDisplay(chartJson: Record<string, unknown> | undefined): string
     month = BRANCH_TO_MONTH[b] ?? undefined;
   }
   if (year != null && month != null && month >= 1 && month <= 12) {
-    return `${year}年${month}月｜流月分析`;
+    return `${year}年（斗數月序${month}）｜流月分析（舊版欄位，建議重算命盤以取得西曆錨點與節氣說明）`;
   }
   return undefined;
 }
@@ -509,6 +544,9 @@ export function buildS19MonthlyOutput(opts: BuildS19MonthlyOutputOpts): S19Month
       triggerStar: primaryFlow.star,
       chain: primaryChain,
       confidence,
+      edgeAuthority: opts.normalizedChart
+        ? "normalizedChart_plus_month_gonggan"
+        : "chartJson_overlay_plus_month_gonggan",
     },
   };
 }

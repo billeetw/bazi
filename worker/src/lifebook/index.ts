@@ -269,6 +269,7 @@ export {
 /** Layer 4：LifebookFindings（Architecture Spec v1.1） */
 export {
   type LifebookFindings,
+  type TimeModuleOverlapSnapshot,
   type SihuaPlacementItem,
   type NatalFlowItem,
   type MainBattlefield,
@@ -284,7 +285,47 @@ export {
   createEmptyFindings,
 } from "./lifebookFindings.js";
 
+export type { TimeModuleDecisionSnapshot } from "./timeModuleDecisionSnapshot.js";
+export {
+  buildTimeModuleS17S19ReaderSnapshot,
+  mergeInjectP2TimeModuleS17S19Snapshot,
+  type TimeModuleS17S19ReaderSnapshot,
+} from "./timeModuleS17S19ReaderSnapshot.js";
+export {
+  buildTimeModuleChartFingerprint,
+  isTimeModuleS17S19ReaderSnapshotStale,
+} from "./timeModuleChartFingerprint.js";
+
 export { normalizeChart } from "./normalize/index.js";
+
+/** S22 結構線 / S23 轉化流（本命靜態） */
+export {
+  getPalaceScore,
+  getStructureLines,
+  getTransformationFlows,
+  classifyStructureBalance,
+  classifyFlowType,
+  formatStructureLinesForTechnical,
+  formatTransformationFlowsForTechnical,
+  getPalacePersonality,
+  pickSynonym,
+  buildStarStateNarrativeSlice,
+  type StarStateNarrativeSlice,
+  type StarStateNarrativeTone,
+  type PalacePersonalityStyle,
+  type PalaceScoreResult,
+  type PalaceScoreVersion,
+  type StructureLine,
+  type StructureLineId,
+  type StructureBalanceType,
+  type TransformationFlow,
+  type TransformationFlowId,
+  type TransformationFlowType,
+} from "./lifeModel/index.js";
+export {
+  canonicalizeChartJsonForLifebook,
+  type CanonicalizeLifebookChartOptions,
+} from "./canonicalizeChartJsonForLifebook.js";
 export {
   buildLifebookFindings,
   buildLifebookFindingsFromChartAndContent,
@@ -294,8 +335,69 @@ export {
 } from "./findings/buildLifebookFindings.js";
 export { assembleTimeModuleFromFindings, type TimeModulePlaceholderMap } from "./findings/assembleTimeModuleFromFindings.js";
 export {
+  buildTimeModuleOverlapSnapshotFromChartJson,
+  applyTimeModuleOverlapPlaceholdersToMap,
+  mergeInjectP2TimeModuleOverlapSnapshot,
+} from "./timeModuleOverlapSnapshot.js";
+export {
+  buildTimeModuleDecisionSnapshotFromChart,
+  mergeInjectP2TimeModuleDecisionSnapshot,
+} from "./timeModuleDecisionSnapshot.js";
+export {
   validateTimelineConsistency,
   hasTimelineErrors,
   type TimelineValidationIssue,
   type TimelineErrorCode,
 } from "./validators/validateTimelineConsistency.js";
+export {
+  validateTransformEdgeConsistency,
+  hasTransformEdgeErrors,
+  TransformEdgeValidationError,
+  isStrictTransformEdgesEnv,
+  type TransformEdgeValidationIssue,
+  type TransformEdgeErrorCode,
+} from "./validators/validateTransformEdgeConsistency.js";
+export {
+  buildStarNameToPalaceFromNormalizedChart,
+  layerFromMutagenWithStarMap,
+  resolveDecadalMutagenStars,
+  resolveYearlyMutagenStars,
+  type MutagenStarsRecord,
+  type SiHuaLayerResolved,
+  type SiHuaStarResolved,
+} from "./sihuaLayersFromNormalizedChart.js";
+export type { BuiltSiHuaStar, BuiltSiHuaLayer, BuiltSiHuaLayers } from "./builtSiHuaTypes.js";
+export {
+  LIFEBOOK_SIHUA_DISPLAY_OVERRIDE_KEY,
+  applySiHuaDisplayOverride,
+  logSiHuaDisplayOverrideApplied,
+  isSiHuaDisplayOverrideDisabledByEnv,
+  type SiHuaDisplayOverrideAudit,
+  type LifebookSiHuaDisplayOverride,
+  type ApplySiHuaDisplayOverrideResult,
+} from "./sihuaDisplayOverride.js";
+export {
+  hasClientSihuaLayers,
+  compareClientSihuaLayersToWorker,
+  maybeLogClientSihuaLayersDiff,
+  isClientSihuaLayersDiffLogEnabled,
+  isDeprecatedClientSihuaWireOmittedForCompute,
+  omitClientSihuaWireForCompute,
+  type Deprecated,
+  type ClientSihuaLayersDiffReport,
+  type SihuaLayersDiffReport,
+  type WorkerSiHuaLayersShape,
+} from "./sihuaLayersClientDiff.js";
+
+export {
+  buildDailyFlowResult,
+  validateDayContractV1,
+  anchorDateForDayKeyInTimeZone,
+  type DayContractV1,
+  type DayFlowFallbackReason,
+} from "./dailyFlow.js";
+
+export {
+  lifebookDailyHoroscopeCacheKey,
+  LIFEBOOK_DAILY_CACHE_ALG_VERSION,
+} from "./lifebookGenerateFingerprint.js";

@@ -4,6 +4,13 @@
  * content/2026: 優先從 D1 ui_copy_texts 讀取，DB 無資料時用靜態 JSON fallback。
  */
 import { astro } from "iztro";
+import { clockHourToTimeIndex, timeIndexFromWallClockInTimeZone } from "../../shared/iztroTimeIndex.js";
+import {
+  resolveFlowMonthSolarYmd,
+  flowMonthAnchorDateForHoroscope,
+  buildFlowMonthSolarTermSpanZh,
+  FLOW_MONTH_TIMEZONE,
+} from "./flowMonthContext.js";
 import { palaceNameToZhTW, FIXED_PALACES_ZH_TW, BRANCH_RING, buildPalaceByBranch, getFlowYearPalace } from "./palace-map.js";
 import { getMutagenStarsFromStem } from "./sihua-stem-table.js";
 import { toEnStarKey, toZhStarKey } from "./star-map.js";
@@ -47,6 +54,7 @@ import {
   injectTimeModuleDataIntoSection,
   buildSihuaTimeBlocksFromChart,
   getSihuaPlacementItemsFromChart,
+  buildPiercingDiagnosticBundle,
   validateModuleOneOutput,
   filterStablePalacesByDominant,
   dedupeParagraphsAcrossBlocks,
@@ -56,30 +64,205 @@ import {
   MODEL_CONFIG,
   type LifeBookConfig,
 } from "./lifeBookPrompts.js";
-import { normalizeChart, createEmptyFindings, buildLifebookFindingsFromChartAndContent, hasTimelineErrors, type LifebookContentLookup } from "./lifebook/index.js";
+import {
+  normalizeChart,
+  createEmptyFindings,
+  buildLifebookFindingsFromChartAndContent,
+  hasTimelineErrors,
+  buildTimeModuleS17S19ReaderSnapshot,
+  canonicalizeChartJsonForLifebook,
+  type LifebookContentLookup,
+} from "./lifebook/index.js";
+import { omitClientSihuaWireForCompute } from "./lifebook/sihuaLayersClientDiff.js";
 import { reasonFromChart } from "./lifebook/v2/reason/reasonFromChart.js";
 import type { LifebookFindingsV2 } from "./lifebook/v2/schema/findingsV2.js";
 import { SECTION_TEMPLATES } from "./lifeBookTemplates.js";
 import { INFER_SYSTEM_PROMPT, buildInferUserPrompt, type InferOutput, type SectionInsight } from "./lifeBookInfer.js";
 import { NARRATE_MODEL, buildNarrateSystemPrompt, buildNarrateUserPrompt } from "./lifeBookNarrate.js";
+import lifebookPlanMatrixJson from "../data/lifebook-plan-matrix.json";
+import {
+  buildLifebookGenerateFingerprint,
+  lifebookDailyHoroscopeCacheKey,
+  lifebookKvCacheKey,
+  lifebookSectionCacheKey,
+  lifebookSectionRateLimitKey,
+  LIFEBOOK_SECTION_CACHE_TTL_SEC,
+  LIFEBOOK_SECTION_RATE_LIMIT_SEC,
+} from "./lifebook/lifebookGenerateFingerprint.js";
+import { buildDailyFlowResult } from "./lifebook/dailyFlow.js";
+import { resolveTimeContextFromBody, timeContextToJson } from "./lifebook/timeContext.js";
 
 interface Env {
   CONSULT_DB?: D1Database;
   CACHE?: KVNamespace;
   OPENAI_API_KEY?: string;
-  /** 設為 "1" 或 "true" 時，generate-section 對 s18 會印出完整 prompt（僅供 dev 除錯） */
+  /** Beta 邀請碼清單，逗號分隔，例如: CODE1,CODE2 */
+  LIFEBOOK_BETA_CODES?: string;
+  /** 設為 "0" 或 "false" 可關閉命書邀請碼封測（預設開啟） */
+  LIFEBOOK_REQUIRE_INVITE?: string;
+  /** 設為 "1" 或 "true" 時：s18 完整 prompt、hydration／Phase5B-10 診斷 log（僅 dev） */
   LIFEBOOK_DEBUG?: string;
+  /** 設為 "1" 或 "true" 時：命書僅走 technical；並停用 ask／infer／narrate 等 OpenAI 路由 */
+  LIFEBOOK_DISABLE_AI?: string;
+}
+
+function isLifebookDebugEnv(env?: Env): boolean {
+  return env?.LIFEBOOK_DEBUG === "1" || env?.LIFEBOOK_DEBUG === "true";
+}
+
+function isLifebookAiDisabled(env?: Env): boolean {
+  return env?.LIFEBOOK_DISABLE_AI === "1" || env?.LIFEBOOK_DISABLE_AI === "true";
+}
+
+/** 命書章節：未指定 output_mode 時視為 AI 版；LIFEBOOK_DISABLE_AI 時強制 technical */
+function resolveLifebookOutputMode(body: { output_mode?: "ai" | "technical" } | undefined, env?: Env): "ai" | "technical" {
+  if (isLifebookAiDisabled(env)) return "technical";
+  return body?.output_mode === "technical" ? "technical" : "ai";
 }
 
 type Lang = "zh-TW" | "zh-CN" | "en-US";
 type Locale = "zh-TW" | "zh-CN" | "en";
+type PlanTier = "free" | "pro";
+
+interface PlanConfig {
+  sections?: string[];
+  optional_sections?: string[];
+}
+interface LifebookPlanMatrix {
+  version: string;
+  free: PlanConfig;
+  pro: PlanConfig;
+}
+
+const LIFEBOOK_PLAN_MATRIX = lifebookPlanMatrixJson as LifebookPlanMatrix;
+
+/** 整本 technical 生成結果 KV TTL（秒），與前端 localStorage 7 天對齊 */
+const LIFEBOOK_GENERATE_KV_TTL_SEC = 7 * 24 * 60 * 60;
+
+function toPlanTier(raw: unknown): PlanTier {
+  const t = typeof raw === "string" ? raw.trim().toLowerCase() : "";
+  return t === "pro" ? "pro" : "free";
+}
+
+/** 不提供內建預設碼；正式封測請用 wrangler secret 設定 LIFEBOOK_BETA_CODES */
+const LIFEBOOK_BETA_BUILTIN_CODES: readonly string[] = [];
+
+function parseBetaInviteCodes(env?: Env): Set<string> {
+  const out = new Set<string>(LIFEBOOK_BETA_BUILTIN_CODES.map((c) => c.toUpperCase()));
+  const raw = String(env?.LIFEBOOK_BETA_CODES || "");
+  raw.split(",")
+    .map((s) => s.trim().toUpperCase())
+    .filter(Boolean)
+    .forEach((c) => out.add(c));
+  return out;
+}
+
+function isValidBetaInviteCode(env: Env | undefined, codeRaw: unknown): boolean {
+  const code = typeof codeRaw === "string" ? codeRaw.trim().toUpperCase() : "";
+  if (!code) return false;
+  const allow = parseBetaInviteCodes(env);
+  return allow.has(code);
+}
+
+function isLifebookInviteRequired(env?: Env): boolean {
+  const raw = String(env?.LIFEBOOK_REQUIRE_INVITE ?? "").trim().toLowerCase();
+  if (raw === "0" || raw === "false") return false;
+  return true;
+}
+
+function normalizePlanSectionList(input: unknown): string[] {
+  if (!Array.isArray(input)) return [];
+  const inOrder = new Set(SECTION_ORDER as readonly string[]);
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const key of input) {
+    if (typeof key !== "string") continue;
+    const k = key.trim();
+    if (!k || !inOrder.has(k) || seen.has(k)) continue;
+    seen.add(k);
+    out.push(k);
+  }
+  return out;
+}
+
+function resolvePlanAccess(planTierRaw: unknown, unlockSectionsRaw: unknown, betaInviteCodeRaw?: unknown, env?: Env): {
+  planTier: PlanTier;
+  availableSections: string[];
+  lockedSectionKeys: string[];
+  matrixVersion: string;
+} {
+  const inOrder = SECTION_ORDER as readonly string[];
+  const elevatedByInvite = isValidBetaInviteCode(env, betaInviteCodeRaw);
+  const planTier = elevatedByInvite ? "pro" : toPlanTier(planTierRaw);
+  const cfg = planTier === "pro" ? LIFEBOOK_PLAN_MATRIX.pro : LIFEBOOK_PLAN_MATRIX.free;
+  const allowedBase = normalizePlanSectionList(cfg?.sections);
+  const unlocked = normalizePlanSectionList(unlockSectionsRaw);
+  const allowedSet = new Set<string>([...allowedBase, ...unlocked]);
+  const availableSections = inOrder.filter((s) => allowedSet.has(s));
+  const lockedSectionKeys = inOrder.filter((s) => !allowedSet.has(s));
+  return {
+    planTier,
+    availableSections,
+    lockedSectionKeys,
+    matrixVersion: LIFEBOOK_PLAN_MATRIX.version || "unknown",
+  };
+}
+
+function buildLockedSectionTeaser(sectionKey: string): {
+  section_key: string;
+  title: string;
+  teaser: string;
+} {
+  const tpl = SECTION_TEMPLATES.find((t) => t.section_key === sectionKey);
+  const title = tpl?.title ?? `[${sectionKey}]`;
+  const teaser = tpl?.description?.trim() || `本章「${title}」屬於進階章節，升級後可查看完整內容。`;
+  return { section_key: sectionKey, title, teaser };
+}
+
+function buildLockedSectionPayload(sectionKey: string): {
+  section_key: string;
+  is_locked: true;
+  lock_reason: "requires_pro";
+  teaser: { section_key: string; title: string; teaser: string };
+} {
+  return {
+    section_key: sectionKey,
+    is_locked: true,
+    lock_reason: "requires_pro",
+    teaser: buildLockedSectionTeaser(sectionKey),
+  };
+}
+
+function buildInviteRequiredPayload(sectionKey: string): {
+  section_key: string;
+  is_locked: true;
+  lock_reason: "requires_beta_invite";
+  teaser: { section_key: string; title: string; teaser: string };
+} {
+  const teaser = buildLockedSectionTeaser(sectionKey);
+  return {
+    section_key: sectionKey,
+    is_locked: true,
+    lock_reason: "requires_beta_invite",
+    teaser: {
+      ...teaser,
+      teaser: "命書功能目前為封測中；請先輸入有效邀請碼再查看內容。",
+    },
+  };
+}
 
 const CORS_HEADERS: Record<string, string> = {
   "access-control-allow-origin": "*",
   "access-control-allow-methods": "GET,POST,OPTIONS",
-  "access-control-allow-headers": "content-type,authorization",
+  "access-control-allow-headers": "content-type,authorization,x-requested-with,accept,origin",
   "access-control-max-age": "86400",
 };
+
+/** 與 buildSiHuaLayers 同源：預設略過已廢止 client wire；diff／KEEP 時保留（見 sihuaLayersClientDiff）。 */
+function sanitizeLifebookRequestChartJson(chart: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+  if (!chart || typeof chart !== "object") return chart;
+  return omitClientSihuaWireForCompute(chart);
+}
 
 /** 嘗試修復 JSON 字串值內的未轉義換行（模型常回傳實際換行導致 parse 失敗） */
 function trySanitizeJsonString(jsonStr: string): string {
@@ -107,6 +290,62 @@ function monthlyHoroscopeCompleteness(m: {
   else requiredMutagen.forEach((k) => { if (!m.mutagenStars![k]) missing.push(`mutagenStars.${k}`); });
   if (m.stars == null) missing.push("stars");
   return { isComplete: missing.length === 0, missing: missing.length ? missing : undefined };
+}
+
+function buildMutagenStarsFromHoroscopeMutagen(mutagen: string[] | undefined): Record<string, string> | undefined {
+  const MUTAGEN_KEYS = ["祿", "權", "科", "忌"] as const;
+  if (!Array.isArray(mutagen)) return undefined;
+  const out: Record<string, string> = {};
+  mutagen.forEach((star, i) => {
+    if (typeof star === "string" && star && MUTAGEN_KEYS[i]) out[MUTAGEN_KEYS[i]] = star;
+  });
+  return Object.keys(out).length ? out : undefined;
+}
+
+/**
+ * 流月：以「同一錨點」呼叫 horoscope(anchor)，與 S19 標題西曆月、節氣說明一致。
+ * anchor 預設為 Asia/Taipei 當日；可由 body.flowMonthSolarDate / horoscopeAsOf 覆寫。
+ */
+function buildMonthlyHoroscopePayload(
+  astrolabeZhTw: { horoscope?: (d?: Date, ti?: number) => unknown; earthlyBranchOfSoulPalace?: string },
+  body: Record<string, unknown>
+): Record<string, unknown> | undefined {
+  const mingBranch = String(astrolabeZhTw.earthlyBranchOfSoulPalace ?? "").trim();
+  const palaceByBranch = mingBranch ? buildPalaceByBranch(mingBranch) : undefined;
+  if (!palaceByBranch) return undefined;
+
+  const { y, m, d } = resolveFlowMonthSolarYmd(body, new Date());
+  const anchor = flowMonthAnchorDateForHoroscope(y, m, d);
+  const horoscopeForMonthly = astrolabeZhTw.horoscope?.(anchor) as {
+    monthly?: { heavenlyStem?: string; earthlyBranch?: string; mutagen?: string[]; stars?: unknown };
+  } | undefined;
+
+  const monthlyBranch = (horoscopeForMonthly?.monthly?.earthlyBranch ?? "").trim() || null;
+  const flowMonthPalace =
+    monthlyBranch && palaceByBranch[monthlyBranch] ? palaceByBranch[monthlyBranch] : null;
+
+  if (!horoscopeForMonthly?.monthly || !flowMonthPalace) return undefined;
+
+  const stem = (horoscopeForMonthly.monthly.heavenlyStem ?? "").trim() || null;
+  const span = buildFlowMonthSolarTermSpanZh(y, m, d);
+
+  const monthlyHoroscopeRaw: Record<string, unknown> = {
+    stem,
+    branch: monthlyBranch,
+    palace: flowMonthPalace,
+    mutagenStars: buildMutagenStarsFromHoroscopeMutagen(horoscopeForMonthly.monthly.mutagen),
+    stars: horoscopeForMonthly.monthly.stars ?? undefined,
+    solarYear: y,
+    solarMonth: m,
+    solarDay: d,
+    displayTimeZone: FLOW_MONTH_TIMEZONE,
+  };
+  if (span) monthlyHoroscopeRaw.solarTermSpan = span;
+
+  return {
+    ...monthlyHoroscopeRaw,
+    ...monthlyHoroscopeCompleteness(monthlyHoroscopeRaw as Parameters<typeof monthlyHoroscopeCompleteness>[0]),
+  };
 }
 
 /** 從 OpenAI 回傳內容擷取命書章節 JSON（支援 ```json ... ``` 或裸 {...}） */
@@ -158,8 +397,8 @@ const P2_CONTENT = {
   },
 } as LifebookContentLookup;
 
-/** Phase 2：僅時間模組章節（s15～s21）才組 P2 findings 與 inject；目前 SECTION_ORDER 僅含 s04+12 宮，故不呼叫。 */
-const TIME_MODULE_SECTION_KEYS = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"] as const;
+/** Phase 2：時間模組與結構／轉化章（s15～s23、s21 收束）才組 P2 findings 與 inject；開場 s00／模組一 s03 等不走 P2。 */
+const TIME_MODULE_SECTION_KEYS = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"] as const;
 
 function emptyP2(): {
   findings: import("./lifebook/index.js").LifebookFindings | null;
@@ -171,8 +410,55 @@ function emptyP2(): {
   return { findings: null, findingsV2: null, timeContext: {} };
 }
 
+/**
+ * 與 generate-section／generate 同源：星曜引用、命主身主、身宮、小限摘要等，供 prompts / findings / piercing 一致。
+ */
+function buildEffectiveLifeBookConfigForChart(
+  chartJson: Record<string, unknown>,
+  content: DbContent,
+  locale: Locale,
+  options?: {
+    lifeBookBase?: LifeBookConfig | null;
+    minorFortuneSummary?: string;
+    minorFortuneTriggers?: string;
+  }
+): LifeBookConfig {
+  const usedKeys = getUsedStarPalaceKeys(chartJson?.ziwei, locale);
+  const usedStarPalaces = buildEffectiveUsedStarPalaces(content.starPalacesMain, content.starPalaces, usedKeys, content.starPalacesAux);
+  const usedAuxAction = filterUsedStarPalaces(content.starPalacesAuxAction, usedKeys);
+  const usedAuxRisk = filterUsedStarPalacesAuxRisk(content.starPalacesAuxRisk, usedKeys);
+  const masterStars = getMasterStarsFromZiwei(chartJson?.ziwei);
+  const masterStarsWithDefs = getMasterStarsWithDefs(masterStars, content.stars, {
+    lifeLordDecode: content.lifeLordDecode,
+    bodyLordDecode: content.bodyLordDecode,
+  });
+  const bodyPalaceInfo = getBodyPalaceInfo(chartJson, content.bodyPalaceByHour);
+  const lifeBodySnippet = getLifeBodyRelationSnippet(
+    bodyPalaceInfo,
+    content.lifeBodyRelation as Record<string, { tagline: string; interpretation: string; strategy_tone: string }> | undefined,
+    masterStarsWithDefs
+  );
+  return {
+    ...(options?.lifeBookBase ?? getDefaultConfig()),
+    starPalaces: usedStarPalaces,
+    starPalacesAuxAction: Object.keys(usedAuxAction).length > 0 ? usedAuxAction : undefined,
+    starPalacesAuxRisk: Object.keys(usedAuxRisk).length > 0 ? usedAuxRisk : undefined,
+    masterStars: masterStarsWithDefs,
+    bodyPalaceInfo: bodyPalaceInfo,
+    lifeBodyRelationSnippet: lifeBodySnippet.length > 0 ? lifeBodySnippet : undefined,
+    minorFortuneSummary: typeof options?.minorFortuneSummary === "string" ? options.minorFortuneSummary : undefined,
+    minorFortuneTriggers: typeof options?.minorFortuneTriggers === "string" ? options.minorFortuneTriggers : undefined,
+    tenGodByPalace: (chartJson?.tenGodByPalace as Record<string, string> | undefined) ?? {},
+    wuxingByPalace: (chartJson?.wuxingByPalace as Record<string, string> | undefined) ?? {},
+  };
+}
+
 /** P2：只吃 chartJson + contentLookup，產出 LifebookFindings + timeContext + findingsV2；模組二只讀 findings。時間／四化區塊於此寫入 findings；V2 reasoner 產出併入 findingsV2。 */
-function buildP2FindingsAndContext(chartJson: Record<string, unknown> | undefined): {
+function buildP2FindingsAndContext(
+  chartJson: Record<string, unknown> | undefined,
+  /** 與 buildSectionUserPrompt／inject 同源；缺省時 piercing 不帶命主身主等（chart-only）。 */
+  config?: LifeBookConfig | null
+): {
   findings: import("./lifebook/index.js").LifebookFindings | null;
   findingsV2: LifebookFindingsV2 | null;
   timeContext: { currentDecadePalace?: string; shenGong?: string; year?: number; nominalAge?: number };
@@ -191,6 +477,11 @@ function buildP2FindingsAndContext(chartJson: Record<string, unknown> | undefine
   if (!result) {
     return { findings: null, findingsV2: null, timeContext: {}, normalizedChart };
   }
+  result.findings.piercingDiagnosticBundle = buildPiercingDiagnosticBundle(chartJson, config ?? null);
+  result.findings.timeModuleS17S19ReaderSnapshot = buildTimeModuleS17S19ReaderSnapshot({
+    chartJson,
+    normalizedChart: normalizedChart ?? undefined,
+  });
   const sihuaTime = buildSihuaTimeBlocksFromChart(chartJson);
   result.findings.timelineSummary = sihuaTime.timelineSummary;
   result.findings.sihuaPlacement = sihuaTime.sihuaPlacement;
@@ -225,6 +516,22 @@ function buildP2FindingsAndContext(chartJson: Record<string, unknown> | undefine
   };
 }
 
+/**
+ * 回傳給前端的 `chart_json`：在 canonical 命盤上附上與 Worker 一致的 findings 子集，
+ * 供 Viewer `chart_json.findings.natalFlowItems`（Timeline 決策任務等）與 ADR-0001 對齊。
+ */
+function chartJsonWithClientFindings(
+  chart: Record<string, unknown>,
+  findings: import("./lifebook/index.js").LifebookFindings | null
+): Record<string, unknown> {
+  return {
+    ...chart,
+    findings: {
+      natalFlowItems: findings?.natalFlowItems ?? [],
+    },
+  };
+}
+
 /** G6：production 清洗 — structure_analysis 專用，等同 sanitizeForReader */
 function sanitizeStructureAnalysis(text: string): string {
   return sanitizeForReader(text);
@@ -241,12 +548,24 @@ async function applyPalaceReaderOverridesForSection(
   sectionKey: string,
   chartJson: Record<string, unknown>,
   locale: LifeBookLocaleNarrate,
-  four: { structure_analysis: string; behavior_pattern: string; blind_spots: string; strategic_advice: string }
+  four: { structure_analysis: string; behavior_pattern: string; blind_spots: string; strategic_advice: string },
+  opts?: {
+    /** 已與 prompts／inject 同源組好的設定（例如 generate-section） */
+    effectiveLifeBookConfig?: LifeBookConfig;
+    /** 僅 KV 快取人格等；與 chart+content 合併為 effective config（例如 narrate） */
+    lifeBookCache?: LifeBookConfig | null;
+  }
 ): Promise<{ structure_analysis: string; behavior_pattern: string; blind_spots: string; strategic_advice: string }> {
   if (!PALACE_SECTION_KEYS.has(sectionKey)) return four;
   const dbLocale = locale === "en" ? "en" : locale === "zh-CN" ? "zh-CN" : "zh-TW";
+  const contentLocale: Locale = locale === "en" ? "en" : locale === "zh-CN" ? "zh-CN" : "zh-TW";
   const { content: lookup } = await getContentForLocale(env, dbLocale);
-  const p2 = buildP2FindingsAndContext(chartJson);
+  const effectiveConfig =
+    opts?.effectiveLifeBookConfig ??
+    buildEffectiveLifeBookConfigForChart(chartJson, lookup as DbContent, contentLocale, {
+      lifeBookBase: opts?.lifeBookCache ?? null,
+    });
+  const p2 = buildP2FindingsAndContext(chartJson, effectiveConfig);
   let findingsForPalace = p2.findings ?? createEmptyFindings();
   if (!findingsForPalace.natalFlowItems || findingsForPalace.natalFlowItems.length === 0) {
     let extractedFlows: unknown[] =
@@ -281,7 +600,7 @@ async function applyPalaceReaderOverridesForSection(
   const overrides = getPalaceSectionReaderOverrides(
     sectionKey,
     chartJson,
-    null,
+    effectiveConfig,
     lookup as import("./lifebook/assembler.js").AssembleContentLookup,
     locale,
     findingsForPalace,
@@ -415,17 +734,6 @@ function stableChartId(input: unknown): string {
   return `c_${h.toString(16)}`;
 }
 
-/**
- * hour (0-23) -> iztro timeIndex (0-11)
- * 子=0 (23,0), 丑=1 (1,2), 寅=2 (3,4), ... 亥=11 (21,22)
- */
-function hourToTimeIndex(hour: number): number {
-  const h = Number(hour);
-  if (!Number.isFinite(h) || h < 0 || h > 23) return 0;
-  if (h === 23 || h === 0) return 0;
-  return Math.floor((h + 1) / 2);
-}
-
 /** 地支 → bodyPalaceByHour 的 key（時辰組） */
 const HOUR_BRANCH_TO_GROUP: Record<string, string> = {
   子: "子午", 午: "子午", 丑: "丑未", 未: "丑未", 寅: "寅申", 申: "寅申",
@@ -458,7 +766,7 @@ function getBodyPalaceInfo(
   if (!bodyPalaceByHour || typeof bodyPalaceByHour !== "object") return undefined;
   const hour = getBirthHourFromChart(chart);
   if (hour === undefined) return undefined;
-  const timeIndex = hourToTimeIndex(hour);
+  const timeIndex = clockHourToTimeIndex(hour);
   const branch = BRANCH_RING[timeIndex];
   const group = branch ? HOUR_BRANCH_TO_GROUP[branch] : undefined;
   if (!group || !bodyPalaceByHour[group]) return undefined;
@@ -897,6 +1205,7 @@ async function getContentForLocale(
 
 export default {
   async fetch(req: Request, env?: Env): Promise<Response> {
+    try {
     if (req.method === "OPTIONS") return corsPreflight();
 
     const url = new URL(req.url);
@@ -987,7 +1296,7 @@ export default {
 
       // iztro: astrolabeBySolarDate(solarDateStr, timeIndex, gender, fixLeap?, language?)
       const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      const timeIndex = hourToTimeIndex(h);
+      const timeIndex = clockHourToTimeIndex(h);
 
       // Core (branch, wuxingju) always zh-TW: 術語固定用中文，不隨 language 西化
       const astrolabeZhTw = astro.astrolabeBySolarDate(
@@ -1074,34 +1383,14 @@ export default {
         (yearlyBranch && palaceByBranch && getFlowYearPalace(yearlyBranch, palaceByBranch))
         ?? palaceFromItem(horoscope?.yearly);
 
-      // 流月：直接使用 iztro horoscope().monthly（不自行用月干重算四化）
-      const horoscopeForMonthly = (astrolabeZhTw as { horoscope?: (d?: Date, ti?: number) => unknown }).horoscope?.(new Date(dateStr), timeIndex) as {
-        monthly?: {
-          heavenlyStem?: string; // 月干
-          earthlyBranch?: string; // 月支
-          palaceNames?: string[];
-          mutagen?: string[]; // [祿,權,科,忌] 對應的星名
-          stars?: unknown; // 流耀
-          index?: number;
-        };
-      } | undefined;
-
-      const monthlyBranch = (horoscopeForMonthly?.monthly?.earthlyBranch ?? "").trim() || null;
-      const flowMonthPalace = monthlyBranch && palaceByBranch?.[monthlyBranch] ? palaceByBranch[monthlyBranch] : null;
-
-      const monthlyHoroscopeRaw =
-        horoscopeForMonthly?.monthly && flowMonthPalace
-          ? {
-              stem: (horoscopeForMonthly.monthly.heavenlyStem ?? "").trim() || null,
-              branch: monthlyBranch,
-              palace: flowMonthPalace,
-              mutagenStars: buildMutagenStars(horoscopeForMonthly.monthly.mutagen) ?? undefined,
-              stars: horoscopeForMonthly.monthly.stars ?? undefined,
-            }
-          : undefined;
-      const monthlyHoroscope = monthlyHoroscopeRaw
-        ? { ...monthlyHoroscopeRaw, ...monthlyHoroscopeCompleteness(monthlyHoroscopeRaw) }
-        : undefined;
+      // 流月：與「現在」同一錨點呼叫 horoscope(anchor)；命宮／四化／標題西曆月一致（見 buildMonthlyHoroscopePayload）
+      const monthlyHoroscope = buildMonthlyHoroscopePayload(
+        astrolabeZhTw as {
+          horoscope?: (d?: Date, ti?: number) => unknown;
+          earthlyBranchOfSoulPalace?: string;
+        },
+        body
+      );
 
       // horoscopeByYear 改為延遲載入（點擊進階時再算），減少 CPU 避免 1102
       const horoscopeByYear: Record<number, { nominalAge: number | null; palace: string | null; stem: string | null }> = {};
@@ -1250,7 +1539,7 @@ export default {
       const m = typeof minute === "number" ? minute : 0;
       const genderStr = String(gender ?? "M").toUpperCase() === "F" ? "female" : "male";
       const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-      const timeIndex = hourToTimeIndex(h);
+      const timeIndex = clockHourToTimeIndex(h);
       const targetYear = typeof horoscopeYear === "number" && horoscopeYear >= 1900 && horoscopeYear <= 2100
         ? horoscopeYear
         : new Date().getFullYear();
@@ -1299,28 +1588,14 @@ export default {
         horoscopeByYear,
       };
 
-      // 流月：與 /compute/all 同一格式，供 S19 與單獨呼叫時使用
-      const aZhTw = astrolabeZhTw as { earthlyBranchOfSoulPalace?: string };
-      const mingBranchForMonthly = aZhTw?.earthlyBranchOfSoulPalace ?? "";
-      const palaceByBranchMonthly = mingBranchForMonthly ? buildPalaceByBranch(mingBranchForMonthly) : undefined;
-      const horoscopeForMonthly = (astrolabeZhTw as { horoscope?: (d?: Date, ti?: number) => unknown }).horoscope?.(new Date(dateStr), timeIndex) as {
-        monthly?: { heavenlyStem?: string; earthlyBranch?: string; mutagen?: string[]; stars?: unknown };
-      } | undefined;
-      const monthlyBranch = (horoscopeForMonthly?.monthly?.earthlyBranch ?? "").trim() || null;
-      const flowMonthPalace = monthlyBranch && palaceByBranchMonthly?.[monthlyBranch] ? palaceByBranchMonthly[monthlyBranch] : null;
-      const monthlyHoroscopeRaw =
-        horoscopeForMonthly?.monthly && flowMonthPalace
-          ? {
-              stem: (horoscopeForMonthly.monthly.heavenlyStem ?? "").trim() || null,
-              branch: monthlyBranch,
-              palace: flowMonthPalace,
-              mutagenStars: buildMutagenStars(horoscopeForMonthly.monthly.mutagen) ?? undefined,
-              stars: horoscopeForMonthly.monthly.stars ?? undefined,
-            }
-          : undefined;
-      const monthlyHoroscope = monthlyHoroscopeRaw
-        ? { ...monthlyHoroscopeRaw, ...monthlyHoroscopeCompleteness(monthlyHoroscopeRaw) }
-        : undefined;
+      // 流月：與 /compute/all 同一錨點與欄位（S19）
+      const monthlyHoroscope = buildMonthlyHoroscopePayload(
+        astrolabeZhTw as {
+          horoscope?: (d?: Date, ti?: number) => unknown;
+          earthlyBranchOfSoulPalace?: string;
+        },
+        body
+      );
 
       return json({ ok: true, horoscope: ziweiHoroscope, monthlyHoroscope });
     }
@@ -1370,6 +1645,9 @@ export default {
 
     // POST /api/life-book/ask（自訂 prompt + 單題問答）
     if (req.method === "POST" && url.pathname === "/api/life-book/ask") {
+      if (isLifebookAiDisabled(env)) {
+        return json({ ok: false, error: "已停用 AI 功能（LIFEBOOK_DISABLE_AI）" }, { status: 403 });
+      }
       const apiKey = env?.OPENAI_API_KEY;
       if (!apiKey) {
         return json({ ok: false, error: "OPENAI_API_KEY 未設定" }, { status: 500 });
@@ -1385,7 +1663,12 @@ export default {
       if (!prompt) return badRequest("缺少 prompt");
       if (!question) return badRequest("缺少 question");
 
-      const chartJson = body?.chart_json as Record<string, unknown> | undefined;
+      let chartJson = sanitizeLifebookRequestChartJson(
+        body?.chart_json && typeof body.chart_json === "object" ? (body.chart_json as Record<string, unknown>) : undefined
+      );
+      if (chartJson && typeof chartJson === "object") {
+        chartJson = canonicalizeChartJsonForLifebook(chartJson) ?? chartJson;
+      }
       const weightAnalysis = body?.weight_analysis as Record<string, unknown> | undefined;
       const askModel = typeof body?.model === "string" && body.model.trim() ? body.model.trim() : "gpt-4.1";
       const askTemp = typeof body?.temperature === "number" && Number.isFinite(body.temperature) ? body.temperature : 0.7;
@@ -1433,8 +1716,33 @@ export default {
       return json({ ok: true, answer });
     }
 
+    // POST /api/life-book/beta/redeem（Beta 邀請碼驗證）
+    if (req.method === "POST" && url.pathname === "/api/life-book/beta/redeem") {
+      let body: { invite_code?: string };
+      try {
+        body = (await req.json()) as { invite_code?: string };
+      } catch {
+        return badRequest("Invalid JSON");
+      }
+      const inviteCode = typeof body?.invite_code === "string" ? body.invite_code.trim() : "";
+      if (!inviteCode) return badRequest("缺少 invite_code");
+      const valid = isValidBetaInviteCode(env, inviteCode);
+      if (!valid) {
+        return json({ ok: false, error: "邀請碼無效" }, { status: 400 });
+      }
+      return json({
+        ok: true,
+        plan_tier: "free",
+        unlock_sections: [],
+        redeemed_at: new Date().toISOString(),
+      });
+    }
+
     // POST /api/life-book/infer（Phase 3 推論層：命盤 → 結構化 insight）
     if (req.method === "POST" && url.pathname === "/api/life-book/infer") {
+      if (isLifebookAiDisabled(env)) {
+        return json({ ok: false, error: "已停用 AI 功能（LIFEBOOK_DISABLE_AI）" }, { status: 403 });
+      }
       const apiKey = env?.OPENAI_API_KEY;
       if (!apiKey) {
         return json({ ok: false, error: "OPENAI_API_KEY 未設定" }, { status: 500 });
@@ -1445,18 +1753,13 @@ export default {
       } catch {
         return badRequest("Invalid JSON");
       }
-      const chartJson = body?.chart_json as Record<string, unknown> | undefined;
+      const chartJsonRaw = body?.chart_json as Record<string, unknown> | undefined;
       const weightAnalysis = body?.weight_analysis as Record<string, unknown> | undefined;
-      if (!chartJson || typeof chartJson !== "object") return badRequest("缺少 chart_json");
+      if (!chartJsonRaw || typeof chartJsonRaw !== "object") return badRequest("缺少 chart_json");
       if (!weightAnalysis || typeof weightAnalysis !== "object") return badRequest("缺少 weight_analysis");
 
-      // 與前端一致：chart_json 可能為 exportCalculationResults() 或含 features 的 compute 回傳，統一取 ziwei/bazi
-      const chartForInfer = { ...chartJson } as Record<string, unknown>;
-      if (!chartForInfer.ziwei && (chartJson as Record<string, unknown>)?.features && typeof (chartJson as Record<string, unknown>).features === "object") {
-        const features = (chartJson as Record<string, unknown>).features as Record<string, unknown>;
-        if (features.ziwei) chartForInfer.ziwei = features.ziwei;
-        if (features.bazi) chartForInfer.bazi = features.bazi;
-      }
+      const chartJson = sanitizeLifebookRequestChartJson(chartJsonRaw)!;
+      const chartForInfer = canonicalizeChartJsonForLifebook(chartJson)!;
 
       const inferModel = typeof body?.model === "string" && body.model.trim() ? body.model.trim() : "gpt-4.1";
       const inferTemp = typeof body?.temperature === "number" && Number.isFinite(body.temperature) ? body.temperature : 0.3;
@@ -1540,6 +1843,9 @@ export default {
 
     // POST /api/life-book/narrate（Phase 3 敘事層：insight → 風格化文案）
     if (req.method === "POST" && url.pathname === "/api/life-book/narrate") {
+      if (isLifebookAiDisabled(env)) {
+        return json({ ok: false, error: "已停用 AI 功能（LIFEBOOK_DISABLE_AI）" }, { status: 403 });
+      }
       const apiKey = env?.OPENAI_API_KEY;
       if (!apiKey) {
         return json({ ok: false, error: "OPENAI_API_KEY 未設定" }, { status: 500 });
@@ -1640,12 +1946,20 @@ export default {
           blind_spots: parsed.blind_spots as string,
           strategic_advice: parsed.strategic_advice as string,
         };
-        const narrateChart = body.chart_json as Record<string, unknown> | undefined;
+        const narrateChartRaw = sanitizeLifebookRequestChartJson(
+          body.chart_json && typeof body.chart_json === "object" ? (body.chart_json as Record<string, unknown>) : undefined
+        );
+        const narrateChart =
+          narrateChartRaw && typeof narrateChartRaw === "object"
+            ? canonicalizeChartJsonForLifebook(narrateChartRaw) ?? narrateChartRaw
+            : narrateChartRaw;
         if (narrateChart && typeof narrateChart === "object" && PALACE_SECTION_KEYS.has(sectionKey)) {
           const locRaw = typeof body.locale === "string" ? body.locale : "zh-TW";
           const narrLocale: LifeBookLocaleNarrate =
             locRaw === "en" || locRaw === "en-US" ? "en" : locRaw === "zh-CN" ? "zh-CN" : "zh-TW";
-          four = await applyPalaceReaderOverridesForSection(env, sectionKey, narrateChart, narrLocale, four);
+          four = await applyPalaceReaderOverridesForSection(env, sectionKey, narrateChart, narrLocale, four, {
+            lifeBookCache: lifeBookConfig,
+          });
         } else if (PALACE_SECTION_KEYS.has(sectionKey) && (!narrateChart || typeof narrateChart !== "object")) {
           console.warn(
             "[life-book/narrate] 12宮 sectionKey=%s 未附 chart_json，無法套用讀者版敘事（請前端 infer→narrate 一併傳 chart_json）",
@@ -1680,11 +1994,6 @@ export default {
 
     // POST /api/life-book/generate-section（單章，供前端逐次呼叫並顯示進度）
     if (req.method === "POST" && url.pathname === "/api/life-book/generate-section") {
-      const apiKey = env?.OPENAI_API_KEY;
-      if (!apiKey) {
-        return json({ ok: false, error: "OPENAI_API_KEY 未設定" }, { status: 500 });
-      }
-
       let body: {
         section_key?: string;
         chart_json?: unknown;
@@ -1692,48 +2001,139 @@ export default {
         model?: string;
         temperature?: number;
         locale?: string;
+        plan_tier?: "free" | "pro";
+        unlock_sections?: string[];
+        beta_invite_code?: string;
         minor_fortune_summary?: string;
         minor_fortune_triggers?: string;
         /** "ai" = 呼叫 OpenAI 產出給用戶；"technical" = 不呼叫 API，回傳資料庫／命盤技術細節（自用） */
         output_mode?: "ai" | "technical";
+        /** IANA，與 `clientNowISO` 一併用於導出 `day_key` 與 KV 鍵 */
+        clientTimeZone?: string;
+        /** ISO 8601，前端「現在」瞬時 */
+        clientNowISO?: string;
       };
       try {
         body = (await req.json()) as typeof body;
       } catch {
-        return badRequest("Invalid JSON");
+        const tcInvalid = resolveTimeContextFromBody({});
+        return json({ ok: false, error: "Invalid JSON", time_context: timeContextToJson(tcInvalid) }, { status: 400 });
+      }
+
+      const timeContext = resolveTimeContextFromBody(body);
+      const withTc = (p: Record<string, unknown>) => ({ ...p, time_context: timeContextToJson(timeContext) });
+
+      const effectiveOutputMode = resolveLifebookOutputMode(body, env);
+      const wantsTechnicalOnly = effectiveOutputMode === "technical";
+      const apiKey = env?.OPENAI_API_KEY;
+      if (!wantsTechnicalOnly && !apiKey) {
+        return json(withTc({ ok: false, error: "OPENAI_API_KEY 未設定" }), { status: 500 });
       }
 
       const sectionKey = typeof body?.section_key === "string" ? body.section_key : "";
-      const chartJson = body?.chart_json as Record<string, unknown> | undefined;
+      const chartJsonRawSection = body?.chart_json as Record<string, unknown> | undefined;
       const weightAnalysis = body?.weight_analysis as Record<string, unknown> | undefined;
       const modelFromBody = typeof body?.model === "string" && body.model.trim() ? body.model.trim() : null;
 
       if (!sectionKey || !(SECTION_ORDER as readonly string[]).includes(sectionKey)) {
-        return badRequest("無效的 section_key");
+        return json(withTc({ ok: false, error: "無效的 section_key" }), { status: 400 });
       }
-      if (!chartJson || typeof chartJson !== "object") return badRequest("缺少 chart_json");
-      if (!weightAnalysis || typeof weightAnalysis !== "object") return badRequest("缺少 weight_analysis");
+      if (isLifebookInviteRequired(env) && !isValidBetaInviteCode(env, body?.beta_invite_code)) {
+        const locked = buildInviteRequiredPayload(sectionKey);
+        return json(
+          withTc({
+            ok: true,
+            is_locked: true,
+            lock_reason: locked.lock_reason,
+            teaser: locked.teaser,
+            invite_required: true,
+            plan_tier: "free",
+            plan_matrix_version: LIFEBOOK_PLAN_MATRIX.version || "unknown",
+          })
+        );
+      }
+      const planAccess = resolvePlanAccess(body?.plan_tier, body?.unlock_sections, body?.beta_invite_code, env);
+      if (!planAccess.availableSections.includes(sectionKey)) {
+        const locked = buildLockedSectionPayload(sectionKey);
+        return json(
+          withTc({
+            ok: true,
+            is_locked: true,
+            lock_reason: locked.lock_reason,
+            teaser: locked.teaser,
+            plan_tier: planAccess.planTier,
+            plan_matrix_version: planAccess.matrixVersion,
+          })
+        );
+      }
+      if (!chartJsonRawSection || typeof chartJsonRawSection !== "object") {
+        return json(withTc({ ok: false, error: "缺少 chart_json" }), { status: 400 });
+      }
+      if (!weightAnalysis || typeof weightAnalysis !== "object") {
+        return json(withTc({ ok: false, error: "缺少 weight_analysis" }), { status: 400 });
+      }
 
-      // 與前端一致：chart_json 可能為 exportCalculationResults() 或含 features 的 compute 回傳，統一取 ziwei
-      const normalizedChart = { ...chartJson } as Record<string, unknown>;
-      if (!normalizedChart.ziwei && (chartJson as Record<string, unknown>)?.features && typeof (chartJson as Record<string, unknown>).features === "object") {
-        const features = (chartJson as Record<string, unknown>).features as Record<string, unknown>;
-        if (features.ziwei) normalizedChart.ziwei = features.ziwei;
-        if (features.bazi) normalizedChart.bazi = features.bazi;
-      }
-      // 大限單一來源：優先 iztro（features.ziwei.decadalLimits / ziwei.decadalLimits），避免 BaziCore 覆蓋
-      const featuresZiweiSection = (chartJson as Record<string, unknown>)?.features && typeof (chartJson as Record<string, unknown>).features === "object"
-        ? ((chartJson as Record<string, unknown>).features as Record<string, unknown>)?.ziwei as Record<string, unknown> | undefined
-        : undefined;
-      const iztroDecadalSection = (featuresZiweiSection?.decadalLimits ?? (normalizedChart.ziwei as Record<string, unknown>)?.decadalLimits) as Array<{ stem?: string; branch?: string }> | undefined;
-      const decadalForSection = Array.isArray(iztroDecadalSection) && iztroDecadalSection.length > 0 ? iztroDecadalSection : (normalizedChart.decadalLimits as Array<unknown> | undefined);
-      if (Array.isArray(decadalForSection) && decadalForSection.length > 0) {
-        normalizedChart.decadalLimits = decadalForSection;
-        if (normalizedChart.ziwei && typeof normalizedChart.ziwei === "object") {
-          (normalizedChart.ziwei as Record<string, unknown>).decadalLimits = decadalForSection;
+      const inviteNormSec =
+        typeof body?.beta_invite_code === "string" ? body.beta_invite_code.trim().toUpperCase() : "";
+      const sectionFingerprint = buildLifebookGenerateFingerprint({
+        chart_json: chartJsonRawSection as Record<string, unknown>,
+        weight_analysis: weightAnalysis as Record<string, unknown>,
+        plan_tier: toPlanTier(body?.plan_tier),
+        unlock_sections: normalizePlanSectionList(body?.unlock_sections),
+        output_mode: effectiveOutputMode,
+        invite_fingerprint: inviteNormSec,
+      });
+      const sectionCacheKvKey = lifebookSectionCacheKey(sectionFingerprint, sectionKey, {
+        timeZone: timeContext.timeZone,
+        dayKey: timeContext.dayKey,
+      });
+      const sectionRateLimitKvKey = lifebookSectionRateLimitKey(sectionFingerprint);
+
+      if (env?.CACHE) {
+        try {
+          const cachedSec = await env.CACHE.get(sectionCacheKvKey);
+          if (cachedSec) {
+            const parsed = JSON.parse(cachedSec) as Record<string, unknown>;
+            if (parsed && typeof parsed === "object" && parsed.ok === true) {
+              return json(withTc(parsed));
+            }
+          }
+        } catch (e) {
+          console.warn("[life-book/generate-section] KV section cache read failed", e);
+        }
+        try {
+          const rl = await env.CACHE.get(sectionRateLimitKvKey);
+          if (rl != null && rl !== "") {
+            return json(withTc({ ok: false, error: "rate_limited", retry_after_sec: 5 }), { status: 429 });
+          }
+        } catch (e) {
+          console.warn("[life-book/generate-section] rate limit read failed", e);
         }
       }
-      const chartForSection = normalizedChart;
+
+      const sectionCachePut = async (payload: Record<string, unknown>): Promise<Response> => {
+        if (env?.CACHE && payload.ok === true) {
+          try {
+            await env.CACHE.put(sectionCacheKvKey, JSON.stringify(payload), {
+              expirationTtl: LIFEBOOK_SECTION_CACHE_TTL_SEC,
+            });
+          } catch (e) {
+            console.warn("[life-book/generate-section] KV section cache write failed", e);
+          }
+        }
+        return json(withTc(payload));
+      };
+
+      try {
+      if (env?.CACHE) {
+        try {
+          await env.CACHE.put(sectionRateLimitKvKey, "1", { expirationTtl: LIFEBOOK_SECTION_RATE_LIMIT_SEC });
+        } catch (e) {
+          console.warn("[life-book/generate-section] rate limit put failed", e);
+        }
+      }
+      const chartJson = sanitizeLifebookRequestChartJson(chartJsonRawSection)!;
+      const chartForSection = canonicalizeChartJsonForLifebook(chartJson)!;
 
       let lifeBookConfig: LifeBookConfig | null = null;
       const cached = await env?.CACHE?.get(LIFEBOOK_CONFIG_KEY);
@@ -1751,53 +2151,35 @@ export default {
       const sectionLocaleRaw = String(body?.locale ?? chartForSection?.language ?? chartForSection?.astrolabeLanguage ?? "zh-TW");
       const sectionLocale: Locale = sectionLocaleRaw === "en" || sectionLocaleRaw === "en-US" ? "en" : sectionLocaleRaw === "zh-CN" ? "zh-CN" : "zh-TW";
       const { content: sectionContent } = await getContentForLocale(env, sectionLocale);
-      const sectionUsedKeys = getUsedStarPalaceKeys(chartForSection?.ziwei, sectionLocale);
-      const usedStarPalacesSection = buildEffectiveUsedStarPalaces(sectionContent?.starPalacesMain, sectionContent?.starPalaces, sectionUsedKeys, sectionContent?.starPalacesAux);
-      const usedStarPalacesAuxActionSection = filterUsedStarPalaces(sectionContent?.starPalacesAuxAction, sectionUsedKeys);
-      const usedStarPalacesAuxRiskSection = filterUsedStarPalacesAuxRisk(sectionContent?.starPalacesAuxRisk, sectionUsedKeys);
       const sectionStarPalacesTotal = typeof sectionContent?.starPalaces === "object" ? Object.keys(sectionContent.starPalaces).length : 0;
-      console.log("[life-book/generate-section] starPalaces_total_count=%s starPalaces_used_count=%s", sectionStarPalacesTotal, Object.keys(usedStarPalacesSection).length);
 
-      const sectionMasterStars = getMasterStarsFromZiwei(chartForSection?.ziwei);
-      const sectionMasterStarsWithDefs = getMasterStarsWithDefs(sectionMasterStars, sectionContent?.stars, {
-        lifeLordDecode: sectionContent?.lifeLordDecode,
-        bodyLordDecode: sectionContent?.bodyLordDecode,
-      });
-      const sectionBodyPalaceInfo = getBodyPalaceInfo(chartForSection, sectionContent?.bodyPalaceByHour);
-      const sectionLifeBodySnippet = getLifeBodyRelationSnippet(
-        sectionBodyPalaceInfo,
-        sectionContent?.lifeBodyRelation as Record<string, { tagline: string; interpretation: string; strategy_tone: string }> | undefined,
-        sectionMasterStarsWithDefs
-      );
-      const sectionConfigWithStarPalaces: LifeBookConfig = {
-        ...(lifeBookConfig ?? getDefaultConfig()),
-        starPalaces: usedStarPalacesSection,
-        starPalacesAuxAction: Object.keys(usedStarPalacesAuxActionSection).length > 0 ? usedStarPalacesAuxActionSection : undefined,
-        starPalacesAuxRisk: Object.keys(usedStarPalacesAuxRiskSection).length > 0 ? usedStarPalacesAuxRiskSection : undefined,
-        masterStars: sectionMasterStarsWithDefs,
-        bodyPalaceInfo: sectionBodyPalaceInfo,
-        lifeBodyRelationSnippet: sectionLifeBodySnippet.length > 0 ? sectionLifeBodySnippet : undefined,
+      const sectionConfigWithStarPalaces = buildEffectiveLifeBookConfigForChart(chartForSection, sectionContent as DbContent, sectionLocale, {
+        lifeBookBase: lifeBookConfig,
         minorFortuneSummary: typeof body?.minor_fortune_summary === "string" ? body.minor_fortune_summary : undefined,
         minorFortuneTriggers: typeof body?.minor_fortune_triggers === "string" ? body.minor_fortune_triggers : undefined,
-        tenGodByPalace: (chartForSection?.tenGodByPalace as Record<string, string> | undefined) ?? {},
-        wuxingByPalace: (chartForSection?.wuxingByPalace as Record<string, string> | undefined) ?? {},
-      };
+      });
+      console.log(
+        "[life-book/generate-section] starPalaces_total_count=%s starPalaces_used_count=%s",
+        sectionStarPalacesTotal,
+        Object.keys(sectionConfigWithStarPalaces.starPalaces ?? {}).length
+      );
 
-      if (body?.output_mode === "technical") {
+      if (wantsTechnicalOnly) {
         const genSectionTemplate = SECTION_TEMPLATES.find((t) => t.section_key === sectionKey);
         const sectionTitle = genSectionTemplate?.title ?? `[${sectionKey}]`;
         const chartSlice = getChartSlice(chartForSection, genSectionTemplate?.slice_types ?? []);
-        const p2Technical = TIME_MODULE_SECTION_KEYS.includes(sectionKey as (typeof TIME_MODULE_SECTION_KEYS)[number])
-          ? buildP2FindingsAndContext(chartForSection ?? undefined)
-          : emptyP2();
+        const p2 =
+          TIME_MODULE_SECTION_KEYS.includes(sectionKey as (typeof TIME_MODULE_SECTION_KEYS)[number])
+            ? buildP2FindingsAndContext(chartForSection ?? undefined, sectionConfigWithStarPalaces)
+            : emptyP2();
         const blocks = getSectionTechnicalBlocks(
           sectionKey,
           chartForSection,
           sectionConfigWithStarPalaces,
           sectionContent as Parameters<typeof getSectionTechnicalBlocks>[3],
           sectionLocale === "zh-TW" ? "zh-TW" : sectionLocale === "zh-CN" ? "zh-CN" : "en",
-          p2Technical.findings ?? undefined,
-          p2Technical.findingsV2 ?? undefined
+          p2.findings ?? undefined,
+          p2.findingsV2 ?? undefined
         );
         const technicalParts: string[] = [];
         const skipDebugBlocks = sectionKey === "s00" || sectionKey === "s03" || sectionKey === "s04";
@@ -1810,8 +2192,7 @@ export default {
           technicalParts.push("", blocks.skeletonBlockText);
         }
         let structureAnalysisFinal = sanitizeStructureAnalysis(technicalParts.join("\n"));
-        if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
-          const p2 = buildP2FindingsAndContext(chartForSection ?? undefined);
+        if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"].includes(sectionKey)) {
           const injectOpts = {
             findings: p2.findings ?? undefined,
             timeContext: p2.timeContext,
@@ -1845,7 +2226,8 @@ export default {
               behavior_pattern: technicalBp,
               blind_spots: technicalBl,
               strategic_advice: technicalSt,
-            }
+            },
+            { effectiveLifeBookConfig: sectionConfigWithStarPalaces }
           );
           structureAnalysisFinal = mergedTech.structure_analysis;
           technicalBp = mergedTech.behavior_pattern;
@@ -1863,7 +2245,10 @@ export default {
           output_mode: "technical",
           technical: {
             chart_slice: chartSlice,
-            star_palace_quotes: usedStarPalacesSection && Object.keys(usedStarPalacesSection).length > 0 ? usedStarPalacesSection : undefined,
+            star_palace_quotes:
+              sectionConfigWithStarPalaces.starPalaces && Object.keys(sectionConfigWithStarPalaces.starPalaces).length > 0
+                ? sectionConfigWithStarPalaces.starPalaces
+                : undefined,
             underlying_params_text: blocks.underlyingParamsText,
             risk_block_text: blocks.riskBlockText,
             decadal_limits: chartForSection?.decadalLimits,
@@ -1880,7 +2265,7 @@ export default {
             four_transformations: chartForSection?.fourTransformations,
           },
         };
-        return json({ ok: true, section: technicalSection, output_mode: "technical" });
+        return await sectionCachePut({ ok: true, section: technicalSection, output_mode: "technical" });
       }
 
       const filteredWeightForSection = filterStablePalacesByDominant(
@@ -1944,7 +2329,7 @@ export default {
 
       if (!openaiResp.ok) {
         const errText = await openaiResp.text();
-        return json({ ok: false, error: `生成失敗: ${errText.slice(0, 150)}` }, { status: 502 });
+        return json(withTc({ ok: false, error: `生成失敗: ${errText.slice(0, 150)}` }), { status: 502 });
       }
 
       const openaiData = (await openaiResp.json()) as { choices?: Array<{ message?: { content?: string } }> };
@@ -1966,7 +2351,7 @@ export default {
         const p2 =
           TIME_MODULE_SECTION_KEYS.includes(sectionKey as (typeof TIME_MODULE_SECTION_KEYS)[number]) ||
           PALACE_SECTION_KEYS.has(sectionKey)
-            ? buildP2FindingsAndContext(chartForSection ?? undefined)
+            ? buildP2FindingsAndContext(chartForSection ?? undefined, sectionConfigWithStarPalaces)
             : emptyP2();
         let structureAnalysisOut = four.structure_analysis;
         let behaviorPatternOut = four.behavior_pattern;
@@ -1989,7 +2374,7 @@ export default {
           blindSpotsOut = normalizePunctuation(blindSpotsOut);
           strategicAdviceOut = normalizePunctuation(strategicAdviceOut);
         }
-        if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
+        if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"].includes(sectionKey)) {
           const injectOpts = {
             findings: p2.findings ?? undefined,
             timeContext: p2.timeContext,
@@ -2036,9 +2421,11 @@ export default {
                 .filter((item) => Boolean(item.fromPalace && item.toPalace && item.transform)) as Array<{ fromPalace: string; toPalace: string; starName?: string; transform: "祿" | "權" | "科" | "忌" }>;
             }
           }
-          console.log("[Hydration Debug] sectionKey:", sectionKey);
-          console.log("[Hydration Debug] natalFlowItems length:", findingsForPalace?.natalFlowItems?.length ?? 0);
-          console.log("[Hydration Debug] natalFlowItems first:", JSON.stringify(findingsForPalace?.natalFlowItems?.[0] ?? null));
+          if (isLifebookDebugEnv(env)) {
+            console.log("[Hydration Debug] sectionKey:", sectionKey);
+            console.log("[Hydration Debug] natalFlowItems length:", findingsForPalace?.natalFlowItems?.length ?? 0);
+            console.log("[Hydration Debug] natalFlowItems first:", JSON.stringify(findingsForPalace?.natalFlowItems?.[0] ?? null));
+          }
           const overrides = getPalaceSectionReaderOverrides(
             sectionKey,
             chartForSection ?? {},
@@ -2077,7 +2464,7 @@ export default {
           structureAnalysisOut = palaceResolvedStructure;
         }
         // Phase 5B-10：最終送進 render 的 structure_analysis（兄弟 s01、僕役 s09、官祿 s11）
-        if (PALACE_SECTION_KEYS.has(sectionKey) && ["s01", "s09", "s11"].includes(sectionKey)) {
+        if (isLifebookDebugEnv(env) && PALACE_SECTION_KEYS.has(sectionKey) && ["s01", "s09", "s11"].includes(sectionKey)) {
           const snippet = structureAnalysisOut.slice(0, 400);
           const hasNew = snippet.includes("四化引動") && snippet.includes("宮干飛化");
           const hasOld = snippet.includes("動態引動與根因");
@@ -2092,18 +2479,18 @@ export default {
           blind_spots: blindSpotsOut,
           strategic_advice: strategicAdviceOut,
         };
-        if (usedStarPalacesSection && Object.keys(usedStarPalacesSection).length > 0) {
-          section.star_palace_quotes = usedStarPalacesSection;
+        if (sectionConfigWithStarPalaces.starPalaces && Object.keys(sectionConfigWithStarPalaces.starPalaces).length > 0) {
+          section.star_palace_quotes = sectionConfigWithStarPalaces.starPalaces;
         }
-        return json({ ok: true, section });
+        return await sectionCachePut({ ok: true, section });
       }
 
       const rawFallback = content.trim().slice(0, 4000);
       let fallbackStructure = rawFallback
         ? `${rawFallback}${rawFallback.length >= 4000 ? "…" : ""}\n\n（原始回傳未符四欄位 JSON，建議重試該章取得正確格式。）`
         : "(AI 回傳格式異常，請重試該章)";
-      if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
-        const p2 = buildP2FindingsAndContext(chartForSection ?? undefined);
+      if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"].includes(sectionKey)) {
+        const p2 = buildP2FindingsAndContext(chartForSection ?? undefined, sectionConfigWithStarPalaces);
         const injectOpts = {
           findings: p2.findings ?? undefined,
           timeContext: p2.timeContext,
@@ -2129,10 +2516,185 @@ export default {
         blind_spots: "",
         strategic_advice: "",
       };
-      if (usedStarPalacesSection && Object.keys(usedStarPalacesSection).length > 0) {
-        fallbackSection.star_palace_quotes = usedStarPalacesSection;
+      if (sectionConfigWithStarPalaces.starPalaces && Object.keys(sectionConfigWithStarPalaces.starPalaces).length > 0) {
+        fallbackSection.star_palace_quotes = sectionConfigWithStarPalaces.starPalaces;
       }
-      return json({ ok: true, section: fallbackSection });
+      return await sectionCachePut({ ok: true, section: fallbackSection });
+      } catch (sectionErr: unknown) {
+        const msg = sectionErr instanceof Error ? sectionErr.message : String(sectionErr);
+        console.error("[life-book/generate-section] unhandled:", sectionErr);
+        return json(
+          withTc({ ok: false, error: `命書章節處理失敗: ${msg.slice(0, 500)}` }),
+          { status: 500 }
+        );
+      }
+    }
+
+    // POST /api/life-book/daily-flow（流日 DayContract：iztro horoscope.daily + §八 降級；KV 鍵見 lifebookDailyHoroscopeCacheKey）
+    if (req.method === "POST" && url.pathname === "/api/life-book/daily-flow") {
+      let body: {
+        chart_json?: unknown;
+        clientTimeZone?: string;
+        clientNowISO?: string;
+        skip_cache?: boolean;
+        beta_invite_code?: string;
+      };
+      try {
+        body = (await req.json()) as typeof body;
+      } catch {
+        const tcInvalid = resolveTimeContextFromBody({});
+        return json({ ok: false, error: "Invalid JSON", time_context: timeContextToJson(tcInvalid) }, { status: 400 });
+      }
+      if (isLifebookInviteRequired(env) && !isValidBetaInviteCode(env, body?.beta_invite_code)) {
+        return json({ ok: false, error: "invite_required" }, { status: 403 });
+      }
+      const timeContext = resolveTimeContextFromBody(body);
+      const withTc = (p: Record<string, unknown>) => ({ ...p, time_context: timeContextToJson(timeContext) });
+
+      const chartRaw = body.chart_json as Record<string, unknown> | undefined;
+      const chartForDaily = sanitizeLifebookRequestChartJson(chartRaw);
+      if (!chartForDaily || typeof chartForDaily !== "object") {
+        return json(withTc({ ok: false, error: "缺少 chart_json" }), { status: 400 });
+      }
+
+      const instant = new Date(timeContext.clientNowISO);
+      const timeIndex = timeIndexFromWallClockInTimeZone(instant, timeContext.timeZone);
+      const dayKey = timeContext.dayKey;
+      const fingerprint = stableChartId(chartForDaily);
+      const cacheKey = lifebookDailyHoroscopeCacheKey(fingerprint, dayKey, timeContext.timeZone, timeIndex);
+
+      if (env?.CACHE && !body.skip_cache) {
+        try {
+          const cached = await env.CACHE.get(cacheKey);
+          if (cached) {
+            const parsed = JSON.parse(cached) as Record<string, unknown>;
+            if (parsed && typeof parsed === "object" && parsed.ok === true && parsed.day_contract) {
+              return json(withTc(parsed));
+            }
+          }
+        } catch (e) {
+          console.warn("[life-book/daily-flow] KV cache read failed", e);
+        }
+      }
+
+      let day_contract;
+      try {
+        day_contract = buildDailyFlowResult({
+          chart_json: chartForDaily,
+          day_key: dayKey,
+          timeIndex,
+          time_zone: timeContext.timeZone,
+        });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        console.error("[life-book/daily-flow] build failed", e);
+        return json(withTc({ ok: false, error: `daily_flow_failed: ${msg.slice(0, 200)}` }), { status: 500 });
+      }
+
+      const payload = { ok: true as const, day_contract };
+      if (env?.CACHE && !body.skip_cache) {
+        try {
+          await env.CACHE.put(cacheKey, JSON.stringify(payload), { expirationTtl: LIFEBOOK_SECTION_CACHE_TTL_SEC });
+        } catch (e) {
+          console.warn("[life-book/daily-flow] KV cache write failed", e);
+        }
+      }
+      return json(withTc(payload));
+    }
+
+    // POST /api/life-book/chart-with-findings（分段生成後附 findings 至 chart_json）
+    if (req.method === "POST" && url.pathname === "/api/life-book/chart-with-findings") {
+      let body: { chart_json?: unknown; locale?: string; beta_invite_code?: string };
+      try {
+        body = (await req.json()) as typeof body;
+      } catch {
+        return badRequest("Invalid JSON");
+      }
+      if (isLifebookInviteRequired(env) && !isValidBetaInviteCode(env, body?.beta_invite_code)) {
+        return json({ ok: false, error: "invite_required" }, { status: 403 });
+      }
+      const chartJsonRawCf = body?.chart_json as Record<string, unknown> | undefined;
+      if (!chartJsonRawCf || typeof chartJsonRawCf !== "object") {
+        return badRequest("缺少 chart_json");
+      }
+      const chartJsonCf = sanitizeLifebookRequestChartJson(chartJsonRawCf)!;
+      const chartForFindings = canonicalizeChartJsonForLifebook(chartJsonCf, { emptyDecadalLimitsWhenNoIztro: true })!;
+      const cfLocaleRaw = String(
+        body?.locale ?? chartForFindings?.language ?? chartForFindings?.astrolabeLanguage ?? "zh-TW"
+      );
+      const cfLocale: Locale =
+        cfLocaleRaw === "en" || cfLocaleRaw === "en-US" ? "en" : cfLocaleRaw === "zh-CN" ? "zh-CN" : "zh-TW";
+      const { content: cfContent } = await getContentForLocale(env, cfLocale);
+      const cfGenerateConfig = buildEffectiveLifeBookConfigForChart(chartForFindings, cfContent as DbContent, cfLocale, {
+        lifeBookBase: null,
+      });
+      const p2Cf = buildP2FindingsAndContext(chartForFindings ?? undefined, cfGenerateConfig);
+      const chartOut = chartJsonWithClientFindings(chartForFindings as Record<string, unknown>, p2Cf.findings);
+      return json({ ok: true, chart_json: chartOut });
+    }
+
+    // POST /api/life-book/cache-fetch（讀取與整本 generate 同鍵的 KV 快取）
+    if (req.method === "POST" && url.pathname === "/api/life-book/cache-fetch") {
+      let body: { fingerprint?: string; beta_invite_code?: string };
+      try {
+        body = (await req.json()) as typeof body;
+      } catch {
+        return badRequest("Invalid JSON");
+      }
+      if (isLifebookInviteRequired(env) && !isValidBetaInviteCode(env, body?.beta_invite_code)) {
+        return json({ ok: false, error: "invite_required" }, { status: 403 });
+      }
+      const fpFetch = typeof body?.fingerprint === "string" ? body.fingerprint.trim() : "";
+      if (!fpFetch) {
+        return badRequest("缺少 fingerprint");
+      }
+      if (!env?.CACHE) {
+        return json({ ok: false, error: "cache_unavailable" }, { status: 503 });
+      }
+      try {
+        const cachedFetch = await env.CACHE.get(lifebookKvCacheKey(fpFetch));
+        if (!cachedFetch) {
+          return json({ ok: false, error: "not_found" }, { status: 404 });
+        }
+        const parsedFetch = JSON.parse(cachedFetch) as Record<string, unknown>;
+        return json(parsedFetch);
+      } catch (e) {
+        console.warn("[life-book/cache-fetch] failed", e);
+        return json({ ok: false, error: "cache_read_failed" }, { status: 500 });
+      }
+    }
+
+    // POST /api/life-book/cache-store（前端分段生成後寫入 KV，與整本 generate 同形）
+    if (req.method === "POST" && url.pathname === "/api/life-book/cache-store") {
+      let body: { fingerprint?: string; beta_invite_code?: string; payload?: unknown };
+      try {
+        body = (await req.json()) as typeof body;
+      } catch {
+        return badRequest("Invalid JSON");
+      }
+      if (isLifebookInviteRequired(env) && !isValidBetaInviteCode(env, body?.beta_invite_code)) {
+        return json({ ok: false, error: "invite_required" }, { status: 403 });
+      }
+      const fpStore = typeof body?.fingerprint === "string" ? body.fingerprint.trim() : "";
+      if (!fpStore) {
+        return badRequest("缺少 fingerprint");
+      }
+      const storePayload = body?.payload;
+      if (storePayload === undefined || typeof storePayload !== "object" || storePayload === null) {
+        return badRequest("缺少 payload");
+      }
+      if (!env?.CACHE) {
+        return json({ ok: false, error: "cache_unavailable" }, { status: 503 });
+      }
+      try {
+        await env.CACHE.put(lifebookKvCacheKey(fpStore), JSON.stringify(storePayload), {
+          expirationTtl: LIFEBOOK_GENERATE_KV_TTL_SEC,
+        });
+        return json({ ok: true });
+      } catch (e) {
+        console.warn("[life-book/cache-store] failed", e);
+        return json({ ok: false, error: "cache_write_failed" }, { status: 500 });
+      }
     }
 
     // POST /api/life-book/generate（保留：一次 20 章，可能逾時）
@@ -2141,6 +2703,9 @@ export default {
         chart_json?: unknown;
         weight_analysis?: unknown;
         locale?: string;
+        plan_tier?: "free" | "pro";
+        unlock_sections?: string[];
+        beta_invite_code?: string;
         minor_fortune_summary?: string;
         minor_fortune_triggers?: string;
         model?: string;
@@ -2153,38 +2718,69 @@ export default {
         return badRequest("Invalid JSON");
       }
 
-      const chartJson = body?.chart_json as Record<string, unknown> | undefined;
+      const chartJsonRawGen = body?.chart_json as Record<string, unknown> | undefined;
       const weightAnalysis = body?.weight_analysis as Record<string, unknown> | undefined;
 
-      if (!chartJson || typeof chartJson !== "object") {
+      if (!chartJsonRawGen || typeof chartJsonRawGen !== "object") {
         return badRequest("缺少 chart_json");
       }
       if (!weightAnalysis || typeof weightAnalysis !== "object") {
         return badRequest("缺少 weight_analysis");
       }
 
-      // 與前端一致：chart_json 可能為 exportCalculationResults() 或含 features 的 compute 回傳，統一取 ziwei/bazi
-      const chartForGenerate = { ...chartJson } as Record<string, unknown>;
-      if (!chartForGenerate.ziwei && (chartJson as Record<string, unknown>)?.features && typeof (chartJson as Record<string, unknown>).features === "object") {
-        const features = (chartJson as Record<string, unknown>).features as Record<string, unknown>;
-        if (features.ziwei) chartForGenerate.ziwei = features.ziwei;
-        if (features.bazi) chartForGenerate.bazi = features.bazi;
+      const effectiveOutputModeGen = resolveLifebookOutputMode(body, env);
+
+      if (isLifebookInviteRequired(env) && !isValidBetaInviteCode(env, body?.beta_invite_code)) {
+        const lockedByInvite = (SECTION_ORDER as readonly string[]).map((k) => buildInviteRequiredPayload(k));
+        return json({
+          ok: true,
+          sections: {},
+          invite_required: true,
+          plan_tier: "free",
+          plan_matrix_version: LIFEBOOK_PLAN_MATRIX.version || "unknown",
+          available_sections: [],
+          locked_sections: lockedByInvite,
+        });
       }
-      // 大限單一來源：僅用 iztro 的 decadalLimits；無 iztro 則設為 []，不接受 BaziCore 或 chart 頂層
-      const featuresZiwei = (chartJson as Record<string, unknown>)?.features && typeof (chartJson as Record<string, unknown>).features === "object"
-        ? ((chartJson as Record<string, unknown>).features as Record<string, unknown>)?.ziwei as Record<string, unknown> | undefined
-        : undefined;
-      const iztroDecadalLimits = (featuresZiwei?.decadalLimits ?? (chartForGenerate.ziwei as Record<string, unknown>)?.decadalLimits) as Array<{ stem?: string; branch?: string; palace?: string; startAge?: number; endAge?: number }> | undefined;
-      const decadalLimitsForLifebook = Array.isArray(iztroDecadalLimits) && iztroDecadalLimits.length > 0 ? iztroDecadalLimits : [];
-      chartForGenerate.decadalLimits = decadalLimitsForLifebook;
-      if (chartForGenerate.ziwei && typeof chartForGenerate.ziwei === "object") {
-        (chartForGenerate.ziwei as Record<string, unknown>).decadalLimits = decadalLimitsForLifebook;
+
+      const inviteNormGen =
+        typeof body?.beta_invite_code === "string" ? body.beta_invite_code.trim().toUpperCase() : "";
+      const generateFp = buildLifebookGenerateFingerprint({
+        chart_json: chartJsonRawGen as Record<string, unknown>,
+        weight_analysis: weightAnalysis as Record<string, unknown>,
+        plan_tier: toPlanTier(body?.plan_tier),
+        unlock_sections: normalizePlanSectionList(body?.unlock_sections),
+        output_mode: effectiveOutputModeGen,
+        invite_fingerprint: inviteNormGen,
+      });
+      const generateCacheKey = lifebookKvCacheKey(generateFp);
+      if (env?.CACHE && effectiveOutputModeGen === "technical") {
+        try {
+          const cachedFull = await env.CACHE.get(generateCacheKey);
+          if (cachedFull) {
+            const parsed = JSON.parse(cachedFull) as unknown;
+            if (parsed && typeof parsed === "object" && (parsed as { ok?: unknown }).ok === true) {
+              return json(parsed as Record<string, unknown>);
+            }
+          }
+        } catch (e) {
+          console.warn("[life-book/generate] KV cache read failed", e);
+        }
       }
-      console.log("[life-book/generate] chart_json.decadalLimits source =", iztroDecadalLimits ? "iztro" : "none (empty)");
+
+      const chartJson = sanitizeLifebookRequestChartJson(chartJsonRawGen)!;
+      const chartForGenerate = canonicalizeChartJsonForLifebook(chartJson, {
+        emptyDecadalLimitsWhenNoIztro: true,
+      })!;
+      const decadalLimitsForLifebook = (chartForGenerate.decadalLimits as unknown[] | undefined) ?? [];
+      console.log(
+        "[life-book/generate] chart_json.decadalLimits source =",
+        Array.isArray(decadalLimitsForLifebook) && decadalLimitsForLifebook.length > 0 ? "iztro" : "none (empty)"
+      );
       console.log("[life-book/generate] chart_json.decadalLimits[5] =", JSON.stringify(decadalLimitsForLifebook[5] ?? null));
 
       const apiKey = env?.OPENAI_API_KEY;
-      if (body?.output_mode !== "technical" && !apiKey) {
+      if (effectiveOutputModeGen !== "technical" && !apiKey) {
         return json({ ok: false, error: "OPENAI_API_KEY 未設定" }, { status: 500 });
       }
 
@@ -2195,52 +2791,35 @@ export default {
       const generateLocaleRaw = String(body?.locale ?? chartForGenerate?.language ?? chartForGenerate?.astrolabeLanguage ?? "zh-TW");
       const generateLocale: Locale = generateLocaleRaw === "en" || generateLocaleRaw === "en-US" ? "en" : generateLocaleRaw === "zh-CN" ? "zh-CN" : "zh-TW";
       const { content: generateContent } = await getContentForLocale(env, generateLocale);
-      const generateUsedKeys = getUsedStarPalaceKeys(chartForGenerate?.ziwei, generateLocale);
-      const usedStarPalacesGenerate = buildEffectiveUsedStarPalaces(generateContent?.starPalacesMain, generateContent?.starPalaces, generateUsedKeys, generateContent?.starPalacesAux);
-      const usedStarPalacesAuxActionGenerate = filterUsedStarPalaces(generateContent?.starPalacesAuxAction, generateUsedKeys);
-      const usedStarPalacesAuxRiskGenerate = filterUsedStarPalacesAuxRisk(generateContent?.starPalacesAuxRisk, generateUsedKeys);
       const generateStarPalacesTotal = typeof generateContent?.starPalaces === "object" ? Object.keys(generateContent.starPalaces).length : 0;
-      console.log("[life-book/generate] starPalaces_total_count=%s starPalaces_used_count=%s", generateStarPalacesTotal, Object.keys(usedStarPalacesGenerate).length);
-
-      const generateMasterStars = getMasterStarsFromZiwei(chartForGenerate?.ziwei);
-      const generateMasterStarsWithDefs = getMasterStarsWithDefs(generateMasterStars, generateContent?.stars, {
-        lifeLordDecode: generateContent?.lifeLordDecode,
-        bodyLordDecode: generateContent?.bodyLordDecode,
-      });
-      const generateBodyPalaceInfo = getBodyPalaceInfo(chartForGenerate, generateContent?.bodyPalaceByHour);
-      const generateLifeBodySnippet = getLifeBodyRelationSnippet(
-        generateBodyPalaceInfo,
-        generateContent?.lifeBodyRelation as Record<string, { tagline: string; interpretation: string; strategy_tone: string }> | undefined,
-        generateMasterStarsWithDefs
-      );
-      const generateConfig: LifeBookConfig = {
-        ...getDefaultConfig(),
-        starPalaces: usedStarPalacesGenerate,
-        starPalacesAuxAction: Object.keys(usedStarPalacesAuxActionGenerate).length > 0 ? usedStarPalacesAuxActionGenerate : undefined,
-        starPalacesAuxRisk: Object.keys(usedStarPalacesAuxRiskGenerate).length > 0 ? usedStarPalacesAuxRiskGenerate : undefined,
-        masterStars: generateMasterStarsWithDefs,
-        bodyPalaceInfo: generateBodyPalaceInfo,
-        lifeBodyRelationSnippet: generateLifeBodySnippet.length > 0 ? generateLifeBodySnippet : undefined,
+      const generateConfig = buildEffectiveLifeBookConfigForChart(chartForGenerate, generateContent as DbContent, generateLocale, {
+        lifeBookBase: null,
         minorFortuneSummary: typeof body?.minor_fortune_summary === "string" ? body.minor_fortune_summary : undefined,
         minorFortuneTriggers: typeof body?.minor_fortune_triggers === "string" ? body.minor_fortune_triggers : undefined,
-        tenGodByPalace: (chartForGenerate?.tenGodByPalace as Record<string, string> | undefined) ?? {},
-        wuxingByPalace: (chartForGenerate?.wuxingByPalace as Record<string, string> | undefined) ?? {},
-      };
+      });
+      console.log(
+        "[life-book/generate] starPalaces_total_count=%s starPalaces_used_count=%s",
+        generateStarPalacesTotal,
+        Object.keys(generateConfig.starPalaces ?? {}).length
+      );
       const sections: Record<string, Record<string, unknown>> = {};
-      const sectionOrder = [...SECTION_ORDER];
+      const planAccess = resolvePlanAccess(body?.plan_tier, body?.unlock_sections, body?.beta_invite_code, env);
+      const sectionOrder = [...planAccess.availableSections];
+      const lockedSections = planAccess.lockedSectionKeys.map((k) => buildLockedSectionPayload(k));
 
       const localeForTechnical = generateLocale === "zh-TW" ? "zh-TW" : generateLocale === "zh-CN" ? "zh-CN" : "en";
 
       for (let i = 0; i < sectionOrder.length; i++) {
         const sectionKey = sectionOrder[i];
-        if (body?.output_mode === "technical") {
+        if (effectiveOutputModeGen === "technical") {
           const genSectionTemplate = SECTION_TEMPLATES.find((t) => t.section_key === sectionKey);
           const sectionTitle = genSectionTemplate?.title ?? `[${sectionKey}]`;
           const chartSlice = getChartSlice(chartForGenerate, genSectionTemplate?.slice_types ?? []);
-          const p2Technical = TIME_MODULE_SECTION_KEYS.includes(sectionKey as (typeof TIME_MODULE_SECTION_KEYS)[number])
-            ? buildP2FindingsAndContext(chartForGenerate ?? undefined)
-            : emptyP2();
-          const blocks = getSectionTechnicalBlocks(sectionKey, chartForGenerate, generateConfig, generateContent as Parameters<typeof getSectionTechnicalBlocks>[3], localeForTechnical, p2Technical.findings ?? undefined, p2Technical.findingsV2 ?? undefined);
+          const p2 =
+            TIME_MODULE_SECTION_KEYS.includes(sectionKey as (typeof TIME_MODULE_SECTION_KEYS)[number])
+              ? buildP2FindingsAndContext(chartForGenerate ?? undefined, generateConfig)
+              : emptyP2();
+          const blocks = getSectionTechnicalBlocks(sectionKey, chartForGenerate, generateConfig, generateContent as Parameters<typeof getSectionTechnicalBlocks>[3], localeForTechnical, p2.findings ?? undefined, p2.findingsV2 ?? undefined);
           const technicalParts: string[] = [];
           const skipDebugBlocks = sectionKey === "s00" || sectionKey === "s03" || sectionKey === "s04";
           if (blocks.underlyingParamsText && !skipDebugBlocks) technicalParts.push("", blocks.underlyingParamsText);
@@ -2252,8 +2831,7 @@ export default {
             technicalParts.push("", blocks.skeletonBlockText);
           }
           let structureAnalysisFinal = sanitizeStructureAnalysis(technicalParts.join("\n"));
-          if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
-            const p2 = buildP2FindingsAndContext(chartForGenerate ?? undefined);
+          if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"].includes(sectionKey)) {
             const injectOpts = {
               findings: p2.findings ?? undefined,
               timeContext: p2.timeContext,
@@ -2281,7 +2859,8 @@ export default {
             output_mode: "technical",
             technical: {
               chart_slice: chartSlice,
-              star_palace_quotes: usedStarPalacesGenerate && Object.keys(usedStarPalacesGenerate).length > 0 ? usedStarPalacesGenerate : undefined,
+              star_palace_quotes:
+                generateConfig.starPalaces && Object.keys(generateConfig.starPalaces).length > 0 ? generateConfig.starPalaces : undefined,
               underlying_params_text: blocks.underlyingParamsText,
               risk_block_text: blocks.riskBlockText,
               decadal_limits: chartForGenerate?.decadalLimits,
@@ -2390,13 +2969,13 @@ export default {
         const p2 =
           TIME_MODULE_SECTION_KEYS.includes(sectionKey as (typeof TIME_MODULE_SECTION_KEYS)[number]) ||
           PALACE_SECTION_KEYS.has(sectionKey)
-            ? buildP2FindingsAndContext(chartForGenerate ?? undefined)
+            ? buildP2FindingsAndContext(chartForGenerate ?? undefined, generateConfig)
             : emptyP2();
         const rawFallback = content.trim().slice(0, 4000);
         let structureAnalysisOut = hasUsable && four && parsed ? four.structure_analysis : (rawFallback
           ? `${rawFallback}${rawFallback.length >= 4000 ? "…" : ""}\n\n（原始回傳未符四欄位 JSON，建議重試該章。）`
           : "(AI 回傳格式異常，請重試)");
-        if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"].includes(sectionKey)) {
+        if (["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"].includes(sectionKey)) {
           const injectOpts = {
             findings: p2.findings ?? undefined,
             timeContext: p2.timeContext,
@@ -2445,9 +3024,11 @@ export default {
                 .filter((item) => Boolean(item.fromPalace && item.toPalace && item.transform)) as Array<{ fromPalace: string; toPalace: string; starName?: string; transform: "祿" | "權" | "科" | "忌" }>;
             }
           }
-          console.log("[Hydration Debug] sectionKey:", sectionKey);
-          console.log("[Hydration Debug] natalFlowItems length:", findingsForPalace?.natalFlowItems?.length ?? 0);
-          console.log("[Hydration Debug] natalFlowItems first:", JSON.stringify(findingsForPalace?.natalFlowItems?.[0] ?? null));
+          if (isLifebookDebugEnv(env)) {
+            console.log("[Hydration Debug] sectionKey:", sectionKey);
+            console.log("[Hydration Debug] natalFlowItems length:", findingsForPalace?.natalFlowItems?.length ?? 0);
+            console.log("[Hydration Debug] natalFlowItems first:", JSON.stringify(findingsForPalace?.natalFlowItems?.[0] ?? null));
+          }
           const overrides = getPalaceSectionReaderOverrides(
             sectionKey,
             chartForGenerate ?? {},
@@ -2500,7 +3081,7 @@ export default {
           structureAnalysisOut = batchPalaceResolved;
         }
         // Phase 5B-10：batch 路徑最終 structure_analysis（s01/s09/s11）
-        if (PALACE_SECTION_KEYS.has(sectionKey) && ["s01", "s09", "s11"].includes(sectionKey)) {
+        if (isLifebookDebugEnv(env) && PALACE_SECTION_KEYS.has(sectionKey) && ["s01", "s09", "s11"].includes(sectionKey)) {
           const snippet = structureAnalysisOut.slice(0, 400);
           const hasNew = snippet.includes("四化引動") && snippet.includes("宮干飛化");
           const hasOld = snippet.includes("動態引動與根因");
@@ -2525,8 +3106,8 @@ export default {
               blind_spots: "",
               strategic_advice: "",
             };
-        if (usedStarPalacesGenerate && Object.keys(usedStarPalacesGenerate).length > 0) {
-          sectionPayload.star_palace_quotes = usedStarPalacesGenerate;
+        if (generateConfig.starPalaces && Object.keys(generateConfig.starPalaces).length > 0) {
+          sectionPayload.star_palace_quotes = generateConfig.starPalaces;
         }
         sections[sectionKey] = sectionPayload;
 
@@ -2537,9 +3118,41 @@ export default {
         }
       }
 
-      return json({ ok: true, sections });
+      const p2Export = buildP2FindingsAndContext(chartForGenerate ?? undefined, generateConfig);
+      const chart_json_response = chartJsonWithClientFindings(chartForGenerate as Record<string, unknown>, p2Export.findings);
+
+      const responsePayload = {
+        ok: true as const,
+        sections,
+        chart_json: chart_json_response,
+        weight_analysis: weightAnalysis,
+        plan_tier: planAccess.planTier,
+        plan_matrix_version: planAccess.matrixVersion,
+        available_sections: planAccess.availableSections,
+        locked_sections: lockedSections,
+      };
+
+      if (env?.CACHE && effectiveOutputModeGen === "technical") {
+        try {
+          await env.CACHE.put(generateCacheKey, JSON.stringify(responsePayload), {
+            expirationTtl: LIFEBOOK_GENERATE_KV_TTL_SEC,
+          });
+        } catch (e) {
+          console.warn("[life-book/generate] KV cache put failed", e);
+        }
+      }
+
+      return json(responsePayload);
     }
 
     return json({ ok: false, error: "Not found" }, { status: 404 });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[worker/fetch] unhandled:", err);
+      return json(
+        { ok: false, error: "Worker internal error", detail: message.slice(0, 500) },
+        { status: 500 }
+      );
+    }
   },
 };

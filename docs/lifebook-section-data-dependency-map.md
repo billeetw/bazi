@@ -33,15 +33,15 @@
 
 | section_key | 主要 findings | 次要 chart/content | prompt 重算 | findingsV2-only | 優先級 |
 |-------------|----------------|--------------------|------------|-----------------|--------|
-| **s00** | (可選) mainBattlefields | overlapAnalysis, fourTransformations, decadalLimits, yearlyHoroscope, ziwei, sihuaLayers | 是 | 否 | high |
-| **s03** | crossChartFindings, palacePatterns | ziwei, overlapAnalysis, fourTransformations, decadalLimits, sihuaLayers, config | 是 | 否 | high |
+| **s00** | (可選) mainBattlefields | overlapAnalysis, fourTransformations, decadalLimits, yearlyHoroscope, ziwei；`sihuaLayers`（deprecated，僅比對）；`lifebookSiHuaDisplayOverride`（可選，Phase 3 顯式覆寫+audit） | 是 | 否 | high |
+| **s03** | crossChartFindings, palacePatterns | ziwei, overlapAnalysis, fourTransformations, decadalLimits；`sihuaLayers`（deprecated）；`lifebookSiHuaDisplayOverride`（可選）；config | 是 | 否 | high |
 | **s15** | keyYears, yearSignals, crossChartFindings | decadalLimits, fourTransformations, yearlyHoroscope, overlapAnalysis, minorFortuneByPalace | 是 | 否 | high |
 | **s15a** | keyYears | minorFortuneByPalace, overlapAnalysis (items/criticalRisks/…), content.decisionMatrix | 是 | 否 | high |
 | **s16** | yearSignals, keyYears, timeAxis | yearlyHoroscope, liunian, fourTransformations.liunian, overlapAnalysis, decisionMatrix | 是 | 否 | high |
 | **s17** | keyYears, yearSignals | minorFortuneByPalace, overlapAnalysis, decadalLimits, yearlyHoroscope | 是 | 否 | high |
 | **s20** | crossChartFindings | buildPiercingDiagnosticBundle(chart), yearlyHoroscope, decadalLimits, map 脈絡 | 是 | 否 | high |
 
-- **說明**：運勢 7 章均大量依賴 chart 直讀與 prompt 前重算（buildSiHuaLayers、runS00Pipeline、buildPiercingDiagnosticBundle、collectFourTransformsForPalace、buildOverlapDetailBlocks 等）。
+- **說明**：運勢 7 章均大量依賴 chart 直讀與 prompt 前重算（buildSiHuaLayers、runS00Pipeline、buildPiercingDiagnosticBundle、collectFourTransformsForPalace、buildOverlapDetailBlocks 等）。四化顯示層權威為 **normalizeChart + fourTransformations**（`buildSiHuaLayers`）；**不得**以 `chartJson.sihuaLayers` 為權威；實驗覆寫用 **`lifebookSiHuaDisplayOverride`**（見 `docs/lifebook-sihua-single-source-phase1.md`）。
 - **findingsV2 對齊**：改為只讀 findingsV2 時，需由 Reasoner 提供：`transformEdges`、`triggeredPaths`、`stackSignals`、`timeWindowScores`、`eventProbabilities`、`pathNarratives`；timeAxis / timelineSummary 可由 V2 時間層產出寫回 findings。
 - **重構**：優先級皆 **high**；V2 上線後改為「只讀 findingsV2 + 既有 findings 時間/行動欄位」，關閉上述 chart 直讀與重算。
 
@@ -53,7 +53,7 @@
 |-------------|----------------|--------------------|------------|-----------------|--------|
 | **s02, s10, s01, s05, s06, s07, s08, s09, s11, s12, s13, s14** | sihuaPlacementItems, natalFlowItems, starCombinations, palacePatterns, mainBattlefields, pressureOutlets | ziwei.palaces (星曜、亮度), overlap (迴路、高壓), content.starPalacesMain, narrativeFacade, config | 是 | 否 | medium |
 
-- **說明**：12 宮共同依賴 buildPalaceContext(chart, config, content) 取得星曜與結構；getPlaceholderMapFromContext 時若有 findings 則四化／宮干飛化改讀 `sihuaPlacementItems`、`natalFlowItems`，否則仍 fallback chart。buildSiHuaContext 在無 sihuaLayers 時會用 findings 組 perPalaceFlow。
+- **說明**：12 宮共同依賴 buildPalaceContext(chart, config, content) 取得星曜與結構；getPlaceholderMapFromContext 時若有 findings 則四化／宮干飛化改讀 `sihuaPlacementItems`、`natalFlowItems`，否則仍 fallback chart。`buildSiHuaContext` 之 perPalaceFlow 依 **findings + buildSihuaFlowSummary**（不依賴已 deprecated 之 `sihuaLayers` wire）。
 - **findingsV2 對齊**：單宮可再讀 `findingsV2.pathNarratives`（過濾 relatedPathIds 含本宮）、`triggeredPaths`（touchedPalaces 含本宮）、必要時 `stackSignals`（palace 為本宮）。
 - **重構**：優先級 **medium**；先確保 findings 穩定寫入 sihuaPlacementItems / natalFlowItems，再讓 12 宮一律不讀 chart 四化；最後補 pathNarratives 等 V2 欄位。
 

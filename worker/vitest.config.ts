@@ -1,3 +1,4 @@
+import path from "path";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -9,6 +10,7 @@ export default defineConfig({
     alias: {
       // 讓 tests 可 import src 時 .js 對應 .ts
       ".js": ".ts",
+      "@shared": path.resolve(__dirname, "../shared"),
     },
   },
 });

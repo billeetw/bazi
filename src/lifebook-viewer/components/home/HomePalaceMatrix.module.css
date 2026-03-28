@@ -1,0 +1,105 @@
+.wrap {
+  margin: 0 0 28px;
+  padding: 0 4px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(203, 213, 225, 0.45);
+  margin: 0;
+}
+
+.hint {
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(226, 232, 240, 0.88);
+  margin: 0;
+}
+
+.hintEm {
+  color: rgba(251, 191, 36, 0.95);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 8px 6px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: rgba(226, 232, 240, 0.82);
+  font-size: 12px;
+  line-height: 1.25;
+  text-align: center;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.cell:hover {
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(30, 41, 59, 0.65);
+}
+
+.cell:focus-visible {
+  outline: 2px solid rgba(251, 191, 36, 0.55);
+  outline-offset: 2px;
+}
+
+.cellActive {
+  border-color: rgba(251, 191, 36, 0.55);
+  background: linear-gradient(145deg, rgba(30, 58, 138, 0.45) 0%, rgba(15, 23, 42, 0.75) 100%);
+  box-shadow:
+    0 0 0 1px rgba(251, 191, 36, 0.2),
+    0 4px 18px rgba(251, 191, 36, 0.08);
+  animation: pulseGlow 2.4s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(251, 191, 36, 0.2),
+      0 4px 18px rgba(251, 191, 36, 0.08);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(251, 191, 36, 0.38),
+      0 6px 22px rgba(251, 191, 36, 0.14);
+  }
+}
+
+.badge {
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: rgba(251, 191, 36, 0.75);
+  margin-bottom: 4px;
+  opacity: 0;
+  max-height: 0;
+  overflow: hidden;
+}
+
+.badgeVisible {
+  opacity: 1;
+  max-height: 14px;
+}

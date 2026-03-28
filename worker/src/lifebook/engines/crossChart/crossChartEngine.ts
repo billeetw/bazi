@@ -17,7 +17,7 @@ import {
   synthesizeSamePalaceStacking,
   synthesizeNatalStableYearTrigger,
   synthesizeSpilloverStacking,
-  synthesizeDecadeXiaoXianMismatch,
+  synthesizeDecadeYearMismatch,
 } from "./crossChartSynthesizer.js";
 
 export interface CrossChartEngineResult {

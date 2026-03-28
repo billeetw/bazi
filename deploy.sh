@@ -64,6 +64,18 @@ if [ ! -f "dist/app.js" ]; then
     exit 1
 fi
 
+# 命書 viewer：避免未更新 dist 卻 deploy，導致線上永遠是舊 HTML（見 docs/lifebook-viewer-deploy-verification.md）
+if [ ! -f "dist/lifebook-viewer.html" ]; then
+    echo "❌ dist/lifebook-viewer.html 不存在（請先 npm run build:lifebook-viewer）"
+    exit 1
+fi
+if ! grep -q 'searchParams.set("view", "timeline")' dist/lifebook-viewer.html 2>/dev/null; then
+    echo "❌ dist/lifebook-viewer.html 內缺少補 view=timeline 的內嵌腳本，請勿部署。"
+    echo "   請確認 lifebook-viewer.html 源碼已更新，並執行: npm run build:lifebook-viewer"
+    exit 1
+fi
+echo "✅ dist/lifebook-viewer.html 已含 view=timeline 內嵌腳本"
+
 # 執行 D1 migrations（consult-db）
 echo "📦 執行 D1 migrations..."
 npx wrangler d1 migrations apply consult-db --remote || { echo "❌ migrations 失敗"; exit 1; }

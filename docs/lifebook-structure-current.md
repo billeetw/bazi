@@ -197,16 +197,11 @@ Viewer 導航用：
 
 ---
 
-## 7b. 四化高階：chart_json.sihuaLayers 與 buildSiHuaContext
+## 7b. 四化高階：`buildSiHuaLayers`／`buildSiHuaContext`（單一權威）
 
-若前端或 domain 層提供 **chart_json.sihuaLayers**，Worker 會優先用它產出 s00／s03／12 宮的四化相關 placeholder；否則由既有的 `fourTransformations`（mutagenStars）與 `overlapAnalysis` 推導。
+**顯示層四化**由 **`buildSiHuaLayers(chartJson)`** 產出（`normalizeChart` 落宮 + `fourTransformations.mutagenStars`）；**不讀** `chart_json.sihuaLayers` wire（已 deprecated，僅供與 worker diff／除錯，見 `docs/lifebook-sihua-single-source-phase1.md`）。實驗覆寫用 **`lifebookSiHuaDisplayOverride`** + audit。
 
-**sihuaLayers 建議結構**（每筆 transform：`starId`, `type: 'lu'|'quan'|'ke'|'ji'`, `fromPalace`, `toPalace`，宮位可用 id 如 ming / cai / guanglu）：
-
-- `benMing`: `{ yearStem?, transforms: SiHuaLayerTransform[] }`
-- `daXianCurrent`: `{ decadeRange?, stem?, transforms }`
-- `liuNianCurrent`: `{ year?, stem?, transforms }`
-- `xiaoXianCurrent`: `{ year?, palace?, stem?, transforms }`（若有算小限四化）
+舊 **sihuaLayers** wire 若仍存在於請求，形狀可參考歷史文件（`benMing`／`daXianCurrent`／`liuNianCurrent` 等 `transforms[]`）；**請勿再依賴其驅動正文**。
 
 **buildSiHuaContext(chartJson)**（`lifeBookPrompts.ts`）回傳：本命／大限／流年列表與祿忌星名、`perPalaceFlow`（每宮一段四化流向摘要）、`sihuaGlobalSummary`。技術版命書不再附「四化來源」演算法備註，避免使用者看到內部說明。
 
@@ -220,8 +215,8 @@ Viewer 導航用：
 
 **可選優化：**
 - **buildSiHuaContext 快取**：整本命書生成時每個 section 都會呼叫一次 `buildSiHuaContext(chartJson)`，若同一請求內 chartJson 不變，可在上層算一次 sihuaContext 再傳入，或於 Worker 內用 request-scoped 快取，避免重複計算。
-- **perPalaceFlow 長度**：無 sihuaLayers 時，fallback 用 `buildSihuaFlowSummary` 整段壓成一段，可能較長；若希望每宮摘要固定簡短，可對該段做字數上限或只取前幾句。
-- **前端提供 sihuaLayers**：若前端或 domain 層產出 `chart_json.sihuaLayers`（含 fromPalace/toPalace），Worker 會優先使用，四化流向會更精準、可區分飛入／飛出。
+- **perPalaceFlow 長度**：依 `buildSihuaFlowSummary`／findings 時，整段壓成一段可能較長；若希望每宮摘要固定簡短，可對該段做字數上限或只取前幾句。
+- **覆寫顯示**：請用 **`lifebookSiHuaDisplayOverride`**，勿再送舊 `sihuaLayers` wire 當權威。
 
 ---
 

@@ -1,0 +1,184 @@
+.timelineContent {
+  padding-top: 8px;
+  padding-bottom: 28px;
+}
+
+/* 薄 header：一句定位，不堆工具感 */
+.timelineHeader {
+  text-align: center;
+  margin-bottom: 18px;
+  padding: 0 4px;
+}
+
+.timelineKicker {
+  margin: 0 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.92);
+}
+
+.timelineHeadline {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  line-height: 1.25;
+  color: var(--lb-text-main, #f8fafc);
+}
+
+.timelineSubline {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(203, 213, 225, 0.82);
+  max-width: 22em;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.timelineHeaderLinks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.headerLink {
+  color: rgba(125, 211, 252, 0.92);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  padding: 4px 2px;
+}
+
+.headerLink:hover {
+  color: rgba(186, 230, 253, 1);
+}
+
+.headerSep {
+  color: rgba(148, 163, 184, 0.5);
+  user-select: none;
+}
+
+/* DestinyTree 主畫布 */
+.timelineHeroStage {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  margin-bottom: 8px;
+}
+
+/* 底部輕量導航 */
+.timelineFooterActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.footerLink {
+  font-size: 13px;
+  color: rgba(148, 163, 184, 0.95);
+  text-decoration: none;
+}
+
+.footerLink:hover {
+  color: rgba(203, 213, 225, 1);
+}
+
+.footerLinkPrimary {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(251, 191, 36, 0.95);
+  text-decoration: none;
+}
+
+.footerLinkPrimary:hover {
+  text-decoration: underline;
+}
+
+/* 空命書 */
+.emptyBanner {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.emptyText {
+  margin: 0 0 12px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(203, 213, 225, 0.92);
+}
+
+/* 已有命盤／seed、僅缺章節：輕提示，不阻擋時間軸與 CTA */
+.seedHint {
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.14);
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.seedHintText {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(148, 163, 184, 0.95);
+}
+
+.emptyActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+.btnPrimary {
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  color: #f8ebc8;
+  background: rgba(212, 175, 55, 0.12);
+}
+
+.btnPrimary:hover {
+  background: rgba(212, 175, 55, 0.2);
+}
+
+.btnGhost {
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(226, 232, 240, 0.95);
+  text-decoration: none;
+}
+
+.btnGhost:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+@media (max-width: 520px) {
+  .timelineHeadline {
+    font-size: 18px;
+  }
+
+  .timelineFooterActions {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+}

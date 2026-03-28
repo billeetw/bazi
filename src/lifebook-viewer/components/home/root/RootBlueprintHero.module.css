@@ -1,0 +1,159 @@
+.wrap {
+  width: 100%;
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+  text-align: center;
+}
+
+.tag {
+  font-family: "Share Tech Mono", ui-monospace, monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(212, 175, 55, 0.55);
+  margin-bottom: 1rem;
+}
+
+.title {
+  font-family: "Noto Serif TC", Georgia, serif;
+  font-size: clamp(1.375rem, 4vw, 1.625rem);
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  line-height: 1.6;
+  color: var(--lb-core-text-main);
+  margin: 0;
+  text-shadow: 0 0 1.25rem rgba(255, 255, 255, 0.08);
+}
+
+.sub {
+  margin: 0.75rem 0 0;
+  font-size: 0.9375rem;
+  letter-spacing: 0.12em;
+  color: var(--lb-core-text-body);
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  min-height: 17.5rem;
+  margin: 2rem 0 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.astrolabe {
+  position: absolute;
+  width: min(110vw, 27.5rem);
+  height: min(110vw, 27.5rem);
+  overflow: visible;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+.ringSoul {
+  fill: none;
+  stroke: rgba(225, 29, 72, 0.45);
+  stroke-width: 4;
+  filter: drop-shadow(0 0 12px #e11d48);
+  animation: pulseRing 4s ease-in-out infinite alternate;
+}
+
+.ringBody {
+  fill: none;
+  stroke: rgba(6, 182, 212, 0.45);
+  stroke-width: 4;
+  filter: drop-shadow(0 0 12px #06b6d4);
+  animation: pulseRing 5s ease-in-out infinite alternate-reverse;
+}
+
+.centerFlareBg {
+  fill: var(--lb-palace-trunk-core);
+  filter: blur(20px);
+  opacity: 0.28;
+  animation: pulseCore 4s ease-in-out infinite alternate;
+}
+
+.centerFlareCore {
+  fill: #fff;
+  filter: blur(4px);
+  opacity: 0.55;
+  animation: pulseCore 3s ease-in-out infinite alternate-reverse;
+}
+
+.node {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.375rem;
+  z-index: 2;
+}
+
+.nodeSub {
+  font-size: 0.625rem;
+  letter-spacing: 0.15em;
+  color: var(--lb-core-text-muted);
+}
+
+.nodeTitle {
+  font-family: "Noto Serif TC", Georgia, serif;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  color: var(--lb-core-text-main);
+}
+
+.nodeSoul {
+  left: 8%;
+  top: 38%;
+}
+
+.nodeSoul .nodeTitle {
+  text-shadow: 0 0 15px #e11d48;
+}
+
+.nodeBody {
+  right: 8%;
+  top: 38%;
+}
+
+.nodeBody .nodeTitle {
+  text-shadow: 0 0 15px #06b6d4;
+}
+
+.nodePalace {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.nodePalace .nodeTitle {
+  font-size: 1.125rem;
+  color: #fef08a;
+  text-shadow: 0 0 20px rgba(212, 175, 55, 0.45);
+}
+
+.nodePalace .nodeSub {
+  color: rgba(212, 175, 55, 0.55);
+}
+
+@keyframes pulseRing {
+  0% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseCore {
+  0% {
+    opacity: 0.4;
+    transform: scale(0.88);
+  }
+  100% {
+    opacity: 0.9;
+    transform: scale(1.08);
+  }
+}

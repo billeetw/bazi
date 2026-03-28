@@ -2,7 +2,7 @@
  * 命書 Viewer 狀態：sections、weight、chart、meta
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, type SetStateAction } from "react";
 import type { LifeBookViewerState, SectionPayload } from "../types";
 
 const emptyState: LifeBookViewerState = {
@@ -31,7 +31,7 @@ export function useLifeBookData(initial?: LifeBookViewerState | null) {
     setState((prev) => ({ ...prev, meta: meta ?? null }));
   }, []);
 
-  const replaceState = useCallback((next: LifeBookViewerState) => {
+  const replaceState = useCallback((next: SetStateAction<LifeBookViewerState>) => {
     setState(next);
   }, []);
 

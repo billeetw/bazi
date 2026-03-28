@@ -4,7 +4,7 @@
  */
 
 import { toPalaceCanonical } from "../canonicalKeys.js";
-import type { NormalizedChart, BodyPalaceSource, TransformEdge, TransformDisplay } from "../normalizedChart.js";
+import type { NormalizedChart, BodyPalaceSource, TransformEdge } from "../normalizedChart.js";
 import { buildPalaceByBranch, getFlowYearPalace } from "../../palace-map.js";
 import {
   buildPalaceStemMap,
@@ -38,21 +38,11 @@ function assignEdgesToPalaces(
   }
 }
 
-/** 依四化類型從 mutagenStars（祿/權/科/忌 或 lu/quan/ke/ji）取星名 */
-function starFromMutagen(mutagenStars: Record<string, string> | undefined, transform: TransformDisplay): string | undefined {
-  if (!mutagenStars || typeof mutagenStars !== "object") return undefined;
-  const t = transform as string;
-  return mutagenStars[t] ?? mutagenStars[t === "祿" ? "lu" : t === "權" ? "quan" : t === "科" ? "ke" : "ji"];
-}
-
-/** 用該層權威 mutagenStars 覆寫邊的 starName，使四化流向與目前大限／流年四化顯示一致 */
-function overwriteEdgeStarNames(edges: TransformEdge[], mutagenStars: Record<string, string> | undefined): void {
-  if (!edges?.length || !mutagenStars) return;
-  for (const e of edges) {
-    const star = starFromMutagen(mutagenStars, e.transform);
-    if (star) e.starName = star;
-  }
-}
+/**
+ * 注意：不得以客戶端 mutagenStars 覆寫已依「宮干／流年干 + 十干四化表」算出的邊之 starName。
+ * 若 mutagen 與實際用來建邊的干支不一致，覆寫會造成「飛入宮仍按星 A 定位，文案卻變成星 B」，
+ * 與命書 s15/s16（純公式）及 S18 敘事互相矛盾。
+ */
 
 function resolveShenGongSource(chartJson: Record<string, unknown>): BodyPalaceSource | undefined {
   if (chartJson.shenGong != null && String(chartJson.shenGong).trim()) return "chart.shenGong";
@@ -102,7 +92,6 @@ export function normalizeChart(chartJson: Record<string, unknown> | undefined): 
   if (currentDecade) {
     currentDecade.transforms = decadeFlowEdges;
     currentDecade.transformSource = "gonggan-formula";
-    overwriteEdgeStarNames(decadeFlowEdges, currentDecade.mutagenStars);
     currentDecade.flows = decadeFlowEdges;
   }
 
@@ -131,7 +120,6 @@ export function normalizeChart(chartJson: Record<string, unknown> | undefined): 
   if (yearlyHoroscope) {
     yearlyHoroscope.transforms = yearFlowEdges;
     yearlyHoroscope.transformSource = "gonggan-formula";
-    overwriteEdgeStarNames(yearFlowEdges, yearlyHoroscope.mutagenStars);
     yearlyHoroscope.flows = yearFlowEdges;
   }
 

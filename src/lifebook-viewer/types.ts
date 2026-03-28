@@ -61,6 +61,10 @@ export interface LifeBookMeta {
   created_at?: string;
   /** 生成時選擇的版本：ai = 給用戶；technical = 資料庫技術版（自用） */
   output_mode?: "ai" | "technical";
+  /**
+   * 閱讀頁可選提示：示範檔若仍為舊「模組／章節」分組，與 Root 十二宮入口並存時，用於避免誤解為最新產品敘事。
+   */
+  viewer_notice_zh?: string;
 }
 
 /** infer 單章結構（Worker /life-book/infer 回傳） */
@@ -106,4 +110,17 @@ export type LifeBookViewerState = Omit<LifeBookDocument, "expert">;
 export interface LifeBookApiResponse {
   ok: boolean;
   sections: Record<string, SectionPayload>;
+  locked_sections?: Array<{
+    section_key: string;
+    is_locked?: boolean;
+    lock_reason?: string;
+    teaser?: {
+      section_key?: string;
+      title?: string;
+      teaser?: string;
+    };
+  }>;
+  plan_tier?: "free" | "pro";
+  plan_matrix_version?: string;
+  available_sections?: string[];
 }

@@ -244,11 +244,25 @@ export function formatPalaceOverlayBlock(item: PalaceOverlayEntry): string {
   ].join("\n");
 }
 
+/** 大限／流年皆無飛入、飛出時略過該宮，減少模組二閱讀噪音。 */
+function palaceHasDecadeOrYearFly(entry: PalaceOverlayEntry): boolean {
+  return (
+    entry.decadalIncoming.length > 0 ||
+    entry.decadalOutgoing.length > 0 ||
+    entry.yearlyIncoming.length > 0 ||
+    entry.yearlyOutgoing.length > 0
+  );
+}
+
 /** S17 疊宮分析全文：【疊宮分析】+ 12 宮區塊，僅用 buildPalaceOverlay 結果，不讀 overlap。 */
 export function buildPalaceOverlayBlocks(overlay: PalaceOverlayEntry[]): string {
   if (!Array.isArray(overlay) || overlay.length === 0) return "【疊宮分析】\n\n（無 overlay 資料）";
   const header = "【疊宮分析】";
-  const blocks = overlay.map(formatPalaceOverlayBlock).join("\n\n");
+  const filtered = overlay.filter(palaceHasDecadeOrYearFly);
+  if (filtered.length === 0) {
+    return `${header}\n\n（目前大限／流年各宮皆無飛星飛入、飛出；以下略。）`;
+  }
+  const blocks = filtered.map(formatPalaceOverlayBlock).join("\n\n");
   return `${header}\n\n${blocks}`;
 }
 

@@ -126,13 +126,25 @@
     "strategic_advice": ""
   },
   "s20": {
-    "structure_analysis": "本章重做中，敬請期待。",
+    "structure_analysis": "【三盤疊加診斷】\n\n【本命底色】\n{s20BenmingLine}\n\n【大限主線】\n{s20DecadalLine}\n\n【流年焦點】\n{s20YearLine}\n\n【三盤交會】\n{s20CrossChartLine}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": ""
+  },
+  "s22": {
+    "structure_analysis": "{structureLinesBlock}",
+    "behavior_pattern": "",
+    "blind_spots": "",
+    "strategic_advice": ""
+  },
+  "s23": {
+    "structure_analysis": "{transformationFlowsBlock}",
     "behavior_pattern": "",
     "blind_spots": "",
     "strategic_advice": ""
   },
   "s21": {
-    "structure_analysis": "本章重做中，敬請期待。",
+    "structure_analysis": "【收束與總結】\n\n{s21LifelongLesson}\n\n{s21NowSee}",
     "behavior_pattern": "",
     "blind_spots": "",
     "strategic_advice": ""

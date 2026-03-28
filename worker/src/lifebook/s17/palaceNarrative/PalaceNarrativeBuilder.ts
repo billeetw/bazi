@@ -3,7 +3,11 @@
  * 目錄在 s17/ 下為歷史結構；勿與命書章節 s17「疊宮分析」混稱。
  */
 import { resolveLeadMainStar } from "../../engines/palaceInference/leadMainStarResolver.js";
-import { getPalaceSemantic, getStarSemantic } from "../../starSemanticDictionary.js";
+import {
+  getPalaceSemantic,
+  getStarSemantic,
+  JIE_BENMING_TRANSFORM_SUPPLEMENT_ZH,
+} from "../../starSemanticDictionary.js";
 import type { NormalizedChart } from "../../normalizedChart.js";
 import { buildWeightedPalaceContext } from "../weights/parser.js";
 import { DEFAULT_DRIVE_THRESHOLD } from "../weights/config.js";
@@ -156,14 +160,22 @@ function pickPalaceNatalTransforms(raw: PalaceRawInput): PalaceNatalTransform[] 
 function buildNatalTransformNarrativeLine(raw: PalaceRawInput, star: string, transform: "祿" | "權" | "科" | "忌"): string {
   const block = getTransformSemantic(transform, star, raw.palace);
   const meaning = block.meaning?.trim();
+  let line: string;
   if (meaning) {
     const advice = block.advice?.trim();
     if (advice && advice.length > 0 && !meaning.includes(advice)) {
-      return `${meaning} ${advice}`;
+      line = `${meaning} ${advice}`;
+    } else {
+      line = meaning;
     }
-    return meaning;
+  } else {
+    line = buildTransformNarrative({ star, transform, palace: raw.palace });
   }
-  return buildTransformNarrative({ star, transform, palace: raw.palace });
+  if (raw.palace === "疾厄宮") {
+    const sup = JIE_BENMING_TRANSFORM_SUPPLEMENT_ZH[transform]?.trim();
+    if (sup) return `${line}\n\n${sup}`;
+  }
+  return line;
 }
 
 function buildNatalTransformItems(raw: PalaceRawInput) {
@@ -175,13 +187,16 @@ function buildNatalTransformItems(raw: PalaceRawInput) {
 
 function buildCoreThemes(raw: PalaceRawInput, lead: string, coLeads: string[]): string[] {
   const ordered = [lead, ...coLeads].filter(Boolean).slice(0, 2);
+  const hasPair = (a: string, b: string) => ordered.includes(a) && ordered.includes(b);
+  if (raw.palace === "僕役宮" && hasPair("太陽", "太陰")) {
+    return ["外顯承擔與內在細膩並存", "人際網絡明暗切換", "團隊溫度與界線感"];
+  }
   if (raw.palace === "命宮") {
-    const has = (a: string, b: string) => ordered.includes(a) && ordered.includes(b);
-    if (has("紫微", "天府")) return ["主軸感", "穩定結構", "長期佈局"];
-    if (has("紫微", "七殺")) return ["主導感", "破局能力", "強烈自我驅動"];
-    if (has("天機", "太陰")) return ["思考內化", "感受導向", "策略型人格"];
-    if (has("廉貞", "貪狼")) return ["欲望驅動", "探索性強", "容易拉扯"];
-    if (has("武曲", "天相")) return ["現實決策", "資源管理", "結構導向"];
+    if (hasPair("紫微", "天府")) return ["主軸感", "穩定結構", "長期佈局"];
+    if (hasPair("紫微", "七殺")) return ["主導感", "破局能力", "強烈自我驅動"];
+    if (hasPair("天機", "太陰")) return ["思考內化", "感受導向", "策略型人格"];
+    if (hasPair("廉貞", "貪狼")) return ["欲望驅動", "探索性強", "容易拉扯"];
+    if (hasPair("武曲", "天相")) return ["現實決策", "資源管理", "結構導向"];
   }
   if (raw.palace === "田宅宮" && ordered.includes("武曲") && ordered.includes("天相")) {
     return ["資源配置與長期回報", "秩序與結構的穩定性", "可持續的安全感"];
@@ -266,7 +281,9 @@ function pickGuanluPhenomenonStars(raw: PalaceRawInput, max: number): string[] {
 function renderSegmentCore(palace: string, stars: string[]): string {
   const schema = PALACE_SEGMENT_SCHEMA[palace];
   if (!schema || stars.length === 0) return "";
-  return `你的核心主軸是「${schema.coreFocus}」，目前由${stars.join("、")}共同定調。`;
+  const who = stars.join("、");
+  const verb = stars.length >= 2 ? "共同定調" : "定調";
+  return `你的核心主軸是「${schema.coreFocus}」，目前由${who}${verb}。`;
 }
 
 /** 命宮權重摘要：用人格運作句，避免輸出架構文件式的 coreFocus 分類句 */
@@ -303,7 +320,7 @@ function renderSegmentDecision(palace: string, star: string): string {
   }
   const schema = PALACE_SEGMENT_SCHEMA[palace];
   const sem = getStarSemantic(star);
-  const plain = sem?.plain ?? `${star}相關判斷`;
+  const plain = sem?.plain ?? sem?.core ?? `${star}相關判斷`;
   if (!schema) return `做決策時，容易優先採用「${plain}」這條邏輯。`;
   return `做決策時，會把重心放在「${schema.decisionFocus}」；其中「${star}」讓你更傾向「${plain}」。`;
 }
@@ -327,8 +344,11 @@ function pitfallStarClause(palace: string, star: string): string {
   if (palace === "財帛宮") return caiPitfallLine(star);
   if (palace === "田宅宮") return tianZhaiPitfallBullet(star);
   const sem = getStarSemantic(star);
-  const risk = stripTrailingSentencePunct(sem?.risk ?? "過度拉扯與反覆");
-  return normalizeNarrativePunctuation(`「${star}」會放大${risk}。`);
+  const core = stripTrailingSentencePunct(sem?.core ?? "節奏與界線");
+  // 與「真實運作」條目避免複製同一段 risk 句，改以核心特質描述「放大後」的摩擦感
+  return normalizeNarrativePunctuation(
+    `「${star}」容易把「${core}」這條線推到過頭，現場摩擦與壓力感會更難降溫。`
+  );
 }
 
 /** 田宅「真實運作」分條：避免每顆星重複「實際居住與房產議題上…」 */
@@ -439,16 +459,18 @@ function renderSegmentPitfall(palace: string, star: string): string {
   }
   const schema = PALACE_SEGMENT_SCHEMA[palace];
   const sem = getStarSemantic(star);
-  const risk = stripTrailingSentencePunct(sem?.risk ?? "過度拉扯與反覆");
-  if (!schema) return `要留意「${star}」帶出的${risk}。`;
-  return `最常見的坑，是「${schema.pitfallFocus}」；其中「${star}」會放大${risk}。`;
+  const core = stripTrailingSentencePunct(sem?.core ?? "節奏與界線");
+  if (!schema) {
+    return `要留意「${star}」在「${core}」上容易用力過猛，現場更難降溫、收尾。`;
+  }
+  return `最常見的坑，是「${schema.pitfallFocus}」；其中「${star}」容易把「${core}」推到過頭，摩擦與壓力感會更難降溫。`;
 }
 
 function tianZhaiDecisionLine(star: string): string {
   const p = getTianZhaiProfile(star);
   if (p) return p.decision;
   const sem = getStarSemantic(star);
-  const plain = sem?.plain ?? `${star}相關議題`;
+  const plain = sem?.plain ?? sem?.core ?? `${star}相關議題`;
   return `在居所與資產根基上，會優先考量「${plain}」，再看長期安全與家庭節奏能否承接。`;
 }
 
@@ -472,7 +494,7 @@ function caiDecisionLine(star: string): string {
   const w = getWealthProfile(star);
   if (w) return w.decision;
   const sem = getStarSemantic(star);
-  const plain = sem?.plain ?? `${star}相關議題`;
+  const plain = sem?.plain ?? sem?.core ?? `${star}相關議題`;
   return `遇到金錢決策時，會優先走「${plain}」這條路，先看風險承受與現金流能否承接。`;
 }
 

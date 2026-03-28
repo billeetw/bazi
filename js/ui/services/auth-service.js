@@ -67,6 +67,9 @@
   var googleClientId = null;
   var googleCodeClient = null;
   var configFetchPromise = null;
+  var API_BASE = (typeof window !== "undefined" && window.Config && window.Config.API_BASE)
+    ? window.Config.API_BASE
+    : ((typeof window !== "undefined" && window.location && window.location.origin) ? window.location.origin : "");
 
   function renderLampBadge(containerId, isMobile) {
     var el = document.getElementById(containerId);
@@ -151,8 +154,9 @@
 
   function fetchConfig() {
     if (configFetchPromise) return configFetchPromise;
-    console.log('📡 API REQUEST', '/api/auth/config', JSON.stringify({}, null, 2));
-    configFetchPromise = fetch('/api/auth/config')
+    var authConfigUrl = API_BASE + '/api/auth/config';
+    console.log('📡 API REQUEST', authConfigUrl, JSON.stringify({}, null, 2));
+    configFetchPromise = fetch(authConfigUrl)
       .then(function (res) {
         if (!res.ok) throw new Error('config ' + res.status);
         return res.json();

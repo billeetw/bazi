@@ -15,6 +15,7 @@ import {
   LIFEBOOK_SCHEMA_VERSION,
   LIFEBOOK_GENERATOR_VERSION,
 } from "../../../js/lifebook-version.js";
+import { omitDeprecatedSihuaLayers } from "./chartJsonSanitize";
 
 /** 與 worker lifeBookTemplates 一致：有宮位聚焦的章節 → 該章要顯示的宮位 */
 const SECTION_PALACE_FOCUS: Record<string, string[] | undefined> = {
@@ -40,6 +41,8 @@ const SECTION_PALACE_FOCUS: Record<string, string[] | undefined> = {
   s18: undefined,
   s19: undefined,
   s20: undefined,
+  s22: undefined,
+  s23: undefined,
   s21: undefined,
 };
 
@@ -170,6 +173,8 @@ const SECTION_TITLE_FALLBACK: Record<string, string> = {
   s18: "未完成的必修課（業力議題）",
   s19: "三條立刻可做・三條長期累積・三條避開折損（短期・長期・避凶）",
   s20: "三盤疊加診斷（流年 × 大限 × 本命）",
+  s22: "你的結構格局（對宮線）",
+  s23: "你怎麼把人生用出來（轉化流）",
   s21: "你往何處去（靈魂總結）",
 };
 
@@ -223,7 +228,8 @@ export function buildLifeBookDocument({
 
   const doc: LifeBookDocument = {
     meta: metaOut,
-    chart_json: chartJson && typeof chartJson === "object" ? chartJson : null,
+    chart_json:
+      chartJson && typeof chartJson === "object" ? omitDeprecatedSihuaLayers(chartJson) ?? null : null,
     weight_analysis: weight_analysis ?? null,
     sections,
   };

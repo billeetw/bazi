@@ -5,15 +5,34 @@
 import { describe, it, expect } from "vitest";
 import { SECTION_ORDER, SECTION_TEMPLATES } from "../src/lifeBookTemplates.js";
 import { getPlaceholderMapFromContext, getSectionTechnicalBlocks } from "../src/lifeBookPrompts.js";
+import { LIFEBOOK_CANONICAL_TEST_CHART_JSON } from "./fixtures/lifebookCanonicalTestChart.js";
 
 /** 前端 lifebook-viewer 模組二＋收束使用的 section_key（須全在 worker 白名單內） */
-const TIME_MODULE_SECTION_KEYS = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s21"] as const;
+const TIME_MODULE_SECTION_KEYS = ["s15", "s15a", "s16", "s17", "s18", "s19", "s20", "s22", "s23", "s21"] as const;
+
+/** 開場與模組一開頭（專家後台 / viewer 會送 generate-section） */
+const OPENING_SECTION_KEYS = ["s00", "s03"] as const;
 
 describe("section_key 白名單（避免無效的 section_key）", () => {
+  it("SECTION_ORDER 包含 s00、s03（與 expert-admin / viewer 一致）", () => {
+    const orderList = SECTION_ORDER as readonly string[];
+    for (const key of OPENING_SECTION_KEYS) {
+      expect(orderList).toContain(key);
+    }
+  });
+
   it("SECTION_ORDER 包含所有模組二＋收束 section_key", () => {
     const orderList = SECTION_ORDER as readonly string[];
     for (const key of TIME_MODULE_SECTION_KEYS) {
       expect(orderList).toContain(key);
+    }
+  });
+
+  it("SECTION_TEMPLATES 為 s00、s03 提供 template", () => {
+    for (const key of OPENING_SECTION_KEYS) {
+      const template = SECTION_TEMPLATES.find((t) => t.section_key === key);
+      expect(template, `missing SECTION_TEMPLATES entry for ${key}`).toBeDefined();
+      expect(template?.title).toBeTruthy();
     }
   });
 
@@ -162,5 +181,52 @@ describe("getSectionTechnicalBlocks 時間模組產出 skeleton（避免只出�
     expect(blocks.resolvedSkeleton?.structure_analysis).toBeTruthy();
     expect(blocks.resolvedSkeleton!.structure_analysis).not.toBe("本章重做中，敬請期待。");
     expect(blocks.resolvedSkeleton!.structure_analysis).toMatch(/【流月引爆點】|本月最有感|本月建議/);
+  });
+
+  it("s20 技術版骨架含三盤 placeholder（非「本章重做中」）", () => {
+    const chartJson = LIFEBOOK_CANONICAL_TEST_CHART_JSON as Record<string, unknown>;
+    const content = {
+      lifebookSection: {
+        s20: {
+          structure_analysis: "本章重做中，敬請期待。",
+          behavior_pattern: "",
+          blind_spots: "",
+          strategic_advice: "",
+        },
+      },
+    } as Record<string, unknown>;
+    const blocks = getSectionTechnicalBlocks("s20", chartJson, null, content, "zh-TW");
+    expect(blocks.resolvedSkeleton?.structure_analysis).toBeTruthy();
+    expect(blocks.resolvedSkeleton!.structure_analysis).not.toMatch(/本章重做中/);
+    expect(blocks.resolvedSkeleton!.structure_analysis).toMatch(/三盤疊加|本命底色|大限主線/);
+  });
+
+  it("s22／s23 技術版骨架為結構線／轉化流（非「本章重做中」）", () => {
+    const chartJson = LIFEBOOK_CANONICAL_TEST_CHART_JSON as Record<string, unknown>;
+    const content = {
+      lifebookSection: {
+        s22: {
+          structure_analysis: "本章重做中，敬請期待。",
+          behavior_pattern: "",
+          blind_spots: "",
+          strategic_advice: "",
+        },
+        s23: {
+          structure_analysis: "本章重做中，敬請期待。",
+          behavior_pattern: "",
+          blind_spots: "",
+          strategic_advice: "",
+        },
+      },
+    } as Record<string, unknown>;
+    const b22 = getSectionTechnicalBlocks("s22", chartJson, null, content, "zh-TW");
+    expect(b22.resolvedSkeleton?.structure_analysis).toBeTruthy();
+    expect(b22.resolvedSkeleton!.structure_analysis).not.toMatch(/本章重做中/);
+    expect(b22.resolvedSkeleton!.structure_analysis).toMatch(/財福線|子田線|官夫線/);
+
+    const b23 = getSectionTechnicalBlocks("s23", chartJson, null, content, "zh-TW");
+    expect(b23.resolvedSkeleton?.structure_analysis).toBeTruthy();
+    expect(b23.resolvedSkeleton!.structure_analysis).not.toMatch(/本章重做中/);
+    expect(b23.resolvedSkeleton!.structure_analysis).toMatch(/事業|收入|轉化率|現金|資產/);
   });
 });

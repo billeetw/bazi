@@ -1,3 +1,43 @@
+# 後台 HTML：勿快取（避免共用裝置／代理留下可重播頁面）
+/admin.html
+  Cache-Control: no-store, private
+/expert-admin
+  Cache-Control: no-store, private
+/expert-admin/*
+  Cache-Control: no-store, private
+/admin-copy.html
+  Cache-Control: no-store, private
+
 # 靜態 JSON 快取（占卦易經資料）
 /data/iching/*
   Cache-Control: public, max-age=86400
+
+# 主站／後台入口 JS、Tailwind：檔名無 hash，避免部署後瀏覽器仍用舊 bundle 指向已刪除的 chunks
+/dist/app.js
+  Cache-Control: public, max-age=0, must-revalidate
+/dist/tailwind.css
+  Cache-Control: public, max-age=0, must-revalidate
+/dist/startup-sequence.js
+  Cache-Control: public, max-age=0, must-revalidate
+/dist/expert-admin.js
+  Cache-Control: public, max-age=0, must-revalidate
+/dist/divination.js
+  Cache-Control: public, max-age=0, must-revalidate
+/dist/lifebook-viewer.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+# 入口 HTML：勿長快取，否則內嵌預設 view 的 script 會長期不更新
+/dist/lifebook-viewer.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# 命書 Viewer 其餘為 hash 檔名（建置後產於 dist/ 根目錄）
+/dist/lifebook-viewer-*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# 少數邊緣代理對無副檔名路由回傳 octet-stream；明確標成 JS 避免 module script MIME 拒絕
+/dist/*.js
+  Content-Type: text/javascript; charset=utf-8
+
+# Vite chunk 檔名含 hash，可長快取
+/dist/chunks/*
+  Cache-Control: public, max-age=31536000, immutable
